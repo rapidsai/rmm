@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2020-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
@@ -339,9 +328,8 @@ class pool_memory_resource final
   {
     if (maximum_pool_size_.has_value()) {
       auto const unaligned_remaining = maximum_pool_size_.value() - pool_size();
-      using rmm::align_up;
-      auto const remaining    = align_up(unaligned_remaining, rmm::CUDA_ALLOCATION_ALIGNMENT);
-      auto const aligned_size = align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      auto const remaining    = rmm::align_up(unaligned_remaining, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      auto const aligned_size = rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
       return (aligned_size <= remaining) ? std::max(aligned_size, remaining / 2) : 0;
     }
     return std::max(size, pool_size());
@@ -352,7 +340,7 @@ class pool_memory_resource final
    *
    * @param size The size in bytes to allocate from the upstream resource
    * @param stream The stream on which the memory is to be used.
-   * @throws if call to allocate_async() throws
+   * @throws if call to allocate() throws
    * @return block_type The allocated block
    */
   block_type block_from_upstream(std::size_t size, cuda_stream_view stream)
@@ -361,7 +349,7 @@ class pool_memory_resource final
 
     if (size == 0) { return {}; }
 
-    void* ptr = get_upstream_resource().allocate_async(size, stream);
+    void* ptr = get_upstream_resource().allocate(stream, size);
     return *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first;
   }
 
@@ -424,7 +412,7 @@ class pool_memory_resource final
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
-      get_upstream_resource().deallocate(block.pointer(), block.size());
+      get_upstream_resource().deallocate_sync(block.pointer(), block.size());
     }
     upstream_blocks_.clear();
 #ifdef RMM_POOL_TRACK_ALLOCATIONS

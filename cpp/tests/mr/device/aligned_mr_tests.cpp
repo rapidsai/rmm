@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2021-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "../../mock_resource.hpp"
@@ -80,8 +69,8 @@ TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
 
   {
     auto const size{5};
-    EXPECT_EQ(mr.allocate(size, stream), pointer);
-    mr.deallocate(pointer, size, stream);
+    EXPECT_EQ(mr.allocate(stream, size), pointer);
+    mr.deallocate(stream, pointer, size);
   }
 }
 
@@ -102,8 +91,8 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
 
   {
     auto const size{3};
-    EXPECT_EQ(mr.allocate(size, stream), pointer);
-    mr.deallocate(pointer, size, stream);
+    EXPECT_EQ(mr.allocate(stream, size), pointer);
+    mr.deallocate(stream, pointer, size);
   }
 
   {
@@ -111,8 +100,8 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
     void* const pointer1 = int_to_address(456);
     EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer1));
     EXPECT_CALL(mock, do_deallocate(pointer1, size, stream)).Times(1);
-    EXPECT_EQ(mr.allocate(size, stream), pointer1);
-    mr.deallocate(pointer1, size, stream);
+    EXPECT_EQ(mr.allocate(stream, size), pointer1);
+    mr.deallocate(stream, pointer1, size);
   }
 }
 
@@ -134,8 +123,8 @@ TEST(AlignedTest, UpstreamAddressAlreadyAligned)
 
   {
     auto const size{65536};
-    EXPECT_EQ(mr.allocate(size, stream), pointer);
-    mr.deallocate(pointer, size, stream);
+    EXPECT_EQ(mr.allocate(stream, size), pointer);
+    mr.deallocate(stream, pointer, size);
   }
 }
 
@@ -157,8 +146,8 @@ TEST(AlignedTest, AlignUpstreamAddress)
   {
     void* const expected_pointer = int_to_address(4096);
     auto const size{65536};
-    EXPECT_EQ(mr.allocate(size, stream), expected_pointer);
-    mr.deallocate(expected_pointer, size, stream);
+    EXPECT_EQ(mr.allocate(stream, size), expected_pointer);
+    mr.deallocate(stream, expected_pointer, size);
   }
 }
 
@@ -193,12 +182,12 @@ TEST(AlignedTest, AlignMultiple)
     auto const size1{65536};
     auto const size2{73728};
     auto const size3{77800};
-    EXPECT_EQ(mr.allocate(size1, stream), expected_pointer1);
-    EXPECT_EQ(mr.allocate(size2, stream), expected_pointer2);
-    EXPECT_EQ(mr.allocate(size3, stream), expected_pointer3);
-    mr.deallocate(expected_pointer1, size1, stream);
-    mr.deallocate(expected_pointer2, size2, stream);
-    mr.deallocate(expected_pointer3, size3, stream);
+    EXPECT_EQ(mr.allocate(stream, size1), expected_pointer1);
+    EXPECT_EQ(mr.allocate(stream, size2), expected_pointer2);
+    EXPECT_EQ(mr.allocate(stream, size3), expected_pointer3);
+    mr.deallocate(stream, expected_pointer1, size1);
+    mr.deallocate(stream, expected_pointer2, size2);
+    mr.deallocate(stream, expected_pointer3, size3);
   }
 }
 
@@ -207,9 +196,9 @@ TEST(AlignedTest, AlignRealPointer)
   auto const alignment{4096};
   auto const threshold{65536};
   aligned_real mr{rmm::mr::get_current_device_resource_ref(), alignment, threshold};
-  void* alloc = mr.allocate(threshold);
+  void* alloc = mr.allocate_sync(threshold);
   EXPECT_TRUE(rmm::is_pointer_aligned(alloc, alignment));
-  mr.deallocate(alloc, threshold);
+  mr.deallocate_sync(alloc, threshold);
 }
 
 TEST(AlignedTest, SmallAlignmentsBumpedTo256Bytes)
@@ -218,7 +207,7 @@ TEST(AlignedTest, SmallAlignmentsBumpedTo256Bytes)
   for (auto requested_alignment : {32UL, 64UL, 128UL}) {
     aligned_real mr{rmm::mr::get_current_device_resource_ref(), requested_alignment};
 
-    void* ptr = mr.allocate(requested_alignment);
+    void* ptr = mr.allocate_sync(requested_alignment);
 
     // Even though we requested smaller alignment, pointer should be 256-byte
     // aligned for CUDA requirements
@@ -226,7 +215,7 @@ TEST(AlignedTest, SmallAlignmentsBumpedTo256Bytes)
     // And also aligned to the originally requested alignment
     EXPECT_TRUE(rmm::is_pointer_aligned(ptr, requested_alignment));
 
-    mr.deallocate(ptr, requested_alignment);
+    mr.deallocate_sync(ptr, requested_alignment);
   }
 }
 

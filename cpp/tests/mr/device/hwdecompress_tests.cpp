@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <rmm/detail/error.hpp>
@@ -56,9 +45,9 @@ TEST_F(HWDecompressTest, CudaMalloc)
 {
   const auto allocation_size{100};
   rmm::mr::cuda_memory_resource mr{};
-  void* ptr = mr.allocate(allocation_size);
+  void* ptr = mr.allocate_sync(allocation_size);
   HWDecompressTest::check_decompress_capable(ptr);
-  mr.deallocate(ptr, allocation_size);
+  mr.deallocate_sync(ptr, allocation_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
@@ -70,9 +59,9 @@ TEST_F(HWDecompressTest, CudaMallocAsync)
   }
   const auto pool_init_size{100};
   rmm::mr::cuda_async_memory_resource mr{pool_init_size};
-  void* ptr = mr.allocate(pool_init_size);
+  void* ptr = mr.allocate_sync(pool_init_size);
   HWDecompressTest::check_decompress_capable(ptr);
-  mr.deallocate(ptr, pool_init_size);
+  mr.deallocate_sync(ptr, pool_init_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 

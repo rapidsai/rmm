@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2024-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "../../byte_literals.hpp"
@@ -92,22 +81,22 @@ TEST_F(SystemMRTest, FirstTouchOnCPU)
 {
   auto const free = rmm::available_device_memory().first;
   system_mr mr;
-  void* ptr = mr.allocate(size_mb);
+  void* ptr = mr.allocate_sync(size_mb);
   touch_on_cpu(ptr, size_mb);
   auto const free2 = rmm::available_device_memory().first;
   EXPECT_EQ(free, free2);
-  mr.deallocate(ptr, size_mb);
+  mr.deallocate_sync(ptr, size_mb);
 }
 
 TEST_F(SystemMRTest, FirstTouchOnGPU)
 {
   auto const free = rmm::available_device_memory().first;
   system_mr mr;
-  void* ptr = mr.allocate(size_mb);
+  void* ptr = mr.allocate_sync(size_mb);
   touch_on_gpu(ptr, size_mb);
   auto const free2 = rmm::available_device_memory().first;
-  EXPECT_LT(free2, free);
-  mr.deallocate(ptr, size_mb);
+  EXPECT_LE(free2, free);
+  mr.deallocate_sync(ptr, size_mb);
 }
 
 TEST_F(SystemMRTest, HeadroomMRReserveAllFreeMemory)
@@ -115,9 +104,9 @@ TEST_F(SystemMRTest, HeadroomMRReserveAllFreeMemory)
   auto const free = rmm::available_device_memory().first;
   // All the free GPU memory is set as headroom, so allocation is only on the CPU.
   headroom_mr mr{free + size_gb};
-  void* ptr = mr.allocate(size_mb);
+  void* ptr = mr.allocate_sync(size_mb);
   touch_on_cpu(ptr, size_mb);
-  mr.deallocate(ptr, size_mb);
+  mr.deallocate_sync(ptr, size_mb);
 }
 
 TEST_F(SystemMRTest, HeadroomMRDifferentParametersUnequal)

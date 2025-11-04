@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2021-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "../../byte_literals.hpp"
@@ -49,7 +38,7 @@ TEST(FailureCallbackTest, RetryAllocationOnce)
   failure_callback_adaptor<> mr{
     rmm::mr::get_current_device_resource_ref(), failure_handler, &retried};
   EXPECT_EQ(retried, false);
-  EXPECT_THROW(mr.allocate(512_GiB), std::bad_alloc);
+  EXPECT_THROW(mr.allocate_sync(512_GiB), std::bad_alloc);
   EXPECT_EQ(retried, true);
 }
 
@@ -68,8 +57,8 @@ TEST(FailureCallbackTest, DifferentExceptionTypes)
   always_throw_memory_resource<rmm::bad_alloc> bad_alloc_mr;
   always_throw_memory_resource<rmm::out_of_memory> oom_mr;
 
-  EXPECT_THROW(bad_alloc_mr.allocate(1_MiB), rmm::bad_alloc);
-  EXPECT_THROW(oom_mr.allocate(1_MiB), rmm::out_of_memory);
+  EXPECT_THROW(bad_alloc_mr.allocate_sync(1_MiB), rmm::bad_alloc);
+  EXPECT_THROW(oom_mr.allocate_sync(1_MiB), rmm::out_of_memory);
 
   // Wrap a bad_alloc-catching callback adaptor around an MR that always throws bad_alloc:
   // Should retry once and then re-throw bad_alloc
@@ -79,7 +68,7 @@ TEST(FailureCallbackTest, DifferentExceptionTypes)
       &bad_alloc_mr, failure_handler, &retried};
 
     EXPECT_EQ(retried, false);
-    EXPECT_THROW(bad_alloc_callback_mr.allocate(1_MiB), rmm::bad_alloc);
+    EXPECT_THROW(bad_alloc_callback_mr.allocate_sync(1_MiB), rmm::bad_alloc);
     EXPECT_EQ(retried, true);
   }
 
@@ -91,7 +80,7 @@ TEST(FailureCallbackTest, DifferentExceptionTypes)
     failure_callback_adaptor<rmm::out_of_memory> oom_callback_mr{
       &oom_mr, failure_handler, &retried};
     EXPECT_EQ(retried, false);
-    EXPECT_THROW(oom_callback_mr.allocate(1_MiB), rmm::out_of_memory);
+    EXPECT_THROW(oom_callback_mr.allocate_sync(1_MiB), rmm::out_of_memory);
     EXPECT_EQ(retried, true);
   }
 
@@ -103,7 +92,7 @@ TEST(FailureCallbackTest, DifferentExceptionTypes)
     failure_callback_adaptor<rmm::out_of_memory> oom_callback_mr{
       &bad_alloc_mr, failure_handler, &retried};
     EXPECT_EQ(retried, false);
-    EXPECT_THROW(oom_callback_mr.allocate(1_MiB), rmm::bad_alloc);  // bad_alloc passes through
+    EXPECT_THROW(oom_callback_mr.allocate_sync(1_MiB), rmm::bad_alloc);  // bad_alloc passes through
     EXPECT_EQ(retried, false);  // Does not catch / retry on anything except OOM
   }
 }

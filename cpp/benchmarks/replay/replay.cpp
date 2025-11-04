@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2020-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either ex  ess or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <rmm/cuda_stream_view.hpp>
@@ -205,7 +194,7 @@ struct replay_benchmark {
         auto alloc = ptr_alloc.second;
         num_leaked++;
         total_leaked += alloc.size;
-        mr_->deallocate(alloc.ptr, alloc.size);
+        mr_->deallocate_sync(alloc.ptr, alloc.size);
       }
       if (num_leaked > 0) {
         std::cout << "LOG shows leak of " << num_leaked << " allocations of " << total_leaked
@@ -237,11 +226,11 @@ struct replay_benchmark {
 
         // rmm::detail::action::ALLOCATE_FAILURE is ignored.
         if (rmm::detail::action::ALLOCATE == event.act) {
-          auto ptr = mr_->allocate(event.size);
+          auto ptr = mr_->allocate_sync(event.size);
           set_allocation(event.pointer, allocation{ptr, event.size});
         } else if (rmm::detail::action::FREE == event.act) {
           auto alloc = remove_allocation(event.pointer);
-          mr_->deallocate(alloc.ptr, event.size);
+          mr_->deallocate_sync(alloc.ptr, event.size);
         }
 
         event_index++;

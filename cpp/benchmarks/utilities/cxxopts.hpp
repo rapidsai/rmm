@@ -1,4 +1,8 @@
 /*
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2022 Jarryd Beck
+ * SPDX-License-Identifier: MIT
+ */
+/*
 
 Copyright (c) 2014-2022 Jarryd Beck
 

@@ -1,15 +1,8 @@
 # =============================================================================
-# Copyright (c) 2018-2025, NVIDIA CORPORATION.
-#
-# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
-# in compliance with the License. You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software distributed under the License
-# is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-# or implied. See the License for the specific language governing permissions and limitations under
-# the License.
+# cmake-format: off
+# SPDX-FileCopyrightText: Copyright (c) 2018-2025, NVIDIA CORPORATION.
+# SPDX-License-Identifier: Apache-2.0
+# cmake-format: on
 # =============================================================================
 
 cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
@@ -44,6 +37,7 @@ option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 # This is mostly so that dependent libraries are configured in shared mode for downstream dependents
 # of RMM that get their common dependencies transitively.
 option(BUILD_SHARED_LIBS "Build RMM shared libraries" ON)
+option(RMM_ENABLE_LEGACY_MR_INTERFACE "Enable legacy memory resource interface" ON)
 set(RMM_LOGGING_LEVEL
     "INFO"
     CACHE STRING "Choose the logging level.")
@@ -54,6 +48,7 @@ message(VERBOSE "RMM: Build with NVTX support: ${RMM_NVTX}")
 # Set logging level. Must go before including gtests and benchmarks. Set the possible values of
 # build type for cmake-gui.
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
+message(STATUS "RMM: Legacy MR interface enabled: ${RMM_ENABLE_LEGACY_MR_INTERFACE}")
 
 # cudart can be linked statically or dynamically
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
@@ -131,6 +126,17 @@ target_compile_definitions(rmm PUBLIC LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESO
 if(RMM_NVTX)
   target_compile_definitions(rmm PUBLIC RMM_NVTX)
 endif()
+
+# Control legacy MR interface visibility
+if(RMM_ENABLE_LEGACY_MR_INTERFACE)
+  target_compile_definitions(rmm PUBLIC RMM_ENABLE_LEGACY_MR_INTERFACE)
+endif()
+
+set(RMM_CXX_FLAGS -Wall -Werror -Wextra -Wno-unknown-pragmas -Wno-error=deprecated-declarations)
+set(RMM_CUDA_FLAGS -Werror=all-warnings
+                   -Xcompiler=-Wall,-Werror,-Wextra,-Wno-error=deprecated-declarations)
+target_compile_options(rmm PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${RMM_CXX_FLAGS}>"
+                                   "$<$<COMPILE_LANGUAGE:CUDA>:${RMM_CUDA_FLAGS}>")
 
 # ##################################################################################################
 # * tests and benchmarks ---------------------------------------------------------------------------

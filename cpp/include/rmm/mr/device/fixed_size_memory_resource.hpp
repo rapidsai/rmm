@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2020-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
@@ -176,7 +165,7 @@ class fixed_size_memory_resource
    */
   free_list blocks_from_upstream(cuda_stream_view stream)
   {
-    void* ptr = get_upstream_resource().allocate_async(upstream_chunk_size_, stream);
+    void* ptr = get_upstream_resource().allocate(stream, upstream_chunk_size_);
     block_type block{ptr};
     upstream_blocks_.push_back(block);
 
@@ -231,7 +220,7 @@ class fixed_size_memory_resource
     lock_guard lock(this->get_mutex());
 
     for (auto block : upstream_blocks_) {
-      get_upstream_resource().deallocate(block.pointer(), upstream_chunk_size_);
+      get_upstream_resource().deallocate_sync(block.pointer(), upstream_chunk_size_);
     }
     upstream_blocks_.clear();
   }

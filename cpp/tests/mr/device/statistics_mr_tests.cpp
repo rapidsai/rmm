@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2020-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "../../byte_literals.hpp"
@@ -63,10 +52,10 @@ TEST(StatisticsTest, AllFreed)
 
   allocations.reserve(num_allocations);
   for (int i = 0; i < num_allocations; ++i) {
-    allocations.push_back(mr.allocate(ten_MiB));
+    allocations.push_back(mr.allocate_sync(ten_MiB));
   }
   for (auto* alloc : allocations) {
-    mr.deallocate(alloc, ten_MiB);
+    mr.deallocate_sync(alloc, ten_MiB);
   }
 
   // Counter values should be 0
@@ -80,11 +69,11 @@ TEST(StatisticsTest, PeakAllocations)
   std::vector<void*> allocations;
 
   for (std::size_t i = 0; i < num_allocations; ++i) {
-    allocations.push_back(mr.allocate(ten_MiB));
+    allocations.push_back(mr.allocate_sync(ten_MiB));
   }
   // Delete every other allocation
   for (auto&& it = allocations.begin(); it != allocations.end(); ++it) {
-    mr.deallocate(*it, ten_MiB);
+    mr.deallocate_sync(*it, ten_MiB);
     it = allocations.erase(it);
   }
 
@@ -105,12 +94,12 @@ TEST(StatisticsTest, PeakAllocations)
 
   // Add 10 more to increase the peak
   for (std::size_t i = 0; i < num_allocations; ++i) {
-    allocations.push_back(mr.allocate(ten_MiB));
+    allocations.push_back(mr.allocate_sync(ten_MiB));
   }
 
   // Deallocate all remaining
   for (auto& allocation : allocations) {
-    mr.deallocate(allocation, ten_MiB);
+    mr.deallocate_sync(allocation, ten_MiB);
   }
   allocations.clear();
 
@@ -188,7 +177,7 @@ TEST(StatisticsTest, NegativeInnerTracking)
   statistics_adaptor mr{rmm::mr::get_current_device_resource_ref()};
   std::vector<void*> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
-    allocations.push_back(mr.allocate(ten_MiB));
+    allocations.push_back(mr.allocate_sync(ten_MiB));
   }
 
   EXPECT_EQ(mr.get_allocations_counter().value, 10);
@@ -197,7 +186,7 @@ TEST(StatisticsTest, NegativeInnerTracking)
 
   // Add more allocations
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
-    allocations.push_back(inner_mr.allocate(ten_MiB));
+    allocations.push_back(inner_mr.allocate_sync(ten_MiB));
   }
 
   // Check the outstanding allocations
@@ -213,7 +202,7 @@ TEST(StatisticsTest, NegativeInnerTracking)
 
   // Deallocate all allocations using the inner_mr
   for (auto& allocation : allocations) {
-    inner_mr.deallocate(allocation, ten_MiB);
+    inner_mr.deallocate_sync(allocation, ten_MiB);
   }
   allocations.clear();
 
@@ -242,7 +231,7 @@ TEST(StatisticsTest, NegativeInnerTracking)
 TEST(StatisticsTest, Nested)
 {
   statistics_adaptor mr{rmm::mr::get_current_device_resource_ref()};
-  void* a0 = mr.allocate(ten_MiB);
+  void* a0 = mr.allocate_sync(ten_MiB);
   EXPECT_EQ(mr.get_bytes_counter().value, ten_MiB);
   EXPECT_EQ(mr.get_allocations_counter().value, 1);
   {
@@ -252,12 +241,12 @@ TEST(StatisticsTest, Nested)
   }
   EXPECT_EQ(mr.get_bytes_counter().value, 0);
   EXPECT_EQ(mr.get_allocations_counter().value, 0);
-  void* a1 = mr.allocate(ten_MiB);
+  void* a1 = mr.allocate_sync(ten_MiB);
   mr.push_counters();
   EXPECT_EQ(mr.get_bytes_counter().value, 0);
   EXPECT_EQ(mr.get_allocations_counter().value, 0);
-  void* a2 = mr.allocate(ten_MiB);
-  mr.deallocate(a2, ten_MiB);
+  void* a2 = mr.allocate_sync(ten_MiB);
+  mr.deallocate_sync(a2, ten_MiB);
   EXPECT_EQ(mr.get_bytes_counter().value, 0);
   EXPECT_EQ(mr.get_bytes_counter().peak, ten_MiB);
   EXPECT_EQ(mr.get_allocations_counter().value, 0);
@@ -269,7 +258,7 @@ TEST(StatisticsTest, Nested)
     EXPECT_EQ(allocs.value, 0);
     EXPECT_EQ(allocs.peak, 1);
   }
-  mr.deallocate(a0, ten_MiB);
+  mr.deallocate_sync(a0, ten_MiB);
   {
     auto [bytes, allocs] = mr.pop_counters();
     EXPECT_EQ(bytes.value, 0);
@@ -277,7 +266,7 @@ TEST(StatisticsTest, Nested)
     EXPECT_EQ(allocs.value, 0);
     EXPECT_EQ(allocs.peak, 2);
   }
-  mr.deallocate(a1, ten_MiB);
+  mr.deallocate_sync(a1, ten_MiB);
   EXPECT_THROW(mr.pop_counters(), std::out_of_range);
 }
 

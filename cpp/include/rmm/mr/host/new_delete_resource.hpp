@@ -1,23 +1,13 @@
 /*
- * Copyright (c) 2020-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
 #include <rmm/aligned.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/error.hpp>
 #include <rmm/mr/host/host_memory_resource.hpp>
 
 #include <cstddef>
@@ -33,8 +23,11 @@ namespace mr {
 /**
  * @brief A `host_memory_resource` that uses the global `operator new` and `operator delete` to
  * allocate host memory.
+ *
+ * @deprecated This class is deprecated in 25.12 and will be removed in 26.02.
  */
-class new_delete_resource final : public host_memory_resource {
+class [[deprecated("new_delete_resource is deprecated in 25.12 and will be removed in 26.02.")]]
+new_delete_resource final : public host_memory_resource {
  public:
   new_delete_resource()                           = default;
   ~new_delete_resource() override                 = default;
@@ -61,9 +54,9 @@ class new_delete_resource final : public host_memory_resource {
   void* do_allocate(std::size_t bytes,
                     std::size_t alignment = rmm::RMM_DEFAULT_HOST_ALIGNMENT) override
   {
-    // If the requested alignment isn't supported, use default
-    alignment =
-      (rmm::is_supported_alignment(alignment)) ? alignment : rmm::RMM_DEFAULT_HOST_ALIGNMENT;
+    RMM_EXPECTS(rmm::is_supported_alignment(alignment),
+                "Allocation alignment is not a power of 2.",
+                rmm::bad_alloc);
 
     return rmm::detail::aligned_host_allocate(
       bytes, alignment, [](std::size_t size) { return ::operator new(size); });

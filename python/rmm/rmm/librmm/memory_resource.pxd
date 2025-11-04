@@ -1,16 +1,5 @@
-# Copyright (c) 2020-2025, NVIDIA CORPORATION.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-License-Identifier: Apache-2.0
 
 # This import is needed for Cython typing in translate_python_except_to_cpp
 # See https://github.com/cython/cython/issues/5589
@@ -32,6 +21,7 @@ from rmm.librmm.memory_resource cimport device_memory_resource
 cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass device_memory_resource:
+        # Legacy functions
         void* allocate(size_t bytes) except +
         void* allocate(size_t bytes, cuda_stream_view stream) except +
         void deallocate(void* ptr, size_t bytes) noexcept
@@ -39,6 +29,19 @@ cdef extern from "rmm/mr/device/device_memory_resource.hpp" \
             void* ptr,
             size_t bytes,
             cuda_stream_view stream
+        ) noexcept
+        # End legacy functions
+
+        void* allocate_sync(size_t bytes) except +
+        void deallocate_sync(void* ptr, size_t bytes) noexcept
+        void* allocate(
+            cuda_stream_view stream,
+            size_t bytes
+        ) except +
+        void deallocate(
+            cuda_stream_view stream,
+            void* ptr,
+            size_t bytes
         ) noexcept
 
 cdef extern from "rmm/cuda_device.hpp" namespace "rmm" nogil:
@@ -98,6 +101,11 @@ cdef extern from "rmm/mr/device/system_memory_resource.hpp" \
     cdef cppclass system_memory_resource(device_memory_resource):
         system_memory_resource() except +
 
+cdef extern from "rmm/mr/pinned_host_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+    cdef cppclass pinned_host_memory_resource(device_memory_resource):
+        pinned_host_memory_resource() except +
+
 cdef extern from "rmm/mr/device/sam_headroom_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass sam_headroom_memory_resource(device_memory_resource):
@@ -118,6 +126,13 @@ cdef extern from "rmm/mr/device/cuda_async_view_memory_resource.hpp" \
     cdef cppclass cuda_async_view_memory_resource(device_memory_resource):
         cuda_async_view_memory_resource(
             cudaMemPool_t pool_handle) except +
+        cudaMemPool_t pool_handle() const
+
+cdef extern from "rmm/mr/device/cuda_async_managed_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+
+    cdef cppclass cuda_async_managed_memory_resource(device_memory_resource):
+        cuda_async_managed_memory_resource() except +
         cudaMemPool_t pool_handle() const
 
 cdef extern from "rmm/mr/device/cuda_async_memory_resource.hpp" \

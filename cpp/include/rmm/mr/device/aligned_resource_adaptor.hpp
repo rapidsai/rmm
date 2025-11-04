@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2021-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
@@ -143,10 +132,10 @@ class aligned_resource_adaptor final : public device_memory_resource {
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
   {
     if (alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
-      return get_upstream_resource().allocate_async(bytes, 1, stream);
+      return get_upstream_resource().allocate(stream, bytes, 1);
     }
     auto const size = upstream_allocation_size(bytes);
-    void* pointer   = get_upstream_resource().allocate_async(size, 1, stream);
+    void* pointer   = get_upstream_resource().allocate(stream, size, 1);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     auto const address         = reinterpret_cast<std::size_t>(pointer);
     auto const aligned_address = rmm::align_up(address, alignment_);
@@ -169,7 +158,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
     if (alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
-      get_upstream_resource().deallocate_async(ptr, bytes, 1, stream);
+      get_upstream_resource().deallocate(stream, ptr, bytes, 1);
     } else {
       {
         lock_guard lock(mtx_);
@@ -179,7 +168,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
           pointers_.erase(iter);
         }
       }
-      get_upstream_resource().deallocate_async(ptr, upstream_allocation_size(bytes), 1, stream);
+      get_upstream_resource().deallocate(stream, ptr, upstream_allocation_size(bytes), 1);
     }
   }
 

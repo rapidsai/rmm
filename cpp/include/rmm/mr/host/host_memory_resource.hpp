@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2020-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
@@ -53,8 +42,10 @@ namespace mr {
  * base class' `allocate` function may log every allocation, no matter what
  * derived class implementation is used.
  *
+ * @deprecated This class is deprecated in 25.12 and will be removed in 26.02.
  */
-class host_memory_resource {
+class [[deprecated("host_memory_resource is deprecated in 25.12 and will be removed in 26.02.")]]
+host_memory_resource {
  public:
   host_memory_resource()                                = default;
   virtual ~host_memory_resource()                       = default;
@@ -65,10 +56,11 @@ class host_memory_resource {
   host_memory_resource& operator=(host_memory_resource&&) noexcept =
     default;  ///< @default_move_assignment{host_memory_resource}
 
+#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
   /**
    * @brief Allocates memory on the host of size at least `bytes` bytes.
    *
-   * The returned storage is aligned to the specified `alignment` if supported, and to
+   * The returned storage is aligned to the specified `alignment` if provided, and to
    * `alignof(std::max_align_t)` otherwise.
    *
    * @throws std::bad_alloc When the requested `bytes` and `alignment` cannot be allocated.
@@ -86,7 +78,7 @@ class host_memory_resource {
   /**
    * @brief Deallocate memory pointed to by `ptr`.
    *
-   * `ptr` must have been returned by a prior call to `allocate(bytes,alignment)` on a
+   * `ptr` must have been returned by a prior call to `allocate(bytes, alignment)` on a
    * `host_memory_resource` that compares equal to `*this`, and the storage it points to must not
    * yet have been deallocated, otherwise behavior is undefined.
    *
@@ -99,6 +91,46 @@ class host_memory_resource {
   void deallocate(void* ptr,
                   std::size_t bytes,
                   std::size_t alignment = alignof(std::max_align_t)) noexcept
+  {
+    RMM_FUNC_RANGE();
+    do_deallocate(ptr, bytes, alignment);
+  }
+#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
+
+  /**
+   * @brief Allocates memory on the host of size at least `bytes` bytes.
+   *
+   * The returned storage is aligned to the specified `alignment` if provided, and to
+   * `alignof(std::max_align_t)` otherwise.
+   *
+   * @throws std::bad_alloc When the requested `bytes` and `alignment` cannot be allocated.
+   *
+   * @param bytes The size of the allocation
+   * @param alignment Alignment of the allocation
+   * @return void* Pointer to the newly allocated memory
+   */
+  void* allocate_sync(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t))
+  {
+    RMM_FUNC_RANGE();
+    return do_allocate(bytes, alignment);
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by `ptr`.
+   *
+   * `ptr` must have been returned by a prior call to `allocate(bytes, alignment)` on a
+   * `host_memory_resource` that compares equal to `*this`, and the storage it points to must not
+   * yet have been deallocated, otherwise behavior is undefined.
+   *
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
+   *              that was passed to the `allocate` call that returned `ptr`.
+   * @param alignment Alignment of the allocation. This must be equal to the value of `alignment`
+   *                  that was passed to the `allocate` call that returned `ptr`.
+   */
+  void deallocate_sync(void* ptr,
+                       std::size_t bytes,
+                       std::size_t alignment = alignof(std::max_align_t)) noexcept
   {
     RMM_FUNC_RANGE();
     do_deallocate(ptr, bytes, alignment);
@@ -201,46 +233,6 @@ class host_memory_resource {
   {
     return this == &other;
   }
-
-#if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 1)
-
- public:
-  /**
-   * @brief Allocates memory on the host of size at least `bytes` bytes.
-   *
-   * The returned storage is aligned to the specified `alignment` if supported, and to
-   * `alignof(std::max_align_t)` otherwise.
-   *
-   * @throws std::bad_alloc When the requested `bytes` and `alignment` cannot be allocated.
-   *
-   * @param bytes The size of the allocation
-   * @param alignment Alignment of the allocation
-   * @return void* Pointer to the newly allocated memory
-   */
-  void* allocate_sync(std::size_t bytes, std::size_t alignment)
-  {
-    return allocate(bytes, alignment);
-  }
-
-  /**
-   * @brief Deallocate memory pointed to by `ptr`.
-   *
-   * `ptr` must have been returned by a prior call to `allocate(bytes,alignment)` on a
-   * `host_memory_resource` that compares equal to `*this`, and the storage it points to must not
-   * yet have been deallocated, otherwise behavior is undefined.
-   *
-   * @param ptr Pointer to be deallocated
-   * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
-   *              that was passed to the `allocate` call that returned `ptr`.
-   * @param alignment Alignment of the allocation. This must be equal to the value of `alignment`
-   *                  that was passed to the `allocate` call that returned `ptr`.
-   */
-  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment)
-  {
-    return deallocate(ptr, bytes, alignment);
-  }
-
-#endif
 };
 
 // static property checks

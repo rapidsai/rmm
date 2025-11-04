@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2019-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "driver_types.h"
@@ -111,10 +100,7 @@ TYPED_TEST(PrefetchTest, DeviceUVector)
 TYPED_TEST(PrefetchTest, DeviceScalar)
 {
   rmm::device_scalar<int> scalar(this->stream, &this->mr);
-  // TODO once we update to a version of CCCL with https://github.com/NVIDIA/cccl/pull/1836,
-  // remove this explicit conversion to span
-  rmm::prefetch<int>(cuda::std::span<int const>{scalar.data(), scalar.size()},
-                     rmm::get_current_cuda_device(),
-                     this->stream);
+  // Implicitly constructs a span from the data and size
+  rmm::prefetch<int>({scalar.data(), scalar.size()}, rmm::get_current_cuda_device(), this->stream);
   this->expect_prefetched(scalar.data(), sizeof(int), rmm::get_current_cuda_device());
 }

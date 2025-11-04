@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2021-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
@@ -143,7 +132,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
     auto const old           = allocated_bytes_.fetch_add(proposed_size);
     if (old + proposed_size <= allocation_limit_) {
       try {
-        return get_upstream_resource().allocate_async(bytes, stream);
+        return get_upstream_resource().allocate(stream, bytes);
       } catch (...) {
         allocated_bytes_ -= proposed_size;
         throw;
@@ -166,7 +155,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
     std::size_t allocated_size = align_up(bytes, alignment_);
-    get_upstream_resource().deallocate_async(ptr, bytes, stream);
+    get_upstream_resource().deallocate(stream, ptr, bytes);
     allocated_bytes_ -= allocated_size;
   }
 

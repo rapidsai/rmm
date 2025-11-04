@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2022-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
@@ -30,6 +19,11 @@ namespace detail {
  * @brief Minimum CUDA driver version for hardware decompression support
  */
 #define RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION 12080
+
+/**
+ * @brief Minimum CUDA driver version for stream-ordered managed memory allocator support
+ */
+#define RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION 13000
 
 /**
  * @brief Determine at runtime if the CUDA driver supports the stream-ordered
@@ -124,6 +118,31 @@ struct concurrent_managed_access {
       return result == cudaSuccess and concurrentManagedAccess == 1;
     }()};
     return driver_supports_concurrent_managed_access;
+  }
+};
+
+/**
+ * @brief Determine at runtime if the CUDA driver/runtime supports the stream-ordered
+ * managed memory allocator functions.
+ *
+ * Stream-ordered managed memory pools were introduced in CUDA 13.0.
+ */
+struct runtime_async_managed_alloc {
+  static bool is_supported()
+  {
+    static auto supports_async_managed_pool{[] {
+      // Concurrent managed access is required for async managed memory pools
+      if (not concurrent_managed_access::is_supported()) { return false; }
+      // CUDA 13.0 or higher is required for async managed memory pools
+      int cuda_driver_version{};
+      auto driver_result = cudaDriverGetVersion(&cuda_driver_version);
+      int cuda_runtime_version{};
+      auto runtime_result = cudaRuntimeGetVersion(&cuda_runtime_version);
+      return driver_result == cudaSuccess and runtime_result == cudaSuccess and
+             cuda_driver_version >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION and
+             cuda_runtime_version >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION;
+    }()};
+    return supports_async_managed_pool;
   }
 };
 

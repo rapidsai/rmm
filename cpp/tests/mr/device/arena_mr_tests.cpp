@@ -1,21 +1,11 @@
 /*
- * Copyright (c) 2021-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "../../byte_literals.hpp"
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/error.hpp>
@@ -40,35 +30,36 @@
 namespace rmm::test {
 namespace {
 
-class mock_memory_resource {
+class mock_memory_resource_interface {
  public:
+  // We must define an interface class so that we can mock methods with default arguments.
+  virtual void* allocate_sync(std::size_t, std::size_t)                     = 0;
+  virtual void deallocate_sync(void*, std::size_t, std::size_t) noexcept    = 0;
+  virtual void* allocate(cuda_stream_view,
+                         std::size_t,
+                         std::size_t = CUDA_ALLOCATION_ALIGNMENT)           = 0;
+  virtual void deallocate(cuda_stream_view,
+                          void*,
+                          std::size_t,
+                          std::size_t = CUDA_ALLOCATION_ALIGNMENT) noexcept = 0;
+};
+
+class mock_memory_resource : public mock_memory_resource_interface {
+ public:
+#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
   MOCK_METHOD(void*, allocate, (std::size_t, std::size_t));
-  MOCK_METHOD(void, deallocate, (void*, std::size_t, std::size_t));
+  MOCK_METHOD(void, deallocate, (void*, std::size_t, std::size_t), (noexcept));
   MOCK_METHOD(void*, allocate_async, (std::size_t, std::size_t, cuda::stream_ref));
-  MOCK_METHOD(void, deallocate_async, (void*, std::size_t, std::size_t, cuda::stream_ref));
+  MOCK_METHOD(void,
+              deallocate_async,
+              (void*, std::size_t, std::size_t, cuda::stream_ref),
+              (noexcept));
+#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
 
-  void* allocate_sync(std::size_t bytes, std::size_t alignment)
-  {
-    return allocate(bytes, alignment);
-  }
-
-  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
-  {
-    deallocate(ptr, bytes, alignment);
-  }
-
-  void* allocate(cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
-  {
-    return allocate_async(bytes, alignment, stream);
-  }
-
-  void deallocate(cuda_stream_view stream,
-                  void* ptr,
-                  std::size_t bytes,
-                  std::size_t alignment) noexcept
-  {
-    return deallocate_async(ptr, bytes, alignment, stream);
-  }
+  MOCK_METHOD(void*, allocate_sync, (std::size_t, std::size_t));
+  MOCK_METHOD(void, deallocate_sync, (void*, std::size_t, std::size_t), (noexcept));
+  MOCK_METHOD(void*, allocate, (cuda_stream_view, std::size_t, std::size_t));
+  MOCK_METHOD(void, deallocate, (cuda_stream_view, void*, std::size_t, std::size_t), (noexcept));
 
   bool operator==(mock_memory_resource const&) const noexcept { return true; }
   bool operator!=(mock_memory_resource const&) const { return false; }
@@ -97,8 +88,8 @@ auto const fake_address4 = reinterpret_cast<void*>(superblock::minimum_size * 2)
 struct ArenaTest : public ::testing::Test {
   void SetUp() override
   {
-    EXPECT_CALL(mock_mr, allocate(arena_size, ::testing::_)).WillOnce(Return(fake_address3));
-    EXPECT_CALL(mock_mr, deallocate(fake_address3, arena_size, ::testing::_));
+    EXPECT_CALL(mock_mr, allocate_sync(arena_size, ::testing::_)).WillOnce(Return(fake_address3));
+    EXPECT_CALL(mock_mr, deallocate_sync(fake_address3, arena_size, ::testing::_));
 
     global     = std::make_unique<global_arena>(mock_mr, arena_size);
     per_thread = std::make_unique<arena>(*global);
@@ -353,7 +344,7 @@ TEST_F(ArenaTest, GlobalArenaReleaseMergeNext)  // NOLINT
 {
   auto sblk = global->acquire(256);
   global->release(std::move(sblk));
-  auto* ptr = global->allocate(arena_size);
+  auto* ptr = global->allocate_sync(arena_size);
   EXPECT_EQ(ptr, fake_address3);
 }
 
@@ -364,7 +355,7 @@ TEST_F(ArenaTest, GlobalArenaReleaseMergePrevious)  // NOLINT
   global->acquire(512);
   global->release(std::move(sblk));
   global->release(std::move(sb2));
-  auto* ptr = global->allocate(superblock::minimum_size * 2);
+  auto* ptr = global->allocate_sync(superblock::minimum_size * 2);
   EXPECT_EQ(ptr, fake_address3);
 }
 
@@ -376,7 +367,7 @@ TEST_F(ArenaTest, GlobalArenaReleaseMergePreviousAndNext)  // NOLINT
   global->release(std::move(sblk));
   global->release(std::move(sb3));
   global->release(std::move(sb2));
-  auto* ptr = global->allocate(arena_size);
+  auto* ptr = global->allocate_sync(arena_size);
   EXPECT_EQ(ptr, fake_address3);
 }
 
@@ -390,38 +381,38 @@ TEST_F(ArenaTest, GlobalArenaReleaseMultiple)  // NOLINT
   auto sb3 = global->acquire(512);
   superblocks.insert(std::move(sb3));
   global->release(superblocks);
-  auto* ptr = global->allocate(arena_size);
+  auto* ptr = global->allocate_sync(arena_size);
   EXPECT_EQ(ptr, fake_address3);
 }
 
 TEST_F(ArenaTest, GlobalArenaAllocate)  // NOLINT
 {
-  auto* ptr = global->allocate(superblock::minimum_size * 2);
+  auto* ptr = global->allocate_sync(superblock::minimum_size * 2);
   EXPECT_EQ(ptr, fake_address3);
 }
 
 TEST_F(ArenaTest, GlobalArenaAllocateExtraLarge)  // NOLINT
 {
-  EXPECT_EQ(global->allocate(1_PiB), nullptr);
-  EXPECT_EQ(global->allocate(1_PiB), nullptr);
+  EXPECT_EQ(global->allocate_sync(1_PiB), nullptr);
+  EXPECT_EQ(global->allocate_sync(1_PiB), nullptr);
 }
 
 TEST_F(ArenaTest, GlobalArenaDeallocate)  // NOLINT
 {
-  auto* ptr = global->allocate(superblock::minimum_size * 2);
+  auto* ptr = global->allocate_sync(superblock::minimum_size * 2);
   EXPECT_EQ(ptr, fake_address3);
-  global->deallocate_async(ptr, superblock::minimum_size * 2, {});
-  ptr = global->allocate(superblock::minimum_size * 2);
+  global->deallocate_sync(ptr, superblock::minimum_size * 2);
+  ptr = global->allocate_sync(superblock::minimum_size * 2);
   EXPECT_EQ(ptr, fake_address3);
 }
 
 TEST_F(ArenaTest, GlobalArenaDeallocateAlignUp)  // NOLINT
 {
-  auto* ptr  = global->allocate(superblock::minimum_size + 256);
-  auto* ptr2 = global->allocate(superblock::minimum_size + 512);
-  global->deallocate_async(ptr, superblock::minimum_size + 256, {});
-  global->deallocate_async(ptr2, superblock::minimum_size + 512, {});
-  EXPECT_EQ(global->allocate(arena_size), fake_address3);
+  auto* ptr  = global->allocate_sync(superblock::minimum_size + 256);
+  auto* ptr2 = global->allocate_sync(superblock::minimum_size + 512);
+  global->deallocate_sync(ptr, superblock::minimum_size + 256);
+  global->deallocate_sync(ptr2, superblock::minimum_size + 512);
+  EXPECT_EQ(global->allocate_sync(arena_size), fake_address3);
 }
 
 TEST_F(ArenaTest, GlobalArenaDeallocateFromOtherArena)  // NOLINT
@@ -430,9 +421,9 @@ TEST_F(ArenaTest, GlobalArenaDeallocateFromOtherArena)  // NOLINT
   auto const blk  = sblk.first_fit(512);
   auto const blk2 = sblk.first_fit(1024);
   global->release(std::move(sblk));
-  global->deallocate(blk.pointer(), blk.size());
-  global->deallocate(blk2.pointer(), blk2.size());
-  EXPECT_EQ(global->allocate(arena_size), fake_address3);
+  global->deallocate_sync(blk.pointer(), blk.size());
+  global->deallocate_sync(blk2.pointer(), blk2.size());
+  EXPECT_EQ(global->allocate_sync(arena_size), fake_address3);
 }
 
 /**
@@ -441,46 +432,46 @@ TEST_F(ArenaTest, GlobalArenaDeallocateFromOtherArena)  // NOLINT
 
 TEST_F(ArenaTest, ArenaAllocate)  // NOLINT
 {
-  EXPECT_EQ(per_thread->allocate(superblock::minimum_size), fake_address3);
-  EXPECT_EQ(per_thread->allocate(256), fake_address4);
+  EXPECT_EQ(per_thread->allocate_sync(superblock::minimum_size), fake_address3);
+  EXPECT_EQ(per_thread->allocate_sync(256), fake_address4);
 }
 
 TEST_F(ArenaTest, ArenaDeallocate)  // NOLINT
 {
-  auto* ptr = per_thread->allocate(superblock::minimum_size);
-  per_thread->deallocate(ptr, superblock::minimum_size, {});
-  auto* ptr2 = per_thread->allocate(256);
-  per_thread->deallocate(ptr2, 256, {});
-  EXPECT_EQ(per_thread->allocate(superblock::minimum_size), fake_address3);
+  auto* ptr = per_thread->allocate_sync(superblock::minimum_size);
+  per_thread->deallocate_sync(ptr, superblock::minimum_size);
+  auto* ptr2 = per_thread->allocate_sync(256);
+  per_thread->deallocate_sync(ptr2, 256);
+  EXPECT_EQ(per_thread->allocate_sync(superblock::minimum_size), fake_address3);
 }
 
 TEST_F(ArenaTest, ArenaDeallocateMergePrevious)  // NOLINT
 {
-  auto* ptr  = per_thread->allocate(256);
-  auto* ptr2 = per_thread->allocate(256);
-  per_thread->allocate(256);
-  per_thread->deallocate(ptr, 256, {});
-  per_thread->deallocate(ptr2, 256, {});
-  EXPECT_EQ(per_thread->allocate(512), fake_address3);
+  auto* ptr  = per_thread->allocate_sync(256);
+  auto* ptr2 = per_thread->allocate_sync(256);
+  per_thread->allocate_sync(256);
+  per_thread->deallocate_sync(ptr, 256);
+  per_thread->deallocate_sync(ptr2, 256);
+  EXPECT_EQ(per_thread->allocate_sync(512), fake_address3);
 }
 
 TEST_F(ArenaTest, ArenaDeallocateMergeNext)  // NOLINT
 {
-  auto* ptr  = per_thread->allocate(256);
-  auto* ptr2 = per_thread->allocate(256);
-  per_thread->allocate(256);
-  per_thread->deallocate(ptr2, 256, {});
-  per_thread->deallocate(ptr, 256, {});
-  EXPECT_EQ(per_thread->allocate(512), fake_address3);
+  auto* ptr  = per_thread->allocate_sync(256);
+  auto* ptr2 = per_thread->allocate_sync(256);
+  per_thread->allocate_sync(256);
+  per_thread->deallocate_sync(ptr2, 256);
+  per_thread->deallocate_sync(ptr, 256);
+  EXPECT_EQ(per_thread->allocate_sync(512), fake_address3);
 }
 
 TEST_F(ArenaTest, ArenaDeallocateMergePreviousAndNext)  // NOLINT
 {
-  auto* ptr  = per_thread->allocate(256);
-  auto* ptr2 = per_thread->allocate(256);
-  per_thread->deallocate(ptr, 256, {});
-  per_thread->deallocate(ptr2, 256, {});
-  EXPECT_EQ(per_thread->allocate(2_KiB), fake_address3);
+  auto* ptr  = per_thread->allocate_sync(256);
+  auto* ptr2 = per_thread->allocate_sync(256);
+  per_thread->deallocate_sync(ptr, 256);
+  per_thread->deallocate_sync(ptr2, 256);
+  EXPECT_EQ(per_thread->allocate_sync(2_KiB), fake_address3);
 }
 
 TEST_F(ArenaTest, ArenaDefragment)  // NOLINT
@@ -488,14 +479,14 @@ TEST_F(ArenaTest, ArenaDefragment)  // NOLINT
   std::vector<void*> pointers;
   std::size_t num_pointers{4};
   for (std::size_t i = 0; i < num_pointers; i++) {
-    pointers.push_back(per_thread->allocate(superblock::minimum_size));
+    pointers.push_back(per_thread->allocate_sync(superblock::minimum_size));
   }
   for (auto* ptr : pointers) {
-    per_thread->deallocate(ptr, superblock::minimum_size, {});
+    per_thread->deallocate_sync(ptr, superblock::minimum_size);
   }
-  EXPECT_EQ(global->allocate(arena_size), nullptr);
+  EXPECT_EQ(global->allocate_sync(arena_size), nullptr);
   per_thread->defragment();
-  EXPECT_EQ(global->allocate(arena_size), fake_address3);
+  EXPECT_EQ(global->allocate_sync(arena_size), fake_address3);
 }
 
 /**
@@ -528,13 +519,13 @@ TEST_F(ArenaTest, SmallMediumLarge)  // NOLINT
 {
   EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
     arena_mr mr(rmm::mr::get_current_device_resource_ref());
-    auto* small     = mr.allocate(256);
-    auto* medium    = mr.allocate(64_MiB);
+    auto* small     = mr.allocate_sync(256);
+    auto* medium    = mr.allocate_sync(64_MiB);
     auto const free = rmm::available_device_memory().first;
-    auto* large     = mr.allocate(free / 3);
-    mr.deallocate(small, 256);
-    mr.deallocate(medium, 64_MiB);
-    mr.deallocate(large, free / 3);
+    auto* large     = mr.allocate_sync(free / 3);
+    mr.deallocate_sync(small, 256);
+    mr.deallocate_sync(medium, 64_MiB);
+    mr.deallocate_sync(large, free / 3);
   }());
 }
 
@@ -549,16 +540,16 @@ TEST_F(ArenaTest, Defragment)  // NOLINT
     for (std::size_t i = 0; i < num_threads; ++i) {
       threads.emplace_back(std::thread([&] {
         cuda_stream stream{};
-        void* ptr = mr.allocate(32_KiB, stream);
-        mr.deallocate(ptr, 32_KiB, stream);
+        void* ptr = mr.allocate(stream, 32_KiB);
+        mr.deallocate(stream, ptr, 32_KiB);
       }));
     }
     for (auto& thread : threads) {
       thread.join();
     }
 
-    auto* ptr = mr.allocate(arena_size);
-    mr.deallocate(ptr, arena_size);
+    auto* ptr = mr.allocate_sync(arena_size);
+    mr.deallocate_sync(ptr, arena_size);
   }());
 }
 
@@ -571,26 +562,26 @@ TEST_F(ArenaTest, PerThreadToStreamDealloc)  // NOLINT
   auto const arena_size = superblock::minimum_size * 2;
   arena_mr mr(rmm::mr::get_current_device_resource_ref(), arena_size);
   // Create an allocation from a per thread arena
-  void* thread_ptr = mr.allocate(256, rmm::cuda_stream_per_thread);
+  void* thread_ptr = mr.allocate(rmm::cuda_stream_per_thread, 256);
   // Create an allocation in a stream arena to force global arena
   // to be empty
   cuda_stream stream{};
-  void* ptr = mr.allocate(32_KiB, stream);
-  mr.deallocate(ptr, 32_KiB, stream);
+  void* ptr = mr.allocate(stream, 32_KiB);
+  mr.deallocate(stream, ptr, 32_KiB);
   // at this point the global arena doesn't have any superblocks so
   // the next allocation causes defrag. Defrag causes all superblocks
   // from the thread and stream arena allocated above to go back to
   // global arena and it allocates one superblock to the stream arena.
-  auto* ptr1 = mr.allocate(superblock::minimum_size, rmm::cuda_stream_view{});
+  auto* ptr1 = mr.allocate(rmm::cuda_stream_view{}, superblock::minimum_size);
   // Allocate again to make sure all superblocks from
   // global arena are owned by a stream arena instead of a thread arena
   // or the global arena.
-  auto* ptr2 = mr.allocate(32_KiB, rmm::cuda_stream_view{});
+  auto* ptr2 = mr.allocate(rmm::cuda_stream_view{}, 32_KiB);
   // The original thread ptr is now owned by a stream arena so make
   // sure deallocation works.
-  mr.deallocate(thread_ptr, 256, rmm::cuda_stream_per_thread);
-  mr.deallocate(ptr1, superblock::minimum_size, rmm::cuda_stream_view{});
-  mr.deallocate(ptr2, 32_KiB, rmm::cuda_stream_view{});
+  mr.deallocate(rmm::cuda_stream_per_thread, thread_ptr, 256);
+  mr.deallocate(rmm::cuda_stream_view{}, ptr1, superblock::minimum_size);
+  mr.deallocate(rmm::cuda_stream_view{}, ptr2, 32_KiB);
 }
 
 TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
@@ -603,8 +594,8 @@ TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
     threads.reserve(num_threads);
     for (std::size_t i = 0; i < num_threads; ++i) {
       threads.emplace_back([&] {
-        void* ptr = mr.allocate(32_KiB);
-        mr.deallocate(ptr, 32_KiB);
+        void* ptr = mr.allocate_sync(32_KiB);
+        mr.deallocate_sync(ptr, 32_KiB);
       });
     }
 
@@ -614,7 +605,7 @@ TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
   }
 
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
-  EXPECT_THROW(mr.allocate(8_MiB), rmm::out_of_memory);
+  EXPECT_THROW(mr.allocate_sync(8_MiB), rmm::out_of_memory);
 
   struct stat file_status{};
   EXPECT_EQ(stat("rmm_arena_memory_dump.log", &file_status), 0);

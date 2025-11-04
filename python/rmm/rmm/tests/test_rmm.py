@@ -1,16 +1,5 @@
-# Copyright (c) 2020-2025, NVIDIA CORPORATION.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-License-Identifier: Apache-2.0
 
 import copy
 import functools
@@ -41,6 +30,16 @@ _SYSTEM_MEMORY_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
 
 _IS_INTEGRATED_MEMORY_SYSTEM = rmm._cuda.gpu.getDeviceAttribute(
     runtime.cudaDeviceAttr.cudaDevAttrIntegrated, rmm._cuda.gpu.getDevice()
+)
+
+_CONCURRENT_MANAGED_ACCESS_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
+    runtime.cudaDeviceAttr.cudaDevAttrConcurrentManagedAccess,
+    rmm._cuda.gpu.getDevice(),
+)
+
+_ASYNC_MANAGED_MEMORY_SUPPORTED = (
+    _CONCURRENT_MANAGED_ACCESS_SUPPORTED
+    and rmm._cuda.gpu.runtimeGetVersion() >= 13000
 )
 
 
@@ -323,17 +322,6 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
     assert hb3 == hb
 
 
-def concurrent_managed_access_supported():
-    err, device_id = runtime.cudaGetDevice()
-    assert err == runtime.cudaError_t.cudaSuccess
-    err, supported = runtime.cudaDeviceGetAttribute(
-        runtime.cudaDeviceAttr.cudaDevAttrConcurrentManagedAccess,
-        device_id,
-    )
-    assert err == runtime.cudaError_t.cudaSuccess
-    return supported
-
-
 def assert_prefetched(buffer, device_id):
     err, dev = runtime.cudaMemRangeGetAttribute(
         4,
@@ -351,10 +339,10 @@ def assert_prefetched(buffer, device_id):
 def test_rmm_device_buffer_prefetch(pool, managed):
     rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
     db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
-    if managed and concurrent_managed_access_supported():
+    if managed and _CONCURRENT_MANAGED_ACCESS_SUPPORTED:
         assert_prefetched(db, runtime.cudaInvalidDeviceId)
     db.prefetch()  # just test that it doesn't throw
-    if managed and concurrent_managed_access_supported():
+    if managed and _CONCURRENT_MANAGED_ACCESS_SUPPORTED:
         err, device_id = runtime.cudaGetDevice()
         assert err == runtime.cudaError_t.cudaSuccess
         assert_prefetched(db, device_id)
@@ -737,6 +725,46 @@ def test_cuda_async_memory_resource_threshold(nelem, alloc):
     array_tester("u1", 2 * nelem, alloc)  # should trigger release
 
 
+@pytest.mark.skipif(
+    not _ASYNC_MANAGED_MEMORY_SUPPORTED,
+    reason="CudaAsyncManagedMemoryResource requires CUDA 13.0+",
+)
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_cuda_async_managed_memory_resource(dtype, nelem, alloc):
+    mr = rmm.mr.experimental.CudaAsyncManagedMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    array_tester(dtype, nelem, alloc)
+
+
+@pytest.mark.skipif(
+    not _ASYNC_MANAGED_MEMORY_SUPPORTED,
+    reason="CudaAsyncManagedMemoryResource requires CUDA 13.0+",
+)
+@pytest.mark.parametrize("nelems", _nelems)
+def test_cuda_async_managed_memory_resource_stream(nelems):
+    mr = rmm.mr.experimental.CudaAsyncManagedMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+    stream = Stream()
+    expected = np.full(nelems, 5, dtype="u1")
+    dbuf = rmm.DeviceBuffer.to_device(expected, stream=stream)
+    result = np.asarray(dbuf.copy_to_host())
+    np.testing.assert_equal(expected, result)
+
+
+@pytest.mark.skipif(
+    not _ASYNC_MANAGED_MEMORY_SUPPORTED,
+    reason="CudaAsyncManagedMemoryResource requires CUDA 13.0+",
+)
+def test_cuda_async_managed_memory_resource_pool_handle():
+    mr = rmm.mr.experimental.CudaAsyncManagedMemoryResource()
+    pool_handle = mr.pool_handle()
+    assert isinstance(pool_handle, int)
+    assert pool_handle != 0
+
+
 @pytest.mark.parametrize(
     "mr",
     [
@@ -778,7 +806,7 @@ def test_tracking_resource_adaptor():
     for i in range(9, 0, -2):
         del buffers[i]
 
-    assert mr.get_allocated_bytes() == 5040
+    assert mr.get_allocated_bytes() == 5000
 
     # Push a new Tracking adaptor
     mr2 = rmm.mr.TrackingResourceAdaptor(mr, capture_stacks=True)
@@ -787,8 +815,8 @@ def test_tracking_resource_adaptor():
     for _ in range(2):
         buffers.append(rmm.DeviceBuffer(size=1000))
 
-    assert mr2.get_allocated_bytes() == 2016
-    assert mr.get_allocated_bytes() == 7056
+    assert mr2.get_allocated_bytes() == 2000
+    assert mr.get_allocated_bytes() == 7000
 
     # Ensure we get back a non-empty string for the allocations
     assert len(mr.get_outstanding_allocations_str()) > 0
@@ -864,10 +892,10 @@ def test_prefetch_resource_adaptor(managed):
     err, device_id = runtime.cudaGetDevice()
     assert err == runtime.cudaError_t.cudaSuccess
 
-    if managed and concurrent_managed_access_supported():
+    if managed and _CONCURRENT_MANAGED_ACCESS_SUPPORTED:
         assert_prefetched(db, device_id)
     db.prefetch()  # just test that it doesn't throw
-    if managed and concurrent_managed_access_supported():
+    if managed and _CONCURRENT_MANAGED_ACCESS_SUPPORTED:
         assert_prefetched(db, device_id)
 
 
@@ -1146,3 +1174,227 @@ def test_cuda_async_view_memory_resource_custom_pool(dtype, nelem, alloc):
     assert err == runtime.cudaError_t.cudaSuccess
     with pytest.raises(MemoryError):
         array_tester(dtype, nelem, alloc)
+
+
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_pinned_host_memory_resource(dtype, nelem, alloc):
+    """Test PinnedHostMemoryResource as a basic memory resource."""
+    mr = rmm.mr.PinnedHostMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    array_tester(dtype, nelem, alloc)
+
+
+@pytest.mark.parametrize("dtype", _dtypes)
+@pytest.mark.parametrize("nelem", _nelems)
+@pytest.mark.parametrize("alloc", _allocs)
+def test_pinned_host_memory_resource_with_pool(dtype, nelem, alloc):
+    """Test PinnedHostMemoryResource with PoolMemoryResource."""
+    base_mr = rmm.mr.PinnedHostMemoryResource()
+    mr = rmm.mr.PoolMemoryResource(
+        base_mr,
+        initial_pool_size="4MiB",
+        maximum_pool_size="8MiB",
+    )
+    rmm.mr.set_current_device_resource(mr)
+    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    array_tester(dtype, nelem, alloc)
+
+
+def test_pinned_host_memory_resource_allocate_deallocate():
+    """Test direct allocation and deallocation with PinnedHostMemoryResource."""
+    mr = rmm.mr.PinnedHostMemoryResource()
+
+    # Test various allocation sizes
+    sizes = [256, 1024, 4096, 1024 * 1024]
+    ptrs = []
+
+    for size in sizes:
+        ptr = mr.allocate(size)
+        assert ptr != 0, f"Allocation of {size} bytes returned null pointer"
+        ptrs.append((ptr, size))
+
+    # Deallocate all
+    for ptr, size in ptrs:
+        mr.deallocate(ptr, size)
+
+
+def test_pinned_host_memory_resource_with_device_buffer():
+    """Test PinnedHostMemoryResource with DeviceBuffer."""
+    mr = rmm.mr.PinnedHostMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+
+    # Test creating various sized buffers
+    sizes = [0, 256, 1024, 4096, 1024 * 1024]
+    for size in sizes:
+        buf = rmm.DeviceBuffer(size=size)
+        assert buf.size == size
+        if size > 0:
+            assert buf.ptr != 0
+            assert buf.capacity() >= size
+        else:
+            assert buf.ptr == 0
+
+
+def test_pinned_host_memory_resource_host_device_access():
+    """Test that pinned memory is accessible from both host and device."""
+    mr = rmm.mr.PinnedHostMemoryResource()
+    rmm.mr.set_current_device_resource(mr)
+
+    # Create test data
+    test_data = np.arange(100, dtype=np.float32)
+
+    # Copy to device using pinned memory
+    device_buf = rmm.DeviceBuffer.to_device(test_data.tobytes())
+
+    # Copy back from device
+    result = np.frombuffer(device_buf.tobytes(), dtype=np.float32)
+
+    # Verify data integrity
+    np.testing.assert_array_equal(test_data, result)
+
+
+def test_pinned_host_memory_resource_type_check():
+    """Test PinnedHostMemoryResource type and inheritance."""
+    mr = rmm.mr.PinnedHostMemoryResource()
+
+    # Check type
+    assert isinstance(mr, rmm.mr.PinnedHostMemoryResource)
+    assert isinstance(mr, rmm.mr.DeviceMemoryResource)
+
+    # Check that it's not an upstream resource adaptor
+    assert not isinstance(mr, rmm.mr.UpstreamResourceAdaptor)
+
+
+@pytest.mark.parametrize(
+    "adaptor_factory",
+    [
+        lambda mr: rmm.mr.StatisticsResourceAdaptor(mr),
+        lambda mr: rmm.mr.TrackingResourceAdaptor(mr),
+        lambda mr: rmm.mr.LimitingResourceAdaptor(
+            mr, allocation_limit=1024 * 1024 * 10
+        ),
+    ],
+)
+def test_pinned_host_memory_resource_with_adaptors(adaptor_factory):
+    """Test PinnedHostMemoryResource with various resource adaptors."""
+    base_mr = rmm.mr.PinnedHostMemoryResource()
+    mr = adaptor_factory(base_mr)
+    rmm.mr.set_current_device_resource(mr)
+
+    # Test with a simple allocation
+    buf = rmm.DeviceBuffer(size=1024)
+    assert buf.size == 1024
+    assert buf.ptr != 0
+
+
+# Tests for stream=None validation (PR #2120)
+def test_device_buffer_init_stream_none():
+    """Test that DeviceBuffer.__init__ raises TypeError for stream=None"""
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        rmm.DeviceBuffer(size=10, stream=None)
+
+
+def test_device_buffer_to_device_stream_none():
+    """Test that DeviceBuffer.to_device raises TypeError for stream=None"""
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        rmm.DeviceBuffer.to_device(b"abc", stream=None)
+
+
+def test_device_buffer_copy_to_host_stream_none():
+    """Test that DeviceBuffer.copy_to_host raises TypeError for stream=None"""
+    db = rmm.DeviceBuffer.to_device(b"abc")
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        db.copy_to_host(stream=None)
+
+
+def test_device_buffer_copy_from_host_stream_none():
+    """Test that DeviceBuffer.copy_from_host raises TypeError for stream=None"""
+    db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        db.copy_from_host(b"abc", stream=None)
+
+
+def test_device_buffer_copy_from_device_stream_none():
+    """Test that DeviceBuffer.copy_from_device raises TypeError for stream=None"""
+    db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
+    cuda_ary = rmm.DeviceBuffer.to_device(b"abc")
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        db.copy_from_device(cuda_ary, stream=None)
+
+
+def test_device_buffer_tobytes_stream_none():
+    """Test that DeviceBuffer.tobytes raises TypeError for stream=None"""
+    db = rmm.DeviceBuffer.to_device(b"abc")
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        db.tobytes(stream=None)
+
+
+def test_device_buffer_reserve_stream_none():
+    """Test that DeviceBuffer.reserve raises TypeError for stream=None"""
+    db = rmm.DeviceBuffer.to_device(b"abc")
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        db.reserve(100, stream=None)
+
+
+def test_device_buffer_resize_stream_none():
+    """Test that DeviceBuffer.resize raises TypeError for stream=None"""
+    db = rmm.DeviceBuffer.to_device(b"abc")
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        db.resize(10, stream=None)
+
+
+def test_to_device_stream_none():
+    """Test that to_device function raises TypeError for stream=None"""
+    # Import the module-level function
+    from rmm import DeviceBuffer
+
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        DeviceBuffer.to_device(b"abc", stream=None)
+
+
+def test_copy_ptr_to_host_stream_none():
+    """Test that copy_ptr_to_host raises TypeError for stream=None"""
+    from rmm.pylibrmm.device_buffer import copy_ptr_to_host
+
+    db = rmm.DeviceBuffer.to_device(b"abc")
+    hb = bytearray(3)
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        copy_ptr_to_host(db.ptr, hb, stream=None)
+
+
+def test_copy_host_to_ptr_stream_none():
+    """Test that copy_host_to_ptr raises TypeError for stream=None"""
+    from rmm.pylibrmm.device_buffer import copy_host_to_ptr
+
+    db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
+    hb = np.array([97, 98, 99], dtype="u1")
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        copy_host_to_ptr(hb, db.ptr, stream=None)
+
+
+def test_copy_device_to_ptr_stream_none():
+    """Test that copy_device_to_ptr raises TypeError for stream=None"""
+    from rmm.pylibrmm.device_buffer import copy_device_to_ptr
+
+    db_src = rmm.DeviceBuffer.to_device(b"abc")
+    db_dst = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        copy_device_to_ptr(db_src.ptr, db_dst.ptr, 3, stream=None)
+
+
+def test_memory_resource_allocate_stream_none():
+    """Test that DeviceMemoryResource.allocate raises TypeError for stream=None"""
+    mr = rmm.mr.get_current_device_resource()
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        mr.allocate(1024, stream=None)
+
+
+def test_memory_resource_deallocate_stream_none():
+    """Test that DeviceMemoryResource.deallocate raises TypeError for stream=None"""
+    mr = rmm.mr.get_current_device_resource()
+    ptr = mr.allocate(1024)
+    with pytest.raises(TypeError, match="stream argument cannot be None"):
+        mr.deallocate(ptr, 1024, stream=None)

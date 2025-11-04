@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <rmm/cuda_device.hpp>
@@ -69,13 +58,13 @@ void BM_AsyncPrimingImpact(benchmark::State& state, MRFactoryFunc factory)
     auto start_time = std::chrono::high_resolution_clock::now();
 
     // First allocation - measure latency to this specific call
-    allocations.push_back(mr->allocate(allocation_size));
+    allocations.push_back(mr->allocate_sync(allocation_size));
     cudaDeviceSynchronize();
     auto first_allocation_time = std::chrono::high_resolution_clock::now();
 
     // Continue with remaining allocations in first round
     for (int i = 1; i < num_allocations; ++i) {
-      allocations.push_back(mr->allocate(allocation_size));
+      allocations.push_back(mr->allocate_sync(allocation_size));
     }
 
     cudaDeviceSynchronize();
@@ -83,13 +72,13 @@ void BM_AsyncPrimingImpact(benchmark::State& state, MRFactoryFunc factory)
 
     // Deallocate all
     for (auto* ptr : allocations) {
-      mr->deallocate(ptr, allocation_size);
+      mr->deallocate_sync(ptr, allocation_size);
     }
     allocations.clear();
 
     // Second round of allocations
     for (int i = 0; i < num_allocations; ++i) {
-      allocations.push_back(mr->allocate(allocation_size));
+      allocations.push_back(mr->allocate_sync(allocation_size));
     }
 
     cudaDeviceSynchronize();
@@ -118,7 +107,7 @@ void BM_AsyncPrimingImpact(benchmark::State& state, MRFactoryFunc factory)
 
     // Clean up for next iteration
     for (auto* ptr : allocations) {
-      mr->deallocate(ptr, allocation_size);
+      mr->deallocate_sync(ptr, allocation_size);
     }
     allocations.clear();
   }

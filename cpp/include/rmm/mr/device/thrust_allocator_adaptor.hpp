@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2019-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #pragma once
@@ -111,8 +100,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   pointer allocate(size_type num)
   {
     cuda_set_device_raii dev{_device};
-    return thrust::device_pointer_cast(
-      static_cast<T*>(_mr.allocate_async(num * sizeof(T), _stream)));
+    return thrust::device_pointer_cast(static_cast<T*>(_mr.allocate(_stream, num * sizeof(T))));
   }
 
   /**
@@ -125,7 +113,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   void deallocate(pointer ptr, size_type num) noexcept
   {
     cuda_set_device_raii dev{_device};
-    return _mr.deallocate_async(thrust::raw_pointer_cast(ptr), num * sizeof(T), _stream);
+    return _mr.deallocate(_stream, thrust::raw_pointer_cast(ptr), num * sizeof(T));
   }
 
   /**

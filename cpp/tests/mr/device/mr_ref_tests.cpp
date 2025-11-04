@@ -1,17 +1,6 @@
 /*
- * Copyright (c) 2023-2025, NVIDIA CORPORATION.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "mr_ref_test.hpp"
@@ -32,24 +21,20 @@ INSTANTIATE_TEST_SUITE_P(ResourceTests,
                                            "Managed",
                                            "System",
                                            "Pool",
-                                           "HostPinnedPool",
+                                           "Pinned",
+                                           "PinnedPool",
                                            "Arena",
                                            "Binning",
                                            "Fixed_Size"),
                          [](auto const& info) { return info.param; });
 
 // Leave out fixed-size MR here because it can't handle the dynamic allocation sizes
-INSTANTIATE_TEST_SUITE_P(ResourceAllocationTests,
-                         mr_ref_allocation_test,
-                         ::testing::Values("CUDA",
-                                           "CUDA_Async",
-                                           "Managed",
-                                           "System"
-                                           "Pool",
-                                           "HostPinnedPool",
-                                           "Arena",
-                                           "Binning"),
-                         [](auto const& info) { return info.param; });
+INSTANTIATE_TEST_SUITE_P(
+  ResourceAllocationTests,
+  mr_ref_allocation_test,
+  ::testing::Values(
+    "CUDA", "CUDA_Async", "Managed", "System", "Pool", "Pinned", "PinnedPool", "Arena", "Binning"),
+  [](auto const& info) { return info.param; });
 
 TEST(DefaultTest, CurrentDeviceResourceIsCUDA)
 {

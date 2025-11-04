@@ -190,7 +190,8 @@ instead:
 ```cmake
 CPMAddPackage(NAME rmm [VERSION]
               GITHUB_REPOSITORY rapidsai/rmm
-              SYSTEM Off)
+              SYSTEM Off
+              SOURCE_SUBDIR cpp)
 # ...
 target_link_libraries(<your-target> (PRIVATE|PUBLIC|INTERFACE) rmm::rmm)
 ```
@@ -482,7 +483,7 @@ rmm::mr::polymorphic_allocator<int> stream_alloc;
 // Constructs an adaptor that forwards all (de)allocations to `stream_alloc` on `stream`.
 auto adapted = rmm::mr::stream_allocator_adaptor(stream_alloc, stream);
 
-// Allocates 100 bytes using `stream_alloc` on `stream`
+// Allocates storage for 100 ints using `stream_alloc` on `stream`
 auto p = adapted.allocate(100);
 ...
 // Deallocates using `stream_alloc` on `stream`
@@ -554,6 +555,8 @@ int32_t v = a.value(s); // Retrieves the value from device to host on stream `s`
 ```
 
 ## `host_memory_resource`
+
+> **⚠️ DEPRECATED in 25.12**: `host_memory_resource`, `pinned_memory_resource`, and `new_delete_resource` are deprecated and will be removed in 26.02. Use `pinned_host_memory_resource` instead for pinned host memory allocations.
 
 `rmm::mr::host_memory_resource` is the base class that defines the interface for allocating and
 freeing host memory.
