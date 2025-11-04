@@ -92,7 +92,6 @@ echo "${NEXT_FULL_TAG}" > VERSION
 echo "${RAPIDS_BRANCH_NAME}" > RAPIDS_BRANCH
 
 # Examples update
-sed_runner "s/RMM_TAG branch-[0-9.]*/RMM_TAG ${RAPIDS_BRANCH_NAME}/" cpp/examples/versions.cmake
 sed_runner "s/RMM_TAG release\/[0-9.]*/RMM_TAG ${RAPIDS_BRANCH_NAME}/" cpp/examples/versions.cmake
 sed_runner "s/RMM_TAG main/RMM_TAG ${RAPIDS_BRANCH_NAME}/" cpp/examples/versions.cmake
 
