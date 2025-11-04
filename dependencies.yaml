@@ -264,6 +264,7 @@ dependencies:
           - sphinx
           - sphinx-copybutton
           - sphinx-markdown-tables
+          - sphinxcontrib-jquery
   py_version:
     specific:
       - output_types: conda

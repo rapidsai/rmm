@@ -5,7 +5,7 @@ This page documents the C++ API for RMM, also called `librmm`.
 ```{toctree}
 :maxdepth: 2
 
-memory_resources
+memory_resources/index
 data_containers
 thrust_integrations
 cuda_device_management

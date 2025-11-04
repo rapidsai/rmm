@@ -5,7 +5,8 @@
 
 introduction
 installation
-quickstart
+quickstart-cpp
+quickstart-python
 guide
 choosing_memory_resources
 stream_ordered_allocation

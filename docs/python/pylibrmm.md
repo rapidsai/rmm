@@ -1,6 +1,6 @@
 # rmm.pylibrmm
 
-This module contains the low-level Cython bindings for RMM. The public API from this module is re-exported through the top-level `rmm` module.
+This module contains the low-level Cython bindings for RMM. Some components from this module are re-exported through the top-level `rmm` module for convenience, while others are available only through this module.
 
 ## Overview
 
@@ -9,8 +9,26 @@ This module contains the low-level Cython bindings for RMM. The public API from 
 - `DeviceBuffer` - GPU memory buffer (available as `rmm.DeviceBuffer`)
 - `memory_resource` - Memory resource implementations (available as `rmm.mr`)
 - Logging utilities (available through `rmm`)
-- CUDA stream wrappers
+- CUDA stream wrappers (documented below)
 
-## Usage
+## CUDA Stream Classes
 
-Most users should access these components through the top-level `rmm` module rather than importing from `rmm.pylibrmm` directly. See the [rmm module documentation](rmm.md) for the public API.
+The stream classes are available only through `rmm.pylibrmm` and provide low-level CUDA stream management.
+
+### rmm.pylibrmm.stream
+
+```{eval-rst}
+.. automodule:: rmm.pylibrmm.stream
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```
+
+### rmm.pylibrmm.cuda_stream
+
+```{eval-rst}
+.. automodule:: rmm.pylibrmm.cuda_stream
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```

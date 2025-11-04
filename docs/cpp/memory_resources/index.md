@@ -1,0 +1,25 @@
+# Memory Resources
+
+```{toctree}
+:maxdepth: 1
+
+device_memory_resources
+cuda_memory_resource
+cuda_async_memory_resource
+cuda_async_view_memory_resource
+managed_memory_resource
+system_memory_resource
+pool_memory_resource
+arena_memory_resource
+fixed_size_memory_resource
+binning_memory_resource
+aligned_resource_adaptor
+logging_resource_adaptor
+failure_callback_resource_adaptor
+tracking_resource_adaptor
+statistics_resource_adaptor
+thread_safe_resource_adaptor
+limiting_resource_adaptor
+prefetch_resource_adaptor
+callback_memory_resource
+```
