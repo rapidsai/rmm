@@ -21,6 +21,13 @@ repos:
       - id: ruff-check
         args: ["--fix"]
       - id: ruff-format
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--settings-path=python/rmm/pyproject.toml"]
+        files: python/.*
+        types: [cython]
   - repo: https://github.com/MarcoGorelli/cython-lint
     rev: v0.17.0
     hooks:
