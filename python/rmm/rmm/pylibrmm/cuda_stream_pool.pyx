@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 cimport cython
@@ -37,14 +37,14 @@ cdef class CudaStreamPool:
 
         Parameters
         ----------
-        stream_id: Optional[int], optional
+        stream_id : Optional[int], optional
             The ID of the stream to get. If None, the next stream from the pool is
             returned.
 
         Returns
         -------
         Stream
-            A non-owning Stream object from the pool.
+            A non-owning Stream object from the pool
         """
         cdef size_t c_stream_id
         if stream_id is None:
@@ -56,4 +56,12 @@ cdef class CudaStreamPool:
                 deref(self.c_obj).get_stream(c_stream_id).value(), owner=self)
 
     def get_pool_size(self) -> int:
+        """
+        Get the pool size.
+
+        Returns
+        -------
+        int
+            The number of streams in the pool
+        """
         return deref(self.c_obj).get_pool_size()
