@@ -5,10 +5,9 @@
 
 from libc.stdint cimport uintptr_t
 
+from rmm.librmm.memory_resource cimport cuda_async_managed_memory_resource
 # import from the private _memory_resource to avoid a circular import
 from rmm.pylibrmm.memory_resource._memory_resource cimport DeviceMemoryResource
-
-from rmm.librmm.memory_resource cimport cuda_async_managed_memory_resource
 
 
 cdef class CudaAsyncManagedMemoryResource(DeviceMemoryResource):

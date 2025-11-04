@@ -1,8 +1,9 @@
 # SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
-from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 from rmm.librmm.cuda_stream cimport cuda_stream_flags
+from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+
 
 cdef extern from "rmm/cuda_stream_pool.hpp" namespace "rmm" nogil:
     cdef cppclass cuda_stream_pool:

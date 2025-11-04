@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from cuda.bindings.cyruntime cimport cudaStream_t
-from libcpp cimport bool
 from libc.stdint cimport uint32_t
+from libcpp cimport bool
 
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 
