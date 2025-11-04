@@ -69,14 +69,14 @@ class device_uvector {
                 "device_uvector only supports types that are trivially copyable.");
 
  public:
-  using value_type = T;            ///< T; stored value type
+  using value_type = T;            ///< Stored value type
   using size_type  = std::size_t;  ///< The type used for the size of the vector
-  using reference = value_type&;  ///< value_type&; reference type returned by operator[](size_type)
-  using const_reference = value_type const&;  ///< value_type const&; constant reference type
-                                              ///< returned by operator[](size_type) const
-  using pointer        = value_type*;         ///< The type of the pointer returned by data()
-  using const_pointer  = value_type const*;   ///< The type of the pointer returned by data() const
-  using iterator       = pointer;             ///< The type of the iterator returned by begin()
+  using reference  = value_type&;  ///< Reference type returned by operator[](size_type)
+  using const_reference =
+    value_type const&;  ///< Constant reference type returned by operator[](size_type) const
+  using pointer        = value_type*;        ///< The type of the pointer returned by data()
+  using const_pointer  = value_type const*;  ///< The type of the pointer returned by data() const
+  using iterator       = pointer;            ///< The type of the iterator returned by begin()
   using const_iterator = const_pointer;  ///< The type of the const iterator returned by cbegin()
   using reverse_iterator =
     thrust::reverse_iterator<iterator>;  ///< The type of the iterator returned by rbegin()

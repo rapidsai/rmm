@@ -143,7 +143,7 @@ TEST(PoolTest, MultidevicePool)
 {
   using MemoryResource = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
 
-  // Get the number of cuda devices
+  // Get the number of CUDA devices
   int num_devices = rmm::get_num_cuda_devices();
 
   // only run on multidevice systems

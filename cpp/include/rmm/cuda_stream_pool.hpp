@@ -33,7 +33,7 @@ class cuda_stream_pool {
   static constexpr std::size_t default_size{16};  ///< Default stream pool size
 
   /**
-   * @brief Construct a new cuda stream pool object of the given non-zero size
+   * @brief Construct a new CUDA stream pool object of the given non-zero size
    *
    * @throws logic_error if `pool_size` is zero
    * @param pool_size The number of streams in the pool

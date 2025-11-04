@@ -84,7 +84,7 @@ class raii_temp_directory {
  *
  * Events in the log file are expected to occur in the same order as in `expected_events`.
  *
- * @note: This function accounts for the fact that `device_memory_resource` automatically pads
+ * @note This function accounts for the fact that `device_memory_resource` automatically pads
  * allocations to a multiple of 8 bytes by rounding up the expected allocation sizes to a multiple
  * of 8.
  *
