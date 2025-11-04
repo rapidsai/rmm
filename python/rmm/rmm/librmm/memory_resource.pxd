@@ -5,14 +5,13 @@
 # See https://github.com/cython/cython/issues/5589
 from builtins import BaseException
 
+from cuda.bindings.cyruntime cimport cudaMemPool_t
 from libc.stddef cimport size_t
 from libc.stdint cimport int8_t, int32_t, int64_t
 from libcpp cimport bool
 from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 from libcpp.string cimport string
-
-from cuda.bindings.cyruntime cimport cudaMemPool_t
 
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 from rmm.librmm.memory_resource cimport device_memory_resource

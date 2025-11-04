@@ -2,12 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cimport cython
-from libc.stddef cimport size_t
 from cython.operator cimport dereference as deref
+from libc.stddef cimport size_t
 
 from rmm.librmm.cuda_stream cimport cuda_stream_flags
 from rmm.librmm.cuda_stream_pool cimport cuda_stream_pool
-
 from rmm.pylibrmm.stream cimport Stream
 
 from typing import Optional
