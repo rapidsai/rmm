@@ -6,10 +6,10 @@
 ########################
 
 ## Usage
-# Primary interface:   bash update-version.sh <new_version> [--run-context=update_dev_branch|update_release_branch]
-# Fallback interface:  [RUN_CONTEXT=update_dev_branch|update_release_branch] bash update-version.sh <new_version>
+# Primary interface:   bash update-version.sh <new_version> [--run-context=main|release]
+# Fallback interface:  [RAPIDS_RUN_CONTEXT=main|release] bash update-version.sh <new_version>
 # CLI arguments take precedence over environment variables
-# Defaults to update_dev_branch (main branch) when no run-context is specified
+# Defaults to main when no run-context is specified
 
 
 # Parse command line arguments
@@ -33,21 +33,22 @@ done
 # Format is YY.MM.PP - no leading 'v' or trailing 'a'
 NEXT_FULL_TAG="$VERSION_ARG"
 
-# Determine RUN_CONTEXT with CLI precedence over environment variable, defaulting to dev branch
+# Determine RUN_CONTEXT with CLI precedence over environment variable, defaulting to main
 if [[ -n "$CLI_RUN_CONTEXT" ]]; then
     RUN_CONTEXT="$CLI_RUN_CONTEXT"
-    echo "Using RUN_CONTEXT from CLI: $RUN_CONTEXT"
-elif [[ -n "${RUN_CONTEXT}" ]]; then
-    echo "Using RUN_CONTEXT from environment: $RUN_CONTEXT"
+    echo "Using run-context from CLI: $RUN_CONTEXT"
+elif [[ -n "${RAPIDS_RUN_CONTEXT}" ]]; then
+    RUN_CONTEXT="$RAPIDS_RUN_CONTEXT"
+    echo "Using run-context from environment: $RUN_CONTEXT"
 else
-    RUN_CONTEXT="update_dev_branch"
-    echo "No RUN_CONTEXT provided, defaulting to: $RUN_CONTEXT (main branch)"
+    RUN_CONTEXT="main"
+    echo "No run-context provided, defaulting to: $RUN_CONTEXT"
 fi
 
 # Validate RUN_CONTEXT value
-if [[ "${RUN_CONTEXT}" != "update_dev_branch" && "${RUN_CONTEXT}" != "update_release_branch" ]]; then
-    echo "Error: Invalid RUN_CONTEXT value '${RUN_CONTEXT}'"
-    echo "Valid values: update_dev_branch, update_release_branch"
+if [[ "${RUN_CONTEXT}" != "main" && "${RUN_CONTEXT}" != "release" ]]; then
+    echo "Error: Invalid run-context value '${RUN_CONTEXT}'"
+    echo "Valid values: main, release"
     exit 1
 fi
 
@@ -55,8 +56,8 @@ fi
 if [[ -z "$NEXT_FULL_TAG" ]]; then
     echo "Error: Version argument is required"
     echo "Usage: $0 <new_version> [--run-context=<context>]"
-    echo "   or: [RUN_CONTEXT=<context>] $0 <new_version>"
-    echo "Note: Defaults to update_dev_branch (main branch) when run-context is not specified"
+    echo "   or: [RAPIDS_RUN_CONTEXT=<context>] $0 <new_version>"
+    echo "Note: Defaults to main when run-context is not specified"
     exit 1
 fi
 
@@ -72,11 +73,11 @@ NEXT_SHORT_TAG=${NEXT_MAJOR}.${NEXT_MINOR}
 NEXT_SHORT_TAG_PEP440=$(python -c "from packaging.version import Version; print(Version('${NEXT_SHORT_TAG}'))")
 
 # Set branch references based on RUN_CONTEXT
-if [[ "${RUN_CONTEXT}" == "update_dev_branch" ]]; then
+if [[ "${RUN_CONTEXT}" == "main" ]]; then
     RAPIDS_BRANCH_NAME="main"
     WORKFLOW_BRANCH_REF="main"
     echo "Preparing development branch update $CURRENT_TAG => $NEXT_FULL_TAG (targeting main branch)"
-elif [[ "${RUN_CONTEXT}" == "update_release_branch" ]]; then
+elif [[ "${RUN_CONTEXT}" == "release" ]]; then
     RAPIDS_BRANCH_NAME="release/${NEXT_SHORT_TAG}"
     WORKFLOW_BRANCH_REF="release/${NEXT_SHORT_TAG}"
     echo "Preparing release branch update $CURRENT_TAG => $NEXT_FULL_TAG (targeting release/${NEXT_SHORT_TAG} branch)"
