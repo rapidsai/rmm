@@ -2,10 +2,26 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cimport cython
+from enum import IntEnum
 from cuda.bindings.cyruntime cimport cudaStream_t
 from libcpp cimport bool
 
-from rmm.librmm.cuda_stream cimport cuda_stream
+from rmm.librmm.cuda_stream cimport cuda_stream, cuda_stream_flags
+
+
+class CudaStreamFlags(IntEnum):
+    """
+    Enumeration of CUDA stream creation flags.
+
+    Attributes
+    ----------
+    SYNC_DEFAULT : int
+        Created stream synchronizes with the default stream.
+    NON_BLOCKING : int
+        Created stream does not synchronize with the default stream.
+    """
+    SYNC_DEFAULT = <int>cuda_stream_flags.sync_default
+    NON_BLOCKING = <int>cuda_stream_flags.non_blocking
 
 
 @cython.final
