@@ -583,11 +583,19 @@ class device_uvector {
   [[nodiscard]] bool is_empty() const noexcept { return size() == 0; }
 
   /**
-   * @briefreturn{std::span of the vector}
+   * @briefreturn{cuda::std::span of the vector}
    */
-  [[nodiscard]] operator cuda::std::span<T const>() const
+  [[nodiscard]] operator cuda::std::span<T const>() const noexcept
   {
     return cuda::std::span<T const>{data(), size()};
+  }
+
+  /**
+   * @briefreturn{cuda::std::span of the vector}
+   */
+  [[nodiscard]] operator cuda::std::span<T>() noexcept
+  {
+    return cuda::std::span<T>{data(), size()};
   }
 
   /**
