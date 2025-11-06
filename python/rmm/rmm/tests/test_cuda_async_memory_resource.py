@@ -5,7 +5,14 @@
 
 import numpy as np
 import pytest
-from test_helpers import _allocs, _dtypes, _nelems, array_tester
+from cuda.bindings import runtime
+from test_helpers import (
+    _MEMORY_POOL_HANDLE_TYPES_SUPPORTED,
+    _allocs,
+    _dtypes,
+    _nelems,
+    array_tester,
+)
 
 import rmm
 from rmm.pylibrmm.stream import Stream
@@ -21,6 +28,14 @@ def test_cuda_async_memory_resource(dtype, nelem, alloc):
     array_tester(dtype, nelem, alloc)
 
 
+@pytest.mark.skipif(
+    (
+        _MEMORY_POOL_HANDLE_TYPES_SUPPORTED
+        & runtime.cudaMemAllocationHandleType.cudaMemHandleTypePosixFileDescriptor
+    )
+    == 0,
+    reason="IPC pool handle types are not supported",
+)
 def test_cuda_async_memory_resource_ipc():
     # CUDA 11.3+ is required for IPC memory handle support
     mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)

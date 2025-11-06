@@ -32,6 +32,11 @@ _ASYNC_MANAGED_MEMORY_SUPPORTED = (
     and rmm._cuda.gpu.runtimeGetVersion() >= 13000
 )
 
+_MEMORY_POOL_HANDLE_TYPES_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
+    runtime.cudaDeviceAttr.cudaDevAttrMemoryPoolSupportedHandleTypes,
+    rmm._cuda.gpu.getDevice(),
+)
+
 
 def array_tester(dtype, nelem, alloc):
     """Test helper for array allocation and copy operations."""
