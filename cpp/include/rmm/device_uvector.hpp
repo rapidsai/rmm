@@ -10,7 +10,7 @@
 #include <rmm/detail/exec_check_disable.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/device_buffer.hpp>
-#include <rmm/mr/device/per_device_resource.hpp>
+#include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <thrust/iterator/reverse_iterator.h>

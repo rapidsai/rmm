@@ -5,8 +5,8 @@
 
 #include "./byte_literals.hpp"
 
-#include <rmm/mr/device/cuda_memory_resource.hpp>
-#include <rmm/mr/device/logging_resource_adaptor.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/logging_resource_adaptor.hpp>
 
 #include <thrust/iterator/zip_iterator.h>
 
