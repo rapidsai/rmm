@@ -8,7 +8,6 @@ package_dir="python/librmm"
 
 source rapids-configure-sccache
 export SCCACHE_NO_CACHE=1
-sccache --stop-server
 source rapids-date-string
 source rapids-init-pip
 
