@@ -9,6 +9,8 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/std/span>
+
 #include <gtest/gtest.h>
 #include <gtest/internal/gtest-type-util.h>
 
@@ -297,4 +299,60 @@ TYPED_TEST(TypedUVectorTest, ReverseIterators)
 
   EXPECT_EQ((vec.rbegin() + 1).base(), vec.end() - 1);
   EXPECT_EQ((vec.rend() - 1).base(), vec.begin() + 1);
+}
+
+TYPED_TEST(TypedUVectorTest, SpanConversionMutable)
+{
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+
+  // Test conversion to mutable span
+  cuda::std::span<TypeParam> span = vec;
+
+  EXPECT_EQ(span.data(), vec.data());
+  EXPECT_EQ(span.size(), vec.size());
+  EXPECT_FALSE(span.empty());
+}
+
+TYPED_TEST(TypedUVectorTest, SpanConversionConst)
+{
+  auto const size{12345};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+
+  // Test conversion to const span
+  cuda::std::span<TypeParam const> const_span = std::as_const(vec);
+
+  EXPECT_EQ(const_span.data(), vec.data());
+  EXPECT_EQ(const_span.size(), vec.size());
+  EXPECT_FALSE(const_span.empty());
+}
+
+TYPED_TEST(TypedUVectorTest, SpanConversionEmpty)
+{
+  rmm::device_uvector<TypeParam> vec(0, this->stream());
+
+  // Test mutable span conversion on empty vector
+  cuda::std::span<TypeParam> span = vec;
+  EXPECT_EQ(span.size(), 0);
+  EXPECT_TRUE(span.empty());
+
+  // Test const span conversion on empty vector
+  cuda::std::span<TypeParam const> const_span = std::as_const(vec);
+  EXPECT_EQ(const_span.size(), 0);
+  EXPECT_TRUE(const_span.empty());
+}
+
+TYPED_TEST(TypedUVectorTest, SpanConversionImplicit)
+{
+  auto const size{1000};
+  rmm::device_uvector<TypeParam> vec(size, this->stream());
+
+  // Test that implicit conversion works in function calls
+  auto check_mutable_span = [](cuda::std::span<TypeParam> s) { return s.size(); };
+
+  auto check_const_span = [](cuda::std::span<TypeParam const> s) { return s.size(); };
+
+  EXPECT_EQ(check_mutable_span(vec), size);
+  EXPECT_EQ(check_const_span(vec), size);
+  EXPECT_EQ(check_const_span(std::as_const(vec)), size);
 }
