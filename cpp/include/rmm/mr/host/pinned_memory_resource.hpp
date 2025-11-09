@@ -56,7 +56,7 @@ class [[deprecated(
    * @param alignment The expected alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    * @deprecated This function is deprecated. Use allocate(cuda_stream_view stream, std::size_t
-   * bytes, std::size_t alignment) instead.
+   *             bytes, std::size_t alignment) instead.
    */
 #ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
   [[deprecated(
@@ -78,7 +78,7 @@ class [[deprecated(
    * @param bytes The size of the allocation
    * @return void* Pointer to the newly allocated memory
    * @deprecated This function is deprecated. Use allocate(cuda_stream_view stream, std::size_t
-   * bytes, std::size_t alignment) instead.
+   *             bytes, std::size_t alignment) instead.
    */
 #ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
   [[deprecated(
@@ -99,7 +99,7 @@ class [[deprecated(
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param alignment The alignment that was passed to the `allocate` call that returned `p`
    * @deprecated This function is deprecated. Use deallocate(cuda_stream_view stream, void* ptr,
-   * std::size_t bytes, std::size_t alignment) instead.
+   *             std::size_t bytes, std::size_t alignment) instead.
    */
 #ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
   [[deprecated(

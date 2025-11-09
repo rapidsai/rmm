@@ -69,7 +69,7 @@ host_memory_resource {
    * @param alignment Alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    * @deprecated This function is deprecated. Use allocate_sync(std::size_t bytes, std::size_t
-   * alignment) instead.
+   *             alignment) instead.
    */
 #ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
   [[deprecated(
@@ -95,7 +95,7 @@ host_memory_resource {
    * @param alignment Alignment of the allocation. This must be equal to the value of `alignment`
    *                  that was passed to the `allocate` call that returned `ptr`.
    * @deprecated This function is deprecated. Use deallocate_sync(void* ptr, std::size_t bytes,
-   * std::size_t alignment) instead.
+   *             std::size_t alignment) instead.
    */
 #ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
   [[deprecated(
