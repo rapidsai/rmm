@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
+from collections.abc import Callable
+
 from rmm import mr
 from rmm.pylibrmm.memory_resource._memory_resource import _initialize
 
@@ -11,7 +13,7 @@ class RMMError(Exception):
         super(RMMError, self).__init__(msg)
 
 
-_reinitialize_hooks = []
+_reinitialize_hooks: list[tuple[Callable, tuple, dict]] = []
 
 
 def reinitialize(

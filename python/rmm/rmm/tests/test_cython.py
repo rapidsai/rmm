@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 import functools
@@ -21,12 +21,12 @@ def py_func(func):
 cython_test_modules = ["rmm.pylibrmm.tests.test_device_buffer"]
 
 
-for mod in cython_test_modules:
+for mod_name in cython_test_modules:
     try:
         # For each callable in `mod` with name `test_*`,
         # wrap the callable in a plain Python function
         # and set the result as an attribute of this module.
-        mod = importlib.import_module(mod)
+        mod = importlib.import_module(mod_name)
         for name in dir(mod):
             item = getattr(mod, name)
             if callable(item) and name.startswith("test_"):

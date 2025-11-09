@@ -13,6 +13,7 @@
 #include <rmm/mr/device/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/std/span>
 #include <thrust/iterator/reverse_iterator.h>
 
 #include <cstddef>
@@ -580,6 +581,22 @@ class device_uvector {
    * @briefreturn{true if the vector contains no elements, i.e. `size() == 0`}
    */
   [[nodiscard]] bool is_empty() const noexcept { return size() == 0; }
+
+  /**
+   * @briefreturn{cuda::std::span of the vector}
+   */
+  [[nodiscard]] operator cuda::std::span<T const>() const noexcept
+  {
+    return cuda::std::span<T const>{data(), size()};
+  }
+
+  /**
+   * @briefreturn{cuda::std::span of the vector}
+   */
+  [[nodiscard]] operator cuda::std::span<T>() noexcept
+  {
+    return cuda::std::span<T>{data(), size()};
+  }
 
   /**
    * @briefreturn{The resource used to allocate and deallocate the device
