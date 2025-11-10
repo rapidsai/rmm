@@ -9,6 +9,7 @@ from builtins import BaseException
 from collections import defaultdict
 
 cimport cython
+from cuda.bindings cimport cyruntime
 from cython.operator cimport dereference as deref
 from libc.stddef cimport size_t
 from libc.stdint cimport int8_t, int32_t, uintptr_t
@@ -17,7 +18,6 @@ from libcpp.memory cimport make_unique, unique_ptr
 from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 
-from cuda.bindings cimport cyruntime
 from cuda.bindings import driver, runtime
 
 from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice

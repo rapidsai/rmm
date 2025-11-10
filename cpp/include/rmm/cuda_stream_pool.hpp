@@ -66,6 +66,9 @@ class cuda_stream_pool {
    * @param stream_id Unique identifier for the desired stream
    *
    * @return rmm::cuda_stream_view
+   *
+   * @note @p stream_id is wrapped around the pool size, therefore any size_t value is
+   * allowed.
    */
   rmm::cuda_stream_view get_stream(std::size_t stream_id) const;
 

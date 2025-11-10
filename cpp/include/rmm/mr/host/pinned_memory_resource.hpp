@@ -55,8 +55,16 @@ class [[deprecated(
    * @param bytes The size of the allocation
    * @param alignment The expected alignment of the allocation
    * @return void* Pointer to the newly allocated memory
+   * @deprecated This function is deprecated. Use allocate(cuda_stream_view stream, std::size_t
+   *             bytes, std::size_t alignment) instead.
    */
-  [[nodiscard]] void* allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view)
+#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
+  [[deprecated(
+    "This function is deprecated. Use allocate(cuda_stream_view stream, std::size_t bytes, "
+    "std::size_t alignment) instead.")]]
+#endif
+  [[nodiscard]] void*
+  allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view)
   {
     return do_allocate(bytes, alignment);
   }
@@ -69,8 +77,16 @@ class [[deprecated(
    *
    * @param bytes The size of the allocation
    * @return void* Pointer to the newly allocated memory
+   * @deprecated This function is deprecated. Use allocate(cuda_stream_view stream, std::size_t
+   *             bytes, std::size_t alignment) instead.
    */
-  [[nodiscard]] void* allocate_async(std::size_t bytes, cuda_stream_view)
+#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
+  [[deprecated(
+    "This function is deprecated. Use allocate(cuda_stream_view stream, std::size_t bytes, "
+    "std::size_t alignment) instead.")]]
+#endif
+  [[nodiscard]] void*
+  allocate_async(std::size_t bytes, cuda_stream_view)
   {
     return do_allocate(bytes);
   }
@@ -82,7 +98,14 @@ class [[deprecated(
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param alignment The alignment that was passed to the `allocate` call that returned `p`
+   * @deprecated This function is deprecated. Use deallocate(cuda_stream_view stream, void* ptr,
+   *             std::size_t bytes, std::size_t alignment) instead.
    */
+#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
+  [[deprecated(
+    "This function is deprecated. Use deallocate(cuda_stream_view stream, void* ptr, std::size_t "
+    "bytes, std::size_t alignment) instead.")]]
+#endif
   void deallocate_async(void* ptr,
                         std::size_t bytes,
                         std::size_t alignment,
@@ -94,6 +117,8 @@ class [[deprecated(
   // Explicitly inherit the allocate and deallocate functions from the host_memory_resource class.
   // Due to inheritance and name hiding rules, we need to declare these with "using" when we
   // override allocate and deallocate for CCCL 3.1.0+ compatibility.
+  // Note: These methods are deprecated. Use allocate_sync/deallocate_sync or the stream-based
+  // overloads instead.
   using host_memory_resource::allocate;
   using host_memory_resource::deallocate;
 #endif  // RMM_ENABLE_LEGACY_MR_INTERFACE

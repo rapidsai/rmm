@@ -124,6 +124,14 @@ cdef class Stream:
             pass
         raise TypeError(f"Cannot create stream from {type(obj)}")
 
+    def __eq__(self, other):
+        if isinstance(other, Stream):
+            return self.view() == (<Stream>other).view()
+        return False
+
+    def __hash__(self):
+        return hash(int(<uintptr_t>self._cuda_stream))
+
     cdef void _init_with_new_cuda_stream(self) except *:
         cdef CudaStream stream = CudaStream()
         self._cuda_stream = stream.value()

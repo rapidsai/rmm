@@ -68,7 +68,14 @@ host_memory_resource {
    * @param bytes The size of the allocation
    * @param alignment Alignment of the allocation
    * @return void* Pointer to the newly allocated memory
+   * @deprecated This function is deprecated. Use allocate_sync(std::size_t bytes, std::size_t
+   *             alignment) instead.
    */
+#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
+  [[deprecated(
+    "This function is deprecated. Use allocate_sync(std::size_t bytes, std::size_t alignment) "
+    "instead.")]]
+#endif
   void* allocate(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t))
   {
     RMM_FUNC_RANGE();
@@ -87,7 +94,14 @@ host_memory_resource {
    *              that was passed to the `allocate` call that returned `ptr`.
    * @param alignment Alignment of the allocation. This must be equal to the value of `alignment`
    *                  that was passed to the `allocate` call that returned `ptr`.
+   * @deprecated This function is deprecated. Use deallocate_sync(void* ptr, std::size_t bytes,
+   *             std::size_t alignment) instead.
    */
+#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
+  [[deprecated(
+    "This function is deprecated. Use deallocate_sync(void* ptr, std::size_t bytes, std::size_t "
+    "alignment) instead.")]]
+#endif
   void deallocate(void* ptr,
                   std::size_t bytes,
                   std::size_t alignment = alignof(std::max_align_t)) noexcept
