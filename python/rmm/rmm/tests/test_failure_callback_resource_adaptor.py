@@ -4,15 +4,10 @@
 """Tests for FailureCallbackResourceAdaptor."""
 
 import pytest
-from test_helpers import _IS_INTEGRATED_MEMORY_SYSTEM
 
 import rmm
 
 
-@pytest.mark.skipif(
-    _IS_INTEGRATED_MEMORY_SYSTEM,
-    reason="Integrated memory systems may kill the process when attempting allocations larger than available memory",
-)
 def test_failure_callback_resource_adaptor():
     retried = [False]
 
@@ -23,26 +18,34 @@ def test_failure_callback_resource_adaptor():
             retried[0] = True
             return True
 
-    cuda_mr = rmm.mr.CudaMemoryResource()
-    mr = rmm.mr.FailureCallbackResourceAdaptor(cuda_mr, callback)
+    def allocate_func(size, stream):
+        raise MemoryError("Intentional allocation failure")
+
+    def deallocate_func(ptr, size, stream):
+        pass
+
+    failing_mr = rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
+    mr = rmm.mr.FailureCallbackResourceAdaptor(failing_mr, callback)
     rmm.mr.set_current_device_resource(mr)
 
     with pytest.raises(MemoryError):
-        rmm.DeviceBuffer(size=1024**5)  # 1 petabyte
+        rmm.DeviceBuffer(size=256)
     assert retried[0]
 
 
-@pytest.mark.skipif(
-    _IS_INTEGRATED_MEMORY_SYSTEM,
-    reason="Integrated memory systems may kill the process when attempting allocations larger than available memory",
-)
 def test_failure_callback_resource_adaptor_error():
     def callback(nbytes: int) -> bool:
         raise RuntimeError("MyError")
 
-    cuda_mr = rmm.mr.CudaMemoryResource()
-    mr = rmm.mr.FailureCallbackResourceAdaptor(cuda_mr, callback)
+    def allocate_func(size, stream):
+        raise MemoryError("Intentional allocation failure")
+
+    def deallocate_func(ptr, size, stream):
+        pass
+
+    failing_mr = rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
+    mr = rmm.mr.FailureCallbackResourceAdaptor(failing_mr, callback)
     rmm.mr.set_current_device_resource(mr)
 
     with pytest.raises(RuntimeError, match="MyError"):
-        rmm.DeviceBuffer(size=1024**5)  # 1 petabyte
+        rmm.DeviceBuffer(size=256)
