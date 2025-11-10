@@ -149,3 +149,7 @@ module = [
     "torch.*"
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "test_helpers"
+ignore_missing_imports = true
