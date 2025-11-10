@@ -39,7 +39,7 @@ option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 option(BUILD_SHARED_LIBS "Build RMM shared libraries" ON)
 option(RMM_ENABLE_LEGACY_MR_INTERFACE "Enable legacy memory resource interface" ON)
 option(RMM_DEPRECATE_LEGACY_MR_INTERFACE
-       "Enable deprecation warnings for legacy memory resource interface" OFF)
+       "Enable deprecation warnings for legacy memory resource interface" ON)
 set(RMM_LOGGING_LEVEL
     "INFO"
     CACHE STRING "Choose the logging level.")
