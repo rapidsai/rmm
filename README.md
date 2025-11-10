@@ -91,7 +91,7 @@ $ cd rmm
 
 ```bash
 # create the conda environment (assuming in base `rmm` directory)
-$ conda env create --name rmm_dev --file conda/environments/all_cuda-130_arch-$(arch).yaml
+$ conda env create --name rmm_dev --file conda/environments/all_cuda-130_arch-$(uname -m).yaml
 # activate the environment
 $ conda activate rmm_dev
 ```
