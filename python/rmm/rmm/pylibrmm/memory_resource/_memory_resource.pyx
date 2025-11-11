@@ -81,7 +81,7 @@ cdef class DeviceMemoryResource:
         ----
         On integrated memory systems, attempting to allocate more memory than
         available can cause the process to be killed by the operating system
-        instead of raising a catchable :class`MemoryError`.
+        instead of raising a catchable :class:`MemoryError`.
 
         Raises
         ------
@@ -1219,9 +1219,9 @@ def enable_logging(log_file_name=None):
 
     Parameters
     ----------
-    log_file_name: str, optional
+    log_file_name : str, optional
         Name of the log file. If not specified, the environment variable
-        RMM_LOG_FILE is used. A :class:`ValueError` is thrown if neither is
+        ``RMM_LOG_FILE`` is used. A :class:`ValueError` is thrown if neither is
         available. A separate log file is produced for each device, and the
         suffix ``".dev{id}"`` is automatically added to the log file name.
 
