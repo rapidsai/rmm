@@ -1,5 +1,0 @@
-Utilities
-============
-
-.. doxygengroup:: utilities
-   :members:
