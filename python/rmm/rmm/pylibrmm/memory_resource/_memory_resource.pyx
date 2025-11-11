@@ -1252,7 +1252,7 @@ def enable_logging(log_file_name=None):
 def disable_logging():
     """
     Disable logging if it was enabled previously using
-    :func:`rmm.initialize()` or :func:`rmm.enable_logging()`.
+    :func:`rmm.reinitialize()` or :func:`rmm.enable_logging()`.
     """
     global _per_device_mrs
     for i, each_mr in _per_device_mrs.items():

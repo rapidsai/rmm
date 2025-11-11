@@ -12,11 +12,7 @@ cuda_device_management
 cuda_streams
 errors
 utilities
-deprecated
-```
-
-```{doxygennamespace} rmm
-:desc-only:
+rmm_namespace
 ```
 
 ## Indices and tables
