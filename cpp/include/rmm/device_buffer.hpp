@@ -34,28 +34,28 @@ namespace RMM_NAMESPACE {
  * behavior to read the contents of `data()` before first initializing it.
  *
  * Examples:
- * ```
- * //Allocates at least 100 bytes of device memory using the default memory
- * //resource and default stream.
+ * ```cpp
+ * // Allocates at least 100 bytes of device memory using the default memory
+ * // resource and default stream.
  * device_buffer buff(100);
  *
- * // allocates at least 100 bytes using the custom memory resource and
+ * // Allocates at least 100 bytes using the custom memory resource and
  * // specified stream
  * custom_memory_resource mr;
  * cuda_stream_view stream = cuda_stream_view{};
  * device_buffer custom_buff(100, stream, &mr);
  *
- * // deep copies `buff` into a new device buffer using the specified stream
+ * // Deep copies `buff` into a new device buffer using the specified stream
  * device_buffer buff_copy(buff, stream);
  *
- * // moves the memory in `from_buff` to `to_buff`. Deallocates previously allocated
+ * // Moves the memory in `from_buff` to `to_buff`. Deallocates previously allocated
  * // to_buff memory on `to_buff.stream()`.
  * device_buffer to_buff(std::move(from_buff));
  *
- * // deep copies `buff` into a new device buffer using the specified stream
+ * // Deep copies `buff` into a new device buffer using the specified stream
  * device_buffer buff_copy(buff, stream);
  *
- * // shallow copies `buff` into a new device_buffer, `buff` is now empty
+ * // Shallow copies `buff` into a new device_buffer, `buff` is now empty
  * device_buffer buff_move(std::move(buff));
  *
  * // Default construction. Buffer is empty
@@ -65,7 +65,7 @@ namespace RMM_NAMESPACE {
  * // deep copies any previous contents. Otherwise, simply updates the value of `size()` to the
  * // newly requested size without any allocations or copies. Uses the specified stream.
  * buff_default.resize(100, stream);
- *```
+ * ```
  */
 class device_buffer {
  public:

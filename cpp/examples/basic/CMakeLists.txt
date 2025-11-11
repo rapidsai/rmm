@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.30.4)
 
 include(../set_cuda_architecture.cmake)
 
-# initialize cuda architecture
+# initialize CUDA architectures
 rapids_cuda_init_architectures(basic_example)
 
 project(
