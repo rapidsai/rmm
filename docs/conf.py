@@ -122,9 +122,20 @@ html_logo = "_static/RAPIDS-logo-purple.png"
 
 html_theme_options = {
     "external_links": [],
-    "icon_links": [],
-    "github_url": "https://github.com/rapidsai/rmm",
-    "twitter_url": "https://twitter.com/rapidsai",
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/rapidsai/rmm",
+            "icon": "fa-brands fa-github",
+            "type": "fontawesome",
+        },
+        {
+            "name": "X",
+            "url": "https://x.com/rapidsai",
+            "icon": "fa-brands fa-x-twitter",
+            "type": "fontawesome",
+        },
+    ],
     "show_toc_level": 1,
     "navbar_align": "right",
     "navigation_with_keys": True,
