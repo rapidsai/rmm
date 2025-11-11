@@ -14,7 +14,7 @@ rapids-generate-version > ./VERSION
 
 cd "${package_dir}"
 
-sccache --zero-stats
+sccache --stop-server >/dev/null 2>&1 || true
 
 # Creates artifacts directory for telemetry
 source rapids-telemetry-setup

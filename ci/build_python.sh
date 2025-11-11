@@ -17,7 +17,7 @@ rapids-logger "Begin py build"
 
 CPP_CHANNEL=$(rapids-download-conda-from-github cpp)
 
-sccache --zero-stats
+sccache --stop-server >/dev/null 2>&1 || true
 
 RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION)
 export RAPIDS_PACKAGE_VERSION

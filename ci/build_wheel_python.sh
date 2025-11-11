@@ -23,7 +23,7 @@ LIBRMM_WHEELHOUSE=$(RAPIDS_PY_WHEEL_NAME="librmm_${RAPIDS_PY_CUDA_SUFFIX}" rapid
 # are used when creating the isolated build environment.
 echo "librmm-${RAPIDS_PY_CUDA_SUFFIX} @ file://$(echo "${LIBRMM_WHEELHOUSE}"/librmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)" >> "${PIP_CONSTRAINT}"
 
-sccache --zero-stats
+sccache --stop-server >/dev/null 2>&1 || true
 
 # Creates artifacts directory for telemetry
 source rapids-telemetry-setup
