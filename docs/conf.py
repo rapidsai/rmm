@@ -46,18 +46,18 @@ release = (
 # ones.
 
 extensions = [
-    "sphinxcontrib.jquery",
-    "sphinx.ext.intersphinx",
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx_copybutton",
-    "numpydoc",
-    "sphinx_markdown_tables",
     "IPython.sphinxext.ipython_console_highlighting",
     "IPython.sphinxext.ipython_directive",
-    "nbsphinx",
-    "recommonmark",
     "breathe",
+    "myst_parser",
+    "nbsphinx",
+    "numpydoc",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
+    "sphinx_copybutton",
+    "sphinx_markdown_tables",
+    "sphinxcontrib.jquery",
 ]
 
 # Breathe Configuration
@@ -95,14 +95,14 @@ exclude_patterns = []
 # List of warnings to suppress
 suppress_warnings = []
 
-# if the file deprecated.xml does not exist in the doxygen xml output,
-# breathe will fail to build the docs, so we conditionally add
-# "deprecated.rst" to the exclude_patterns list
+# If the file deprecated.xml does not exist in the Doxygen XML output,
+# Breathe's deprecated page will fail. Conditionally exclude that page
+# and suppress the resulting toctree warning.
 if not os.path.exists(
     os.path.join(breathe_projects["librmm"], "deprecated.xml")
 ):
-    exclude_patterns.append("librmm_docs/deprecated.rst")
-    suppress_warnings.append("toc.excluded")
+    exclude_patterns.append("cpp/deprecated.md")
+    suppress_warnings.append("toc.not_readable")
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"
@@ -117,18 +117,34 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 
-html_theme = "sphinx_rtd_theme"
+html_theme = "pydata_sphinx_theme"
+html_logo = "_static/RAPIDS-logo-purple.png"
 
-# Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
-# documentation.
-#
-# html_theme_options = {}
+html_theme_options = {
+    "external_links": [],
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/rapidsai/rmm",
+            "icon": "fa-brands fa-github",
+            "type": "fontawesome",
+        },
+        {
+            "name": "X",
+            "url": "https://x.com/rapidsai",
+            "icon": "fa-brands fa-x-twitter",
+            "type": "fontawesome",
+        },
+    ],
+    "show_toc_level": 1,
+    "navbar_align": "right",
+    "navigation_with_keys": True,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = []
+html_static_path = ["_static"]
 
 
 # -- Options for HTMLHelp output ------------------------------------------
@@ -300,7 +316,6 @@ def on_missing_reference(app, env, node, contnode):
 
 
 def setup(app):
-    app.add_js_file("copybutton_pydocs.js")
     app.add_css_file("https://docs.rapids.ai/assets/css/custom.css")
     app.add_js_file(
         "https://docs.rapids.ai/assets/js/custom.js", loading_method="defer"
