@@ -31,7 +31,7 @@ namespace mr {
  * allocate objects of a specific type `T`, but can be freely rebound to other
  * types.
  *
- * The allocator records the current cuda device and may only be used with a backing
+ * The allocator records the current CUDA device and may only be used with a backing
  * `device_async_resource_ref` valid for the same device.
  *
  * @tparam T The type of the objects that will be allocated by this allocator

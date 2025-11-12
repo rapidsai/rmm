@@ -175,7 +175,7 @@ class stream_allocator_adaptor {
   /**
    * @brief Construct a `stream_allocator_adaptor` using `a` as the underlying allocator.
    *
-   * @note: The `stream` must not be destroyed before the `stream_allocator_adaptor`, otherwise
+   * @note The `stream` must not be destroyed before the `stream_allocator_adaptor`, otherwise
    * behavior is undefined.
    *
    * @param allocator The stream ordered allocator to use as the underlying allocator

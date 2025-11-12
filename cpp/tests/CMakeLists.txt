@@ -190,7 +190,7 @@ ConfigureTest(PINNED_MR_TEST mr/host/pinned_mr_tests.cpp)
 # pinned pool mr tests
 ConfigureTest(PINNED_POOL_MR_TEST mr/host/pinned_pool_mr_tests.cpp)
 
-# cuda stream tests
+# CUDA stream tests
 ConfigureTest(CUDA_STREAM_TEST cuda_stream_tests.cpp cuda_stream_pool_tests.cpp)
 
 # device buffer tests

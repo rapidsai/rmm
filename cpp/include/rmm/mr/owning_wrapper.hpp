@@ -112,7 +112,7 @@ class owning_wrapper : public device_memory_resource {
    * };
    *
    * using cuda = rmm::mr::cuda_memory_resource;
-   * using example = example_resource<cuda,cuda>;
+   * using example = example_resource<cuda, cuda>;
    * using wrapped_example = rmm::mr::owning_wrapper<example, cuda, cuda>;
    * auto cuda_mr = std::make_shared<cuda>();
    *
