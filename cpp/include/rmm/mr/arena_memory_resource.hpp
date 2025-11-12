@@ -24,7 +24,7 @@
 namespace RMM_NAMESPACE {
 namespace mr {
 /**
- * @addtogroup device_memory_resources
+ * @addtogroup memory_resources
  * @{
  * @file
  */
