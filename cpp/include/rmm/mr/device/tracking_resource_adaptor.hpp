@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if !defined(RMM_DEPRECATE_MR_DEVICE_HEADERS) || RMM_DEPRECATE_MR_DEVICE_HEADERS
 #pragma message( \
   "rmm/mr/device/tracking_resource_adaptor.hpp is deprecated in 25.12 and will be removed in 26.02. Use rmm/mr/tracking_resource_adaptor.hpp instead.")
+#endif
 #include <rmm/mr/tracking_resource_adaptor.hpp>
