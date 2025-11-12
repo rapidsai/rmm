@@ -168,7 +168,7 @@ class device_scalar {
    * referenced by `v` should not be destroyed or modified until `stream` has been
    * synchronized. Otherwise, behavior is undefined.
    *
-   * @note: This function incurs a host to device memcpy or device memset and should be used
+   * @note This function incurs a host to device memcpy or device memset and should be used
    * carefully.
    *
    * Example:
@@ -209,7 +209,7 @@ class device_scalar {
    *
    * This function does not synchronize `stream` before returning.
    *
-   * @note: This function incurs a device memset and should be used carefully.
+   * @note This function incurs a device memset and should be used carefully.
    *
    * @param stream CUDA stream on which to perform the copy
    */

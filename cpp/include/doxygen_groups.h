@@ -48,7 +48,6 @@
  * @defgroup cuda_streams CUDA Streams
  * @defgroup data_containers Data Containers
  * @defgroup errors Errors
- * @defgroup logging Logging
  * @defgroup thrust_integrations Thrust Integrations
  * @defgroup utilities Utilities
  */
