@@ -95,6 +95,7 @@ thirdparty/googletest/
 
 ## Documentation
 cpp/doxygen/html
+cpp/doxygen/latex
 cpp/doxygen/xml
 docs/_build
 
