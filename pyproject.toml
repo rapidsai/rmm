@@ -107,3 +107,49 @@ exclude = [
     # TODO: Remove this in a follow-up where we fix __all__.
     "__init__.py",
 ]
+
+[tool.mypy]
+# Start with minimal strictness for gradual adoption
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+
+# But enforce some basic quality checks
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unreachable = true
+
+# Cython and extension modules
+
+# Per-module overrides for gradual adoption
+[[tool.mypy.overrides]]
+module = [
+    "librmm.*",
+    "rmm.librmm.*",
+    "rmm.pylibrmm.*",
+]
+ignore_errors = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "rmm.allocators.torch"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "rmm.statistics"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+    "cuda.bindings.*",
+    "cuda.core.*",
+    "cupy.*",
+    "numba.*",
+    "torch.*"
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "test_helpers"
+ignore_missing_imports = true

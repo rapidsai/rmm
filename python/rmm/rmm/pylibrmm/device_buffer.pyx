@@ -173,11 +173,12 @@ cdef class DeviceBuffer:
                      strm.view())
 
     def copy(self):
-        """Returns a copy of DeviceBuffer.
+        """Returns a copy of this :class:`DeviceBuffer`.
 
         Returns
         -------
-        A deep copy of existing ``DeviceBuffer``
+        DeviceBuffer
+            A deep copy of this :class:`DeviceBuffer`
 
         Examples
         --------
@@ -232,8 +233,10 @@ cdef class DeviceBuffer:
 
         Parameters
         ----------
-        ary : ``bytes``-like buffer to write into
-        stream : CUDA stream to use for copying, default the default stream
+        ary :
+            :class:`bytes`-like buffer to write into
+        stream : optional
+            CUDA stream to use for copying, defaults to the default stream
 
         Examples
         --------
@@ -270,8 +273,10 @@ cdef class DeviceBuffer:
 
         Parameters
         ----------
-        ary : ``bytes``-like buffer to copy from
-        stream : CUDA stream to use for copying, default the default stream
+        ary :
+            :class:`bytes`-like buffer to copy from
+        stream : optional
+            CUDA stream to use for copying, defaults to the default stream
 
         Examples
         --------
@@ -301,8 +306,10 @@ cdef class DeviceBuffer:
 
         Parameters
         ----------
-        cuda_ary : object to copy from that has ``__cuda_array_interface__``
-        stream : CUDA stream to use for copying, default the default stream
+        cuda_ary :
+            Object to copy from that has ``__cuda_array_interface__``
+        stream : optional
+            CUDA stream to use for copying, defaults to the default stream
 
         Examples
         --------
