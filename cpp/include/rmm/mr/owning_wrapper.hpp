@@ -58,7 +58,7 @@ auto make_resource(std::tuple<std::shared_ptr<Upstreams>...> const& upstreams, A
 }  // namespace detail
 
 /**
- * @addtogroup device_resource_adaptors
+ * @addtogroup memory_resource_adaptors
  * @{
  * @file
  */
