@@ -1,4 +1,4 @@
-# Thrust Integration
+# Thrust Integrations
 
 ```{doxygengroup} thrust_integrations
 :members:

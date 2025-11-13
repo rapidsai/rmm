@@ -19,7 +19,7 @@
 
 /**
  * @namespace rmm
- * @brief RAPIDS Memory Manager - The top level namespace for all RMM functionality
+ * @brief RAPIDS Memory Manager - The top-level namespace for all RMM functionality
  *
  * The rmm namespace provides a comprehensive set of memory management
  * utilities for CUDA applications, including memory resources, CUDA stream
