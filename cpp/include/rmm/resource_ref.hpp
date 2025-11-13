@@ -5,9 +5,9 @@
 #pragma once
 
 #include <rmm/detail/cccl_adaptors.hpp>
-#include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/mr/device_memory_resource.hpp>
 
 namespace RMM_NAMESPACE {
 
@@ -74,6 +74,21 @@ device_async_resource_ref to_device_async_resource_ref_checked(Resource* res)
   RMM_EXPECTS(res, "Unexpected null resource pointer.");
   return device_async_resource_ref{*res};
 }
+
+// Verify that the device_memory_resource bridge constructors work correctly
+// These assertions validate that resource_ref types can be constructed from raw pointers/references
+static_assert(
+  std::is_constructible_v<device_resource_ref, mr::device_memory_resource*>,
+  "device_resource_ref must be constructible from device_memory_resource* (via bridge)");
+static_assert(
+  std::is_constructible_v<device_async_resource_ref, mr::device_memory_resource*>,
+  "device_async_resource_ref must be constructible from device_memory_resource* (via bridge)");
+static_assert(
+  std::is_constructible_v<device_resource_ref, mr::device_memory_resource&>,
+  "device_resource_ref must be constructible from device_memory_resource& (via bridge)");
+static_assert(
+  std::is_constructible_v<device_async_resource_ref, mr::device_memory_resource&>,
+  "device_async_resource_ref must be constructible from device_memory_resource& (via bridge)");
 
 /** @} */  // end of group
 }  // namespace RMM_NAMESPACE

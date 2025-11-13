@@ -244,7 +244,7 @@ inline device_memory_resource* set_per_device_resource(cuda_device_id device_id,
   // state consistent with the resource pointer state. This is necessary because the
   // Python API still uses the raw pointer API. Once the Python API is updated to use
   // resource_ref, this call can be removed.
-  if (new_mr != nullptr) { detail::set_per_device_resource_ref_unsafe(device_id, *new_mr); }
+  if (new_mr != nullptr) { detail::set_per_device_resource_ref_unsafe(device_id, new_mr); }
 
   auto& map          = detail::get_map();
   auto const old_itr = map.find(device_id.value());

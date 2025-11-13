@@ -30,22 +30,11 @@
 namespace rmm::test {
 namespace {
 
-class mock_memory_resource_interface {
+class mock_memory_resource : public rmm::mr::device_memory_resource {
  public:
-  // We must define an interface class so that we can mock methods with default arguments.
-  virtual void* allocate_sync(std::size_t, std::size_t)                     = 0;
-  virtual void deallocate_sync(void*, std::size_t, std::size_t) noexcept    = 0;
-  virtual void* allocate(cuda_stream_view,
-                         std::size_t,
-                         std::size_t = CUDA_ALLOCATION_ALIGNMENT)           = 0;
-  virtual void deallocate(cuda_stream_view,
-                          void*,
-                          std::size_t,
-                          std::size_t = CUDA_ALLOCATION_ALIGNMENT) noexcept = 0;
-};
 
-class mock_memory_resource : public mock_memory_resource_interface {
- public:
+  MOCK_METHOD(void*, do_allocate, (std::size_t, cuda_stream_view));
+  MOCK_METHOD(void, do_deallocate, (void*, std::size_t, cuda_stream_view), (noexcept));
   MOCK_METHOD(void*, allocate_sync, (std::size_t, std::size_t));
   MOCK_METHOD(void, deallocate_sync, (void*, std::size_t, std::size_t), (noexcept));
   MOCK_METHOD(void*, allocate, (cuda_stream_view, std::size_t, std::size_t));
