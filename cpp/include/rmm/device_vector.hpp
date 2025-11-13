@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2024, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,7 +7,7 @@
 
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/thrust_namespace.h>
-#include <rmm/mr/device/thrust_allocator_adaptor.hpp>
+#include <rmm/mr/thrust_allocator_adaptor.hpp>
 
 #include <thrust/device_vector.h>
 

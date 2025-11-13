@@ -134,52 +134,52 @@ endfunction()
 # test sources
 
 # device mr_ref tests
-ConfigureTest(DEVICE_MR_REF_TEST mr/device/mr_ref_tests.cpp
-              mr/device/mr_ref_multithreaded_tests.cpp GPUS 1 PERCENT 100)
+ConfigureTest(DEVICE_MR_REF_TEST mr/mr_ref_tests.cpp mr/mr_ref_multithreaded_tests.cpp GPUS 1
+              PERCENT 100)
 
 # general adaptor tests
-ConfigureTest(ADAPTOR_TEST mr/device/adaptor_tests.cpp)
+ConfigureTest(ADAPTOR_TEST mr/adaptor_tests.cpp)
 
 # pool mr tests
-ConfigureTest(POOL_MR_TEST mr/device/pool_mr_tests.cpp GPUS 1 PERCENT 100)
+ConfigureTest(POOL_MR_TEST mr/pool_mr_tests.cpp GPUS 1 PERCENT 100)
 
-ConfigureTest(HWDECOMPRESS_TEST mr/device/hwdecompress_tests.cpp LINK_DRIVER)
+ConfigureTest(HWDECOMPRESS_TEST mr/hwdecompress_tests.cpp LINK_DRIVER)
 
 # cuda_async mr tests
-ConfigureTest(CUDA_ASYNC_MR_STATIC_CUDART_TEST mr/device/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60
-              CUDART STATIC)
-ConfigureTest(CUDA_ASYNC_MR_SHARED_CUDART_TEST mr/device/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60
-              CUDART SHARED)
+ConfigureTest(CUDA_ASYNC_MR_STATIC_CUDART_TEST mr/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60 CUDART
+              STATIC)
+ConfigureTest(CUDA_ASYNC_MR_SHARED_CUDART_TEST mr/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60 CUDART
+              SHARED)
 
 # cuda_async managed mr tests (available with CUDA 13+ runtime/driver)
-ConfigureTest(CUDA_ASYNC_MANAGED_MR_TEST mr/device/cuda_async_managed_mr_tests.cpp)
+ConfigureTest(CUDA_ASYNC_MANAGED_MR_TEST mr/cuda_async_managed_mr_tests.cpp)
 
 # thrust allocator tests
-ConfigureTest(THRUST_ALLOCATOR_TEST mr/device/thrust_allocator_tests.cu GPUS 1 PERCENT 60)
+ConfigureTest(THRUST_ALLOCATOR_TEST mr/thrust_allocator_tests.cu GPUS 1 PERCENT 60)
 
 # polymorphic allocator tests
-ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST mr/device/polymorphic_allocator_tests.cpp)
+ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST mr/polymorphic_allocator_tests.cpp)
 
 # stream allocator adaptor tests
-ConfigureTest(STREAM_ADAPTOR_TEST mr/device/stream_allocator_adaptor_tests.cpp)
+ConfigureTest(STREAM_ADAPTOR_TEST mr/stream_allocator_adaptor_tests.cpp)
 
 # statistics adaptor tests
-ConfigureTest(STATISTICS_TEST mr/device/statistics_mr_tests.cpp)
+ConfigureTest(STATISTICS_TEST mr/statistics_mr_tests.cpp)
 
 # tracking adaptor tests
-ConfigureTest(TRACKING_TEST mr/device/tracking_mr_tests.cpp)
+ConfigureTest(TRACKING_TEST mr/tracking_mr_tests.cpp)
 
 # out-of-memory callback adaptor tests
-ConfigureTest(FAILURE_CALLBACK_TEST mr/device/failure_callback_mr_tests.cpp)
+ConfigureTest(FAILURE_CALLBACK_TEST mr/failure_callback_mr_tests.cpp)
 
 # prefetch adaptor tests
-ConfigureTest(PREFETCH_ADAPTOR_TEST mr/device/prefetch_resource_adaptor_tests.cpp)
+ConfigureTest(PREFETCH_ADAPTOR_TEST mr/prefetch_resource_adaptor_tests.cpp)
 
 # aligned adaptor tests
-ConfigureTest(ALIGNED_TEST mr/device/aligned_mr_tests.cpp)
+ConfigureTest(ALIGNED_TEST mr/aligned_mr_tests.cpp)
 
 # limiting adaptor tests
-ConfigureTest(LIMITING_TEST mr/device/limiting_mr_tests.cpp)
+ConfigureTest(LIMITING_TEST mr/limiting_mr_tests.cpp)
 
 # host mr_ref tests
 ConfigureTest(HOST_MR_REF_TEST mr/host/mr_ref_tests.cpp)
@@ -209,16 +209,16 @@ ConfigureTest(PREFETCH_TEST prefetch_tests.cpp)
 ConfigureTest(LOGGER_TEST logger_tests.cpp)
 
 # arena MR tests
-ConfigureTest(ARENA_MR_TEST mr/device/arena_mr_tests.cpp GPUS 1 PERCENT 100)
+ConfigureTest(ARENA_MR_TEST mr/arena_mr_tests.cpp GPUS 1 PERCENT 100)
 
 # binning MR tests
-ConfigureTest(BINNING_MR_TEST mr/device/binning_mr_tests.cpp)
+ConfigureTest(BINNING_MR_TEST mr/binning_mr_tests.cpp)
 
 # callback memory resource tests
-ConfigureTest(CALLBACK_MR_TEST mr/device/callback_mr_tests.cpp)
+ConfigureTest(CALLBACK_MR_TEST mr/callback_mr_tests.cpp)
 
 # system memory resource tests
-ConfigureTest(SYSTEM_MR_TEST mr/device/system_mr_tests.cu GPUS 1 PERCENT 100)
+ConfigureTest(SYSTEM_MR_TEST mr/system_mr_tests.cu GPUS 1 PERCENT 100)
 
 # container multidevice tests
 ConfigureTest(CONTAINER_MULTIDEVICE_TEST container_multidevice_tests.cu)

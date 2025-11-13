@@ -1,11 +1,11 @@
-# SPDX-FileCopyrightText: Copyright (c) 2019-2024, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 from rmm.librmm.memory_resource cimport device_memory_resource
 
 
-cdef extern from "rmm/mr/device/per_device_resource.hpp" namespace "rmm" nogil:
+cdef extern from "rmm/mr/per_device_resource.hpp" namespace "rmm" nogil:
     cdef cppclass cuda_device_id:
         ctypedef int value_type
         cuda_device_id()

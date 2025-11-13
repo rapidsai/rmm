@@ -4,7 +4,7 @@
  */
 
 #include <rmm/error.hpp>
-#include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/mr/pool_memory_resource.hpp>
 
 // Suppress deprecation warnings for testing deprecated functionality
 #if defined(__GNUC__) || defined(__clang__)
