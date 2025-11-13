@@ -1,8 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any
-
 from cuda.bindings import driver, runtime
 
 
@@ -130,7 +128,7 @@ def getDeviceAttribute(attr: runtime.cudaDeviceAttr, device: int) -> int:
     return value
 
 
-def getDeviceProperties(device: int) -> Any:
+def getDeviceProperties(device: int) -> runtime.cudaDeviceProp:
     """
     Returns information about the compute-device.
 
