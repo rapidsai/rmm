@@ -8,9 +8,13 @@ from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import wraps
-from typing import Any, Literal, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, ParamSpec, TypeVar
 
 import rmm.mr
+
+if TYPE_CHECKING:
+    from types import TracebackType
+
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -316,7 +320,12 @@ class ProfilerContext:
         push_statistics()
         return self
 
-    def __exit__(self, *exc: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: "TracebackType | None",
+    ) -> None:
         if (stats := pop_statistics()) is not None:
             self._records.add(name=self._name, data=stats)
 
