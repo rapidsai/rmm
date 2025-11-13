@@ -7,6 +7,7 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/cccl_adaptors.hpp>
+#include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/detail/device_memory_resource_view.hpp>
 #include <rmm/resource_ref.hpp>
@@ -98,12 +99,18 @@ TEST(DeviceMemoryResourceViewTest, InequalityComparison)
 {
   rmm::mr::cuda_memory_resource mr1;
   rmm::mr::cuda_memory_resource mr2;
+  rmm::mr::cuda_async_memory_resource mr3;
   rmm::mr::detail::device_memory_resource_view view1{&mr1};
   rmm::mr::detail::device_memory_resource_view view2{&mr2};
+  rmm::mr::detail::device_memory_resource_view view3{&mr3};
 
-  // Views wrapping different resources should not be equal
-  EXPECT_NE(view1, view2);
-  EXPECT_FALSE(view1 == view2);
+  // Views wrapping different resources should be equal iff the resources compare equal
+  EXPECT_EQ(mr1, mr2);
+  EXPECT_EQ(view1, view2);
+  EXPECT_TRUE(view1 == view2);
+  EXPECT_NE(mr1, mr3);
+  EXPECT_NE(view1, view3);
+  EXPECT_FALSE(view1 == view3);
 }
 
 /**
