@@ -38,8 +38,7 @@ namespace mr {
  * the project is linked with `-rdynamic`. This can be accomplished with
  * `add_link_options(-rdynamic)` in cmake.
  *
- * @tparam Upstream Type of the upstream resource used for
- * allocation/deallocation.
+ * @tparam Upstream Type of the upstream resource used for allocation/deallocation.
  */
 template <typename Upstream>
 class tracking_resource_adaptor final : public device_memory_resource {

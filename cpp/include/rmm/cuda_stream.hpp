@@ -56,7 +56,7 @@ class cuda_stream {
   cuda_stream& operator=(cuda_stream&)  = delete;
 
   /**
-   * @brief Construct a new cuda stream object
+   * @brief Construct a new CUDA stream object
    *
    * @param flags Stream creation flags.
    *

@@ -22,7 +22,7 @@ struct librmm_domain {
  * Customizes an NVTX range with the given input.
  *
  * Example:
- * ```
+ * ```cpp
  * void some_function(){
  *    rmm::scoped_range rng{"custom_name"}; // Customizes range name
  *    ...
@@ -41,7 +41,7 @@ using scoped_range = ::nvtx3::scoped_range_in<librmm_domain>;
  * name the range.
  *
  * Example:
- * ```
+ * ```cpp
  * void some_function(){
  *    RMM_FUNC_RANGE();
  *    ...

@@ -26,11 +26,11 @@
  * specified.
  *
  * Example usage:
- * ```
- * // throws rmm::logic_error
+ * ```cpp
+ * // Throws rmm::logic_error
  * RMM_EXPECTS(p != nullptr, "Unexpected null pointer");
  *
- * // throws std::runtime_error
+ * // Throws std::runtime_error
  * RMM_EXPECTS(p != nullptr, "Unexpected nullptr", std::runtime_error);
  * ```
  * @param ... This macro accepts either two or three arguments:
@@ -60,7 +60,7 @@
  * @brief Indicates that an erroneous code path has been taken.
  *
  * Example usage:
- * ```c++
+ * ```cpp
  * // Throws rmm::logic_error
  * RMM_FAIL("Unsupported code path");
  *
@@ -91,8 +91,7 @@
  * specified.
  *
  * Example:
- * ```c++
- *
+ * ```cpp
  * // Throws rmm::cuda_error if `cudaMalloc` fails
  * RMM_CUDA_TRY(cudaMalloc(&p, 100));
  *
@@ -176,14 +175,14 @@
  * equal to `cudaSuccess`.
  *
  *
- * Replaces usecases such as:
- * ```
+ * Replaces use cases such as:
+ * ```cpp
  * auto status = cudaRuntimeApi(...);
  * assert(status == cudaSuccess);
  * ```
  *
  * Example:
- * ```
+ * ```cpp
  * RMM_ASSERT_CUDA_SUCCESS(cudaRuntimeApi(...));
  * ```
  *
