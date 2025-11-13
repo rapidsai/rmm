@@ -7,6 +7,8 @@ set -euo pipefail
 package_dir="python/rmm"
 
 source rapids-configure-sccache
+export SCCACHE_RECACHE=1
+
 source rapids-date-string
 source rapids-init-pip
 
