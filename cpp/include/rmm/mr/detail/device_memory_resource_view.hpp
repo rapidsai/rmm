@@ -126,11 +126,7 @@ class device_memory_resource_view {
    */
   [[nodiscard]] bool operator==(device_memory_resource_view const& other) const noexcept
   {
-    // If both pointers are null, they're equal
-    if (resource_ptr_ == nullptr && other.resource_ptr_ == nullptr) { return true; }
-    // If only one is null, they're not equal
-    if (resource_ptr_ == nullptr || other.resource_ptr_ == nullptr) { return false; }
-    // Otherwise, compare the resources they point to
+    // Compare the resources the views point to
     return resource_ptr_->is_equal(*other.resource_ptr_);
   }
 
