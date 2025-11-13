@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
+from typing import Any
+
 from rmm import pylibrmm
 from rmm.pylibrmm.stream import Stream
 
@@ -9,7 +11,7 @@ except ImportError:
     cupy = None
 
 
-def rmm_cupy_allocator(nbytes):
+def rmm_cupy_allocator(nbytes: int) -> Any:
     """
     A CuPy allocator that makes use of RMM.
 

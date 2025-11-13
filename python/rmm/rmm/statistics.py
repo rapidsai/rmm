@@ -1,15 +1,19 @@
-# SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 import inspect
 import threading
 from collections import defaultdict
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import wraps
-from typing import Literal
+from typing import Any, Literal, ParamSpec, TypeVar
 
 import rmm.mr
+
+P = ParamSpec("P")
+T = TypeVar("T")
 
 
 @dataclass
@@ -115,7 +119,7 @@ def pop_statistics() -> Statistics | None:
 
 
 @contextmanager
-def statistics():
+def statistics() -> Generator[None, None, None]:
     """Context to enable allocation statistics.
 
     If statistics have been enabled already (the current memory resource is an
@@ -175,7 +179,7 @@ class ProfilerRecords:
         memory_total: int = 0
         memory_peak: int = 0
 
-        def add(self, memory_total: int, memory_peak: int):
+        def add(self, memory_total: int, memory_peak: int) -> None:
             self.num_calls += 1
             self.memory_total += memory_total
             self.memory_peak = max(self.memory_peak, memory_peak)
@@ -273,20 +277,55 @@ def _get_descriptive_name_of_object(obj: object) -> str:
     A string including filename, line number, and object name.
     """
 
-    obj = inspect.unwrap(obj)
-    _, linenumber = inspect.getsourcelines(obj)
-    filepath = inspect.getfile(obj)
-    return f"{filepath}:{linenumber}({obj.__qualname__})"
+    unwrapped: Any = inspect.unwrap(obj)  # type: ignore[arg-type]
+    _, linenumber = inspect.getsourcelines(unwrapped)
+    filepath = inspect.getfile(unwrapped)
+    return f"{filepath}:{linenumber}({unwrapped.__qualname__})"
 
 
 default_profiler_records = ProfilerRecords()
+
+
+class ProfilerContext:
+    """Context manager and decorator for profiling memory usage."""
+
+    def __init__(self, records: ProfilerRecords, name: str) -> None:
+        self._records = records
+        self._name = name
+
+    def __call__(self, func: Callable[P, T]) -> Callable[P, T]:
+        _name = self._name or _get_descriptive_name_of_object(func)
+
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+            push_statistics()
+            try:
+                return func(*args, **kwargs)
+            finally:
+                if (stats := pop_statistics()) is not None:
+                    self._records.add(name=_name, data=stats)
+
+        return wrapper
+
+    def __enter__(self) -> "ProfilerContext":
+        if not self._name:
+            raise ValueError(
+                "When profiler is used as a context manager, "
+                "a name must be provided"
+            )
+        push_statistics()
+        return self
+
+    def __exit__(self, *exc: Any) -> None:
+        if (stats := pop_statistics()) is not None:
+            self._records.add(name=self._name, data=stats)
 
 
 def profiler(
     *,
     records: ProfilerRecords = default_profiler_records,
     name: str = "",
-):
+) -> ProfilerContext:
     """Decorator and context to profile function or code block.
 
     If statistics are enabled (the current memory resource is an
@@ -306,34 +345,4 @@ def profiler(
         is allowed. In this case, the name is the filename, line number, and
         function name.
     """
-
-    class ProfilerContext:
-        def __call__(self, func: callable) -> callable:
-            _name = name or _get_descriptive_name_of_object(func)
-
-            @wraps(func)
-            def wrapper(*args, **kwargs):
-                push_statistics()
-                try:
-                    return func(*args, **kwargs)
-                finally:
-                    if (stats := pop_statistics()) is not None:
-                        records.add(name=_name, data=stats)
-
-            return wrapper
-
-        def __enter__(self):
-            if not name:
-                raise ValueError(
-                    "When profiler is used as a context manager, "
-                    "a name must be provided"
-                )
-            push_statistics()
-            return self
-
-        def __exit__(self, *exc):
-            if (stats := pop_statistics()) is not None:
-                records.add(name=name, data=stats)
-            return False
-
-    return ProfilerContext()
+    return ProfilerContext(records, name)

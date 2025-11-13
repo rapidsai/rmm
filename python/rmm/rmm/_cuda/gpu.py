@@ -1,5 +1,7 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
+
+from typing import Any
 
 from cuda.bindings import driver, runtime
 
@@ -15,12 +17,14 @@ class CUDARuntimeError(RuntimeError):
             f"{name.decode()}: {msg.decode()}"
         )
 
-    def __reduce__(self):
+    def __reduce__(
+        self,
+    ) -> tuple[type["CUDARuntimeError"], tuple[runtime.cudaError_t]]:
         return (type(self), (self.status,))
 
 
 class CUDADriverError(RuntimeError):
-    def __init__(self, status: driver.CUresult):
+    def __init__(self, status: driver.CUresult) -> None:
         self.status = status
 
         _, name = driver.cuGetErrorName(status)
@@ -30,11 +34,13 @@ class CUDADriverError(RuntimeError):
             f"{name.decode()}: {msg.decode()}"
         )
 
-    def __reduce__(self):
+    def __reduce__(
+        self,
+    ) -> tuple[type["CUDADriverError"], tuple[driver.CUresult]]:
         return (type(self), (self.status,))
 
 
-def driverGetVersion():
+def driverGetVersion() -> int:
     """
     Returns in the latest version of CUDA supported by the driver.
     The version is returned as (1000 major + 10 minor). For example,
@@ -50,7 +56,7 @@ def driverGetVersion():
     return version
 
 
-def getDevice():
+def getDevice() -> int:
     """
     Get the current CUDA device
     """
@@ -60,7 +66,7 @@ def getDevice():
     return device
 
 
-def setDevice(device: int):
+def setDevice(device: int) -> None:
     """
     Set the current CUDA device
 
@@ -74,7 +80,7 @@ def setDevice(device: int):
         raise CUDARuntimeError(status)
 
 
-def runtimeGetVersion():
+def runtimeGetVersion() -> int:
     """
     Returns the version number of the local CUDA runtime.
 
@@ -90,7 +96,7 @@ def runtimeGetVersion():
     return version
 
 
-def getDeviceCount():
+def getDeviceCount() -> int:
     """
     Returns the number of devices with compute capability greater or
     equal to 2.0 that are available for execution.
@@ -104,7 +110,7 @@ def getDeviceCount():
     return count
 
 
-def getDeviceAttribute(attr: runtime.cudaDeviceAttr, device: int):
+def getDeviceAttribute(attr: runtime.cudaDeviceAttr, device: int) -> int:
     """
     Returns information about the device.
 
@@ -124,7 +130,7 @@ def getDeviceAttribute(attr: runtime.cudaDeviceAttr, device: int):
     return value
 
 
-def getDeviceProperties(device: int):
+def getDeviceProperties(device: int) -> Any:
     """
     Returns information about the compute-device.
 
@@ -142,7 +148,7 @@ def getDeviceProperties(device: int):
     return prop
 
 
-def deviceGetName(device: int):
+def deviceGetName(device: int) -> str:
     """
     Returns an identifier string for the device.
 

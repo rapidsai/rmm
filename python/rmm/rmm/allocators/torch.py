@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023-2024, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 rmm_torch_allocator = None
@@ -18,7 +18,7 @@ else:
         # is pure Python and will therefore be in the source directory.
         # Instead, we search relative to an arbitrary file in the compiled
         # package. We use the librmm._logger module because it is small.
-        from rmm.librmm import _logger
+        from rmm.librmm import _logger  # type: ignore[attr-defined]
 
         sofile = pathlib.Path(_logger.__file__).parent / "_torch_allocator.so"
         rmm_torch_allocator = CUDAPluggableAllocator(
