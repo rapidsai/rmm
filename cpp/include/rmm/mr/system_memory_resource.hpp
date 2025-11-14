@@ -35,7 +35,7 @@ static bool is_system_memory_supported(cuda_device_id device_id)
 }  // namespace detail
 
 /**
- * @addtogroup device_memory_resources
+ * @addtogroup memory_resources
  * @{
  * @file
  */
