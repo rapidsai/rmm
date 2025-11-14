@@ -127,7 +127,6 @@ module = [
     "cupy.*",
     "numba.*",
     "torch.*",
-    "rmm.pylibrmm.*",
     "rmm.librmm.*",
     "librmm"
 ]
