@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Generator
-from typing import Any
 
 import pytest
 
 import rmm
+import rmm.mr
 import rmm.statistics
 
 
@@ -22,7 +22,7 @@ def rmm_auto_reinitialize() -> Generator[None, None, None]:
 
 
 @pytest.fixture
-def stats_mr() -> Generator[Any, None, None]:
+def stats_mr() -> Generator[rmm.mr.StatisticsResourceAdaptor, None, None]:
     """Fixture that makes a StatisticsResourceAdaptor available to the test"""
     with rmm.statistics.statistics():
         yield rmm.mr.get_current_device_resource()
