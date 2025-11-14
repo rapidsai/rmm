@@ -1,10 +1,10 @@
-# SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 import rmm
 
 
-def test_version_constants_are_populated():
+def test_version_constants_are_populated() -> None:
     # __git_commit__ will only be non-empty in a built distribution
     assert isinstance(rmm.__git_commit__, str)
 
