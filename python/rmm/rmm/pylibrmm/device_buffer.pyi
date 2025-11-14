@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Buffer
-from typing import Any, NotRequired, Optional, Protocol, TypedDict, overload
+from typing import Any, Optional, Protocol, TypedDict, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -16,8 +16,10 @@ class _CUDAArrayInterface(TypedDict):
     typestr: str
     version: int
     # optional
-    strides: NotRequired[tuple[int, ...] | None]
-    descr: NotRequired[list[tuple]]
+    # TODO: add NotRequired for strides and descr
+    # when we require Python 3.11
+    strides: tuple[int, ...] | None
+    descr: list[tuple]
 
 class SupportsCUDAArrayInterface(Protocol):
     """Protocol for objects that implement the CUDA array interface."""
