@@ -13,7 +13,7 @@ rapids-print-env
 
 rapids-logger "Begin cpp build"
 
-sccache --zero-stats
+sccache --stop-server 2>/dev/null || true
 
 RAPIDS_PACKAGE_VERSION=$(rapids-generate-version)
 export RAPIDS_PACKAGE_VERSION
