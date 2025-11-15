@@ -40,6 +40,7 @@ option(BUILD_SHARED_LIBS "Build RMM shared libraries" ON)
 option(RMM_ENABLE_LEGACY_MR_INTERFACE "Enable legacy memory resource interface" ON)
 option(RMM_DEPRECATE_LEGACY_MR_INTERFACE
        "Enable deprecation warnings for legacy memory resource interface" ON)
+option(RMM_DEPRECATE_MR_DEVICE_HEADERS "Enable deprecation warnings for rmm/mr/device/* headers" ON)
 set(RMM_LOGGING_LEVEL
     "INFO"
     CACHE STRING "Choose the logging level.")
@@ -52,6 +53,7 @@ message(VERBOSE "RMM: Build with NVTX support: ${RMM_NVTX}")
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 message(STATUS "RMM: Legacy MR interface enabled: ${RMM_ENABLE_LEGACY_MR_INTERFACE}")
 message(STATUS "RMM: Legacy MR interface deprecated: ${RMM_DEPRECATE_LEGACY_MR_INTERFACE}")
+message(STATUS "RMM: Legacy rmm/mr/device headers deprecated: ${RMM_DEPRECATE_MR_DEVICE_HEADERS}")
 
 # cudart can be linked statically or dynamically
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
@@ -138,6 +140,11 @@ endif()
 # Control legacy MR interface deprecation warnings
 if(RMM_DEPRECATE_LEGACY_MR_INTERFACE)
   target_compile_definitions(rmm PUBLIC RMM_DEPRECATE_LEGACY_MR_INTERFACE)
+endif()
+
+# Control rmm/mr/device header deprecation warnings
+if(RMM_DEPRECATE_MR_DEVICE_HEADERS)
+  target_compile_definitions(rmm PUBLIC RMM_DEPRECATE_MR_DEVICE_HEADERS=1)
 endif()
 
 set(RMM_CXX_FLAGS -Wall -Werror -Wextra -Wno-unknown-pragmas -Wno-error=deprecated-declarations)
