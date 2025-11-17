@@ -40,7 +40,6 @@
 /**
  * @defgroup memory_resources Memory Resources
  * @defgroup memory_resource_adaptors Memory Resource Adaptors
- * @defgroup host_memory_resources Host Memory Resources
  * @defgroup cuda_device_management CUDA Device Management
  * @defgroup cuda_streams CUDA Streams
  * @defgroup data_containers Data Containers

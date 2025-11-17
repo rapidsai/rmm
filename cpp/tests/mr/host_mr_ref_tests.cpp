@@ -3,19 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "../../byte_literals.hpp"
+#include "../byte_literals.hpp"
 
 #include <rmm/aligned.hpp>
 #include <rmm/detail/cuda_memory_resource.hpp>
-
-// Suppress deprecation warnings for testing deprecated functionality
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-
-#include <rmm/mr/host/new_delete_resource.hpp>
-#include <rmm/mr/host/pinned_memory_resource.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -87,15 +78,9 @@ struct MRRefTest : public ::testing::Test {
   }
 };
 
-using resources = ::testing::Types<rmm::mr::new_delete_resource,
-                                   rmm::mr::pinned_memory_resource,
-                                   rmm::mr::pinned_host_memory_resource>;
+using resources = ::testing::Types<rmm::mr::pinned_host_memory_resource>;
 
 // static property checks
-static_assert(
-  rmm::detail::polyfill::resource_with<rmm::mr::new_delete_resource, cuda::mr::host_accessible>);
-static_assert(
-  rmm::detail::polyfill::resource_with<rmm::mr::pinned_memory_resource, cuda::mr::host_accessible>);
 static_assert(rmm::detail::polyfill::resource_with<rmm::mr::pinned_host_memory_resource,
                                                    cuda::mr::host_accessible>);
 
@@ -265,16 +250,6 @@ TYPED_TEST(MRRefTest, UnsupportedAlignmentTest)
   }
 }
 
-TEST(PinnedResource, isPinned)
-{
-  rmm::mr::pinned_memory_resource mr;
-  rmm::host_resource_ref ref{mr};
-  void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = ref.allocate_sync(100));
-  EXPECT_TRUE(is_pinned_memory(ptr));
-  EXPECT_NO_THROW(ref.deallocate_sync(ptr, 100));
-}
-
 TEST(PinnedHostResource, isPinned)
 {
   rmm::mr::pinned_host_memory_resource mr;
@@ -285,7 +260,3 @@ TEST(PinnedHostResource, isPinned)
   EXPECT_NO_THROW(ref.deallocate_sync(ptr, 100));
 }
 }  // namespace rmm::test
-
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic pop
-#endif

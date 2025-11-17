@@ -18,8 +18,7 @@ host <-> device memory transfers, or using a device memory pool sub-allocator to
 dynamic device memory allocation.
 
 The goal of the RAPIDS Memory Manager (RMM) is to provide:
-- A common interface that allows customizing [device](#device_memory_resource) and
-  [host](#host_memory_resource) memory allocation
+- A common interface that allows customizing memory allocation on device and host
 - A collection of [implementations](#available-resources) of the interface
 - A collection of [data structures](#device-data-structures) that use the interface for memory allocation
 
@@ -202,13 +201,12 @@ The first goal of RMM is to provide a common interface for device and host memor
 This allows both _users_ and _implementers_ of custom allocation logic to program to a single
 interface.
 
-To this end, RMM defines two abstract interface classes:
-- [`rmm::mr::device_memory_resource`](#device_memory_resource) for device memory allocation
-- [`rmm::mr::host_memory_resource`](#host_memory_resource) for host memory allocation
+To this end, RMM defines the abstract interface class [`rmm::mr::device_memory_resource`](#device_memory_resource) for device memory allocation.
 
-These classes are based on the
-[`std::pmr::memory_resource`](https://en.cppreference.com/w/cpp/memory/memory_resource) interface
-class introduced in C++17 for polymorphic memory allocation.
+RMM is in the process of migrating to a design based on [CCCL's memory
+resource](https://nvidia.github.io/cccl/libcudacxx/extended_api/memory_resource.html).
+This design is based on concepts rather than inheritance from a virtual base
+class. The RMM documentation will be updated as this progresses.
 
 ## `device_memory_resource`
 
@@ -553,42 +551,6 @@ kernel<<<...,s.value()>>>(a.data()); // Pass raw pointer to underlying element i
 
 int32_t v = a.value(s); // Retrieves the value from device to host on stream `s`
 ```
-
-## `host_memory_resource`
-
-> **⚠️ DEPRECATED in 25.12**: `host_memory_resource`, `pinned_memory_resource`, and `new_delete_resource` are deprecated and will be removed in 26.02. Use `pinned_host_memory_resource` instead for pinned host memory allocations.
-
-`rmm::mr::host_memory_resource` is the base class that defines the interface for allocating and
-freeing host memory.
-
-Similar to `device_memory_resource`, it has two key functions for (de)allocation:
-
-1. `void* host_memory_resource::allocate(std::size_t bytes, std::size_t alignment)`
-   - Returns a pointer to an allocation of at least `bytes` bytes aligned to the specified
-     `alignment`
-
-2. `void host_memory_resource::deallocate(void* p, std::size_t bytes, std::size_t alignment)`
-   - Reclaims a previous allocation of size `bytes` pointed to by `p`.
-
-
-Unlike `device_memory_resource`, the `host_memory_resource` interface and behavior is identical to
-`std::pmr::memory_resource`.
-
-## Available Host Resources
-
-### `new_delete_resource`
-
-Uses the global `operator new` and `operator delete` to allocate host memory.
-
-### `pinned_memory_resource`
-
-Allocates "pinned" host memory using `cuda(Malloc/Free)Host`.
-
-## Host Data Structures
-
-RMM does not currently provide any data structures that interface with `host_memory_resource`.
-In the future, RMM will provide a similar host-side structure like `device_buffer` and an allocator
-that can be used with STL containers.
 
 ## Using RMM with Thrust
 
