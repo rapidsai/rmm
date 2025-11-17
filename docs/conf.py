@@ -228,6 +228,9 @@ autoclass_content = "init"
 nitpick_ignore = [
     ("py:class", "size_t"),
     ("py:class", "void"),
+    # Ignore the ParamSpec and TypeVar generics used by statistics.
+    ("py:class", "P"),
+    ("py:class", "rmm.statistics.T"),
 ]
 
 
