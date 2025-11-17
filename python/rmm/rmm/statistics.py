@@ -292,10 +292,10 @@ default_profiler_records = ProfilerRecords()
 
 class ProfilerContext:
     """Context manager and decorator for profiling memory usage.
-    
+
     This class can be used both as a decorator and as a context manager
     to profile memory allocations in functions or code blocks.
-    
+
     Parameters
     ----------
     records : ProfilerRecords
@@ -303,17 +303,17 @@ class ProfilerContext:
     name : str
         The name of the memory profile. Mandatory when used as a context
         manager. Optional when used as a decorator.
-    
+
     Examples
     --------
     As a decorator:
-    
+
     >>> @profiler()
     ... def my_function():
     ...     pass
-    
+
     As a context manager:
-    
+
     >>> with profiler(name="my_code_block"):
     ...     pass
     """
