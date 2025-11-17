@@ -182,13 +182,10 @@ ConfigureTest(ALIGNED_TEST mr/aligned_mr_tests.cpp)
 ConfigureTest(LIMITING_TEST mr/limiting_mr_tests.cpp)
 
 # host mr_ref tests
-ConfigureTest(HOST_MR_REF_TEST mr/host/mr_ref_tests.cpp)
+ConfigureTest(HOST_MR_REF_TEST mr/host_mr_ref_tests.cpp)
 
-# pinned mr tests
-ConfigureTest(PINNED_MR_TEST mr/host/pinned_mr_tests.cpp)
-
-# pinned pool mr tests
-ConfigureTest(PINNED_POOL_MR_TEST mr/host/pinned_pool_mr_tests.cpp)
+# pinned host pool mr tests
+ConfigureTest(PINNED_HOST_POOL_MR_TEST mr/pinned_host_pool_mr_tests.cpp)
 
 # CUDA stream tests
 ConfigureTest(CUDA_STREAM_TEST cuda_stream_tests.cpp cuda_stream_pool_tests.cpp)
