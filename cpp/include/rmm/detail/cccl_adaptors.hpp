@@ -23,45 +23,6 @@ class cccl_resource_ref : public ResourceType {
 
   cccl_resource_ref(base&& other) : base(std::move(other)) {}
 
-#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
-#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
-  [[deprecated("This function is deprecated. Use allocate_sync(std::size_t bytes) instead.")]]
-#endif
-  void* allocate(std::size_t bytes)
-  {
-    return this->allocate_sync(bytes);
-  }
-
-#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
-  [[deprecated(
-    "This function is deprecated. Use allocate_sync(std::size_t bytes, std::size_t alignment) "
-    "instead.")]]
-#endif
-  void* allocate(std::size_t bytes, std::size_t alignment)
-  {
-    return this->allocate_sync(bytes, alignment);
-  }
-
-#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
-  [[deprecated(
-    "This function is deprecated. Use deallocate_sync(void* ptr, std::size_t bytes) instead.")]]
-#endif
-  void deallocate(void* ptr, std::size_t bytes) noexcept
-  {
-    return this->deallocate_sync(ptr, bytes);
-  }
-
-#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
-  [[deprecated(
-    "This function is deprecated. Use deallocate_sync(void* ptr, std::size_t bytes, std::size_t "
-    "alignment) instead.")]]
-#endif
-  void deallocate(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
-  {
-    return this->deallocate_sync(ptr, bytes, alignment);
-  }
-#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
-
   void* allocate_sync(std::size_t bytes) { return base::allocate_sync(bytes); }
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment)
@@ -89,89 +50,6 @@ class cccl_async_resource_ref : public ResourceType {
 
   cccl_async_resource_ref(base const& other) : base(other) {}
   cccl_async_resource_ref(base&& other) : base(std::move(other)) {}
-
-#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
-#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
-  [[deprecated("This function is deprecated. Use allocate_sync(std::size_t bytes) instead.")]]
-#endif
-  void* allocate(std::size_t bytes)
-  {
-    return this->allocate_sync(bytes);
-  }
-
-#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
-  [[deprecated(
-    "This function is deprecated. Use allocate_sync(std::size_t bytes, std::size_t alignment) "
-    "instead.")]]
-#endif
-  void* allocate(std::size_t bytes, std::size_t alignment)
-  {
-    return this->allocate_sync(bytes, alignment);
-  }
-
-#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
-  [[deprecated(
-    "This function is deprecated. Use deallocate_sync(void* ptr, std::size_t bytes) instead.")]]
-#endif
-  void deallocate(void* ptr, std::size_t bytes) noexcept
-  {
-    return this->deallocate_sync(ptr, bytes);
-  }
-
-#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
-  [[deprecated(
-    "This function is deprecated. Use deallocate_sync(void* ptr, std::size_t bytes, std::size_t "
-    "alignment) instead.")]]
-#endif
-  void deallocate(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
-  {
-    return this->deallocate_sync(ptr, bytes, alignment);
-  }
-
-#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
-  [[deprecated(
-    "This function is deprecated. Use allocate(cuda_stream_view stream, std::size_t bytes) "
-    "instead.")]]
-#endif
-  void* allocate_async(std::size_t bytes, cuda_stream_view stream)
-  {
-    return this->allocate(stream, bytes);
-  }
-
-#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
-  [[deprecated(
-    "This function is deprecated. Use allocate(cuda_stream_view stream, std::size_t bytes, "
-    "std::size_t alignment) instead.")]]
-#endif
-  void* allocate_async(std::size_t bytes, std::size_t alignment, cuda_stream_view stream)
-  {
-    return this->allocate(stream, bytes, alignment);
-  }
-
-#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
-  [[deprecated(
-    "This function is deprecated. Use deallocate(cuda_stream_view stream, void* ptr, std::size_t "
-    "bytes) instead.")]]
-#endif
-  void deallocate_async(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept
-  {
-    return this->deallocate(stream, ptr, bytes);
-  }
-
-#ifdef RMM_DEPRECATE_LEGACY_MR_INTERFACE
-  [[deprecated(
-    "This function is deprecated. Use deallocate(cuda_stream_view stream, void* ptr, std::size_t "
-    "bytes, std::size_t alignment) instead.")]]
-#endif
-  void deallocate_async(void* ptr,
-                        std::size_t bytes,
-                        std::size_t alignment,
-                        cuda_stream_view stream) noexcept
-  {
-    return this->deallocate(stream, ptr, bytes, alignment);
-  }
-
-#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
 
   void* allocate_sync(std::size_t bytes) { return base::allocate_sync(bytes); }
 

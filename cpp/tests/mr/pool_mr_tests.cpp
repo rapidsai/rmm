@@ -182,13 +182,6 @@ namespace test_properties {
 class fake_async_resource {
  public:
   // To model `async_resource`
-#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
-  static void* allocate(std::size_t, std::size_t) { return nullptr; }
-  static void deallocate(void* ptr, std::size_t, std::size_t) noexcept {}
-  static void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) { return nullptr; }
-  static void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref) noexcept {}
-#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
-
   void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
   void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept {}
   void* allocate(cuda_stream_view, std::size_t, std::size_t) { return nullptr; }

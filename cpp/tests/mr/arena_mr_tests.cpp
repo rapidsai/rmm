@@ -46,16 +46,6 @@ class mock_memory_resource_interface {
 
 class mock_memory_resource : public mock_memory_resource_interface {
  public:
-#ifdef RMM_ENABLE_LEGACY_MR_INTERFACE
-  MOCK_METHOD(void*, allocate, (std::size_t, std::size_t));
-  MOCK_METHOD(void, deallocate, (void*, std::size_t, std::size_t), (noexcept));
-  MOCK_METHOD(void*, allocate_async, (std::size_t, std::size_t, cuda::stream_ref));
-  MOCK_METHOD(void,
-              deallocate_async,
-              (void*, std::size_t, std::size_t, cuda::stream_ref),
-              (noexcept));
-#endif  // RMM_ENABLE_LEGACY_MR_INTERFACE
-
   MOCK_METHOD(void*, allocate_sync, (std::size_t, std::size_t));
   MOCK_METHOD(void, deallocate_sync, (void*, std::size_t, std::size_t), (noexcept));
   MOCK_METHOD(void*, allocate, (cuda_stream_view, std::size_t, std::size_t));
