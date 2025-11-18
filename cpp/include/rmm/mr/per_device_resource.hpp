@@ -105,7 +105,7 @@ namespace detail {
  *
  * @return Pointer to the static cuda_memory_resource used as the initial, default resource
  */
-RMM_EXPORT inline cuda_memory_resource* initial_resource()
+RMM_EXPORT inline device_memory_resource* initial_resource()
 {
   static cuda_memory_resource mr{};
   return &mr;
