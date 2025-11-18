@@ -37,7 +37,6 @@ option(BUILD_BENCHMARKS "Configure CMake to build (google) benchmarks" OFF)
 # This is mostly so that dependent libraries are configured in shared mode for downstream dependents
 # of RMM that get their common dependencies transitively.
 option(BUILD_SHARED_LIBS "Build RMM shared libraries" ON)
-option(RMM_DEPRECATE_MR_DEVICE_HEADERS "Enable deprecation warnings for rmm/mr/device/* headers" ON)
 set(RMM_LOGGING_LEVEL
     "INFO"
     CACHE STRING "Choose the logging level.")
@@ -48,7 +47,6 @@ message(VERBOSE "RMM: Build with NVTX support: ${RMM_NVTX}")
 # Set logging level. Must go before including gtests and benchmarks. Set the possible values of
 # build type for cmake-gui.
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
-message(STATUS "RMM: Legacy rmm/mr/device headers deprecated: ${RMM_DEPRECATE_MR_DEVICE_HEADERS}")
 
 # cudart can be linked statically or dynamically
 option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
@@ -125,11 +123,6 @@ target_compile_definitions(rmm PUBLIC LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESO
 # Enable NVTX if necessary
 if(RMM_NVTX)
   target_compile_definitions(rmm PUBLIC RMM_NVTX)
-endif()
-
-# Control rmm/mr/device header deprecation warnings
-if(RMM_DEPRECATE_MR_DEVICE_HEADERS)
-  target_compile_definitions(rmm PUBLIC RMM_DEPRECATE_MR_DEVICE_HEADERS=1)
 endif()
 
 set(RMM_CXX_FLAGS -Wall -Werror -Wextra -Wno-unknown-pragmas -Wno-error=deprecated-declarations)
