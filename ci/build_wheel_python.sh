@@ -10,6 +10,10 @@ source rapids-configure-sccache
 source rapids-date-string
 source rapids-init-pip
 
+# shellcheck disable=SC2155
+export SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX="rmm-${RAPIDS_CONDA_ARCH}-cuda${RAPIDS_CUDA_VERSION%%.*}-wheel-preprocessor-cache"
+export SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE=true
+
 rapids-generate-version > ./VERSION
 
 pushd "${package_dir}"
@@ -36,6 +40,7 @@ rapids-telemetry-record build.log rapids-pip-retry wheel \
   .
 
 rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
+sccache --stop-server >/dev/null 2>&1 || true
 
 EXCLUDE_ARGS=(
   --exclude "librapids_logger.so"

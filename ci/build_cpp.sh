@@ -35,6 +35,7 @@ rapids-telemetry-record build.log rattler-build build \
     "${RATTLER_CHANNELS[@]}"
 
 rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
+sccache --stop-server >/dev/null 2>&1 || true
 
 # remove build_cache directory
 rm -rf "$RAPIDS_CONDA_BLD_OUTPUT_DIR"/build_cache
