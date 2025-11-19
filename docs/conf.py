@@ -275,6 +275,9 @@ def on_missing_reference(app, env, node, contnode):
         "RMM_EXEC_CHECK_DISABLE",
         # Template types
         "Base",
+        # Unsupported by Breathe
+        # https://github.com/breathe-doc/breathe/issues/355
+        "deprecated",
     ]
     if (
         node["refdomain"] == "cpp"
