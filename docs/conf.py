@@ -280,7 +280,7 @@ def on_missing_reference(app, env, node, contnode):
         "deprecated",
     ]
     if (
-        node["refdomain"] == "cpp"
+        node["refdomain"] in ("std", "cpp")
         and (reftarget := node.get("reftarget")) is not None
     ):
         if any(toskip in reftarget for toskip in cpp_names_to_skip):
