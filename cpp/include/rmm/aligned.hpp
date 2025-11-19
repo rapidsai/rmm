@@ -21,7 +21,9 @@ namespace RMM_EXPORT rmm {
 /**
  * @brief Default alignment used for host memory allocated by RMM.
  *
+ * @deprecated This constant is deprecated in 25.12 and will be removed in 26.02.
  */
+[[deprecated("RMM_DEFAULT_HOST_ALIGNMENT is deprecated in 25.12 and will be removed in 26.02.")]]
 static constexpr std::size_t RMM_DEFAULT_HOST_ALIGNMENT{alignof(std::max_align_t)};
 
 /**
