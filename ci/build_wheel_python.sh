@@ -10,6 +10,9 @@ source rapids-configure-sccache
 source rapids-date-string
 source rapids-init-pip
 
+export SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX="rmm-${RAPIDS_CONDA_ARCH}-cuda${RAPIDS_CUDA_VERSION%%.*}-wheel-preprocessor-cache"
+export SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE=true
+
 rapids-generate-version > ./VERSION
 
 pushd "${package_dir}"
@@ -23,7 +26,7 @@ LIBRMM_WHEELHOUSE=$(RAPIDS_PY_WHEEL_NAME="librmm_${RAPIDS_PY_CUDA_SUFFIX}" rapid
 # are used when creating the isolated build environment.
 echo "librmm-${RAPIDS_PY_CUDA_SUFFIX} @ file://$(echo "${LIBRMM_WHEELHOUSE}"/librmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)" >> "${PIP_CONSTRAINT}"
 
-sccache --zero-stats
+sccache --stop-server 2>/dev/null || true
 
 # Creates artifacts directory for telemetry
 source rapids-telemetry-setup
@@ -36,6 +39,7 @@ rapids-telemetry-record build.log rapids-pip-retry wheel \
   .
 
 rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
+sccache --stop-server >/dev/null 2>&1 || true
 
 EXCLUDE_ARGS=(
   --exclude "librapids_logger.so"
