@@ -17,7 +17,7 @@ rapids-logger "Begin py build"
 
 CPP_CHANNEL=$(rapids-download-conda-from-github cpp)
 
-sccache --zero-stats
+sccache --stop-server 2>/dev/null || true
 
 RAPIDS_PACKAGE_VERSION=$(head -1 ./VERSION)
 export RAPIDS_PACKAGE_VERSION
@@ -40,6 +40,7 @@ rapids-telemetry-record build.log rattler-build build \
     "${RATTLER_CHANNELS[@]}"
 
 rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
+sccache --stop-server >/dev/null 2>&1 || true
 
 # See https://github.com/prefix-dev/rattler-build/issues/1424
 rm -rf "$RAPIDS_CONDA_BLD_OUTPUT_DIR"/build_cache

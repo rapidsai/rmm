@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 from collections.abc import Callable
+from typing import Any
 
 from rmm import mr
 from rmm.pylibrmm.memory_resource._memory_resource import _initialize
@@ -8,7 +9,7 @@ from rmm.pylibrmm.memory_resource._memory_resource import _initialize
 
 # Utility Functions
 class RMMError(Exception):
-    def __init__(self, errcode, msg):
+    def __init__(self, errcode: int, msg: str) -> None:
         self.errcode = errcode
         super(RMMError, self).__init__(msg)
 
@@ -17,14 +18,14 @@ _reinitialize_hooks: list[tuple[Callable, tuple, dict]] = []
 
 
 def reinitialize(
-    pool_allocator=False,
-    managed_memory=False,
-    initial_pool_size=None,
-    maximum_pool_size=None,
-    devices=0,
-    logging=False,
-    log_file_name=None,
-):
+    pool_allocator: bool = False,
+    managed_memory: bool = False,
+    initial_pool_size: int | str | None = None,
+    maximum_pool_size: int | str | None = None,
+    devices: int | list[int] = 0,
+    logging: bool = False,
+    log_file_name: str | None = None,
+) -> None:
     """
     Finalizes and then initializes RMM using the options passed. Using memory
     from a previous initialization of RMM is undefined behavior and should be
@@ -83,14 +84,16 @@ def reinitialize(
     )
 
 
-def is_initialized():
+def is_initialized() -> bool:
     """
     Returns True if RMM has been initialized, False otherwise.
     """
     return mr.is_initialized()
 
 
-def register_reinitialize_hook(func, *args, **kwargs):
+def register_reinitialize_hook(
+    func: Callable[..., Any], *args: Any, **kwargs: Any
+) -> Callable[..., Any]:
     """
     Add a function to the list of functions ("hooks") that will be
     called before :py:func:`~rmm.reinitialize()`.
@@ -121,7 +124,7 @@ def register_reinitialize_hook(func, *args, **kwargs):
     return func
 
 
-def unregister_reinitialize_hook(func):
+def unregister_reinitialize_hook(func: Callable[..., Any]) -> None:
     """
     Remove `func` from list of hooks that will be called before
     :py:func:`~rmm.reinitialize()`.

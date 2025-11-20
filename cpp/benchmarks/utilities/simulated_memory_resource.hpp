@@ -6,7 +6,7 @@
 
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/format.hpp>
-#include <rmm/mr/device/device_memory_resource.hpp>
+#include <rmm/mr/device_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
 
