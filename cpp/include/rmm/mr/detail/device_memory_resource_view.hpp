@@ -90,6 +90,8 @@ class device_memory_resource_view {
                                std::size_t bytes,
                                std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
+    RMM_EXPECTS(resource_ptr_ != nullptr,
+                "Cannot allocate from a default-constructed device_memory_resource_view");
     return resource_ptr_->allocate(stream, bytes, alignment);
   }
 
@@ -126,7 +128,11 @@ class device_memory_resource_view {
    */
   [[nodiscard]] bool operator==(device_memory_resource_view const& other) const noexcept
   {
-    // Compare the resources the views point to
+    // If both pointers are null, they're equal
+    if (resource_ptr_ == nullptr && other.resource_ptr_ == nullptr) { return true; }
+    // If only one is null, they're not equal
+    if (resource_ptr_ == nullptr || other.resource_ptr_ == nullptr) { return false; }
+    // Otherwise, compare the resources they point to
     return resource_ptr_->is_equal(*other.resource_ptr_);
   }
 
@@ -148,6 +154,17 @@ class device_memory_resource_view {
    * memory.
    */
   friend void get_property(device_memory_resource_view const&, cuda::mr::device_accessible) noexcept
+  {
+  }
+
+  /**
+   * @brief Enables the `cuda::mr::host_accessible` property
+   *
+   * This property declares that the wrapped `device_memory_resource` may provide host accessible
+   * memory. This is needed for resources like pinned_host_memory_resource that are both host and
+   * device accessible.
+   */
+  friend void get_property(device_memory_resource_view const&, cuda::mr::host_accessible) noexcept
   {
   }
 
