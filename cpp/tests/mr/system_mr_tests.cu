@@ -6,6 +6,7 @@
 #include "../byte_literals.hpp"
 
 #include <rmm/cuda_device.hpp>
+#include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/error.hpp>
 #include <rmm/mr/sam_headroom_memory_resource.hpp>
 #include <rmm/mr/system_memory_resource.hpp>
@@ -79,6 +80,10 @@ TEST(SystemMRSimpleTest, ThrowIfNotSupported)
 
 TEST_F(SystemMRTest, FirstTouchOnCPU)
 {
+  // On integrated memory systems, available device memory changes based on system/CPU activity
+  if (rmm::detail::device_integrated_memory::is_supported()) {
+    GTEST_SKIP() << "Skipping memory comparison test on integrated memory system";
+  }
   auto const free = rmm::available_device_memory().first;
   system_mr mr;
   void* ptr = mr.allocate_sync(size_mb);
@@ -90,6 +95,10 @@ TEST_F(SystemMRTest, FirstTouchOnCPU)
 
 TEST_F(SystemMRTest, FirstTouchOnGPU)
 {
+  // On integrated memory systems, available device memory changes based on system/CPU activity
+  if (rmm::detail::device_integrated_memory::is_supported()) {
+    GTEST_SKIP() << "Skipping memory comparison test on integrated memory system";
+  }
   auto const free = rmm::available_device_memory().first;
   system_mr mr;
   void* ptr = mr.allocate_sync(size_mb);
