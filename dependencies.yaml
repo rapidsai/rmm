@@ -106,8 +106,8 @@ files:
     includes:
       - test_python
 channels:
-  - rapidsai
   - rapidsai-nightly
+  - rapidsai
   - conda-forge
 dependencies:
   rapids_build_skbuild:
