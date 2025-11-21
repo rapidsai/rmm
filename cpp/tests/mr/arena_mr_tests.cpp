@@ -32,7 +32,6 @@ namespace {
 
 class mock_memory_resource : public rmm::mr::device_memory_resource {
  public:
-
   MOCK_METHOD(void*, do_allocate, (std::size_t, cuda_stream_view));
   MOCK_METHOD(void, do_deallocate, (void*, std::size_t, cuda_stream_view), (noexcept));
   MOCK_METHOD(void*, allocate_sync, (std::size_t, std::size_t));
@@ -67,8 +66,8 @@ auto const fake_address4 = reinterpret_cast<void*>(superblock::minimum_size * 2)
 struct ArenaTest : public ::testing::Test {
   void SetUp() override
   {
-    EXPECT_CALL(mock_mr, allocate_sync(arena_size, ::testing::_)).WillOnce(Return(fake_address3));
-    EXPECT_CALL(mock_mr, deallocate_sync(fake_address3, arena_size, ::testing::_));
+    EXPECT_CALL(mock_mr, do_allocate(arena_size, ::testing::_)).WillOnce(Return(fake_address3));
+    EXPECT_CALL(mock_mr, do_deallocate(fake_address3, arena_size, ::testing::_));
 
     global     = std::make_unique<global_arena>(mock_mr, arena_size);
     per_thread = std::make_unique<arena>(*global);
