@@ -90,5 +90,36 @@ static_assert(
   std::is_constructible_v<device_async_resource_ref, mr::device_memory_resource&>,
   "device_async_resource_ref must be constructible from device_memory_resource& (via bridge)");
 
+// Verify that RMM resource_ref types can be constructed from corresponding CCCL resource_ref types
+static_assert(
+  std::is_constructible_v<device_resource_ref,
+                          cuda::mr::synchronous_resource_ref<cuda::mr::device_accessible>>,
+  "device_resource_ref must be constructible from CCCL "
+  "synchronous_resource_ref<device_accessible>");
+static_assert(
+  std::is_constructible_v<device_async_resource_ref,
+                          cuda::mr::resource_ref<cuda::mr::device_accessible>>,
+  "device_async_resource_ref must be constructible from CCCL resource_ref<device_accessible>");
+static_assert(
+  std::is_constructible_v<host_resource_ref,
+                          cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible>>,
+  "host_resource_ref must be constructible from CCCL synchronous_resource_ref<host_accessible>");
+static_assert(
+  std::is_constructible_v<host_async_resource_ref,
+                          cuda::mr::resource_ref<cuda::mr::host_accessible>>,
+  "host_async_resource_ref must be constructible from CCCL resource_ref<host_accessible>");
+static_assert(
+  std::is_constructible_v<
+    host_device_resource_ref,
+    cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>>,
+  "host_device_resource_ref must be constructible from CCCL "
+  "synchronous_resource_ref<host_accessible, device_accessible>");
+static_assert(
+  std::is_constructible_v<
+    host_device_async_resource_ref,
+    cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>>,
+  "host_device_async_resource_ref must be constructible from CCCL resource_ref<host_accessible, "
+  "device_accessible>");
+
 /** @} */  // end of group
 }  // namespace RMM_NAMESPACE

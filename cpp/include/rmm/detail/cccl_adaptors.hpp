@@ -54,6 +54,27 @@ class cccl_resource_ref : private view_holder, public ResourceType {
   }
 
   /**
+   * @brief Constructs a resource reference from a CCCL resource_ref directly.
+   *
+   * This constructor enables interoperability with CCCL 3.2 resource_ref types,
+   * allowing RMM resource_ref types to be constructed from CCCL resource_ref types.
+   *
+   * @param ref A CCCL resource_ref of the appropriate type
+   */
+  cccl_resource_ref(ResourceType const& ref) : view_holder(), base(ref) {}
+
+  /**
+   * @brief Constructs a resource reference from a CCCL resource_ref directly (move).
+   *
+   * This constructor enables interoperability with CCCL 3.2 resource_ref types,
+   * allowing RMM resource_ref types to be constructed from CCCL resource_ref types
+   * using move semantics.
+   *
+   * @param ref A CCCL resource_ref of the appropriate type
+   */
+  cccl_resource_ref(ResourceType&& ref) : view_holder(), base(std::move(ref)) {}
+
+  /**
    * @brief Copy constructor that properly reconstructs the base to point to the new view.
    */
   cccl_resource_ref(cccl_resource_ref const& other)
@@ -141,6 +162,27 @@ class cccl_async_resource_ref : private view_holder, public ResourceType {
     : view_holder(&res), base(view_holder::view_)
   {
   }
+
+  /**
+   * @brief Constructs an async resource reference from a CCCL resource_ref directly.
+   *
+   * This constructor enables interoperability with CCCL 3.2 resource_ref types,
+   * allowing RMM async resource_ref types to be constructed from CCCL resource_ref types.
+   *
+   * @param ref A CCCL async resource_ref of the appropriate type
+   */
+  cccl_async_resource_ref(ResourceType const& ref) : view_holder(), base(ref) {}
+
+  /**
+   * @brief Constructs an async resource reference from a CCCL resource_ref directly (move).
+   *
+   * This constructor enables interoperability with CCCL 3.2 resource_ref types,
+   * allowing RMM async resource_ref types to be constructed from CCCL resource_ref types
+   * using move semantics.
+   *
+   * @param ref A CCCL async resource_ref of the appropriate type
+   */
+  cccl_async_resource_ref(ResourceType&& ref) : view_holder(), base(std::move(ref)) {}
 
   /**
    * @brief Copy constructor that properly reconstructs the base to point to the new view.
