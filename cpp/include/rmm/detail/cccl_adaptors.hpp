@@ -91,6 +91,23 @@ class cccl_resource_ref : private view_holder, public ResourceType {
   }
 
   /**
+   * @brief Conversion constructor from a cccl_resource_ref with a convertible ResourceType.
+   *
+   * This enables conversions like host_device_resource_ref -> device_resource_ref,
+   * where the source type has a superset of properties compared to the target type.
+   * The underlying CCCL resource_ref types handle the actual property compatibility check.
+   *
+   * @tparam OtherResourceType A CCCL resource_ref type that is convertible to ResourceType
+   * @param other The source resource_ref to convert from
+   */
+  template <typename OtherResourceType,
+            typename = std::enable_if_t<std::is_constructible_v<ResourceType, OtherResourceType>>>
+  cccl_resource_ref(cccl_resource_ref<OtherResourceType> const& other)
+    : view_holder(), base(static_cast<OtherResourceType const&>(other))
+  {
+  }
+
+  /**
    * @brief Copy assignment operator.
    */
   cccl_resource_ref& operator=(cccl_resource_ref const& other)
@@ -201,6 +218,23 @@ class cccl_async_resource_ref : private view_holder, public ResourceType {
    */
   cccl_async_resource_ref(cccl_async_resource_ref&& other) noexcept
     : view_holder(static_cast<view_holder&&>(other)), base(view_holder::view_)
+  {
+  }
+
+  /**
+   * @brief Conversion constructor from a cccl_async_resource_ref with a convertible ResourceType.
+   *
+   * This enables conversions like host_device_async_resource_ref -> device_async_resource_ref,
+   * where the source type has a superset of properties compared to the target type.
+   * The underlying CCCL resource_ref types handle the actual property compatibility check.
+   *
+   * @tparam OtherResourceType A CCCL async resource_ref type that is convertible to ResourceType
+   * @param other The source async resource_ref to convert from
+   */
+  template <typename OtherResourceType,
+            typename = std::enable_if_t<std::is_constructible_v<ResourceType, OtherResourceType>>>
+  cccl_async_resource_ref(cccl_async_resource_ref<OtherResourceType> const& other)
+    : view_holder(), base(static_cast<OtherResourceType const&>(other))
   {
   }
 
