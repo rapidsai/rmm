@@ -134,6 +134,13 @@ cdef extern from "rmm/mr/cuda_async_managed_memory_resource.hpp" \
         cuda_async_managed_memory_resource() except +
         cudaMemPool_t pool_handle() const
 
+cdef extern from "rmm/mr/cuda_async_pinned_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+
+    cdef cppclass cuda_async_pinned_memory_resource(device_memory_resource):
+        cuda_async_pinned_memory_resource() except +
+        cudaMemPool_t pool_handle() const
+
 cdef extern from "rmm/mr/cuda_async_memory_resource.hpp" \
         namespace \
         "rmm::mr::cuda_async_memory_resource" \
