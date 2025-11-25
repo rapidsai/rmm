@@ -26,4 +26,4 @@ rapids-pip-retry install \
     "$(echo "${LIBRMM_WHEELHOUSE}"/librmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)" \
     "$(echo "${RMM_WHEELHOUSE}"/rmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)[test]"
 
-python -m pytest ./python/rmm/rmm/tests
+timeout 15m python -m pytest ./python/rmm/rmm/tests
