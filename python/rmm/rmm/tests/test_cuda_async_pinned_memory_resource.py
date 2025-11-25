@@ -19,7 +19,7 @@ from rmm.pylibrmm.stream import Stream
 
 @pytest.mark.skipif(
     not _ASYNC_PINNED_MEMORY_SUPPORTED,
-    reason="CudaAsyncPinnedMemoryResource requires CUDA 13.0+",
+    reason="CudaAsyncPinnedMemoryResource requires CUDA 12.6+",
 )
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
@@ -33,7 +33,7 @@ def test_cuda_async_pinned_memory_resource(dtype, nelem, alloc):
 
 @pytest.mark.skipif(
     not _ASYNC_PINNED_MEMORY_SUPPORTED,
-    reason="CudaAsyncPinnedMemoryResource requires CUDA 13.0+",
+    reason="CudaAsyncPinnedMemoryResource requires CUDA 12.6+",
 )
 @pytest.mark.parametrize("nelems", _nelems)
 def test_cuda_async_pinned_memory_resource_stream(nelems):
@@ -48,7 +48,7 @@ def test_cuda_async_pinned_memory_resource_stream(nelems):
 
 @pytest.mark.skipif(
     not _ASYNC_PINNED_MEMORY_SUPPORTED,
-    reason="CudaAsyncPinnedMemoryResource requires CUDA 13.0+",
+    reason="CudaAsyncPinnedMemoryResource requires CUDA 12.6+",
 )
 def test_cuda_async_pinned_memory_resource_pool_handle():
     mr = rmm.mr.experimental.CudaAsyncPinnedMemoryResource()
@@ -59,7 +59,7 @@ def test_cuda_async_pinned_memory_resource_pool_handle():
 
 @pytest.mark.skipif(
     not _ASYNC_PINNED_MEMORY_SUPPORTED,
-    reason="CudaAsyncPinnedMemoryResource requires CUDA 13.0+",
+    reason="CudaAsyncPinnedMemoryResource requires CUDA 12.6+",
 )
 def test_cuda_async_pinned_memory_resource_host_access():
     """Test that pinned memory allocated by the resource is accessible from host."""
@@ -67,7 +67,7 @@ def test_cuda_async_pinned_memory_resource_host_access():
     rmm.mr.set_current_device_resource(mr)
 
     # Allocate a buffer
-    expected = np.full(100, 42, dtype="i4")
+    expected = np.full(100, 42, dtype="u1")
     dbuf = rmm.DeviceBuffer.to_device(expected)
 
     # Verify host can access the data

@@ -36,28 +36,47 @@ namespace mr {
 class cuda_async_pinned_memory_resource final : public device_memory_resource {
  public:
   /**
-   * @brief Constructs a cuda_async_pinned_memory_resource with the default pinned memory pool for
+   * @brief Constructs a cuda_async_pinned_memory_resource with a pinned memory pool for
    * the current device.
    *
-   * The default pinned memory pool is the pool that is created when the device is created.
+   * On CUDA 12.6-12.x, creates a new pinned memory pool using cudaMemPoolCreate.
+   * On CUDA 13.0+, uses the default pinned memory pool via cudaMemGetDefaultMemPool.
+   *
    * Pool properties such as the release threshold are not modified.
    *
-   * @throws rmm::logic_error if the CUDA version does not support `cudaMallocFromPoolAsync` with
-   * pinned memory pool
+   * @throws rmm::logic_error if the CUDA build version is less than 12.6
+   * @throws rmm::logic_error if the CUDA runtime version does not support pinned memory pools
+   * (requires CUDA 12.6 or higher)
    */
   cuda_async_pinned_memory_resource()
   {
-    // Check if pinned memory pools are supported
+#if !defined(CUDA_VERSION) || CUDA_VERSION < RMM_MIN_ASYNC_PINNED_ALLOC_CUDA_VERSION
+    RMM_FAIL(
+      "cuda_async_pinned_memory_resource requires CUDA 12.6 or higher. "
+      "This build was compiled with an older CUDA version.");
+#else
+    // Check if pinned memory pools are supported at runtime
     RMM_EXPECTS(rmm::detail::runtime_async_pinned_alloc::is_supported(),
-                "cuda_async_pinned_memory_resource requires CUDA 13.0 or higher");
+                "cuda_async_pinned_memory_resource requires CUDA 12.6 or higher runtime");
 
-#if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_ASYNC_PINNED_ALLOC_CUDA_VERSION
-    cudaMemPool_t pinned_pool_handle{};
+    pool_handle_.reset(new cudaMemPool_t{});
+
+#if CUDA_VERSION >= 13000
+    // CUDA 13.0+: Use the default pinned memory pool (no cleanup needed)
     cudaMemLocation location{.type = cudaMemLocationTypeDevice,
                              .id   = rmm::get_current_cuda_device().value()};
     RMM_CUDA_TRY(
-      cudaMemGetDefaultMemPool(&pinned_pool_handle, &location, cudaMemAllocationTypePinned));
-    pool_ = cuda_async_view_memory_resource{pinned_pool_handle};
+      cudaMemGetDefaultMemPool(pool_handle_.get(), &location, cudaMemAllocationTypePinned));
+#else
+    // CUDA 12.6-12.x: Create a new pinned memory pool (needs cleanup)
+    cudaMemPoolProps pool_props{};
+    pool_props.allocType     = cudaMemAllocationTypePinned;
+    pool_props.location.type = cudaMemLocationTypeDevice;
+    pool_props.location.id   = rmm::get_current_cuda_device().value();
+    RMM_CUDA_TRY(cudaMemPoolCreate(pool_handle_.get(), &pool_props));
+#endif
+
+    pool_ = cuda_async_view_memory_resource{*pool_handle_};
 #endif
   }
 
@@ -68,13 +87,30 @@ class cuda_async_pinned_memory_resource final : public device_memory_resource {
    */
   [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return pool_.pool_handle(); }
 
-  ~cuda_async_pinned_memory_resource() override {}
+  ~cuda_async_pinned_memory_resource() override                                          = default;
   cuda_async_pinned_memory_resource(cuda_async_pinned_memory_resource const&)            = delete;
   cuda_async_pinned_memory_resource(cuda_async_pinned_memory_resource&&)                 = delete;
   cuda_async_pinned_memory_resource& operator=(cuda_async_pinned_memory_resource const&) = delete;
   cuda_async_pinned_memory_resource& operator=(cuda_async_pinned_memory_resource&&)      = delete;
 
  private:
+  // Inline deleter: cleanup on CUDA 12.6-12.x, no-op on CUDA 13.0+
+  struct pool_deleter {
+    void operator()(cudaMemPool_t* pool) const
+    {
+      if (pool != nullptr && *pool != nullptr) {
+#if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_ASYNC_PINNED_ALLOC_CUDA_VERSION && \
+  CUDA_VERSION < 13000
+        // CUDA 12.6-12.x: Destroy the pool we created
+        cudaMemPoolDestroy(*pool);  // Ignore errors during destruction
+#endif
+        // CUDA 13.0+: Do nothing (using default pool managed by CUDA runtime)
+      }
+      delete pool;
+    }
+  };
+
+  std::unique_ptr<cudaMemPool_t, pool_deleter> pool_handle_;
   cuda_async_view_memory_resource pool_{};
 
   /**

@@ -22,7 +22,7 @@ class AsyncPinnedMRTest : public ::testing::Test {
   {
     if (!rmm::detail::runtime_async_pinned_alloc::is_supported()) {
       GTEST_SKIP() << "Skipping tests because cuda_async_pinned_memory_resource "
-                   << "requires CUDA 13.0 or higher and memory pool support.";
+                   << "requires CUDA 12.6 or higher and memory pool support.";
     }
   }
 };

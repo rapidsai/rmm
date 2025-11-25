@@ -28,7 +28,7 @@ namespace detail {
 /**
  * @brief Minimum CUDA driver version for stream-ordered pinned memory allocator support
  */
-#define RMM_MIN_ASYNC_PINNED_ALLOC_CUDA_VERSION 13000
+#define RMM_MIN_ASYNC_PINNED_ALLOC_CUDA_VERSION 12060
 
 /**
  * @brief Determine at runtime if the CUDA driver supports the stream-ordered
@@ -151,12 +151,11 @@ struct runtime_async_managed_alloc {
   }
 };
 
-/*
+/**
  * @brief Determine at runtime if the CUDA driver/runtime supports the stream-ordered
  * pinned memory allocator functions.
  *
- * Stream-ordered pinned memory pools were introduced in CUDA 12.6 but our
- * implementation requires features from CUDA 13.0 or higher.
+ * Stream-ordered pinned memory pools were introduced in CUDA 12.6.
  */
 struct runtime_async_pinned_alloc {
   static bool is_supported()
@@ -164,7 +163,7 @@ struct runtime_async_pinned_alloc {
     static auto supports_async_pinned_pool{[] {
       // Basic pool support required
       if (not runtime_async_alloc::is_supported()) { return false; }
-      // CUDA 13.0 or higher is required for async pinned memory pools
+      // CUDA 12.6 or higher is required for async pinned memory pools
       int cuda_driver_version{};
       auto driver_result = cudaDriverGetVersion(&cuda_driver_version);
       int cuda_runtime_version{};
