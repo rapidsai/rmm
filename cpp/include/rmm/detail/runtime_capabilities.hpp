@@ -146,5 +146,23 @@ struct runtime_async_managed_alloc {
   }
 };
 
+/**
+ * @brief Check if the current device is an integrated memory system.
+ *
+ * @return true if the device is an integrated memory system, false otherwise
+ */
+struct device_integrated_memory {
+  static bool is_supported()
+  {
+    static auto is_integrated{[] {
+      int integrated = 0;
+      auto result    = cudaDeviceGetAttribute(
+        &integrated, cudaDevAttrIntegrated, rmm::get_current_cuda_device().value());
+      return result == cudaSuccess and integrated == 1;
+    }()};
+    return is_integrated;
+  }
+};
+
 }  // namespace detail
 }  // namespace RMM_NAMESPACE
