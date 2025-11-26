@@ -36,7 +36,7 @@ class cccl_resource_ref : private view_holder, public ResourceType {
    * @param ptr Non-null pointer to a `device_memory_resource`
    */
   cccl_resource_ref(rmm::mr::device_memory_resource* ptr)
-    : view_holder(ptr), base(view_holder::view_)
+    : view_holder{ptr}, base{view_holder::view_}
   {
   }
 
@@ -49,7 +49,7 @@ class cccl_resource_ref : private view_holder, public ResourceType {
    * @param res Reference to a `device_memory_resource`
    */
   cccl_resource_ref(rmm::mr::device_memory_resource& res)
-    : view_holder(&res), base(view_holder::view_)
+    : view_holder{&res}, base{view_holder::view_}
   {
   }
 
@@ -61,7 +61,7 @@ class cccl_resource_ref : private view_holder, public ResourceType {
    *
    * @param ref A CCCL resource_ref of the appropriate type
    */
-  cccl_resource_ref(ResourceType const& ref) : view_holder(), base(ref) {}
+  cccl_resource_ref(ResourceType const& ref) : view_holder{}, base{ref} {}
 
   /**
    * @brief Constructs a resource reference from a CCCL resource_ref directly (move).
@@ -72,13 +72,13 @@ class cccl_resource_ref : private view_holder, public ResourceType {
    *
    * @param ref A CCCL resource_ref of the appropriate type
    */
-  cccl_resource_ref(ResourceType&& ref) : view_holder(), base(std::move(ref)) {}
+  cccl_resource_ref(ResourceType&& ref) : view_holder{}, base{std::move(ref)} {}
 
   /**
    * @brief Copy constructor that properly reconstructs the base to point to the new view.
    */
   cccl_resource_ref(cccl_resource_ref const& other)
-    : view_holder(static_cast<view_holder const&>(other)), base(view_holder::view_)
+    : view_holder{static_cast<view_holder const&>(other)}, base{view_holder::view_}
   {
   }
 
@@ -86,7 +86,7 @@ class cccl_resource_ref : private view_holder, public ResourceType {
    * @brief Move constructor that properly reconstructs the base to point to the new view.
    */
   cccl_resource_ref(cccl_resource_ref&& other) noexcept
-    : view_holder(static_cast<view_holder&&>(other)), base(view_holder::view_)
+    : view_holder{static_cast<view_holder&&>(other)}, base{view_holder::view_}
   {
   }
 
@@ -103,7 +103,7 @@ class cccl_resource_ref : private view_holder, public ResourceType {
   template <typename OtherResourceType,
             typename = std::enable_if_t<std::is_constructible_v<ResourceType, OtherResourceType>>>
   cccl_resource_ref(cccl_resource_ref<OtherResourceType> const& other)
-    : view_holder(), base(static_cast<OtherResourceType const&>(other))
+    : view_holder{}, base{static_cast<OtherResourceType const&>(other)}
   {
   }
 
@@ -163,7 +163,7 @@ class cccl_async_resource_ref : private view_holder, public ResourceType {
    * @param ptr Non-null pointer to a `device_memory_resource`
    */
   cccl_async_resource_ref(rmm::mr::device_memory_resource* ptr)
-    : view_holder(ptr), base(view_holder::view_)
+    : view_holder{ptr}, base{view_holder::view_}
   {
   }
 
@@ -176,7 +176,7 @@ class cccl_async_resource_ref : private view_holder, public ResourceType {
    * @param res Reference to a `device_memory_resource`
    */
   cccl_async_resource_ref(rmm::mr::device_memory_resource& res)
-    : view_holder(&res), base(view_holder::view_)
+    : view_holder{&res}, base{view_holder::view_}
   {
   }
 
@@ -188,7 +188,7 @@ class cccl_async_resource_ref : private view_holder, public ResourceType {
    *
    * @param ref A CCCL async resource_ref of the appropriate type
    */
-  cccl_async_resource_ref(ResourceType const& ref) : view_holder(), base(ref) {}
+  cccl_async_resource_ref(ResourceType const& ref) : view_holder{}, base{ref} {}
 
   /**
    * @brief Constructs an async resource reference from a CCCL resource_ref directly (move).
@@ -199,7 +199,7 @@ class cccl_async_resource_ref : private view_holder, public ResourceType {
    *
    * @param ref A CCCL async resource_ref of the appropriate type
    */
-  cccl_async_resource_ref(ResourceType&& ref) : view_holder(), base(std::move(ref)) {}
+  cccl_async_resource_ref(ResourceType&& ref) : view_holder{}, base{std::move(ref)} {}
 
   /**
    * @brief Copy constructor that properly reconstructs the base to point to the new view.
@@ -209,7 +209,7 @@ class cccl_async_resource_ref : private view_holder, public ResourceType {
    * to point to our own view.
    */
   cccl_async_resource_ref(cccl_async_resource_ref const& other)
-    : view_holder(static_cast<view_holder const&>(other)), base(view_holder::view_)
+    : view_holder{static_cast<view_holder const&>(other)}, base{view_holder::view_}
   {
   }
 
@@ -217,7 +217,7 @@ class cccl_async_resource_ref : private view_holder, public ResourceType {
    * @brief Move constructor that properly reconstructs the base to point to the new view.
    */
   cccl_async_resource_ref(cccl_async_resource_ref&& other) noexcept
-    : view_holder(static_cast<view_holder&&>(other)), base(view_holder::view_)
+    : view_holder{static_cast<view_holder&&>(other)}, base{view_holder::view_}
   {
   }
 
@@ -234,7 +234,7 @@ class cccl_async_resource_ref : private view_holder, public ResourceType {
   template <typename OtherResourceType,
             typename = std::enable_if_t<std::is_constructible_v<ResourceType, OtherResourceType>>>
   cccl_async_resource_ref(cccl_async_resource_ref<OtherResourceType> const& other)
-    : view_holder(), base(static_cast<OtherResourceType const&>(other))
+    : view_holder{}, base{static_cast<OtherResourceType const&>(other)}
   {
   }
 
