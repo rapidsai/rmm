@@ -6,9 +6,9 @@
 
 Achieving optimal performance in GPU-accelerated applications frequently requires customizing memory allocation strategies. For example:
 
-- Using **pinned host memory** for faster asynchronous CPU ↔ GPU transfers
 - Using **memory pools** to reduce the overhead of dynamic allocation
 - Using **managed memory** to work with datasets larger than GPU memory
+- Using **pinned host memory** for faster asynchronous CPU ↔ GPU transfers
 - Customizing allocation strategies for specific workload patterns
 
 RMM provides the building blocks to implement these optimizations through a unified interface.
@@ -16,16 +16,16 @@ RMM provides the building blocks to implement these optimizations through a unif
 ## Key Features
 
 ### Unified Interface
-- Common abstraction for device memory allocation
-- Compatible with C++17 `std::pmr::memory_resource` design
+- Common abstraction for device memory allocation based on CCCL's memory resource design
 - Stream-ordered allocation for asynchronous GPU workflows
 
 ### Flexible Memory Resources
-- Multiple built-in memory resource implementations
-- Composable design - wrap resources to add functionality
+- Multiple built-in base memory resource implementations
+- Composable design - wrap resources with *adaptors* to add functionality
 - Easy integration with CUDA libraries (cuDF, PyTorch, CuPy, Numba)
 
-### Efficient Data Structures
+### Efficient Containers
+- RAII-friendly containers avoid problems arising from managing raw allocations such as memory leaks or improper stream ordering
 - `device_buffer`: Untyped device memory allocation
 - `device_uvector<T>`: Typed vector of device memory
 - `device_scalar<T>`: Single element in device memory
