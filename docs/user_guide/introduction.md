@@ -43,8 +43,9 @@ RMM provides the building blocks to implement these optimizations through a unif
 import rmm
 import cupy as cp
 
-# Use CUDA async memory pool (recommended)
-rmm.reinitialize(pool_allocator=False)
+# Use CUDA async memory resource (recommended)
+mr = rmm.mr.CudaAsyncMemoryResource()
+rmm.mr.set_current_device_resource(mr)
 
 # Allocate device memory
 buffer = rmm.DeviceBuffer(size=1024)
@@ -138,7 +139,8 @@ import rmm
 import torch
 from rmm.allocators.torch import rmm_torch_allocator
 
-rmm.reinitialize(pool_allocator=False)
+mr = rmm.mr.CudaAsyncMemoryResource()
+rmm.mr.set_current_device_resource(mr)
 torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
 ```
 
@@ -146,9 +148,11 @@ torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
 
 ```python
 import rmm
+import cupy
 from rmm.allocators.cupy import rmm_cupy_allocator
 
-rmm.reinitialize(pool_allocator=False)
+mr = rmm.mr.CudaAsyncMemoryResource()
+rmm.mr.set_current_device_resource(mr)
 cupy.cuda.set_allocator(rmm_cupy_allocator)
 ```
 
@@ -193,11 +197,13 @@ cuda.set_memory_manager(RMMNumbaManager)
 
 ### Recommended Defaults
 
-For most applications, use `cuda_async_memory_resource`:
+For most applications, use `CudaAsyncMemoryResource`:
 
 ```python
 import rmm
-rmm.reinitialize(pool_allocator=False)  # Uses async MR
+
+mr = rmm.mr.CudaAsyncMemoryResource()
+rmm.mr.set_current_device_resource(mr)
 ```
 
 **Why?**

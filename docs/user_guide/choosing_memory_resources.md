@@ -32,9 +32,6 @@ import rmm
 
 # Set async memory resource as default
 rmm.mr.set_current_device_resource(rmm.mr.CudaAsyncMemoryResource())
-
-# Or use rmm.reinitialize for convenience
-rmm.reinitialize(pool_allocator=False, devices=[0])
 ```
 
 **When to use:**

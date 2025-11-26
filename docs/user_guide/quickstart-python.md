@@ -7,7 +7,8 @@ import rmm
 
 # RMM initializes with CudaMemoryResource by default
 # For better performance, use the async memory resource
-rmm.reinitialize(pool_allocator=False)  # Uses CudaAsyncMemoryResource
+mr = rmm.mr.CudaAsyncMemoryResource()
+rmm.mr.set_current_device_resource(mr)
 
 # Allocate device memory
 buffer = rmm.DeviceBuffer(size=1024)  # 1024 bytes
@@ -31,10 +32,11 @@ print(host_copy)  # [1. 2. 3. 4.]
 import rmm
 
 # Create a memory pool with 1 GiB initial size
-rmm.reinitialize(
-    pool_allocator=True,
+pool = rmm.mr.PoolMemoryResource(
+    rmm.mr.CudaMemoryResource(),
     initial_pool_size=2**30  # 1 GiB
 )
+rmm.mr.set_current_device_resource(pool)
 
 # All allocations now use the pool
 buffer = rmm.DeviceBuffer(size=1024)
@@ -45,20 +47,13 @@ buffer = rmm.DeviceBuffer(size=1024)
 ```python
 import rmm
 
-# Option 1: Use rmm.reinitialize (simple)
-rmm.reinitialize(
-    pool_allocator=False,  # Use async MR (recommended)
-    managed_memory=False,  # Don't use managed memory
-    devices=[0]  # Configure device 0
-)
-
-# Option 2: Set memory resource directly (more control)
+# Use the async memory resource (recommended)
 mr = rmm.mr.CudaAsyncMemoryResource()
 rmm.mr.set_current_device_resource(mr)
 
-# Option 3: Use a pool wrapping async MR
+# Or use a pool wrapping CudaMemoryResource
 pool = rmm.mr.PoolMemoryResource(
-    rmm.mr.CudaAsyncMemoryResource(),
+    rmm.mr.CudaMemoryResource(),
     initial_pool_size=2**30,  # 1 GiB
     maximum_pool_size=2**32   # 4 GiB
 )
@@ -73,7 +68,8 @@ import cupy as cp
 from rmm.allocators.cupy import rmm_cupy_allocator
 
 # Configure RMM
-rmm.reinitialize(pool_allocator=False)
+mr = rmm.mr.CudaAsyncMemoryResource()
+rmm.mr.set_current_device_resource(mr)
 
 # Set CuPy to use RMM
 cp.cuda.set_allocator(rmm_cupy_allocator)
@@ -91,7 +87,8 @@ from rmm.allocators.numba import RMMNumbaManager
 import rmm
 
 # Configure RMM
-rmm.reinitialize(pool_allocator=False)
+mr = rmm.mr.CudaAsyncMemoryResource()
+rmm.mr.set_current_device_resource(mr)
 
 # Set Numba to use RMM
 cuda.set_memory_manager(RMMNumbaManager)
@@ -121,7 +118,8 @@ import torch
 from rmm.allocators.torch import rmm_torch_allocator
 
 # Configure RMM
-rmm.reinitialize(pool_allocator=False)
+mr = rmm.mr.CudaAsyncMemoryResource()
+rmm.mr.set_current_device_resource(mr)
 
 # Set PyTorch to use RMM
 torch.cuda.memory.change_current_allocator(rmm_torch_allocator)

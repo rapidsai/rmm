@@ -70,9 +70,8 @@ array([1., 2., 3.])
 
 [CUDA Unified Memory](
   https://developer.nvidia.com/blog/unified-memory-cuda-beginners/
-), also known as managed memory, can be allocated using an
-`rmm.mr.ManagedMemoryResource` explicitly, or by calling `rmm.reinitialize`
-with `managed_memory=True`.
+), also known as managed memory, can be allocated by setting the current
+device resource to an `rmm.mr.ManagedMemoryResource`.
 
 A `DeviceBuffer` backed by managed memory or other
 migratable memory (such as
@@ -81,7 +80,7 @@ memory) may be prefetched to a specified device, for example to reduce or elimin
 
 ```python
 >>> import rmm
->>> rmm.reinitialize(managed_memory=True)
+>>> rmm.mr.set_current_device_resource(rmm.mr.ManagedMemoryResource())
 >>> buf = rmm.DeviceBuffer(size=100)
 >>> buf.prefetch()
 ```
@@ -92,7 +91,7 @@ destination device ID and stream are optional parameters.
 
 ```python
 >>> import rmm
->>> rmm.reinitialize(managed_memory=True)
+>>> rmm.mr.set_current_device_resource(rmm.mr.ManagedMemoryResource())
 >>> from rmm.pylibrmm.stream import Stream
 >>> stream = Stream()
 >>> buf = rmm.DeviceBuffer(size=100, stream=stream)
@@ -123,12 +122,9 @@ RMM.
 By default if a `MemoryResource` is not set explicitly, RMM uses the `CudaMemoryResource`, which
 uses `cudaMalloc` for allocating device memory.
 
-`rmm.reinitialize()` provides an easy way to initialize RMM with specific memory resource options
-across multiple devices. See `help(rmm.reinitialize)` for full details.
-
-For lower-level control, the `rmm.mr.set_current_device_resource()` function can be
+The `rmm.mr.set_current_device_resource()` function can be
 used to set a different MemoryResource for the current CUDA device.  For
-example, enabling the `ManagedMemoryResource` tells RMM to use
+example, setting `ManagedMemoryResource` tells RMM to use
 `cudaMallocManaged` instead of `cudaMalloc` for allocating memory:
 
 ```python

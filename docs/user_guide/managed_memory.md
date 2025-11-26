@@ -30,9 +30,6 @@ import rmm
 # Use managed memory as the default resource
 rmm.mr.set_current_device_resource(rmm.mr.ManagedMemoryResource())
 
-# Or use rmm.reinitialize
-rmm.reinitialize(managed_memory=True)
-
 # Allocations now use managed memory
 buffer = rmm.DeviceBuffer(size=1000000)
 ```

@@ -12,16 +12,15 @@ Memory event logging writes details of every allocation and deallocation to a CS
 
 ### Python: Using Memory Event Logging
 
-Enable logging with `rmm.reinitialize()`:
+Enable logging by wrapping your memory resource with `LoggingResourceAdaptor`:
 
 ```python
 import rmm
 
-# Enable logging to specified file
-rmm.reinitialize(
-    logging=True,
-    log_file_name="memory_log.csv"
-)
+# Wrap the current resource with logging adaptor
+base = rmm.mr.CudaAsyncMemoryResource()
+log_mr = rmm.mr.LoggingResourceAdaptor(base, log_file_name="memory_log.csv")
+rmm.mr.set_current_device_resource(log_mr)
 
 # Allocations are now logged
 buffer1 = rmm.DeviceBuffer(size=1024)
@@ -429,11 +428,10 @@ Use multiple logging features together:
 ```python
 import rmm
 
-# Enable memory event logging
-rmm.reinitialize(
-    logging=True,
-    log_file_name="events.csv"
-)
+# Enable memory event logging by wrapping with adaptor
+base = rmm.mr.CudaAsyncMemoryResource()
+log_mr = rmm.mr.LoggingResourceAdaptor(base, log_file_name="events.csv")
+rmm.mr.set_current_device_resource(log_mr)
 
 # Enable statistics and profiling
 rmm.statistics.enable_statistics()
@@ -496,7 +494,9 @@ int main() {
 import rmm
 
 # Enable detailed logging
-rmm.reinitialize(logging=True, log_file_name="oom_debug.csv")
+base = rmm.mr.CudaAsyncMemoryResource()
+log_mr = rmm.mr.LoggingResourceAdaptor(base, log_file_name="oom_debug.csv")
+rmm.mr.set_current_device_resource(log_mr)
 rmm.set_logging_level("debug")
 rmm.statistics.enable_statistics()
 
@@ -506,7 +506,7 @@ try:
 except MemoryError as e:
     stats = rmm.statistics.get_statistics()
     print(f"Peak before OOM: {stats.peak_bytes / 2**30:.2f} GiB")
-    print(f"Check events.csv for allocation history")
+    print(f"Check oom_debug.csv for allocation history")
     raise
 ```
 
