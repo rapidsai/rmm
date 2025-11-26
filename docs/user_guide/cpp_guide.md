@@ -438,35 +438,6 @@ rmm::device_buffer buffer(1024, stream.view());  // Uses device 0's resource
    rmm::device_buffer buf(16, rmm::cuda_stream_default, &mr);  // UB!
    ```
 
-## Host Memory Resources
-
-### host_memory_resource Interface
-
-```cpp
-#include <rmm/mr/host/host_memory_resource.hpp>
-
-void* allocate(std::size_t bytes, std::size_t alignment);
-void deallocate(void* ptr, std::size_t bytes, std::size_t alignment);
-```
-
-Interface matches `std::pmr::memory_resource` (no stream argument).
-
-### Available Host Resources
-
-```cpp
-#include <rmm/mr/host/new_delete_resource.hpp>
-#include <rmm/mr/host/pinned_memory_resource.hpp>
-
-// Uses operator new/delete
-auto new_delete_mr = rmm::mr::new_delete_resource{};
-
-// Uses cudaMallocHost/cudaFreeHost (pinned memory)
-auto pinned_mr = rmm::mr::pinned_memory_resource{};
-
-// Set as host resource (if supported in future)
-// Currently no default host resource mechanism
-```
-
 ## Thread Safety
 
 All device memory resources are **thread-safe** with respect to concurrent `allocate()` and `deallocate()` calls. They are **not** thread-safe with respect to resource construction/destruction.
