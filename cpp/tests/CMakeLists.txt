@@ -137,6 +137,9 @@ endfunction()
 ConfigureTest(DEVICE_MR_REF_TEST mr/mr_ref_tests.cpp mr/mr_ref_multithreaded_tests.cpp GPUS 1
               PERCENT 100)
 
+# device_memory_resource_view tests
+ConfigureTest(DEVICE_MEMORY_RESOURCE_VIEW_TEST mr/device_memory_resource_view_tests.cpp)
+
 # general adaptor tests
 ConfigureTest(ADAPTOR_TEST mr/adaptor_tests.cpp)
 
