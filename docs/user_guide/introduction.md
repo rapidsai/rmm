@@ -1,8 +1,8 @@
 # Introduction to RMM
 
-**RMM (RAPIDS Memory Manager)** is a library for allocating and managing GPU memory in Python and C++. It provides a flexible interface for customizing how device memory is allocated, along with efficient implementations and containers.
+**RMM (RAPIDS Memory Manager)** is a library for allocating and managing GPU memory in C++ and Python. It provides a flexible interface for customizing how device memory is allocated, along with efficient implementations and containers.
 
-## Why RMM?
+## Purpose
 
 Achieving optimal performance in GPU-accelerated applications frequently requires customizing memory allocation strategies. For example:
 
@@ -11,7 +11,13 @@ Achieving optimal performance in GPU-accelerated applications frequently require
 - Using **pinned host memory** for faster asynchronous CPU ↔ GPU transfers
 - Customizing allocation strategies for specific workload patterns
 
-RMM provides the building blocks to implement these optimizations through a unified interface.
+RMM provides a unified interface, called a **memory resource**, which is a building block for GPU-accelerated applications.
+
+Memory resources provide a **minimal-overhead abstraction** over memory allocation that is **pluggable at runtime**, making it possible to debug, measure performance, and optimize a CUDA application without recompiling.
+Memory resources aim to serve the needs of a wide range of applications, from data science and machine learning to high-performance simulation.
+
+RMM's memory resources leverage CUDA features like **stream-ordered** (asynchronous) pipeline parallelism, **managed** memory (also known as unified virtual memory, UVM), and **pinned** memory, making it easier to write complex workflows that optimally use both device and host memory.
+The integrations provided in RMM allow memory resources to benefit memory management across libraries frequently used together, such as **PyTorch** and **RAPIDS**.
 
 ## Key Features
 
@@ -21,13 +27,14 @@ RMM is built around three main concepts.
 
 Memory resources provide a common abstraction for device memory allocation.
 The API of RMM's memory resources is based on the CCCL memory resource design to facilitate interoperability.
+
 The choice of resource determines the underlying type of memory and thus its accessibility from host or device.
 For example, the `cuda_async_memory_resource` uses a pool of memory managed by the CUDA driver.
 This resource is recommended for most applications, because of its performance and support for asynchrous (stream-ordered) allocations. See [Stream-Ordered Allocation](stream_ordered_allocation.md) for details.
 As another example, the `managed_memory_resource` provides unified memory for CPU+GPU, and is recommended for applications exceeding the available GPU memory.
-[NVIDIA Nsight™ Systems](https://developer.nvidia.com/nsight-systems) can be used to profile memory resource performance.
 
 See [Choosing a Memory Resource](choosing_memory_resources.md) for guidance on the available memory resources, performance considerations, and how they fit into efficient CUDA application design strategies.
+[NVIDIA Nsight™ Systems](https://developer.nvidia.com/nsight-systems) can be used to profile memory resource performance.
 
 ### 2. Resource Adaptors
 
@@ -46,7 +53,7 @@ Using these containers avoids common problems with performing raw allocation suc
 
 All containers use stream-ordered allocation and work with any memory resource.
 
-## Quick Example
+## Basic Example
 
 ### C++
 
@@ -84,11 +91,13 @@ cp.cuda.set_allocator(rmm.allocators.cupy.rmm_cupy_allocator)
 array = cp.zeros(1000)  # Now uses RMM for allocation
 ```
 
-## Integration with Other Libraries
+## Integration with GPU Libraries
 
 RMM integrates seamlessly with popular GPU libraries:
 
 ### PyTorch
+
+Set the PyTorch allocator to use the current device resource:
 
 ```python
 import rmm
@@ -101,6 +110,8 @@ torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
 ```
 
 ### CuPy
+
+Set the CuPy allocator to use the current device resource:
 
 ```python
 import rmm
@@ -122,18 +133,14 @@ NUMBA_CUDA_MEMORY_MANAGER=rmm.allocators.numba python script.py
 Or from Python:
 
 ```python
+import rmm
 from numba import cuda
 from rmm.allocators.numba import RMMNumbaManager
 
+mr = rmm.mr.CudaAsyncMemoryResource()
+rmm.mr.set_current_device_resource(mr)
 cuda.set_memory_manager(RMMNumbaManager)
 ```
-
-## Use Cases
-
-Memory resources aim to serve the needs of a wide range of applications, from data science and machine learning to high-performance simulation.
-Memory resources provide an minimal-overhead abstraction over memory allocation that is pluggable at runtime, making it possible to debug, measure performance, and optimize a CUDA application without recompiling.
-RMM leverages CUDA features like stream-ordered (asynchronous) pipeline parallelism, as well as managed and pinned memory, making it easier to write complex workflows that optimally use both device and host memory.
-The integrations provided in RMM allow memory resources to benefit memory management across libraries frequently used together, such as PyTorch and RAPIDS.
 
 ## Resources and Support
 
