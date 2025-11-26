@@ -251,7 +251,7 @@ start = time.time()
 print(f"With prefetch: {time.time() - start:.2f}s")
 ```
 
-Use NVIDIA Nsight Systems to visualize page faults and data migration:
+Use [NVIDIA Nsight™ Systems](https://developer.nvidia.com/nsight-systems) to visualize page faults and data migration:
 
 ```bash
 nsys profile -o output python your_script.py

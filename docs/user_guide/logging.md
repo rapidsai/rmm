@@ -572,8 +572,4 @@ benchmark_allocations("PoolMemoryResource", pool)
 4. **Set appropriate debug level** - Use `INFO` normally, `DEBUG`/`TRACE` when troubleshooting
 5. **Disable logging in production** - Logging has overhead; only enable when needed
 6. **Analyze logs with tools** - Use pandas, REPLAY_BENCHMARK, or custom scripts
-7. **Combine with NVIDIA tools** - Use Nsight Systems alongside RMM logging for complete picture
-
-## See Also
-
-- [NVIDIA Nsight Systems](https://developer.nvidia.com/nsight-systems)
+7. **Combine with NVIDIA tools** - Use [NVIDIA Nsight™ Systems](https://developer.nvidia.com/nsight-systems) alongside RMM logging for a complete picture
