@@ -1,6 +1,6 @@
 # C++ Programming Guide
 
-This guide covers using RMM in C++ applications, including memory resources, data structures, allocators, and advanced topics.
+This guide covers using RMM in C++ applications, including memory resources, containers, allocators, and advanced topics.
 
 ## Memory Resources
 
@@ -107,7 +107,7 @@ mr->deallocate(ptr, 1024, stream_b.view());
 
 See [Stream-Ordered Allocation](stream_ordered_allocation.md) for more details.
 
-## Data Structures
+## Containers
 
 ### device_buffer
 
@@ -415,7 +415,7 @@ rmm::device_buffer buffer(1024, stream.view());  // Uses device 0's resource
 
 1. **Device must match at creation and use**:
    - The active device when creating a resource must match when using it
-   - Data structures store the device ID and ensure it's active during (de)allocation
+   - Containers store the device ID and ensure it's active during (de)allocation
 
 2. **Correct usage**:
    ```cpp
@@ -622,7 +622,7 @@ class my_memory_resource final : public rmm::mr::device_memory_resource {
 
 5. **Synchronize streams correctly** - follow stream-ordered allocation rules
 
-6. **Use RAII data structures** - prefer `device_buffer` over raw pointers
+6. **Use RAII containers** - prefer `device_buffer` over raw pointers
 
 7. **Profile and measure** - use statistics and logging to understand allocation patterns
 

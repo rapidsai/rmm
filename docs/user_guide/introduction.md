@@ -1,6 +1,6 @@
 # Introduction to RMM
 
-**RMM (RAPIDS Memory Manager)** is a library for allocating and managing GPU memory in Python and C++. It provides a flexible interface for customizing how device memory is allocated, along with efficient implementations and data structures.
+**RMM (RAPIDS Memory Manager)** is a library for allocating and managing GPU memory in Python and C++. It provides a flexible interface for customizing how device memory is allocated, along with efficient implementations and containers.
 
 ## Why RMM?
 

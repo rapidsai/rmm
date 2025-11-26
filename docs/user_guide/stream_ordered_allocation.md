@@ -287,7 +287,7 @@ for stream in streams:
 
 ## C++ API
 
-In C++, stream-ordered allocation is the default for most RMM data structures:
+In C++, stream-ordered allocation is the default for most RMM containers:
 
 ```cpp
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
