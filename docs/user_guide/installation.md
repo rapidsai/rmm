@@ -18,7 +18,7 @@ The easiest way to install RMM is using conda. You can get a minimal conda insta
 Install the latest stable release:
 
 ```bash
-conda install -c rapidsai -c conda-forge -c nvidia rmm cuda-version=13.0
+conda install -c rapidsai -c conda-forge rmm cuda-version=13.0
 ```
 
 Replace `cuda-version=13.0` with your CUDA version (e.g., `cuda-version=12.0` for CUDA 12.0).
@@ -28,7 +28,7 @@ Replace `cuda-version=13.0` with your CUDA version (e.g., `cuda-version=12.0` fo
 For the latest development version, install from the nightly channel:
 
 ```bash
-conda install -c rapidsai-nightly -c conda-forge -c nvidia rmm cuda-version=13.0
+conda install -c rapidsai-nightly -c conda-forge rmm cuda-version=13.0
 ```
 
 Nightly builds are created from the HEAD of the development branch and may contain unreleased features or bug fixes.
