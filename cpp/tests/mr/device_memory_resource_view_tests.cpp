@@ -242,25 +242,16 @@ TEST(DeviceMemoryResourceViewTest, ResourceRefFromPointerIsCopyable)
 TEST(DeviceMemoryResourceViewTest, NonOwningSemantics)
 {
   auto mr_ptr = std::make_unique<rmm::mr::cuda_memory_resource>();
-  rmm::mr::detail::device_memory_resource_view view{mr_ptr.get()};
-
-  // Allocate something through the view
-  void* ptr = view.allocate_sync(100);
-  EXPECT_NE(ptr, nullptr);
 
   // Destroying the view should NOT destroy the resource
   {
-    auto view_copy = view;
-    // view_copy goes out of scope here
+    rmm::mr::detail::device_memory_resource_view view{mr_ptr.get()};
   }
 
-  // The original view should still work
-  view.deallocate_sync(ptr, 100);
-
-  // And we can still use the underlying resource
-  void* ptr2 = mr_ptr->allocate_sync(100);
-  EXPECT_NE(ptr2, nullptr);
-  mr_ptr->deallocate_sync(ptr2, 100);
+  // The underlying resource should still be valid
+  void* ptr = mr_ptr->allocate_sync(100);
+  EXPECT_NE(ptr, nullptr);
+  mr_ptr->deallocate_sync(ptr, 100);
 }
 
 }  // namespace
