@@ -39,13 +39,6 @@ class device_memory_resource_view {
    *
    * @param ptr Non-null pointer to a `device_memory_resource`
    */
-  device_memory_resource_view()                                              = default;
-  ~device_memory_resource_view()                                             = default;
-  device_memory_resource_view(device_memory_resource_view const&)            = default;
-  device_memory_resource_view(device_memory_resource_view&&)                 = default;
-  device_memory_resource_view& operator=(device_memory_resource_view const&) = default;
-  device_memory_resource_view& operator=(device_memory_resource_view&&)      = default;
-
   device_memory_resource_view(device_memory_resource* ptr) : resource_ptr_{ptr}
   {
     RMM_EXPECTS(ptr != nullptr, "device_memory_resource_view cannot wrap a null pointer");
