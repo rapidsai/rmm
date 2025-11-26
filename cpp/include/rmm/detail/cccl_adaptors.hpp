@@ -10,6 +10,10 @@
 #include <rmm/mr/detail/device_memory_resource_view.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 
+#include <cstddef>
+#include <type_traits>
+#include <utility>
+
 namespace RMM_NAMESPACE {
 
 namespace detail {
