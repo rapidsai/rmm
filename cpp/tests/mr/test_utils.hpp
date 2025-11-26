@@ -23,16 +23,8 @@ inline bool is_device_accessible_memory(void* ptr)
   return attributes.devicePointer != nullptr;
 }
 
-inline bool is_host_memory(void* ptr)
-{
-  cudaPointerAttributes attributes{};
-  if (cudaSuccess != cudaPointerGetAttributes(&attributes, ptr)) { return false; }
-  return attributes.hostPointer != nullptr || attributes.type == cudaMemoryTypeUnregistered;
-}
-
 inline bool is_properly_aligned(void* ptr)
 {
-  if (is_host_memory(ptr)) { return rmm::is_pointer_aligned(ptr, rmm::RMM_DEFAULT_HOST_ALIGNMENT); }
   return rmm::is_pointer_aligned(ptr, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
