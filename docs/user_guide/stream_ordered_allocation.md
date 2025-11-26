@@ -23,17 +23,9 @@ Stream-ordered allocation enables:
 
 ## How It Works
 
-When you allocate memory from a stream-ordered memory resource:
+Consider the following example of allocating memory from a stream-ordered memory resource.
 
-```python
-import rmm
-
-# Allocate on a specific stream
-stream = rmm.cuda_stream()
-buffer = rmm.DeviceBuffer(size=1000, stream=stream)
-```
-
-Or in C++:
+C++:
 
 ```cpp
 #include <rmm/mr/device/cuda_async_memory_resource.hpp>
@@ -41,6 +33,16 @@ Or in C++:
 
 rmm::cuda_stream_view stream;
 auto buffer = rmm::device_buffer(1000, stream);
+```
+
+Python:
+
+```python
+import rmm
+
+# Allocate on a specific stream
+stream = rmm.cuda_stream()
+buffer = rmm.DeviceBuffer(size=1000, stream=stream)
 ```
 
 The following happens:

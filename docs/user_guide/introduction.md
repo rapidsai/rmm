@@ -23,7 +23,7 @@ Memory resources provide a common abstraction for device memory allocation.
 The API of RMM's memory resources is based on the CCCL memory resource design to facilitate interoperability.
 The choice of resource determines the underlying type of memory and thus its accessibility from host or device.
 For example, the `cuda_async_memory_resource` uses a pool of memory managed by the CUDA driver.
-This resource is recommended for most applications, because of its performance and support for asynchrous (stream-ordered) allocations.
+This resource is recommended for most applications, because of its performance and support for asynchrous (stream-ordered) allocations. See [Stream-Ordered Allocation](stream_ordered_allocation.md) for details.
 As another example, the `managed_memory_resource` provides unified memory for CPU+GPU, and is recommended for applications exceeding the available GPU memory.
 [NVIDIA Nsight™ Systems](https://developer.nvidia.com/nsight-systems) can be used to profile memory resource performance.
 
@@ -48,6 +48,22 @@ All containers use stream-ordered allocation and work with any memory resource.
 
 ## Quick Example
 
+### C++
+
+```cpp
+#include <rmm/mr/device/cuda_async_memory_resource.hpp>
+#include <rmm/device_buffer.hpp>
+
+// Use CUDA async memory pool
+auto async_mr = rmm::mr::cuda_async_memory_resource{};
+rmm::mr::set_current_device_resource(&async_mr);
+
+// Allocate device memory asynchronously
+rmm::cuda_stream stream;
+rmm::device_buffer buffer(1024, stream.view());
+stream.synchronize();
+```
+
 ### Python
 
 ```python
@@ -67,42 +83,6 @@ buffer = rmm.DeviceBuffer(size=1024)
 cp.cuda.set_allocator(rmm.allocators.cupy.rmm_cupy_allocator)
 array = cp.zeros(1000)  # Now uses RMM for allocation
 ```
-
-### C++
-
-```cpp
-#include <rmm/mr/device/cuda_async_memory_resource.hpp>
-#include <rmm/device_buffer.hpp>
-
-// Use CUDA async memory pool
-auto async_mr = rmm::mr::cuda_async_memory_resource{};
-rmm::mr::set_current_device_resource(&async_mr);
-
-// Allocate device memory asynchronously
-rmm::cuda_stream stream;
-rmm::device_buffer buffer(1024, stream.view());
-stream.synchronize();
-```
-
-## Stream-Ordered Allocation
-
-RMM provides **stream-ordered memory allocation**, meaning allocations and deallocations are ordered with respect to CUDA streams. This enables:
-
-- Asynchronous allocation without blocking
-- Safe memory reuse within a stream
-- Better multi-stream performance
-
-```cpp
-rmm::cuda_stream stream;
-
-// Allocate on stream
-auto buffer = rmm::device_buffer(1024, stream.view());
-
-// Use immediately on same stream (no synchronization needed)
-kernel<<<grid, block, 0, stream.value()>>>(buffer.data());
-```
-
-See [Stream-Ordered Allocation](stream_ordered_allocation.md) for details.
 
 ## Integration with Other Libraries
 
