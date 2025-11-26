@@ -15,6 +15,8 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <memory>
+#include <utility>
 
 namespace rmm::test {
 namespace {
