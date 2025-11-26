@@ -83,8 +83,6 @@ class device_memory_resource_view {
                                std::size_t bytes,
                                std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    RMM_EXPECTS(resource_ptr_ != nullptr,
-                "Cannot allocate from a default-constructed device_memory_resource_view");
     return resource_ptr_->allocate(stream, bytes, alignment);
   }
 
