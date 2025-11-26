@@ -224,41 +224,6 @@ class cccl_async_resource_ref : private view_holder, public ResourceType {
   cccl_async_resource_ref(ResourceType&& ref) : view_holder{}, base{std::move(ref)} {}
 
   /**
-   * @brief Constructs an async resource reference from a CCCL any_resource.
-   *
-   * This constructor enables interoperability with CCCL 3.2 any_resource types,
-   * allowing RMM async resource_ref types to be constructed from any_resource.
-   * The any_resource is implicitly converted to a resource_ref.
-   *
-   * @tparam Properties The properties of the any_resource
-   * @param any_res A CCCL any_resource with compatible properties
-   */
-  template <typename... Properties>
-  cccl_async_resource_ref(cuda::mr::any_resource<Properties...>& any_res)
-    : view_holder(), base(any_res)
-  {
-  }
-
-  /**
-   * @brief Constructs an async resource reference from a const CCCL any_resource.
-   *
-   * This constructor enables interoperability with CCCL 3.2 any_resource types,
-   * allowing RMM async resource_ref types to be constructed from const any_resource.
-   * The any_resource is implicitly converted to a resource_ref.
-   *
-   * @note Uses const_cast because resource_ref requires a non-const lvalue,
-   *       but creating a reference doesn't modify the resource.
-   *
-   * @tparam Properties The properties of the any_resource
-   * @param any_res A const CCCL any_resource with compatible properties
-   */
-  template <typename... Properties>
-  cccl_async_resource_ref(cuda::mr::any_resource<Properties...> const& any_res)
-    : view_holder(), base(const_cast<cuda::mr::any_resource<Properties...>&>(any_res))
-  {
-  }
-
-  /**
    * @brief Copy constructor that properly reconstructs the base to point to the new view.
    *
    * The implicit copy constructor would copy the view_holder correctly, but the base
