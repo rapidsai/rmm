@@ -11,7 +11,6 @@
 #include <rmm/mr/device_memory_resource.hpp>
 
 #include <cstddef>
-#include <optional>
 #include <type_traits>
 #include <utility>
 
@@ -24,7 +23,7 @@ namespace detail {
 struct view_holder {
   view_holder() = default;
   view_holder(rmm::mr::device_memory_resource* ptr) : view_{ptr} {}
-  std::optional<rmm::mr::detail::device_memory_resource_view> view_;
+  rmm::mr::detail::device_memory_resource_view view_;
 };
 
 template <typename ResourceType>
@@ -41,7 +40,7 @@ class cccl_resource_ref : private view_holder, public ResourceType {
    * @param ptr Non-null pointer to a `device_memory_resource`
    */
   cccl_resource_ref(rmm::mr::device_memory_resource* ptr)
-    : view_holder{ptr}, base{*view_holder::view_}
+    : view_holder{ptr}, base{view_holder::view_}
   {
   }
 
@@ -54,7 +53,7 @@ class cccl_resource_ref : private view_holder, public ResourceType {
    * @param res Reference to a `device_memory_resource`
    */
   cccl_resource_ref(rmm::mr::device_memory_resource& res)
-    : view_holder{&res}, base{*view_holder::view_}
+    : view_holder{&res}, base{view_holder::view_}
   {
   }
 
@@ -81,26 +80,17 @@ class cccl_resource_ref : private view_holder, public ResourceType {
 
   /**
    * @brief Copy constructor that properly reconstructs the base to point to the new view.
-   *
-   * If the view is present (e.g., when constructed from device_memory_resource*), we reconstruct
-   * the base from our local view. Otherwise, we copy the base directly.
    */
   cccl_resource_ref(cccl_resource_ref const& other)
-    : view_holder{static_cast<view_holder const&>(other)},
-      base{view_holder::view_.has_value() ? base{*view_holder::view_}
-                                          : static_cast<base const&>(other)}
+    : view_holder{static_cast<view_holder const&>(other)}, base{view_holder::view_}
   {
   }
 
   /**
    * @brief Move constructor that properly reconstructs the base to point to the new view.
-   *
-   * If the view is present (e.g., when constructed from device_memory_resource*), we reconstruct
-   * the base from our local view. Otherwise, we move the base directly.
    */
   cccl_resource_ref(cccl_resource_ref&& other) noexcept
-    : view_holder{static_cast<view_holder&&>(other)},
-      base{view_holder::view_.has_value() ? base{*view_holder::view_} : static_cast<base&&>(other)}
+    : view_holder{static_cast<view_holder&&>(other)}, base{view_holder::view_}
   {
   }
 
@@ -123,32 +113,24 @@ class cccl_resource_ref : private view_holder, public ResourceType {
 
   /**
    * @brief Copy assignment operator.
-   *
-   * If the view is present, we reconstruct the base from our local view.
-   * Otherwise, we copy the base directly.
    */
   cccl_resource_ref& operator=(cccl_resource_ref const& other)
   {
     if (this != &other) {
       view_holder::view_ = other.view_;
-      base::operator=(view_holder::view_.has_value() ? base(*view_holder::view_)
-                                                     : static_cast<base const&>(other));
+      base::operator=(base(view_holder::view_));
     }
     return *this;
   }
 
   /**
    * @brief Move assignment operator.
-   *
-   * If the view is present, we reconstruct the base from our local view.
-   * Otherwise, we move the base directly.
    */
   cccl_resource_ref& operator=(cccl_resource_ref&& other) noexcept
   {
     if (this != &other) {
       view_holder::view_ = std::move(other.view_);
-      base::operator=(view_holder::view_.has_value() ? base(*view_holder::view_)
-                                                     : static_cast<base&&>(other));
+      base::operator=(base(view_holder::view_));
     }
     return *this;
   }
@@ -185,7 +167,7 @@ class cccl_async_resource_ref : private view_holder, public ResourceType {
    * @param ptr Non-null pointer to a `device_memory_resource`
    */
   cccl_async_resource_ref(rmm::mr::device_memory_resource* ptr)
-    : view_holder{ptr}, base{*view_holder::view_}
+    : view_holder{ptr}, base{view_holder::view_}
   {
   }
 
@@ -198,7 +180,7 @@ class cccl_async_resource_ref : private view_holder, public ResourceType {
    * @param res Reference to a `device_memory_resource`
    */
   cccl_async_resource_ref(rmm::mr::device_memory_resource& res)
-    : view_holder{&res}, base{*view_holder::view_}
+    : view_holder{&res}, base{view_holder::view_}
   {
   }
 
@@ -229,26 +211,17 @@ class cccl_async_resource_ref : private view_holder, public ResourceType {
    * The implicit copy constructor would copy the view_holder correctly, but the base
    * would still point to the original object's view. We need to reconstruct the base
    * to point to our own view.
-   *
-   * If the view is present (e.g., when constructed from device_memory_resource*), we reconstruct
-   * the base from our local view. Otherwise, we copy the base directly.
    */
   cccl_async_resource_ref(cccl_async_resource_ref const& other)
-    : view_holder{static_cast<view_holder const&>(other)},
-      base{view_holder::view_.has_value() ? base{*view_holder::view_}
-                                          : static_cast<base const&>(other)}
+    : view_holder{static_cast<view_holder const&>(other)}, base{view_holder::view_}
   {
   }
 
   /**
    * @brief Move constructor that properly reconstructs the base to point to the new view.
-   *
-   * If the view is present (e.g., when constructed from device_memory_resource*), we reconstruct
-   * the base from our local view. Otherwise, we move the base directly.
    */
   cccl_async_resource_ref(cccl_async_resource_ref&& other) noexcept
-    : view_holder{static_cast<view_holder&&>(other)},
-      base{view_holder::view_.has_value() ? base{*view_holder::view_} : static_cast<base&&>(other)}
+    : view_holder{static_cast<view_holder&&>(other)}, base{view_holder::view_}
   {
   }
 
@@ -271,32 +244,24 @@ class cccl_async_resource_ref : private view_holder, public ResourceType {
 
   /**
    * @brief Copy assignment operator.
-   *
-   * If the view is present, we reconstruct the base from our local view.
-   * Otherwise, we copy the base directly.
    */
   cccl_async_resource_ref& operator=(cccl_async_resource_ref const& other)
   {
     if (this != &other) {
       view_holder::view_ = other.view_;
-      base::operator=(view_holder::view_.has_value() ? base(*view_holder::view_)
-                                                     : static_cast<base const&>(other));
+      base::operator=(base(view_holder::view_));
     }
     return *this;
   }
 
   /**
    * @brief Move assignment operator.
-   *
-   * If the view is present, we reconstruct the base from our local view.
-   * Otherwise, we move the base directly.
    */
   cccl_async_resource_ref& operator=(cccl_async_resource_ref&& other) noexcept
   {
     if (this != &other) {
       view_holder::view_ = std::move(other.view_);
-      base::operator=(view_holder::view_.has_value() ? base(*view_holder::view_)
-                                                     : static_cast<base&&>(other));
+      base::operator=(base(view_holder::view_));
     }
     return *this;
   }
