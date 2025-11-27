@@ -154,7 +154,7 @@ class binning_memory_resource final : public device_memory_resource {
     } else if (resource_bins_.count(allocation_size) == 0) {  // do nothing if bin already exists
       owned_bin_resources_.push_back(
         std::make_unique<fixed_size_memory_resource<Upstream>>(upstream_mr_, allocation_size));
-      resource_bins_.insert({allocation_size, *owned_bin_resources_.back()});
+      resource_bins_.insert({allocation_size, owned_bin_resources_.back().get()});
     }
   }
 
