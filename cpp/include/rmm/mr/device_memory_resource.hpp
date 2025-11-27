@@ -98,6 +98,8 @@ class device_memory_resource {
    * The returned pointer will have 256 byte alignment regardless of the value
    * of alignment. Higher alignments must use the aligned_resource_adaptor.
    *
+   * The returned pointer is immediately valid on all streams.
+   *
    * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated.
    *
    * @param bytes The size of the allocation
@@ -110,7 +112,10 @@ class device_memory_resource {
       alignment <= rmm::CUDA_ALLOCATION_ALIGNMENT && rmm::is_supported_alignment(alignment),
       "Alignment must be less than or equal to 256 and a power of two",
       rmm::bad_alloc);
-    return do_allocate(bytes, cuda_stream_view{});
+    auto const stream = cuda_stream_view{};
+    void* ptr         = do_allocate(bytes, stream);
+    stream.synchronize();
+    return ptr;
   }
 
   /**
