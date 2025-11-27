@@ -32,6 +32,14 @@ _ASYNC_MANAGED_MEMORY_SUPPORTED = (
     and rmm._cuda.gpu.runtimeGetVersion() >= 13000
 )
 
+_ASYNC_PINNED_MEMORY_SUPPORTED = (
+    rmm._cuda.gpu.getDeviceAttribute(
+        runtime.cudaDeviceAttr.cudaDevAttrMemoryPoolsSupported,
+        rmm._cuda.gpu.getDevice(),
+    )
+    and rmm._cuda.gpu.runtimeGetVersion() >= 12060
+)
+
 _MEMORY_POOL_HANDLE_TYPES_SUPPORTED = rmm._cuda.gpu.getDeviceAttribute(
     runtime.cudaDeviceAttr.cudaDevAttrMemoryPoolSupportedHandleTypes,
     rmm._cuda.gpu.getDevice(),
