@@ -119,12 +119,15 @@ class device_memory_resource {
   }
 
   /**
-   * @brief Deallocate memory pointed to by \p p.
+   * @brief Deallocate memory pointed to by \p ptr.
+   *
+   * @note All stream-ordered work on `ptr` must be complete before calling this function otherwise
+   * behavior is undefined.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
-   * @param alignment The alignment that was passed to the `allocate` call that returned `p`
+   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
+   * @param alignment The alignment that was passed to the `allocate` call that returned `ptr`
    */
   void deallocate_sync(
     void* ptr,
@@ -164,8 +167,8 @@ class device_memory_resource {
    * @param stream The stream on which to perform the deallocation
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
-   * @param alignment The alignment that was passed to the `allocate` call that returned `p`
+   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
+   * @param alignment The alignment that was passed to the `allocate` call that returned `ptr`
    */
   void deallocate(cuda_stream_view stream,
                   void* ptr,
@@ -240,14 +243,14 @@ class device_memory_resource {
   virtual void* do_allocate(std::size_t bytes, cuda_stream_view stream) = 0;
 
   /**
-   * @brief Deallocate memory pointed to by \p p.
+   * @brief Deallocate memory pointed to by \p ptr.
    *
    * If supported, this operation may optionally be executed on a stream.
    * Otherwise, the stream is ignored and the null stream is used.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
    * @param stream Stream on which to perform deallocation
    */
   virtual void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept = 0;
