@@ -108,5 +108,33 @@ TEST_F(AsyncPinnedMRTest, PoolHandleIsValid)
   EXPECT_NE(pool_handle, nullptr);
 }
 
+TEST_F(AsyncPinnedMRTest, AllocatedPointerIsAccessibleFromDevice)
+{
+  const auto alloc_size{sizeof(int) * 100};
+  cuda_async_pinned_mr mr{};
+  auto* ptr = static_cast<int*>(mr.allocate_sync(alloc_size));
+  ASSERT_NE(nullptr, ptr);
+
+  // Initialize from host
+  for (int i = 0; i < 100; ++i) {
+    ptr[i] = i;
+  }
+
+  // Allocate device memory and copy from pinned -> device -> back to verify device access
+  int* d_ptr{};
+  EXPECT_EQ(cudaMalloc(&d_ptr, alloc_size), cudaSuccess);
+  EXPECT_EQ(cudaMemcpy(d_ptr, ptr, alloc_size, cudaMemcpyDefault), cudaSuccess);
+
+  int result[100];
+  EXPECT_EQ(cudaMemcpy(result, d_ptr, alloc_size, cudaMemcpyDefault), cudaSuccess);
+
+  for (int i = 0; i < 100; ++i) {
+    EXPECT_EQ(result[i], i);
+  }
+
+  cudaFree(d_ptr);
+  mr.deallocate_sync(ptr, alloc_size);
+}
+
 }  // namespace
 }  // namespace rmm::test
