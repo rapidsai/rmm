@@ -268,6 +268,7 @@ dependencies:
           - sphinx
           - sphinx-copybutton
           - sphinx-markdown-tables
+          - sphinx-tabs
           - sphinxcontrib-jquery
   py_version:
     specific:
