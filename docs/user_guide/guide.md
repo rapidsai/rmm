@@ -205,6 +205,7 @@ Typed, uninitialized device vector for trivially copyable types:
 
 ```cpp
 #include <rmm/device_uvector.hpp>
+#include <rmm/exec_policy.hpp>
 #include <thrust/fill.h>
 
 rmm::cuda_stream stream;
@@ -220,8 +221,7 @@ auto begin = vec.begin();
 auto end = vec.end();
 
 // Initialize with Thrust
-thrust::fill(thrust::cuda::par.on(stream.value()),
-             vec.begin(), vec.end(), 42);
+thrust::fill(rmm::exec_policy(stream.view()), vec.begin(), vec.end(), 42);
 
 // Resize
 vec.resize(200, stream.view());
@@ -378,15 +378,23 @@ Use `rmm::exec_policy` to make Thrust algorithms use RMM for temporary storage:
 
 ```cpp
 #include <rmm/exec_policy.hpp>
-#include <thrust/device_vector.h>
+#include <rmm/device_uvector.hpp>
+#include <thrust/sequence.h>
 #include <thrust/sort.h>
 
 rmm::cuda_stream stream;
-thrust::device_vector<int> vec(1000);
-// ... fill vec ...
+rmm::device_uvector<int> vec(1000, stream.view());
 
-// Sort using RMM for temporary storage
+// Fill with descending values
+thrust::sequence(rmm::exec_policy(stream.view()),
+                 vec.begin(), vec.end(), vec.size() - 1, -1);
+
+// Sort using current device resource for temporary storage
 thrust::sort(rmm::exec_policy(stream.view()), vec.begin(), vec.end());
+
+// Or use a specific memory resource for temporary storage
+rmm::mr::cuda_async_memory_resource custom_mr;
+thrust::sort(rmm::exec_policy(stream.view(), custom_mr), vec.begin(), vec.end());
 
 stream.synchronize();
 ```
