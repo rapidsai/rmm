@@ -102,7 +102,7 @@ auto async_mr = rmm::mr::cuda_async_memory_resource{};
 auto managed_mr = rmm::mr::managed_memory_resource{};
 
 // PoolMemoryResource - coalescing pool with 1 GiB initial size
-auto pool_mr = rmm::mr::pool_memory_resource{&cuda_mr, 1ULL << 30};
+rmm::mr::pool_memory_resource pool_mr{cuda_mr, 1ULL << 30};
 ````
 ````{code-tab} python
 import rmm
@@ -145,8 +145,12 @@ rmm::mr::set_per_device_resource_ref(rmm::cuda_device_id{0}, async_mr);
 ````{code-tab} python
 import rmm
 
+# Get per-device resource
+mr0 = rmm.mr.get_per_device_resource(0)
+
 # Set per-device resource
-rmm.mr.set_per_device_resource(0, rmm.mr.CudaAsyncMemoryResource())
+async_mr = rmm.mr.CudaAsyncMemoryResource()
+rmm.mr.set_per_device_resource(0, async_mr)
 ````
 `````
 
@@ -174,15 +178,11 @@ std::size_t size = buffer.size();
 // Resize (may reallocate)
 buffer.resize(2048, stream.view());
 
-// Copy from another buffer (deep copy)
-rmm::device_buffer buffer2 = buffer;
-
-// Move (original becomes empty)
-rmm::device_buffer buffer3 = std::move(buffer);
+// Copy construct (deep copy)
+rmm::device_buffer buffer2(buffer, stream.view());
 ````
 ````{code-tab} python
 import rmm
-import numpy as np
 
 # Allocate 1024 bytes
 buffer = rmm.DeviceBuffer(size=1024)
@@ -191,12 +191,11 @@ buffer = rmm.DeviceBuffer(size=1024)
 ptr = buffer.ptr
 size = buffer.size
 
-# Copy data from host to device
-host_data = np.array([1, 2, 3, 4], dtype=np.float32)
-buffer = rmm.DeviceBuffer.to_device(host_data.view('uint8'))
+# Resize (may reallocate)
+buffer.resize(2048)
 
-# Copy data back to host
-host_copy = np.frombuffer(buffer.tobytes(), dtype=np.float32)
+# Copy construct (deep copy)
+buffer2 = buffer.copy()
 ````
 `````
 
@@ -273,24 +272,27 @@ rmm::cuda_stream stream;
 rmm::device_buffer buffer(1024, stream.view());
 
 // Get statistics
-auto stats = stats_mr.get_statistics();
-std::cout << "Allocated bytes: " << stats.allocated_bytes << "\n";
+auto bytes = stats_mr.get_bytes_counter();
+std::cout << "Current bytes: " << bytes.value << "\n";
+std::cout << "Peak bytes: " << bytes.peak << "\n";
+std::cout << "Total bytes: " << bytes.total << "\n";
 ````
 ````{code-tab} python
 import rmm
 
-# Enable statistics tracking
-rmm.statistics.enable_statistics()
+# Wrap base resource with statistics adaptor
+cuda_mr = rmm.mr.CudaAsyncMemoryResource()
+stats_mr = rmm.mr.StatisticsResourceAdaptor(cuda_mr)
+rmm.mr.set_current_device_resource(stats_mr)
 
-# Run some allocations
-buffer1 = rmm.DeviceBuffer(size=1000)
-buffer2 = rmm.DeviceBuffer(size=2000)
+# Allocate
+buffer = rmm.DeviceBuffer(size=1024)
 
 # Get statistics
-stats = rmm.statistics.get_statistics()
+stats = stats_mr.allocation_counts
 print(f"Current bytes: {stats.current_bytes}")
 print(f"Peak bytes: {stats.peak_bytes}")
-print(f"Total allocations: {stats.total_count}")
+print(f"Total bytes: {stats.total_bytes}")
 ````
 `````
 
@@ -482,12 +484,21 @@ rmm::device_buffer buffer(1024, stream.view());  // Uses device 0's resource
 import rmm
 from cuda import cuda
 
-# Set up resources for each device
 num_devices = cuda.cuDeviceGetCount()[1]
 
+# Store resources to maintain lifetime
+resources = []
+
 for device_id in range(num_devices):
+    # Create resource for this device
     mr = rmm.mr.CudaAsyncMemoryResource()
+    resources.append(mr)
+
+    # Set as per-device resource
     rmm.mr.set_per_device_resource(device_id, mr)
+
+# Use device 0
+buffer = rmm.DeviceBuffer(size=1024)  # Uses device 0's resource
 ````
 `````
 
