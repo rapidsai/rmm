@@ -401,6 +401,8 @@ stream.synchronize();
 
 ### CuPy (Python)
 
+Configure CuPy to use RMM for all device memory allocations:
+
 ```python
 import rmm
 import cupy as cp
@@ -418,6 +420,8 @@ array = cp.zeros(1000)
 ```
 
 ### Numba (Python)
+
+Configure Numba to use RMM for device memory in CUDA JIT-compiled functions:
 
 ```python
 from numba import cuda
@@ -439,6 +443,8 @@ NUMBA_CUDA_MEMORY_MANAGER=rmm.allocators.numba python script.py
 ```
 
 ### PyTorch (Python)
+
+Configure PyTorch to use RMM for CUDA tensor allocations:
 
 ```python
 import rmm
