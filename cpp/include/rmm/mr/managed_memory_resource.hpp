@@ -39,7 +39,7 @@ class managed_memory_resource final : public device_memory_resource {
    *
    * The returned pointer will have at minimum 256 byte alignment.
    *
-   * The stream is ignored.
+   * The stream argument is ignored.
    *
    * @param bytes The size of the allocation
    * @param stream This argument is ignored
@@ -57,13 +57,13 @@ class managed_memory_resource final : public device_memory_resource {
   }
 
   /**
-   * @brief Deallocate memory pointed to by \p p.
+   * @brief Deallocate memory pointed to by \p ptr.
    *
-   * The stream is ignored.
+   * The stream argument is ignored.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
    * @param stream This argument is ignored
    */
   void do_deallocate(void* ptr,

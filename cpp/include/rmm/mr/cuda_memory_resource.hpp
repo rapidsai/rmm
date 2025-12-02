@@ -53,13 +53,13 @@ class cuda_memory_resource final : public device_memory_resource {
   }
 
   /**
-   * @brief Deallocate memory pointed to by \p p.
+   * @brief Deallocate memory pointed to by \p ptr.
    *
    * The stream argument is ignored.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
    * @param stream This argument is ignored.
    */
   void do_deallocate(void* ptr,

@@ -174,11 +174,11 @@ class cuda_async_memory_resource final : public device_memory_resource {
   }
 
   /**
-   * @brief Deallocate memory pointed to by \p p.
+   * @brief Deallocate memory pointed to by \p ptr.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
    * @param stream Stream on which to perform deallocation
    */
   void do_deallocate(void* ptr, std::size_t bytes, rmm::cuda_stream_view stream) noexcept override

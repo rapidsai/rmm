@@ -101,7 +101,7 @@ class system_memory_resource final : public device_memory_resource {
   }
 
   /**
-   * @brief Deallocate memory pointed to by \p p.
+   * @brief Deallocate memory pointed to by \p ptr.
    *
    * This function synchronizes the stream before deallocating the memory.
    *
