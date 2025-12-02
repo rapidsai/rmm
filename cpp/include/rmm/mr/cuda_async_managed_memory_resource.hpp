@@ -42,16 +42,21 @@ class cuda_async_managed_memory_resource final : public device_memory_resource {
    * The default managed memory pool is the pool that is created when the device is created.
    * Pool properties such as the release threshold are not modified.
    *
-   * @throws rmm::logic_error if the CUDA version does not support `cudaMallocFromPoolAsync` with
-   * managed memory pool
+   * @throws rmm::logic_error if the CUDA build version is less than 13.0
+   * @throws rmm::logic_error if the CUDA runtime version does not support `cudaMallocFromPoolAsync`
+   * with managed memory pool (requires CUDA 13.0 or higher)
    */
   cuda_async_managed_memory_resource()
   {
-    // Check if managed memory pools are supported
+#if !defined(CUDA_VERSION) || CUDA_VERSION < RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION
+    RMM_FAIL(
+      "cuda_async_managed_memory_resource requires CUDA 13.0 or higher. "
+      "This build was compiled with an older CUDA version.");
+#else
+    // Check if managed memory pools are supported at runtime
     RMM_EXPECTS(rmm::detail::runtime_async_managed_alloc::is_supported(),
                 "cuda_async_managed_memory_resource requires CUDA 13.0 or higher");
 
-#if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION
     cudaMemPool_t managed_pool_handle{};
     cudaMemLocation location{.type = cudaMemLocationTypeDevice,
                              .id   = rmm::get_current_cuda_device().value()};
