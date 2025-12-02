@@ -28,7 +28,7 @@ Consider the following example of allocating memory from a stream-ordered memory
 C++:
 
 ```cpp
-#include <rmm/mr/device/cuda_async_memory_resource.hpp>
+#include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/device_buffer.hpp>
 
 rmm::cuda_stream_view stream;
@@ -290,7 +290,7 @@ for stream in streams:
 In C++, stream-ordered allocation is the default for most RMM containers:
 
 ```cpp
-#include <rmm/mr/device/cuda_async_memory_resource.hpp>
+#include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/cuda_stream_view.hpp>

@@ -6,7 +6,7 @@ This guide covers using RMM in C++ and Python applications, including memory res
 
 `````{tabs}
 ````{code-tab} c++
-#include <rmm/mr/device/cuda_async_memory_resource.hpp>
+#include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/device_buffer.hpp>
 #include <iostream>
@@ -49,7 +49,7 @@ The current device resource is used by default for all allocations:
 
 `````{tabs}
 ````{code-tab} c++
-#include <rmm/mr/device/cuda_async_memory_resource.hpp>
+#include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 
 // Get current device resource ref
@@ -87,10 +87,10 @@ RMM provides several memory resource implementations:
 
 `````{tabs}
 ````{code-tab} c++
-#include <rmm/mr/device/cuda_memory_resource.hpp>
-#include <rmm/mr/device/cuda_async_memory_resource.hpp>
-#include <rmm/mr/device/managed_memory_resource.hpp>
-#include <rmm/mr/device/pool_memory_resource.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/cuda_async_memory_resource.hpp>
+#include <rmm/mr/managed_memory_resource.hpp>
+#include <rmm/mr/pool_memory_resource.hpp>
 
 // CudaMemoryResource - uses cudaMalloc/cudaFree
 auto cuda_mr = rmm::mr::cuda_memory_resource{};
@@ -260,7 +260,7 @@ Adaptors wrap resources to add functionality like statistics tracking and loggin
 
 `````{tabs}
 ````{code-tab} c++
-#include <rmm/mr/device/statistics_resource_adaptor.hpp>
+#include <rmm/mr/statistics_resource_adaptor.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 
 rmm::mr::cuda_async_memory_resource cuda_mr;
@@ -300,7 +300,7 @@ print(f"Total bytes: {stats.total_bytes}")
 
 `````{tabs}
 ````{code-tab} c++
-#include <rmm/mr/device/logging_resource_adaptor.hpp>
+#include <rmm/mr/logging_resource_adaptor.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 
 rmm::mr::cuda_async_memory_resource cuda_mr;
@@ -333,6 +333,12 @@ Adaptors can be stacked to combine functionality:
 
 `````{tabs}
 ````{code-tab} c++
+#include <rmm/mr/cuda_async_memory_resource.hpp>
+#include <rmm/mr/pool_memory_resource.hpp>
+#include <rmm/mr/statistics_resource_adaptor.hpp>
+#include <rmm/mr/logging_resource_adaptor.hpp>
+#include <rmm/mr/per_device_resource.hpp>
+
 // Base resource
 rmm::mr::cuda_async_memory_resource cuda_mr;
 
@@ -466,7 +472,7 @@ tensor = torch.zeros(1000, device='cuda')
 
 `````{tabs}
 ````{code-tab} c++
-#include <rmm/mr/device/cuda_async_memory_resource.hpp>
+#include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/cuda_device.hpp>
 #include <memory>

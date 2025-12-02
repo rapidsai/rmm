@@ -37,7 +37,7 @@ buffer = rmm.DeviceBuffer(size=1000000)
 ### C++
 
 ```cpp
-#include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/managed_memory_resource.hpp>
 
 auto managed_mr = rmm::mr::managed_memory_resource{};
 rmm::mr::set_current_device_resource(&managed_mr);
@@ -129,7 +129,7 @@ buffer.prefetch(device=0, stream=stream)  # Prefetch to device 0
 **In C++:**
 
 ```cpp
-#include <rmm/mr/device/managed_memory_resource.hpp>
+#include <rmm/mr/managed_memory_resource.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/prefetch.hpp>
 

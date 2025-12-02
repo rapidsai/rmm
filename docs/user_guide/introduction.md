@@ -58,7 +58,7 @@ All containers use stream-ordered allocation and work with any memory resource.
 ### C++
 
 ```cpp
-#include <rmm/mr/device/cuda_async_memory_resource.hpp>
+#include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/device_buffer.hpp>
 
 // Use CUDA async memory pool

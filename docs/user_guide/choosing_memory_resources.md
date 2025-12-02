@@ -8,9 +8,63 @@ This guide provides recommendations for selecting the appropriate memory resourc
 
 **For most applications**: Use `CudaAsyncMemoryResource` (the CUDA async memory pool).
 
-**For applications larger than GPU memory**: Use `ManagedMemoryResource` with prefetching strategies.
+`````{tabs}
+````{code-tab} c++
+#include <rmm/mr/cuda_async_memory_resource.hpp>
+#include <rmm/mr/per_device_resource.hpp>
+
+rmm::mr::cuda_async_memory_resource mr;
+rmm::mr::set_current_device_resource_ref(mr);
+````
+````{code-tab} python
+import rmm
+
+mr = rmm.mr.CudaAsyncMemoryResource()
+rmm.mr.set_current_device_resource(mr)
+````
+`````
+
+**For applications larger than GPU memory**: Use `ManagedMemoryResource` with prefetching.
+
+`````{tabs}
+````{code-tab} c++
+#include <rmm/mr/managed_memory_resource.hpp>
+#include <rmm/mr/prefetch_resource_adaptor.hpp>
+#include <rmm/mr/per_device_resource.hpp>
+
+rmm::mr::managed_memory_resource managed_mr;
+rmm::mr::prefetch_resource_adaptor prefetch_mr{managed_mr};
+rmm::mr::set_current_device_resource_ref(prefetch_mr);
+````
+````{code-tab} python
+import rmm
+
+managed_mr = rmm.mr.ManagedMemoryResource()
+prefetch_mr = rmm.mr.PrefetchResourceAdaptor(managed_mr)
+rmm.mr.set_current_device_resource(prefetch_mr)
+````
+`````
 
 **For specific allocation patterns**: Consider `ArenaMemoryResource` or custom configurations.
+
+`````{tabs}
+````{code-tab} c++
+#include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/arena_memory_resource.hpp>
+#include <rmm/mr/per_device_resource.hpp>
+
+rmm::mr::cuda_memory_resource cuda_mr;
+rmm::mr::arena_memory_resource arena_mr{cuda_mr};
+rmm::mr::set_current_device_resource_ref(arena_mr);
+````
+````{code-tab} python
+import rmm
+
+cuda_mr = rmm.mr.CudaMemoryResource()
+arena_mr = rmm.mr.ArenaMemoryResource(cuda_mr)
+rmm.mr.set_current_device_resource(arena_mr)
+````
+`````
 
 ## Understanding Memory Resources
 
@@ -215,30 +269,6 @@ torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
 ```
 
 With this setup, both PyTorch and any other RMM-using code (like cuDF) will share the same driver-managed pool.
-
-## Decision Tree
-
-```
-Start: What are your requirements?
-│
-├─ Working with data larger than GPU memory?
-│  └─ Use ManagedMemoryResource + PrefetchResourceAdaptor
-│     (See managed_memory.md for details)
-│
-├─ Using multiple GPU libraries (cuDF, PyTorch, etc.)?
-│  └─ Use CudaAsyncMemoryResource (enables cross-library sharing)
-│
-├─ Need statistics or profiling?
-│  └─ Wrap your resource with StatisticsResourceAdaptor
-│     Example: StatisticsResourceAdaptor(CudaAsyncMemoryResource())
-│
-├─ Legacy application or specific tuning needs?
-│  └─ Use PoolMemoryResource or ArenaMemoryResource
-│     (Consider wrapping CudaAsyncMemoryResource as upstream)
-│
-└─ Default case / Not sure?
-   └─ Use CudaAsyncMemoryResource
-```
 
 ## Performance Considerations
 

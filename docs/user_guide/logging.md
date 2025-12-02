@@ -41,8 +41,8 @@ python script.py
 Wrap any memory resource with `logging_resource_adaptor`:
 
 ```cpp
-#include <rmm/mr/device/cuda_async_memory_resource.hpp>
-#include <rmm/mr/device/logging_resource_adaptor.hpp>
+#include <rmm/mr/cuda_async_memory_resource.hpp>
+#include <rmm/mr/logging_resource_adaptor.hpp>
 
 int main() {
     // Create upstream resource
@@ -171,8 +171,8 @@ class Statistics:
 ### C++: Using statistics_resource_adaptor
 
 ```cpp
-#include <rmm/mr/device/cuda_async_memory_resource.hpp>
-#include <rmm/mr/device/statistics_resource_adaptor.hpp>
+#include <rmm/mr/cuda_async_memory_resource.hpp>
+#include <rmm/mr/statistics_resource_adaptor.hpp>
 #include <iostream>
 
 int main() {
@@ -458,9 +458,9 @@ print(rmm.statistics.default_profiler_records.report())
 C++ equivalent:
 
 ```cpp
-#include <rmm/mr/device/cuda_async_memory_resource.hpp>
-#include <rmm/mr/device/logging_resource_adaptor.hpp>
-#include <rmm/mr/device/statistics_resource_adaptor.hpp>
+#include <rmm/mr/cuda_async_memory_resource.hpp>
+#include <rmm/mr/logging_resource_adaptor.hpp>
+#include <rmm/mr/statistics_resource_adaptor.hpp>
 #include <rmm/logger.hpp>
 
 int main() {
