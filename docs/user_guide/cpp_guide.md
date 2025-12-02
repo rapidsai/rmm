@@ -2,6 +2,28 @@
 
 This guide covers using RMM in C++ applications, including memory resources, containers, allocators, and advanced topics.
 
+## Basic Example
+
+```cpp
+#include <rmm/mr/device/cuda_async_memory_resource.hpp>
+#include <rmm/device_buffer.hpp>
+#include <iostream>
+
+int main() {
+    // Use async MR (recommended)
+    auto async_mr = rmm::mr::cuda_async_memory_resource{};
+    rmm::mr::set_current_device_resource(&async_mr);
+
+    // Allocate device memory
+    rmm::cuda_stream stream;
+    rmm::device_buffer buffer(1024, stream.view());
+
+    std::cout << "Allocated " << buffer.size() << " bytes\n";
+
+    return 0;
+}
+```
+
 ## Memory Resources
 
 ### device_memory_resource Interface

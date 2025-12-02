@@ -5,13 +5,12 @@
 
 introduction
 installation
-quickstart-cpp
+cpp_guide
 quickstart-python
 guide
 choosing_memory_resources
 stream_ordered_allocation
 managed_memory
 pool_allocators
-cpp_guide
 logging
 ```
