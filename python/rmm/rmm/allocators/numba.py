@@ -1,13 +1,12 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
-import ctypes
 import inspect
 from collections.abc import Callable
 from typing import Any
 
 from cuda.bindings.driver import CUdeviceptr, cuIpcGetMemHandle
-from numba import config, cuda
+from numba import cuda
 from numba.cuda import HostOnlyCUDAMemoryManager, IpcHandle, MemoryPointer
 
 from rmm import pylibrmm
@@ -65,12 +64,7 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         """
         buf = pylibrmm.DeviceBuffer(size=size)
         ctx = self.context
-
-        if config.CUDA_USE_NVIDIA_BINDING:
-            ptr = CUdeviceptr(int(buf.ptr))
-        else:
-            # expect ctypes bindings in numba
-            ptr = ctypes.c_uint64(int(buf.ptr))
+        ptr = CUdeviceptr(int(buf.ptr))
 
         finalizer = _make_emm_plugin_finalizer(int(buf.ptr), self.allocations)
 
@@ -88,17 +82,9 @@ class RMMNumbaManager(HostOnlyCUDAMemoryManager):
         the RMM memory pool.
         """
         start, _ = cuda.cudadrv.driver.device_extents(memory)
+        _, ipc_handle = cuIpcGetMemHandle(start)
+        offset = int(memory.handle) - int(start)
 
-        if config.CUDA_USE_NVIDIA_BINDING:
-            _, ipc_handle = cuIpcGetMemHandle(start)
-            offset = int(memory.handle) - int(start)
-        else:
-            ipc_handle = (ctypes.c_byte * 64)()  # IPC handle is 64 bytes
-            cuda.cudadrv.driver.driver.cuIpcGetMemHandle(
-                ctypes.byref(ipc_handle),
-                start,
-            )
-            offset = memory.handle.value - start
         source_info = cuda.current_context().device.get_device_identity()
 
         return IpcHandle(

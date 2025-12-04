@@ -262,7 +262,7 @@ dependencies:
           - myst-parser
           - nbsphinx
           - &numba numba>=0.60.0,<0.62.0a0
-          - &numba_cuda numba-cuda>=0.19.1,<0.20.0a0
+          - &numba_cuda numba-cuda>=0.21.2,<0.22.0a0
           - numpydoc
           - pydata-sphinx-theme>=0.15.4
           - sphinx
@@ -335,7 +335,7 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - numba-cuda==0.19.1
+              - numba-cuda==0.21.2
           - matrix:
             packages:
               - *numba_cuda
@@ -344,14 +344,14 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - numba-cuda==0.19.1
+              - numba-cuda==0.21.2
           - matrix:
               cuda: "12.*"
             packages:
-              - &numba_cuda_cu12 numba-cuda[cu12]>=0.19.1,<0.20.0a0
+              - &numba_cuda_cu12 numba-cuda[cu12]>=0.21.2,<0.22.0a0
           - matrix: # All CUDA 13 versions
             packages:
-              - &numba_cuda_cu13 numba-cuda[cu13]>=0.19.1,<0.20.0a0
+              - &numba_cuda_cu13 numba-cuda[cu13]>=0.21.2,<0.22.0a0
 
   depends_on_rapids_logger:
     common:
