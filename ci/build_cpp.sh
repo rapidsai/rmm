@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+git clone https://github.com/rapidsai/gha-tools.git -b fea/use-rapids-sccache /tmp/gha-tools
+export PATH="/tmp/gha-tools/tools:$PATH"
+
 source rapids-configure-sccache
 source rapids-date-string
 
