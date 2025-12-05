@@ -4,9 +4,9 @@ One of the most common questions when using RMM is: "Which memory resource shoul
 
 This guide provides recommendations for selecting the appropriate memory resource based on your application's needs.
 
-## Quick Recommendations
+## Recommended Defaults
 
-**For most applications**: Use `CudaAsyncMemoryResource` (the CUDA async memory pool).
+For most applications, use the CUDA async memory pool.
 
 `````{tabs}
 ````{code-tab} c++
@@ -24,53 +24,47 @@ rmm.mr.set_current_device_resource(mr)
 ````
 `````
 
-**For applications larger than GPU memory**: Use `ManagedMemoryResource` with prefetching.
+For applications exceeding GPU memory limits, use a pooled managed memory resource with prefetching. Note: managed memory is not supported on WSL2 systems.
 
 `````{tabs}
 ````{code-tab} c++
 #include <rmm/mr/managed_memory_resource.hpp>
+#include <rmm/mr/pool_memory_resource.hpp>
 #include <rmm/mr/prefetch_resource_adaptor.hpp>
 #include <rmm/mr/per_device_resource.hpp>
+#include <rmm/cuda_device.hpp>
+
+// Use 80% of GPU memory, rounded down to nearest 256 bytes
+auto [free_memory, total_memory] = rmm::available_device_memory();
+std::size_t pool_size = (static_cast<std::size_t>(total_memory * 0.8) / 256) * 256;
 
 rmm::mr::managed_memory_resource managed_mr;
-rmm::mr::prefetch_resource_adaptor prefetch_mr{managed_mr};
+rmm::mr::pool_memory_resource pool_mr{managed_mr, pool_size};
+rmm::mr::prefetch_resource_adaptor prefetch_mr{pool_mr};
 rmm::mr::set_current_device_resource_ref(prefetch_mr);
 ````
 ````{code-tab} python
 import rmm
 
-managed_mr = rmm.mr.ManagedMemoryResource()
-prefetch_mr = rmm.mr.PrefetchResourceAdaptor(managed_mr)
-rmm.mr.set_current_device_resource(prefetch_mr)
+# Use 80% of GPU memory, rounded down to nearest 256 bytes
+free_memory, total_memory = rmm.mr.available_device_memory()
+pool_size = int(total_memory * 0.8) // 256 * 256
+
+mr = rmm.mr.PrefetchResourceAdaptor(
+    rmm.mr.PoolMemoryResource(
+        rmm.mr.ManagedMemoryResource(),
+        initial_pool_size=pool_size,
+    )
+)
+rmm.mr.set_current_device_resource(mr)
 ````
 `````
 
-**For specific allocation patterns**: Consider `ArenaMemoryResource` or custom configurations.
+## Memory Resource Considerations
 
-`````{tabs}
-````{code-tab} c++
-#include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/arena_memory_resource.hpp>
-#include <rmm/mr/per_device_resource.hpp>
+It is usually best to use resources that allow the CUDA driver to manage pool suballocation via `cudaMallocFromPoolAsync`.
 
-rmm::mr::cuda_memory_resource cuda_mr;
-rmm::mr::arena_memory_resource arena_mr{cuda_mr};
-rmm::mr::set_current_device_resource_ref(arena_mr);
-````
-````{code-tab} python
-import rmm
-
-cuda_mr = rmm.mr.CudaMemoryResource()
-arena_mr = rmm.mr.ArenaMemoryResource(cuda_mr)
-rmm.mr.set_current_device_resource(arena_mr)
-````
-`````
-
-## Understanding Memory Resources
-
-RMM provides several memory resource types, each optimized for different use cases:
-
-### CudaAsyncMemoryResource (Recommended Default)
+### CudaAsyncMemoryResource
 
 The `CudaAsyncMemoryResource` uses CUDA's driver-managed memory pool (via `cudaMallocAsync`). This is the **recommended default** for most applications.
 
@@ -79,14 +73,6 @@ The `CudaAsyncMemoryResource` uses CUDA's driver-managed memory pool (via `cudaM
 - **Cross-library sharing**: The pool can be shared across multiple applications and libraries, even those not using RMM directly
 - **Stream-ordered semantics**: Allocations and deallocations are stream-ordered by default
 - **Performance**: Similar or better performance compared to RMM's pool implementations
-
-**Example:**
-```python
-import rmm
-
-# Set async memory resource as default
-rmm.mr.set_current_device_resource(rmm.mr.CudaAsyncMemoryResource())
-```
 
 **When to use:**
 - Default choice for GPU-accelerated applications
@@ -105,7 +91,6 @@ The `CudaMemoryResource` uses `cudaMalloc` directly for each allocation, with no
 
 **Disadvantages:**
 - Slower than pooled allocators due to synchronization overhead
-- Each allocation requires a driver call
 
 **Example:**
 ```python
