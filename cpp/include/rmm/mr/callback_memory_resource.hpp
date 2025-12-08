@@ -115,14 +115,14 @@ class callback_memory_resource final : public device_memory_resource {
   }
 
   /**
-   * @brief Deallocate memory pointed to by \p p.
+   * @brief Deallocate memory pointed to by \p ptr.
    *
    * If supported by the callback, this operation may optionally be executed on
    * a stream.  Otherwise, the stream is ignored and the null stream is used.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
    * @param stream Stream on which to perform deallocation
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
