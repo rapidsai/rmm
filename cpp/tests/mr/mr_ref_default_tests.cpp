@@ -17,11 +17,6 @@
 namespace rmm::test {
 namespace {
 
-// Suppress warnings about uninstantiated parameterized tests in this file
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(mr_ref_test);
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(mr_ref_allocation_test);
-GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(mr_ref_test_mt);
-
 // Helper functions for multi-threaded tests
 template <typename Task, typename... Arguments>
 void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
