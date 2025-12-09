@@ -198,7 +198,7 @@ inline device_async_resource_ref set_per_device_resource_ref_unsafe(
   // Note: because resource_ref is not default-constructible, we can't use std::map::operator[]
   if (old_itr == map.end()) {
     map.insert({device_id.value(), new_resource_ref});
-    return device_async_resource_ref{detail::initial_resource()};
+    return device_async_resource_ref{*detail::initial_resource()};
   }
 
   auto old_resource_ref = old_itr->second;
@@ -244,7 +244,7 @@ inline device_memory_resource* set_per_device_resource(cuda_device_id device_id,
   // state consistent with the resource pointer state. This is necessary because the
   // Python API still uses the raw pointer API. Once the Python API is updated to use
   // resource_ref, this call can be removed.
-  detail::set_per_device_resource_ref_unsafe(device_id, new_mr);
+  if (new_mr != nullptr) { detail::set_per_device_resource_ref_unsafe(device_id, new_mr); }
 
   auto& map          = detail::get_map();
   auto const old_itr = map.find(device_id.value());
@@ -338,7 +338,7 @@ inline device_async_resource_ref get_per_device_resource_ref(cuda_device_id devi
   // If a resource was never set for `id`, set to the initial resource
   auto const found = map.find(device_id.value());
   if (found == map.end()) {
-    auto item = map.insert({device_id.value(), detail::initial_resource()});
+    auto item = map.insert({device_id.value(), *detail::initial_resource()});
     return item.first->second;
   }
   return found->second;
@@ -447,7 +447,7 @@ inline device_async_resource_ref set_current_device_resource_ref(
  */
 inline device_async_resource_ref reset_per_device_resource_ref(cuda_device_id device_id)
 {
-  return set_per_device_resource_ref(device_id, detail::initial_resource());
+  return set_per_device_resource_ref(device_id, *detail::initial_resource());
 }
 
 /**
