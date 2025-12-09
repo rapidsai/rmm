@@ -41,6 +41,7 @@ dependencies:
 - sphinx
 - sphinx-copybutton
 - sphinx-markdown-tables
+- sphinx-tabs
 - sphinxcontrib-jquery
 - sysroot_linux-64==2.28
 name: all_cuda-130_arch-x86_64

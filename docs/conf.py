@@ -57,6 +57,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_copybutton",
     "sphinx_markdown_tables",
+    "sphinx_tabs.tabs",
     "sphinxcontrib.jquery",
 ]
 
