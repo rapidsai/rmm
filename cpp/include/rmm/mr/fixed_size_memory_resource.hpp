@@ -200,7 +200,7 @@ class fixed_size_memory_resource
    *
    * @param ptr The pointer to the memory to free.
    * @param size The size of the memory to free. Must be equal to the original allocation size.
-   * @return The (now freed) block associated with `ptr`. The caller is expected to return the block
+   * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool.
    */
   block_type free_block(void* ptr, std::size_t size) noexcept

@@ -623,7 +623,7 @@ of more detailed logging. The default is `INFO`. Available levels are `TRACE`, `
 `WARN`, `ERROR`, `CRITICAL` and `OFF`.
 
 Note that to see logging below the `INFO` level, the application must also set the logging level at
-run time. C++ applications must call `rmm::default_logger().set_level()`, for example to enable all
+run time. C++ applications must must call `rmm::default_logger().set_level()`, for example to enable all
 levels of logging down to `TRACE`, call `rmm::default_logger().set_level(rapids_logger::level_enum::trace)` (and compile
 librmm with `-DRMM_LOGGING_LEVEL=TRACE`). Python applications must call `rmm.set_logging_level()`,
 for example to enable all levels of logging down to `TRACE`, call `rmm.set_logging_level("trace")`

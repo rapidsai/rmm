@@ -591,7 +591,7 @@ class global_arena final {
    * @param stream Stream on which to perform deallocation.
    * @param ptr Pointer to be deallocated.
    * @param size The size in bytes of the allocation. This must be equal to the value of `size`
-   * that was passed to the `allocate` call that returned `ptr`.
+   * that was passed to the `allocate` call that returned `p`.
    * @return bool true if the allocation is found, false otherwise.
    */
   bool deallocate(cuda_stream_view stream, void* ptr, std::size_t size)
@@ -816,7 +816,7 @@ class arena {
    * @param stream Stream on which to perform deallocation.
    * @param ptr Pointer to be deallocated.
    * @param size The size in bytes of the allocation. This must be equal to the value of `size`
-   * that was passed to the `allocate` call that returned `ptr`.
+   * that was passed to the `allocate` call that returned `p`.
    * @return bool true if the allocation is found, false otherwise.
    */
   bool deallocate(cuda_stream_view stream, void* ptr, std::size_t size)
@@ -830,7 +830,7 @@ class arena {
    *
    * @param ptr Pointer to be deallocated.
    * @param size The size in bytes of the allocation. This must be equal to the value of `size`
-   * that was passed to the `allocate` call that returned `ptr`.
+   * that was passed to the `allocate` call that returned `p`.
    * @return bool true if the allocation is found, false otherwise.
    */
   bool deallocate_sync(void* ptr, std::size_t size)

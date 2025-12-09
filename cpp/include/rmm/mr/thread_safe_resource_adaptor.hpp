@@ -93,7 +93,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   }
 
   /**
-   * @brief Free allocation of size `bytes` pointed to by `ptr`.
+   * @brief Free allocation of size `bytes` pointed to to by `ptr`.s
    *
    * @param ptr Pointer to be deallocated
    * @param bytes Size of the allocation

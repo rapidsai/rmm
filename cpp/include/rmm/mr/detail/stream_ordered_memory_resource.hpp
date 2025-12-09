@@ -62,7 +62,7 @@ struct crtp {
  * 1. `std::size_t get_maximum_allocation_size() const`
  * 2. `block_type expand_pool(std::size_t size, free_list& blocks, cuda_stream_view stream)`
  * 3. `split_block allocate_from_block(block_type const& b, std::size_t size)`
- * 4. `block_type free_block(void* ptr, std::size_t size) noexcept`
+ * 4. `block_type free_block(void* p, std::size_t size) noexcept`
  */
 template <typename PoolResource, typename FreeListType>
 class stream_ordered_memory_resource : public crtp<PoolResource>, public device_memory_resource {
@@ -127,14 +127,14 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   // split_block allocate_from_block(block_type const& b, std::size_t size)
 
   /*
-   * @brief Finds, frees and returns the block associated with pointer `ptr`.
+   * @brief Finds, frees and returns the block associated with pointer `p`.
    *
-   * @param ptr The pointer to the memory to free.
+   * @param p The pointer to the memory to free.
    * @param size The size of the memory to free. Must be equal to the original allocation size.
-   * @return The (now freed) block associated with `ptr`. The caller is expected to return the block
+   * @return The (now freed) block associated with `p`. The caller is expected to return the block
    * to the pool.
    */
-  // block_type free_block(void* ptr, std::size_t size) noexcept
+  // block_type free_block(void* p, std::size_t size) noexcept
 
   /**
    * @brief Returns the block `b` (last used on stream `stream_event`) to the pool.

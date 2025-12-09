@@ -19,12 +19,12 @@ namespace detail {
  * @brief Allocates sufficient host-accessible memory to satisfy the requested size `bytes` with
  * alignment `alignment` using the unary callable `alloc` to allocate memory.
  *
- * Given a pointer `base_ptr` to an allocation of size `n` returned from the unary callable `alloc`,
- * the pointer `aligned_ptr` returned from `aligned_host_allocate` points to a location within the
- * `n` bytes with sufficient space for `bytes` that satisfies `alignment`.
+ * Given a pointer `p` to an allocation of size `n` returned from the unary callable `alloc`, the
+ * pointer `q` returned from `aligned_alloc` points to a location within the `n` bytes with
+ * sufficient space for `bytes` that satisfies `alignment`.
  *
- * In order to retrieve the original allocation pointer `base_ptr`, the offset between `base_ptr`
- * and `aligned_ptr` is stored at `aligned_ptr - sizeof(std::ptrdiff_t)`.
+ * In order to retrieve the original allocation pointer `p`, the offset between `p` and `q` is
+ * stored at `q - sizeof(std::ptrdiff_t)`.
  *
  * Allocations returned from `aligned_host_allocate` *MUST* be freed by calling
  * `aligned_host_deallocate` with the same arguments for `bytes` and `alignment` with a compatible
@@ -76,7 +76,7 @@ void* aligned_host_allocate(std::size_t bytes, std::size_t alignment, Alloc allo
  * `aligned_host_deallocate` with the same arguments for `bytes` and `alignment` with a compatible
  * unary `dealloc` callable capable of freeing the memory returned from `alloc`.
  *
- * @param ptr The aligned pointer to deallocate
+ * @param p The aligned pointer to deallocate
  * @param bytes The number of bytes requested from `aligned_host_allocate`
  * @param alignment The alignment required from `aligned_host_allocate`
  * @param dealloc A unary callable capable of freeing host-accessible memory returned from `alloc`

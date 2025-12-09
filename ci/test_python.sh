@@ -44,7 +44,7 @@ nvidia-smi
 
 rapids-logger "pytest rmm"
 
-timeout 10m ./ci/run_pytests.sh \
+./ci/run_pytests.sh \
     --junitxml="${RAPIDS_TESTS_DIR}/junit-rmm.xml" \
     --cov-config=.coveragerc \
     --cov=rmm \
