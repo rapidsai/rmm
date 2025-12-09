@@ -7,6 +7,12 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/detail/export.hpp>
+
+// CCCL 3.2 introduced a new basic_any-based resource_ref implementation that requires
+// composition instead of inheritance to avoid issues with copy/move semantics and
+// recursive constraint satisfaction. For CCCL < 3.2, we use the simpler inheritance-based
+// approach.
+#if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 2)
 #include <rmm/mr/detail/device_memory_resource_view.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 
@@ -14,10 +20,13 @@
 #include <optional>
 #include <type_traits>
 #include <utility>
+#endif
 
 namespace RMM_NAMESPACE {
 
 namespace detail {
+
+#if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 2)
 
 /**
  * @brief Helper trait to check if a type is a specialization of a class template.
@@ -523,6 +532,90 @@ class cccl_async_resource_ref {
   std::optional<rmm::mr::detail::device_memory_resource_view> view_;
   ResourceType ref_;
 };
+
+#else  // CCCL < 3.2: Use simpler inheritance-based implementation
+
+template <typename ResourceType>
+class cccl_resource_ref : public ResourceType {
+ public:
+  using base = ResourceType;
+
+  using base::base;
+
+  cccl_resource_ref(base const& other) : base(other) {}
+
+  cccl_resource_ref(base&& other) : base(std::move(other)) {}
+
+  void* allocate_sync(std::size_t bytes) { return base::allocate_sync(bytes); }
+
+  void* allocate_sync(std::size_t bytes, std::size_t alignment)
+  {
+    return base::allocate_sync(bytes, alignment);
+  }
+
+  void deallocate_sync(void* ptr, std::size_t bytes) noexcept
+  {
+    return base::deallocate_sync(ptr, bytes);
+  }
+
+  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
+  {
+    return base::deallocate_sync(ptr, bytes, alignment);
+  }
+};
+
+template <typename ResourceType>
+class cccl_async_resource_ref : public ResourceType {
+ public:
+  using base = ResourceType;
+
+  using base::base;
+
+  cccl_async_resource_ref(base const& other) : base(other) {}
+  cccl_async_resource_ref(base&& other) : base(std::move(other)) {}
+
+  void* allocate_sync(std::size_t bytes) { return base::allocate_sync(bytes); }
+
+  void* allocate_sync(std::size_t bytes, std::size_t alignment)
+  {
+    return base::allocate_sync(bytes, alignment);
+  }
+
+  void deallocate_sync(void* ptr, std::size_t bytes) noexcept
+  {
+    return base::deallocate_sync(ptr, bytes);
+  }
+
+  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
+  {
+    return base::deallocate_sync(ptr, bytes, alignment);
+  }
+
+  void* allocate(cuda_stream_view stream, std::size_t bytes)
+  {
+    return base::allocate(stream, bytes);
+  }
+
+  void* allocate(cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
+  {
+    return base::allocate(stream, bytes, alignment);
+  }
+
+  void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes) noexcept
+  {
+    return base::deallocate(stream, ptr, bytes);
+  }
+
+  void deallocate(cuda_stream_view stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment) noexcept
+  {
+    return base::deallocate(stream, ptr, bytes, alignment);
+  }
+};
+
+#endif  // CCCL version check
 
 }  // namespace detail
 }  // namespace RMM_NAMESPACE
