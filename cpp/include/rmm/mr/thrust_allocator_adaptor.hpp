@@ -108,7 +108,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    *
    * @param ptr Pointer returned by a previous call to `allocate`
    * @param num number of elements, *must* be equal to the argument passed to the
-   * prior `allocate` call that produced `ptr`
+   * prior `allocate` call that produced `p`
    */
   void deallocate(pointer ptr, size_type num) noexcept
   {

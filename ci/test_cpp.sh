@@ -40,13 +40,13 @@ nvidia-smi
 rapids-logger "Run gtests"
 
 export GTEST_OUTPUT=xml:${RAPIDS_TESTS_DIR}/
-timeout 15m ./ci/run_ctests.sh -j20 && EXITCODE=$? || EXITCODE=$?;
+./ci/run_ctests.sh -j20 && EXITCODE=$? || EXITCODE=$?;
 
 # Run all examples from librmm-example package
 for example in "${CONDA_PREFIX}"/bin/examples/librmm/*; do
     if [ -x "$example" ]; then
         rapids-logger "Running example: $(basename "$example")"
-        timeout 15m "$example" && EXAMPLE_EXITCODE=$? || EXAMPLE_EXITCODE=$?;
+        "$example" && EXAMPLE_EXITCODE=$? || EXAMPLE_EXITCODE=$?;
         if [ "$EXAMPLE_EXITCODE" -ne 0 ]; then
             rapids-logger "Example $(basename "$example") failed with exit code: $EXAMPLE_EXITCODE"
             EXITCODE=$EXAMPLE_EXITCODE

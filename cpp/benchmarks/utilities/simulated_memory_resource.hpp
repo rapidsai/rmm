@@ -65,7 +65,7 @@ class simulated_memory_resource final : public device_memory_resource {
   }
 
   /**
-   * @brief Deallocate memory pointed to by `ptr`.
+   * @brief Deallocate memory pointed to by `p`.
    *
    * @note This call is ignored.
    *

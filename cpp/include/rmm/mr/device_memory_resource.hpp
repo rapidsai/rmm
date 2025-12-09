@@ -6,7 +6,6 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
-#include <rmm/detail/cccl_adaptors.hpp>
 #include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
@@ -98,8 +97,6 @@ class device_memory_resource {
    * The returned pointer will have 256 byte alignment regardless of the value
    * of alignment. Higher alignments must use the aligned_resource_adaptor.
    *
-   * The returned pointer is immediately valid on all streams.
-   *
    * @throws rmm::bad_alloc When the requested `bytes` cannot be allocated.
    *
    * @param bytes The size of the allocation
@@ -112,22 +109,16 @@ class device_memory_resource {
       alignment <= rmm::CUDA_ALLOCATION_ALIGNMENT && rmm::is_supported_alignment(alignment),
       "Alignment must be less than or equal to 256 and a power of two",
       rmm::bad_alloc);
-    auto const stream = cuda_stream_view{};
-    void* ptr         = do_allocate(bytes, stream);
-    stream.synchronize();
-    return ptr;
+    return do_allocate(bytes, cuda_stream_view{});
   }
 
   /**
-   * @brief Deallocate memory pointed to by \p ptr.
-   *
-   * @note All stream-ordered work on `ptr` must be complete before calling this function otherwise
-   * behavior is undefined.
+   * @brief Deallocate memory pointed to by \p p.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
-   * @param alignment The alignment that was passed to the `allocate` call that returned `ptr`
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param alignment The alignment that was passed to the `allocate` call that returned `p`
    */
   void deallocate_sync(
     void* ptr,
@@ -167,8 +158,8 @@ class device_memory_resource {
    * @param stream The stream on which to perform the deallocation
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
-   * @param alignment The alignment that was passed to the `allocate` call that returned `ptr`
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
+   * @param alignment The alignment that was passed to the `allocate` call that returned `p`
    */
   void deallocate(cuda_stream_view stream,
                   void* ptr,
@@ -243,14 +234,14 @@ class device_memory_resource {
   virtual void* do_allocate(std::size_t bytes, cuda_stream_view stream) = 0;
 
   /**
-   * @brief Deallocate memory pointed to by \p ptr.
+   * @brief Deallocate memory pointed to by \p p.
    *
    * If supported, this operation may optionally be executed on a stream.
    * Otherwise, the stream is ignored and the null stream is used.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream Stream on which to perform deallocation
    */
   virtual void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept = 0;

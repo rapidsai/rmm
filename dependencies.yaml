@@ -114,7 +114,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - rapids-build-backend>=0.4.0,<0.5.0
+          - rapids-build-backend>=0.4.0,<0.5.0.dev0
       - output_types: conda
         packages:
           - scikit-build-core >=0.10.0
@@ -150,17 +150,17 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           # Pin Cython to <3.2 to avoid https://github.com/rapidsai/rmm/issues/2134
-          - cython>=3.0.0,<3.2.0
+          - cython>=3.0.0,<3.2.0a0
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:
           - matrix:
               cuda: "12.*"
             packages:
-              - &cuda_python12 cuda-python>=12.9.2,<13.0
+              - &cuda_python12 cuda-python>=12.9.2,<13.0a0
           - matrix: # All CUDA 13 versions
             packages:
-              - &cuda_python13 cuda-python>=13.0.1,<14.0
+              - &cuda_python13 cuda-python>=13.0.1,<14.0a0
   depends_on_librmm:
     common:
       - output_types: conda
@@ -261,8 +261,8 @@ dependencies:
           - make
           - myst-parser
           - nbsphinx
-          - &numba numba>=0.60.0,<0.62.0
-          - &numba_cuda numba-cuda>=0.19.1,<0.20.0
+          - &numba numba>=0.60.0,<0.62.0a0
+          - &numba_cuda numba-cuda>=0.19.1,<0.20.0a0
           - numpydoc
           - pydata-sphinx-theme>=0.15.4
           - sphinx
@@ -296,7 +296,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - numpy>=1.23,<3.0
+          - numpy>=1.23,<3.0a0
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:
@@ -317,7 +317,7 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - packaging
-          - pytest<9.0.0
+          - pytest<9.0.0a0
           - pytest-cov
     specific:
       - output_types: [conda, requirements, pyproject]
@@ -348,10 +348,10 @@ dependencies:
           - matrix:
               cuda: "12.*"
             packages:
-              - &numba_cuda_cu12 numba-cuda[cu12]>=0.19.1,<0.20.0
+              - &numba_cuda_cu12 numba-cuda[cu12]>=0.19.1,<0.20.0a0
           - matrix: # All CUDA 13 versions
             packages:
-              - &numba_cuda_cu13 numba-cuda[cu13]>=0.19.1,<0.20.0
+              - &numba_cuda_cu13 numba-cuda[cu13]>=0.19.1,<0.20.0a0
 
   depends_on_rapids_logger:
     common:

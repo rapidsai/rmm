@@ -1285,7 +1285,7 @@ def get_log_filenames():
 
 def available_device_memory():
     """
-    Returns a tuple of free and total device memory.
+    Returns a tuple of free and total device memory memory.
     """
     cdef pair[size_t, size_t] res
     res = c_available_device_memory()

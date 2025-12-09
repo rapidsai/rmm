@@ -51,7 +51,7 @@ class pinned_host_memory_resource final : public device_memory_resource {
   /**
    * @brief Allocates pinned host memory of size at least \p bytes bytes.
    *
-   * @throws rmm::out_of_memory if the requested allocation could not be fulfilled due to a
+   * @throws rmm::out_of_memory if the requested allocation could not be fulfilled due to to a
    * CUDA out of memory error.
    * @throws rmm::bad_alloc if the requested allocation could not be fulfilled due to any other
    * reason.
@@ -78,13 +78,13 @@ class pinned_host_memory_resource final : public device_memory_resource {
   }
 
   /**
-   * @brief Deallocate memory pointed to by \p ptr.
+   * @brief Deallocate memory pointed to by \p p.
    *
    * The stream argument is ignored.
    *
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
+   * value of `bytes` that was passed to the `allocate` call that returned `p`.
    * @param stream This argument is ignored.
    */
   void do_deallocate(void* ptr,
