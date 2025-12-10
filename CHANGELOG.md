@@ -1,3 +1,70 @@
+# rmm 25.12.00 (10 Dec 2025)
+
+### 🚨 Breaking Changes
+* Deallocation should be noexcept by @bdice in https://github.com/rapidsai/rmm/pull/2077
+* Refactor memory_resource Python/Cython to prepare for experimental memory resources by @bdice in https://github.com/rapidsai/rmm/pull/2083
+* Derive pinned_host_memory_resource from device_memory_resource by @bdice in https://github.com/rapidsai/rmm/pull/2102
+* Deprecate host memory resources by @bdice in https://github.com/rapidsai/rmm/pull/2104
+* Fix bug, improve testing for pinned_host_memory_resource, and error on non-power-of-2 alignments in host memory resources by @bdice in https://github.com/rapidsai/rmm/pull/2107
+* Remove align-up on base allocations. by @bdice in https://github.com/rapidsai/rmm/pull/2114
+* Require CCCL >=3.1.0 and add CMake option to disable legacy MR interface by @bdice in https://github.com/rapidsai/rmm/pull/2113
+* Remove deprecated module by @vyasr in https://github.com/rapidsai/rmm/pull/2119
+* Add deprecation warnings for legacy MR interface by @bdice in https://github.com/rapidsai/rmm/pull/2128
+* Deprecate RMM_DEFAULT_HOST_ALIGNMENT by @bdice in https://github.com/rapidsai/rmm/pull/2153
+### 🐛 Bug Fixes
+* Make mock_mr deallocation noexcept by @bdice in https://github.com/rapidsai/rmm/pull/2085
+* Make more warnings errors and fix associated issues by @vyasr in https://github.com/rapidsai/rmm/pull/2118
+* Add SOURCE_SUBDIR cpp to CPM examples by @bdice in https://github.com/rapidsai/rmm/pull/2121
+* Restore isort for Cython files by @KyleFromNVIDIA in https://github.com/rapidsai/rmm/pull/2124
+* refactored update-version.sh to accept RAPIDS_RUN_CONTEXT or --run-context to handle main and release branches by @rockhowse in https://github.com/rapidsai/rmm/pull/2123
+* Make rmm.pylibrmm.stream.Stream hashable by @TomAugspurger in https://github.com/rapidsai/rmm/pull/2131
+* Pin Cython<3.2.0 by @TomAugspurger in https://github.com/rapidsai/rmm/pull/2135
+* Pin Cython pre-3.2.0 and PyTest pre-9 by @jakirkham in https://github.com/rapidsai/rmm/pull/2136
+### 📖 Documentation
+* Fix parameter docstrings by @bdice in https://github.com/rapidsai/rmm/pull/2062
+* [MINOR] [DOC] Adding a note to stream operations in `device_buffer` by @nirandaperera in https://github.com/rapidsai/rmm/pull/2081
+* Clarify comment in cuda_async_managed_memory_resource by @bdice in https://github.com/rapidsai/rmm/pull/2117
+* Use current system architecture in conda environment creation command by @bdice in https://github.com/rapidsai/rmm/pull/2125
+* Improve Python docs by @bdice in https://github.com/rapidsai/rmm/pull/2139
+* Use PyData docs theme, reorganize C++ docs by @bdice in https://github.com/rapidsai/rmm/pull/2137
+* Improve C++ docs by @bdice in https://github.com/rapidsai/rmm/pull/2138
+* Migrate memory resource documentation to drop "device" qualifier by @bdice in https://github.com/rapidsai/rmm/pull/2142
+### 🚀 New Features
+* Disable async MR priming by default by @bdice in https://github.com/rapidsai/rmm/pull/2051
+* Add experimental cuda_async_managed_memory_resource. by @bdice in https://github.com/rapidsai/rmm/pull/2056
+* Add Python bindings to pinned_host_memory_resource by @bdice in https://github.com/rapidsai/rmm/pull/2105
+* Add Python bindings to cuda_stream_pool by @nirandaperera in https://github.com/rapidsai/rmm/pull/2110
+### 🛠️ Improvements
+* Update `RAPIDS_BRANCH`, codify changes in `update-version.sh` by @KyleFromNVIDIA in https://github.com/rapidsai/rmm/pull/2049
+* Simplify cuda_async_view_memory_resource constructor by @bdice in https://github.com/rapidsai/rmm/pull/2055
+* Update to rapids-logger 0.2 by @bdice in https://github.com/rapidsai/rmm/pull/2072
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/rapidsai/rmm/pull/2079
+* Enable `sccache-dist` connection pool by @trxcllnt in https://github.com/rapidsai/rmm/pull/2093
+* Check for equality of device buffer contents in tests by @bdice in https://github.com/rapidsai/rmm/pull/2092
+* Implicitly construct span from scalar in a test by @bdice in https://github.com/rapidsai/rmm/pull/2091
+* Use main in RAPIDS_BRANCH by @bdice in https://github.com/rapidsai/rmm/pull/2096
+* Use main branch by @bdice in https://github.com/rapidsai/rmm/pull/2097
+* Enable sccache-dist connection pool by @trxcllnt in https://github.com/rapidsai/rmm/pull/2098
+* Use main shared-workflows branch by @bdice in https://github.com/rapidsai/rmm/pull/2099
+* Use SPDX for all copyright headers by @KyleFromNVIDIA in https://github.com/rapidsai/rmm/pull/2100
+* Implement CUDA Stream Protocol for `rmm.pylibrmm.stream.Stream` by @TomAugspurger in https://github.com/rapidsai/rmm/pull/2094
+* Use `RAPIDS_BRANCH` in cmake-format invocations that need rapids-cmake configs by @bdice in https://github.com/rapidsai/rmm/pull/2111
+* Skip pytorch tests on CPU-only builds by @bdice in https://github.com/rapidsai/rmm/pull/2115
+* Use CCCL MR interface internally by @bdice in https://github.com/rapidsai/rmm/pull/2112
+* Feat/more none checking by @vyasr in https://github.com/rapidsai/rmm/pull/2120
+* compare <= to accommodate unified systems by @trxcllnt in https://github.com/rapidsai/rmm/pull/2122
+* Add cuda::std::span operator to rmm::device_uvector by @davidwendt in https://github.com/rapidsai/rmm/pull/2132
+* Initial type checking infrastructure by @TomAugspurger in https://github.com/rapidsai/rmm/pull/2133
+* Reorganize Python tests by memory resource class by @bdice in https://github.com/rapidsai/rmm/pull/2127
+* Migrate device memory resource headers by @bdice in https://github.com/rapidsai/rmm/pull/2140
+* Use `sccache-dist` build cluster for conda and wheel builds by @trxcllnt in https://github.com/rapidsai/rmm/pull/2101
+
+## New Contributors
+* @nirandaperera made their first contribution in https://github.com/rapidsai/rmm/pull/2081
+* @rockhowse made their first contribution in https://github.com/rapidsai/rmm/pull/2123
+
+**Full Changelog**: https://github.com/rapidsai/rmm/compare/v25.12.00a...release/25.12
+
 # rmm 25.10.00 (8 Oct 2025)
 
 ## 🚨 Breaking Changes
