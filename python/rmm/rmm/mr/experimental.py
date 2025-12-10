@@ -5,8 +5,10 @@
 
 from rmm.pylibrmm.memory_resource.experimental import (
     CudaAsyncManagedMemoryResource,
+    CudaAsyncPinnedMemoryResource,
 )
 
 __all__ = [
     "CudaAsyncManagedMemoryResource",
+    "CudaAsyncPinnedMemoryResource",
 ]
