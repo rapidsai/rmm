@@ -64,7 +64,6 @@ requirements:
     - ${{ stdlib("c") }}
   host:
     - cuda-version =${{ cuda_version }}
-    - cuda-cudart-dev
     - if: cuda_major == "12"
       then: cuda-python >=12.9.2,<13.0
       else: cuda-python >=13.0.1,<14.0
@@ -75,7 +74,6 @@ requirements:
     - pip
     - scikit-build-core >=0.10.0
   run:
-    - cuda-cudart
     - if: cuda_major == "12"
       then: cuda-python >=12.9.2,<13.0
       else: cuda-python >=13.0.1,<14.0
@@ -85,7 +83,6 @@ requirements:
   ignore_run_exports:
     from_package:
       - cuda-python
-      - cuda-cudart-dev
     by_name:
       - cuda-version
 

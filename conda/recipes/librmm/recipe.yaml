@@ -92,17 +92,13 @@ outputs:
         - ${{ stdlib("c") }}
       host:
         - cuda-version =${{ cuda_version }}
-        - cuda-cudart-dev
         - rapids-logger =0.2
       run:
         - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
-        - cuda-cudart
         - rapids-logger =0.2
       run_exports:
         - ${{ pin_subpackage("librmm", upper_bound="x.x") }}
       ignore_run_exports:
-        from_package:
-          - cuda-cudart-dev
         by_name:
           - cuda-version
     tests:
@@ -131,15 +127,11 @@ outputs:
         - ${{ pin_subpackage("librmm", exact=True) }}
         - cuda-driver-dev
         - cuda-version =${{ cuda_version }}
-        - cuda-cudart-dev
       run:
         - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
         - ${{ pin_subpackage("librmm", exact=True) }}
         - rapids-logger =0.2
-        - cuda-cudart
       ignore_run_exports:
-        from_package:
-          - cuda-cudart-dev
         by_name:
           - cuda-version
     about:
@@ -190,15 +182,11 @@ outputs:
         - cuda-version =${{ cuda_version }}
       host:
         - cuda-version =${{ cuda_version }}
-        - cuda-cudart-dev
         - ${{ pin_subpackage("librmm", exact=True) }}
       run:
-        - cuda-cudart
         - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
         - ${{ pin_subpackage("librmm", exact=True) }}
       ignore_run_exports:
-        from_package:
-          - cuda-cudart-dev
         by_name:
           - cuda-version
           - librmm
