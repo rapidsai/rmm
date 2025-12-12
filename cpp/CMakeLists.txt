@@ -48,6 +48,9 @@ message(VERBOSE "RMM: Build with NVTX support: ${RMM_NVTX}")
 # build type for cmake-gui.
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
+# cudart can be linked statically or dynamically
+option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
+
 # ##################################################################################################
 # * compiler options -------------------------------------------------------------------------------
 
@@ -96,7 +99,12 @@ target_include_directories(
          "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
   INTERFACE "$<INSTALL_INTERFACE:include>")
 
-target_link_libraries(rmm PUBLIC CUDA::cudart_static)
+if(CUDA_STATIC_RUNTIME)
+  message(STATUS "RMM: Enabling static linking of cudart")
+  target_link_libraries(rmm PUBLIC CUDA::cudart_static)
+else()
+  target_link_libraries(rmm PUBLIC CUDA::cudart)
+endif()
 
 target_link_libraries(rmm PUBLIC CCCL::CCCL ${CMAKE_DL_LIBS} nvtx3::nvtx3-cpp
                                  rapids_logger::rapids_logger)
