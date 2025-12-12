@@ -26,5 +26,6 @@ unset(rmm_FOUND)
 
 set(BUILD_TESTS OFF)
 set(BUILD_BENCHMARKS OFF)
+set(CUDA_STATIC_RUNTIME ON)
 
 add_subdirectory(../../cpp rmm-cpp)

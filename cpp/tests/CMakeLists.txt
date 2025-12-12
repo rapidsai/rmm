@@ -83,7 +83,7 @@ endfunction()
 function(ConfigureTest TEST_NAME)
 
   set(options LINK_DRIVER)
-  set(one_value GPUS PERCENT)
+  set(one_value CUDART GPUS PERCENT)
   set(multi_value)
   cmake_parse_arguments(_RMM_TEST "${options}" "${one_value}" "${multi_value}" ${ARGN})
   if(NOT DEFINED _RMM_TEST_GPUS AND NOT DEFINED _RMM_TEST_PERCENT)
@@ -97,7 +97,13 @@ function(ConfigureTest TEST_NAME)
     set(_RMM_TEST_PERCENT 100)
   endif()
 
-  set(cudart_link_libs $<COMPILE_ONLY:rmm> CUDA::cudart_static)
+  if(_RMM_TEST_CUDART STREQUAL SHARED)
+    set(cudart_link_libs $<COMPILE_ONLY:rmm> CUDA::cudart)
+  elseif(_RMM_TEST_CUDART STREQUAL STATIC)
+    set(cudart_link_libs $<COMPILE_ONLY:rmm> CUDA::cudart_static)
+  else()
+    set(cudart_link_libs rmm)
+  endif()
 
   # Test with legacy default stream.
   ConfigureTestInternal(${TEST_NAME} ${_RMM_TEST_UNPARSED_ARGUMENTS})
@@ -140,7 +146,10 @@ ConfigureTest(POOL_MR_TEST mr/pool_mr_tests.cpp GPUS 1 PERCENT 100)
 ConfigureTest(HWDECOMPRESS_TEST mr/hwdecompress_tests.cpp LINK_DRIVER)
 
 # cuda_async mr tests
-ConfigureTest(CUDA_ASYNC_MR_TEST mr/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60)
+ConfigureTest(CUDA_ASYNC_MR_STATIC_CUDART_TEST mr/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60 CUDART
+              STATIC)
+ConfigureTest(CUDA_ASYNC_MR_SHARED_CUDART_TEST mr/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60 CUDART
+              SHARED)
 
 # cuda_async managed mr tests (available with CUDA 13+ runtime/driver)
 ConfigureTest(CUDA_ASYNC_MANAGED_MR_TEST mr/cuda_async_managed_mr_tests.cpp)
