@@ -133,9 +133,27 @@ endfunction()
 
 # test sources
 
-# device mr_ref tests
-ConfigureTest(DEVICE_MR_REF_TEST mr/mr_ref_tests.cpp mr/mr_ref_multithreaded_tests.cpp GPUS 1
-              PERCENT 100)
+# device mr_ref tests - split by memory resource type for parallel execution PERCENT values based on
+# maximum memory allocation per test (assuming 16GB GPU)
+
+# Full test suites with multi-threading (~2GB max allocation = 15%)
+ConfigureTest(CUDA_MR_REF_TEST mr/mr_ref_cuda_tests.cpp GPUS 1 PERCENT 15)
+ConfigureTest(CUDA_ASYNC_MR_REF_TEST mr/mr_ref_cuda_async_tests.cpp GPUS 1 PERCENT 15)
+ConfigureTest(MANAGED_MR_REF_TEST mr/mr_ref_managed_tests.cpp GPUS 1 PERCENT 15)
+
+# Pre-allocating resources (50% of free device memory = 50%)
+ConfigureTest(POOL_MR_REF_TEST mr/mr_ref_pool_tests.cpp GPUS 1 PERCENT 50)
+ConfigureTest(ARENA_MR_REF_TEST mr/mr_ref_arena_tests.cpp GPUS 1 PERCENT 50)
+ConfigureTest(BINNING_MR_REF_TEST mr/mr_ref_binning_tests.cpp GPUS 1 PERCENT 50)
+
+# Partial test suites without multi-threading (~500MB max = 5%)
+ConfigureTest(SYSTEM_MR_REF_TEST mr/mr_ref_system_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(PINNED_MR_REF_TEST mr/mr_ref_pinned_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(PINNED_POOL_MR_REF_TEST mr/mr_ref_pinned_pool_tests.cpp GPUS 1 PERCENT 5)
+
+# Small test suites (minimal allocations = 5%)
+ConfigureTest(FIXED_SIZE_MR_REF_TEST mr/mr_ref_fixed_size_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(DEFAULT_MR_REF_TEST mr/mr_ref_default_tests.cpp GPUS 1 PERCENT 5)
 
 # general adaptor tests
 ConfigureTest(ADAPTOR_TEST mr/adaptor_tests.cpp)

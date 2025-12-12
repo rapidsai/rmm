@@ -3,31 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#pragma once
+
 #include "mr_ref_test.hpp"
 
-#include <rmm/cuda_stream.hpp>
-#include <rmm/mr/arena_memory_resource.hpp>
-#include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
-#include <rmm/mr/per_device_resource.hpp>
-#include <rmm/mr/pool_memory_resource.hpp>
-#include <rmm/resource_ref.hpp>
-
-#include <gtest/gtest.h>
-
+#include <condition_variable>
+#include <list>
+#include <mutex>
 #include <thread>
 #include <vector>
 
 namespace rmm::test {
-namespace {
 
+// Multi-threaded test fixture
 struct mr_ref_test_mt : public mr_ref_test {};
 
-INSTANTIATE_TEST_SUITE_P(
-  MultiThreadResourceTests,
-  mr_ref_test_mt,
-  ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool", "Arena", "Binning"),
-  [](auto const& info) { return info.param; });
+// Helper functions for multi-threaded tests
 
 template <typename Task, typename... Arguments>
 void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
@@ -49,42 +40,93 @@ void spawn(Task task, Arguments&&... args)
   spawn_n(4, task, std::forward<Arguments>(args)...);
 }
 
-TEST(DefaultTest, UseCurrentDeviceResource_mt) { spawn(test_get_current_device_resource); }
-
-TEST(DefaultTest, UseCurrentDeviceResourceRef_mt) { spawn(test_get_current_device_resource_ref); }
-
-TEST(DefaultTest, CurrentDeviceResourceIsCUDA_mt)
+inline void async_allocate_loop(rmm::device_async_resource_ref ref,
+                                std::size_t num_allocations,
+                                std::list<allocation>& allocations,
+                                std::mutex& mtx,
+                                std::condition_variable& allocations_ready,
+                                cudaEvent_t& event,
+                                rmm::cuda_stream_view stream)
 {
-  spawn([]() {
-    EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
-    EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
-  });
+  constexpr std::size_t max_size{1_MiB};
+
+  std::default_random_engine generator;
+  std::uniform_int_distribution<std::size_t> size_distribution(1, max_size);
+
+  for (std::size_t i = 0; i < num_allocations; ++i) {
+    std::size_t size = size_distribution(generator);
+    void* ptr        = ref.allocate(stream, size);
+    {
+      std::lock_guard<std::mutex> lock(mtx);
+      RMM_CUDA_TRY(cudaEventRecord(event, stream.value()));
+      allocations.emplace_back(ptr, size);
+    }
+    allocations_ready.notify_one();
+  }
+
+  // Work around for threads going away before cudaEvent has finished async processing
+  cudaEventSynchronize(event);
 }
 
-TEST(DefaultTest, CurrentDeviceResourceRefIsCUDA_mt)
+inline void async_deallocate_loop(rmm::device_async_resource_ref ref,
+                                  std::size_t num_allocations,
+                                  std::list<allocation>& allocations,
+                                  std::mutex& mtx,
+                                  std::condition_variable& allocations_ready,
+                                  cudaEvent_t& event,
+                                  rmm::cuda_stream_view stream)
 {
-  spawn([]() {
-    EXPECT_EQ(rmm::mr::get_current_device_resource_ref(),
-              rmm::device_async_resource_ref{rmm::mr::detail::initial_resource()});
-  });
+  for (std::size_t i = 0; i < num_allocations; i++) {
+    std::unique_lock lock(mtx);
+    allocations_ready.wait(lock, [&allocations] { return !allocations.empty(); });
+    RMM_CUDA_TRY(cudaStreamWaitEvent(stream.value(), event));
+    allocation alloc = allocations.front();
+    allocations.pop_front();
+    ref.deallocate(stream, alloc.ptr, alloc.size);
+  }
+
+  // Work around for threads going away before cudaEvent has finished async processing
+  cudaEventSynchronize(event);
 }
 
-TEST(DefaultTest, GetCurrentDeviceResource_mt)
+inline void test_async_allocate_free_different_threads(rmm::device_async_resource_ref ref,
+                                                       rmm::cuda_stream_view streamA,
+                                                       rmm::cuda_stream_view streamB)
 {
-  spawn([]() {
-    rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource();
-    EXPECT_NE(nullptr, mr);
-    EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
-  });
+  constexpr std::size_t num_allocations{100};
+
+  std::mutex mtx;
+  std::condition_variable allocations_ready;
+  std::list<allocation> allocations;
+  cudaEvent_t event{};
+
+  RMM_CUDA_TRY(cudaEventCreate(&event));
+
+  std::thread producer(async_allocate_loop,
+                       ref,
+                       num_allocations,
+                       std::ref(allocations),
+                       std::ref(mtx),
+                       std::ref(allocations_ready),
+                       std::ref(event),
+                       streamA);
+
+  std::thread consumer(async_deallocate_loop,
+                       ref,
+                       num_allocations,
+                       std::ref(allocations),
+                       std::ref(mtx),
+                       std::ref(allocations_ready),
+                       std::ref(event),
+                       streamB);
+
+  producer.join();
+  consumer.join();
+
+  RMM_CUDA_TRY(cudaEventDestroy(event));
 }
 
-TEST(DefaultTest, GetCurrentDeviceResourceRef_mt)
-{
-  spawn([]() {
-    auto mr = rmm::mr::get_current_device_resource_ref();
-    EXPECT_EQ(mr, rmm::device_async_resource_ref{rmm::mr::detail::initial_resource()});
-  });
-}
+// Parameterized test definitions for mr_ref_test_mt
 
 TEST_P(mr_ref_test_mt, SetCurrentDeviceResourceRef_mt)
 {
@@ -203,92 +245,6 @@ TEST_P(mr_ref_test_mt, MixedRandomAllocationFreeStream)
   spawn(test_mixed_random_async_allocation_free, this->ref, default_max_size, this->stream.view());
 }
 
-void async_allocate_loop(rmm::device_async_resource_ref ref,
-                         std::size_t num_allocations,
-                         std::list<allocation>& allocations,
-                         std::mutex& mtx,
-                         std::condition_variable& allocations_ready,
-                         cudaEvent_t& event,
-                         rmm::cuda_stream_view stream)
-{
-  constexpr std::size_t max_size{1_MiB};
-
-  std::default_random_engine generator;
-  std::uniform_int_distribution<std::size_t> size_distribution(1, max_size);
-
-  for (std::size_t i = 0; i < num_allocations; ++i) {
-    std::size_t size = size_distribution(generator);
-    void* ptr        = ref.allocate(stream, size);
-    {
-      std::lock_guard<std::mutex> lock(mtx);
-      RMM_CUDA_TRY(cudaEventRecord(event, stream.value()));
-      allocations.emplace_back(ptr, size);
-    }
-    allocations_ready.notify_one();
-  }
-
-  // Work around for threads going away before cudaEvent has finished async processing
-  cudaEventSynchronize(event);
-}
-
-void async_deallocate_loop(rmm::device_async_resource_ref ref,
-                           std::size_t num_allocations,
-                           std::list<allocation>& allocations,
-                           std::mutex& mtx,
-                           std::condition_variable& allocations_ready,
-                           cudaEvent_t& event,
-                           rmm::cuda_stream_view stream)
-{
-  for (std::size_t i = 0; i < num_allocations; i++) {
-    std::unique_lock lock(mtx);
-    allocations_ready.wait(lock, [&allocations] { return !allocations.empty(); });
-    RMM_CUDA_TRY(cudaStreamWaitEvent(stream.value(), event));
-    allocation alloc = allocations.front();
-    allocations.pop_front();
-    ref.deallocate(stream, alloc.ptr, alloc.size);
-  }
-
-  // Work around for threads going away before cudaEvent has finished async processing
-  cudaEventSynchronize(event);
-}
-
-void test_async_allocate_free_different_threads(rmm::device_async_resource_ref ref,
-                                                rmm::cuda_stream_view streamA,
-                                                rmm::cuda_stream_view streamB)
-{
-  constexpr std::size_t num_allocations{100};
-
-  std::mutex mtx;
-  std::condition_variable allocations_ready;
-  std::list<allocation> allocations;
-  cudaEvent_t event{};
-
-  RMM_CUDA_TRY(cudaEventCreate(&event));
-
-  std::thread producer(async_allocate_loop,
-                       ref,
-                       num_allocations,
-                       std::ref(allocations),
-                       std::ref(mtx),
-                       std::ref(allocations_ready),
-                       std::ref(event),
-                       streamA);
-
-  std::thread consumer(async_deallocate_loop,
-                       ref,
-                       num_allocations,
-                       std::ref(allocations),
-                       std::ref(mtx),
-                       std::ref(allocations_ready),
-                       std::ref(event),
-                       streamB);
-
-  producer.join();
-  consumer.join();
-
-  RMM_CUDA_TRY(cudaEventDestroy(event));
-}
-
 TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsDefaultStream)
 {
   test_async_allocate_free_different_threads(
@@ -313,5 +269,4 @@ TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsDifferentStream)
   streamB.synchronize();
 }
 
-}  // namespace
 }  // namespace rmm::test
