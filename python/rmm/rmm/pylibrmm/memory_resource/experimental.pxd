@@ -7,3 +7,6 @@ from rmm.pylibrmm.memory_resource._memory_resource cimport DeviceMemoryResource
 
 cdef class CudaAsyncManagedMemoryResource(DeviceMemoryResource):
     pass
+
+cdef class CudaAsyncPinnedMemoryResource(DeviceMemoryResource):
+    pass
