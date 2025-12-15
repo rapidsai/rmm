@@ -12,11 +12,11 @@ dependencies:
 - cmake>=3.30.4
 - cuda-nvcc
 - cuda-python>=13.0.1,<14.0
-- cuda-version=13.0
+- cuda-version=13.1
 - cxx-compiler
 - cython>=3.0.0,<3.2.0
 - doxygen=1.9.1
-- gcc_linux-64=14.*
+- gcc_linux-aarch64=14.*
 - gcovr>=5.0
 - graphviz
 - identify>=2.5.20
@@ -42,5 +42,5 @@ dependencies:
 - sphinx-copybutton
 - sphinx-markdown-tables
 - sphinxcontrib-jquery
-- sysroot_linux-64==2.28
-name: all_cuda-130_arch-x86_64
+- sysroot_linux-aarch64==2.28
+name: all_cuda-131_arch-aarch64
