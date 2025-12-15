@@ -114,6 +114,8 @@ jobs:
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@main
     with:
+      # Build a wheel for each CUDA x ARCH
+      matrix_filter: map(select(.PY_VER == "3.13")) | unique_by({CUDA_VER, ARCH})
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
       sha: ${{ inputs.sha }}
