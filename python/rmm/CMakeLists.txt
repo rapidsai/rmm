@@ -19,6 +19,10 @@ find_package(rmm "${RAPIDS_VERSION}" REQUIRED)
 include(rapids-cython-core)
 rapids_cython_init()
 
+# Enable Python Limited API (Stable ABI) targeting Python 3.11+
+add_compile_definitions("Py_LIMITED_API=0x030B0000")
+add_compile_definitions("CYTHON_LIMITED_API=1")
+
 # pass through logging level to spdlog
 add_compile_definitions("RMM_LOG_ACTIVE_LEVEL=RAPIDS_LOGGER_LOG_LEVEL_${RMM_LOGGING_LEVEL}")
 
