@@ -89,6 +89,9 @@ sdist.exclude = ["*tests*"]
 sdist.reproducible = true
 wheel.packages = ["rmm"]
 
+[tool.scikit-build.cmake.define]
+CMAKE_CXX_FLAGS = "-DPy_LIMITED_API=0x030B0000 -DCYTHON_LIMITED_API=1"
+
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
 input = "rmm/VERSION"
