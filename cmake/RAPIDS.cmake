@@ -10,6 +10,12 @@
 # Enforce the minimum required CMake version for all users
 cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
 
+# To override the GitHub repository:
+set(rapids-cmake-repo "gforsyth/rapids-cmake")
+
+# To override the repository branch:
+set(rapids-cmake-branch "limited_api")
+
 # Allow users to control which version is used
 if(NOT (rapids-cmake-branch OR rapids-cmake-version))
   message(
