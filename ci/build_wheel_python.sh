@@ -72,5 +72,8 @@ absolute_wheel_dir=$(realpath "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}")
 popd
 ci/check_symbols.sh "$(echo "${absolute_wheel_dir}"/rmm_*.whl)"
 
-RAPIDS_PACKAGE_NAME="$(rapids-package-name wheel_python rmm --stable --cuda)"
-export RAPIDS_PACKAGE_NAME
+# Only use stable ABI package naming for Python >= 3.11
+if [[ "${RAPIDS_PY_VERSION}" != "3.10" ]]; then
+  RAPIDS_PACKAGE_NAME="$(rapids-package-name wheel_python rmm --stable --cuda)"
+  export RAPIDS_PACKAGE_NAME
+fi
