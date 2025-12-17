@@ -88,6 +88,9 @@ ninja.make-fallback = false
 sdist.exclude = ["*tests*"]
 sdist.reproducible = true
 wheel.packages = ["rmm"]
+
+[[tool.scikit-build.overrides]]
+if.python-version = ">=3.11"
 wheel.py-api = "cp311"
 
 [tool.scikit-build.metadata.version]
