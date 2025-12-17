@@ -4,13 +4,6 @@
 
 set -euo pipefail
 
-# Download custom rapids-package-name and add to PATH
-mkdir -p /tmp/gha-tools
-curl -fsSL https://raw.githubusercontent.com/gforsyth/gha-tools/e956ec25ec9cb421ad90ee7407262374491625e2/tools/rapids-package-name \
-  -o /tmp/gha-tools/rapids-package-name
-chmod +x /tmp/gha-tools/rapids-package-name
-export PATH="/tmp/gha-tools:$PATH"
-
 package_dir="python/rmm"
 
 source rapids-configure-sccache
