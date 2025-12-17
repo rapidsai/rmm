@@ -114,8 +114,10 @@ jobs:
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@main
     with:
-      # Build a wheel for each CUDA x ARCH
-      matrix_filter: map(select(.PY_VER == "3.13")) | unique_by({CUDA_VER, ARCH})
+      # Build a wheel for each CUDA x ARCH x PY_VER (3.10 and 3.11)
+      # When we drop Python 3.10, this can be simplified to:
+      # matrix_filter: map(select(.PY_VER == "3.11")) | unique_by({CUDA_VER, ARCH})
+      matrix_filter: map(select(.PY_VER == "3.11" or .PY_VER == "3.10")) | unique_by({CUDA_VER, ARCH, PY_VER})
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
       sha: ${{ inputs.sha }}
