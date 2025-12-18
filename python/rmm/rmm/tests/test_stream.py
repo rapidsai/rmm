@@ -88,7 +88,7 @@ def test_cuda_core_buffer(current_device):
 
     buf = cuda_core_mr.allocate(1024, stream=rmm_stream)
     buf.close(stream=rmm_stream)
-    rmm_stream.synchronize()
+    rmm_stream.sync()
 
 
 @pytest.mark.parametrize(
