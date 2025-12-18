@@ -79,7 +79,7 @@ def test_cuda_stream_cupy(current_device):
 
 
 def test_cuda_core_buffer(current_device):
-    # Test that RMM's Stream duck-types as a cuda.core.Stream
+    # Test that RMM's Stream can be converted to a cuda.core.Stream
     pytest.importorskip("cuda.core", minversion="0.5.0")
     from cuda.core import DeviceMemoryResource
 
