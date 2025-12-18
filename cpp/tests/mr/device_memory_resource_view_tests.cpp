@@ -109,10 +109,8 @@ TEST(DeviceMemoryResourceViewTest, InequalityComparison)
   // Views wrapping different resources should be equal iff the resources compare equal
   EXPECT_EQ(mr1, mr2);
   EXPECT_EQ(view1, view2);
-  EXPECT_TRUE(view1 == view2);
   EXPECT_NE(mr1, mr3);
   EXPECT_NE(view1, view3);
-  EXPECT_FALSE(view1 == view3);
 }
 
 /**
