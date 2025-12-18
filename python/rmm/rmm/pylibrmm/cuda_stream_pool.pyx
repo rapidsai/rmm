@@ -50,7 +50,7 @@ cdef class CudaStreamPool:
             return Stream._from_cudaStream_t(
                 deref(self.c_obj).get_stream().value(), owner=self)
         else:
-            c_stream_id = <size_t>stream_id
+            c_stream_id = <size_t>(stream_id)
             return Stream._from_cudaStream_t(
                 deref(self.c_obj).get_stream(c_stream_id).value(), owner=self)
 
