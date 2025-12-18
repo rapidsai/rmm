@@ -6,16 +6,16 @@ import importlib.metadata
 
 import packaging.version
 import pytest
-from cuda.core.experimental import Device
+from cuda.core import Device
 
 import rmm.pylibrmm.cuda_stream
 import rmm.pylibrmm.cuda_stream_pool
 import rmm.pylibrmm.stream
 
 CUDA_CORE_VERSION = importlib.metadata.version("cuda-core")
-CUDA_CORE_0_4_0 = packaging.version.parse(
+CUDA_CORE_0_5_0 = packaging.version.parse(
     CUDA_CORE_VERSION
-) >= packaging.version.parse("0.4.0")
+) >= packaging.version.parse("0.5.0")
 
 
 @pytest.fixture
@@ -84,10 +84,10 @@ def test_cuda_stream_cupy(current_device):
     assert cuda_stream.__cuda_stream__() == (0, cupy_stream.ptr)
 
 
-@pytest.mark.skipif(not CUDA_CORE_0_4_0, reason="cuda.core >=0.4.0 required.")
+@pytest.mark.skipif(not CUDA_CORE_0_5_0, reason="cuda.core >=0.5.0 required.")
 def test_cuda_core_buffer(current_device):
     # Test that RMM's Stream duck-types as a cuda.core.Stream
-    from cuda.core.experimental import DeviceMemoryResource
+    from cuda.core import DeviceMemoryResource
 
     rmm_stream = rmm.pylibrmm.stream.Stream()
     cuda_core_mr = DeviceMemoryResource(device_id=current_device.device_id)
