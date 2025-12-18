@@ -244,11 +244,8 @@ ConfigureTest(CONTAINER_MULTIDEVICE_TEST container_multidevice_tests.cu)
 # error macros tests
 ConfigureTest(ERROR_MACROS_TEST error_macros_tests.cpp)
 
-# CCCL 3.2 conversion bug reproducer
-ConfigureTest(CCCL32_CONVERSION_BUG_TEST cccl_32_conversion_bug.cpp)
-
-# Resource ref conversion tests (uses C++20 to match cudf)
-ConfigureTest(RESOURCE_REF_CONVERSION_TEST resource_ref_conversion_tests.cpp)
+# Resource ref construction and conversion tests
+ConfigureTest(RESOURCE_REF_CONVERSION_TEST mr/resource_ref_conversion_tests.cpp)
 set_target_properties(RESOURCE_REF_CONVERSION_TEST PROPERTIES CXX_STANDARD 20)
 set_target_properties(RESOURCE_REF_CONVERSION_PTDS_TEST PROPERTIES CXX_STANDARD 20)
 

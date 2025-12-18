@@ -10,6 +10,8 @@
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <thrust/host_vector.h>
+
 #include <gtest/gtest.h>
 
 class new_delete_memory_resource {
@@ -115,109 +117,106 @@ TEST(ResourceRefConversion, HostDeviceToDeviceAsync)
   d_ref.deallocate(stream, ptr, 1024);
 }
 
-/*
-// Test conversion from host_device_async_resource_ref to host_async_resource_ref
-TEST(ResourceRefConversion, HostDeviceToHostAsync)
+// Host allocator that takes a resource_ref (similar to cudf's rmm_host_allocator)
+template <typename T>
+class host_allocator {
+ public:
+  using value_type = T;
+
+  host_allocator() = delete;
+
+  template <class... Properties>
+  host_allocator(cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> mr,
+                 rmm::cuda_stream_view stream)
+    : mr_(mr), stream_(stream)
+  {
+  }
+
+  host_allocator(host_allocator const& other) = default;
+  host_allocator(host_allocator&& other)      = default;
+
+  T* allocate(std::size_t n)
+  {
+    auto const result = mr_.allocate(stream_, n * sizeof(T));
+    stream_.synchronize();
+    return static_cast<T*>(result);
+  }
+
+  void deallocate(T* p, std::size_t n) noexcept { mr_.deallocate(stream_, p, n * sizeof(T)); }
+
+  bool operator==(host_allocator const& other) const { return mr_ == other.mr_; }
+  bool operator!=(host_allocator const& other) const { return !(*this == other); }
+
+ private:
+  rmm::host_async_resource_ref mr_;
+  rmm::cuda_stream_view stream_;
+};
+
+// Function that returns host_device_async_resource_ref (like cudf::get_pinned_memory_resource)
+rmm::host_device_async_resource_ref get_pinned_resource()
 {
-  rmm::mr::pinned_host_memory_resource mr{};
+  static rmm::mr::pinned_host_memory_resource mr{};
+  return rmm::host_device_async_resource_ref{mr};
+}
 
-  // Create a host_device_async_resource_ref
-  rmm::host_device_async_resource_ref hd_ref{mr};
+// Helper to create a pinned vector (similar to cudf's make_pinned_vector_async)
+template <typename T>
+thrust::host_vector<T, host_allocator<T>> make_pinned_vector(std::size_t size,
+                                                             rmm::cuda_stream_view stream)
+{
+  return thrust::host_vector<T, host_allocator<T>>(size, {get_pinned_resource(), stream});
+}
 
-  // Convert to host_async_resource_ref
-  rmm::host_async_resource_ref h_ref{hd_ref};
-
-  // Use the converted ref
+// Test direct allocation through the converted ref
+TEST(ResourceRefConversionAllocator, DirectAllocation)
+{
   rmm::cuda_stream stream{};
-  void* ptr = h_ref.allocate(stream, 1024);
+  auto mr = get_pinned_resource();
+
+  host_allocator<int> alloc{mr, stream};
+  int* ptr = alloc.allocate(10);
   ASSERT_NE(ptr, nullptr);
-  h_ref.deallocate(stream, ptr, 1024);
+  alloc.deallocate(ptr, 10);
 }
 
-// Test conversion from host_device_resource_ref to device_resource_ref (sync version)
-TEST(ResourceRefConversion, HostDeviceToDeviceSync)
+// Test allocator copy works correctly
+TEST(ResourceRefConversionAllocator, AllocatorCopy)
 {
-  rmm::mr::pinned_host_memory_resource mr{};
-
-  // Create a host_device_resource_ref
-  rmm::host_device_resource_ref hd_ref{mr};
-
-  // Convert to device_resource_ref
-  rmm::device_resource_ref d_ref{hd_ref};
-
-  // Use the converted ref
-  void* ptr = d_ref.allocate_sync(1024);
-  ASSERT_NE(ptr, nullptr);
-  d_ref.deallocate_sync(ptr, 1024);
-}
-
-// Test conversion from host_device_resource_ref to host_resource_ref (sync version)
-TEST(ResourceRefConversion, HostDeviceToHostSync)
-{
-  rmm::mr::pinned_host_memory_resource mr{};
-
-  // Create a host_device_resource_ref
-  rmm::host_device_resource_ref hd_ref{mr};
-
-  // Convert to host_resource_ref
-  rmm::host_resource_ref h_ref{hd_ref};
-
-  // Use the converted ref
-  void* ptr = h_ref.allocate_sync(1024);
-  ASSERT_NE(ptr, nullptr);
-  h_ref.deallocate_sync(ptr, 1024);
-}
-
-// Test that the converted ref still works after the original goes out of scope
-TEST(ResourceRefConversion, ConvertedRefOutlivesOriginal)
-{
-  rmm::mr::pinned_host_memory_resource mr{};
   rmm::cuda_stream stream{};
+  auto mr = get_pinned_resource();
 
-  rmm::device_async_resource_ref d_ref{rmm::host_device_async_resource_ref{mr}};
+  host_allocator<int> alloc1{mr, stream};
+  host_allocator<int> alloc2 = alloc1;
 
-  // Use the converted ref - the original host_device_async_resource_ref is now gone
-  void* ptr = d_ref.allocate(stream, 1024);
+  int* ptr = alloc2.allocate(10);
   ASSERT_NE(ptr, nullptr);
-  d_ref.deallocate(stream, ptr, 1024);
+  alloc2.deallocate(ptr, 10);
 }
 
-// Test copy of converted ref
-TEST(ResourceRefConversion, CopyOfConvertedRef)
+// Test vector construction with converted resource ref
+TEST(ResourceRefConversionAllocator, VectorConstruction)
 {
-  rmm::mr::pinned_host_memory_resource mr{};
   rmm::cuda_stream stream{};
-
-  rmm::host_device_async_resource_ref hd_ref{mr};
-  rmm::device_async_resource_ref d_ref1{hd_ref};
-
-  // Copy the converted ref
-  rmm::device_async_resource_ref d_ref2 = d_ref1;
-
-  // Both should work
-  void* ptr1 = d_ref1.allocate(stream, 512);
-  void* ptr2 = d_ref2.allocate(stream, 512);
-  ASSERT_NE(ptr1, nullptr);
-  ASSERT_NE(ptr2, nullptr);
-  d_ref1.deallocate(stream, ptr1, 512);
-  d_ref2.deallocate(stream, ptr2, 512);
+  thrust::host_vector<int, host_allocator<int>> vec(1, {get_pinned_resource(), stream});
+  vec[0] = 42;
+  ASSERT_EQ(vec[0], 42);
 }
 
-// Test move of converted ref
-TEST(ResourceRefConversion, MoveOfConvertedRef)
+// Test vector returned from function (like cudf's make_pinned_vector pattern)
+TEST(ResourceRefConversionAllocator, VectorFromFunction)
 {
-  rmm::mr::pinned_host_memory_resource mr{};
   rmm::cuda_stream stream{};
-
-  rmm::host_device_async_resource_ref hd_ref{mr};
-  rmm::device_async_resource_ref d_ref1{hd_ref};
-
-  // Move the converted ref
-  rmm::device_async_resource_ref d_ref2 = std::move(d_ref1);
-
-  // Only d_ref2 should be used after move
-  void* ptr = d_ref2.allocate(stream, 1024);
-  ASSERT_NE(ptr, nullptr);
-  d_ref2.deallocate(stream, ptr, 1024);
+  auto vec = make_pinned_vector<int>(1, stream);
+  vec[0]   = 42;
+  ASSERT_EQ(vec[0], 42);
 }
-*/
+
+// Test vector move (exercises allocator move semantics)
+TEST(ResourceRefConversionAllocator, VectorMove)
+{
+  rmm::cuda_stream stream{};
+  thrust::host_vector<int, host_allocator<int>> vec1(1, {get_pinned_resource(), stream});
+  vec1[0]   = 42;
+  auto vec2 = std::move(vec1);
+  ASSERT_EQ(vec2[0], 42);
+}
