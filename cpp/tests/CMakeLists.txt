@@ -155,6 +155,9 @@ ConfigureTest(PINNED_POOL_MR_REF_TEST mr/mr_ref_pinned_pool_tests.cpp GPUS 1 PER
 ConfigureTest(FIXED_SIZE_MR_REF_TEST mr/mr_ref_fixed_size_tests.cpp GPUS 1 PERCENT 5)
 ConfigureTest(DEFAULT_MR_REF_TEST mr/mr_ref_default_tests.cpp GPUS 1 PERCENT 5)
 
+# device_memory_resource_view tests
+ConfigureTest(DEVICE_MEMORY_RESOURCE_VIEW_TEST mr/device_memory_resource_view_tests.cpp)
+
 # general adaptor tests
 ConfigureTest(ADAPTOR_TEST mr/adaptor_tests.cpp)
 
@@ -240,5 +243,10 @@ ConfigureTest(CONTAINER_MULTIDEVICE_TEST container_multidevice_tests.cu)
 
 # error macros tests
 ConfigureTest(ERROR_MACROS_TEST error_macros_tests.cpp)
+
+# Resource ref construction and conversion tests
+ConfigureTest(RESOURCE_REF_CONVERSION_TEST mr/resource_ref_conversion_tests.cpp)
+set_target_properties(RESOURCE_REF_CONVERSION_TEST PROPERTIES CXX_STANDARD 20)
+set_target_properties(RESOURCE_REF_CONVERSION_PTDS_TEST PROPERTIES CXX_STANDARD 20)
 
 rapids_test_install_relocatable(INSTALL_COMPONENT_SET testing DESTINATION bin/gtests/librmm)
