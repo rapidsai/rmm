@@ -10,6 +10,7 @@ dependencies:
 - clang-tools==20.1.4
 - clang==20.1.4
 - cmake>=3.30.4
+- cuda-core<0.5.0
 - cuda-nvcc
 - cuda-python>=13.0.1,<14.0
 - cuda-version=13.0
