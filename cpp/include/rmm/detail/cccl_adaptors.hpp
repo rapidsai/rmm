@@ -16,8 +16,9 @@
 #include <rmm/mr/detail/device_memory_resource_view.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 
+#include <cuda/std/optional>
+
 #include <cstddef>
-#include <optional>
 #include <type_traits>
 #include <utility>
 #endif
@@ -95,7 +96,7 @@ class cccl_resource_ref {
    */
   template <typename... Properties>
   cccl_resource_ref(cuda::mr::synchronous_resource_ref<Properties...> const& ref)
-    : view_{std::nullopt}, ref_{ref}
+    : view_{cuda::std::nullopt}, ref_{ref}
   {
   }
 
@@ -110,7 +111,7 @@ class cccl_resource_ref {
    */
   template <typename... Properties>
   cccl_resource_ref(cuda::mr::synchronous_resource_ref<Properties...>&& ref)
-    : view_{std::nullopt}, ref_{std::move(ref)}
+    : view_{cuda::std::nullopt}, ref_{std::move(ref)}
   {
   }
 
@@ -271,7 +272,7 @@ class cccl_resource_ref {
   }
 
  protected:
-  std::optional<rmm::mr::detail::device_memory_resource_view> view_;
+  cuda::std::optional<rmm::mr::detail::device_memory_resource_view> view_;
   ResourceType ref_;
 };
 
@@ -324,7 +325,7 @@ class cccl_async_resource_ref {
    */
   template <typename... Properties>
   cccl_async_resource_ref(cuda::mr::resource_ref<Properties...> const& ref)
-    : view_{std::nullopt}, ref_{ref}
+    : view_{cuda::std::nullopt}, ref_{ref}
   {
   }
 
@@ -339,7 +340,7 @@ class cccl_async_resource_ref {
    */
   template <typename... Properties>
   cccl_async_resource_ref(cuda::mr::resource_ref<Properties...>&& ref)
-    : view_{std::nullopt}, ref_{std::move(ref)}
+    : view_{cuda::std::nullopt}, ref_{std::move(ref)}
   {
   }
 
@@ -531,7 +532,7 @@ class cccl_async_resource_ref {
   }
 
  protected:
-  std::optional<rmm::mr::detail::device_memory_resource_view> view_;
+  cuda::std::optional<rmm::mr::detail::device_memory_resource_view> view_;
   ResourceType ref_;
 };
 
