@@ -66,8 +66,14 @@ auto const fake_address4 = reinterpret_cast<void*>(superblock::minimum_size * 2)
 struct ArenaTest : public ::testing::Test {
   void SetUp() override
   {
+// CCCL 3.2+ uses device_memory_resource_view which routes through do_allocate/do_deallocate
+#if CCCL_MAJOR_VERSION > 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION >= 2)
+    EXPECT_CALL(mock_mr, do_allocate(arena_size, ::testing::_)).WillOnce(Return(fake_address3));
+    EXPECT_CALL(mock_mr, do_deallocate(fake_address3, arena_size, ::testing::_));
+#else
     EXPECT_CALL(mock_mr, allocate_sync(arena_size, ::testing::_)).WillOnce(Return(fake_address3));
     EXPECT_CALL(mock_mr, deallocate_sync(fake_address3, arena_size, ::testing::_));
+#endif
 
     global     = std::make_unique<global_arena>(mock_mr, arena_size);
     per_thread = std::make_unique<arena>(*global);
