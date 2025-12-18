@@ -125,10 +125,8 @@ class host_allocator {
 
   host_allocator() = delete;
 
-  template <class... Properties>
-  host_allocator(cuda::mr::resource_ref<cuda::mr::host_accessible, Properties...> mr,
-                 rmm::cuda_stream_view stream)
-    : mr_(mr), stream_(stream)
+  template <typename ResourceType>
+  host_allocator(ResourceType mr, rmm::cuda_stream_view stream) : mr_(mr), stream_(stream)
   {
   }
 
