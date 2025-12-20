@@ -85,6 +85,8 @@ struct export_handle_type {
  * @return false if unsupported
  */
 #ifdef __CUDACC__
+// This suppression was needed due to a false positive warning from nvcc. We
+// should be able to remove it altogether once we rework the thrust allocator.
 #pragma nv_diag_suppress 20011
 #endif
 struct hwdecompress {
