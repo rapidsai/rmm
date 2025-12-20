@@ -84,6 +84,11 @@ struct export_handle_type {
  * @return true if supported
  * @return false if unsupported
  */
+#ifdef __CUDACC__
+// This suppression was needed due to a false positive warning from nvcc. We
+// should be able to remove it altogether once we rework the thrust allocator.
+#pragma nv_diag_suppress 20011
+#endif
 struct hwdecompress {
   static bool is_supported()
   {
@@ -100,6 +105,9 @@ struct hwdecompress {
 #endif
   }
 };
+#ifdef __CUDACC__
+#pragma nv_diag_default 20011
+#endif
 
 /**
  * @brief Check if the current device supports concurrent managed access.
