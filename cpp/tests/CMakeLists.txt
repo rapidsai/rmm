@@ -141,10 +141,10 @@ ConfigureTest(CUDA_MR_REF_TEST mr/mr_ref_cuda_tests.cpp GPUS 1 PERCENT 15)
 ConfigureTest(CUDA_ASYNC_MR_REF_TEST mr/mr_ref_cuda_async_tests.cpp GPUS 1 PERCENT 15)
 ConfigureTest(MANAGED_MR_REF_TEST mr/mr_ref_managed_tests.cpp GPUS 1 PERCENT 15)
 
-# Pre-allocating resources (50% of free device memory = 50%)
-ConfigureTest(POOL_MR_REF_TEST mr/mr_ref_pool_tests.cpp GPUS 1 PERCENT 50)
-ConfigureTest(ARENA_MR_REF_TEST mr/mr_ref_arena_tests.cpp GPUS 1 PERCENT 50)
-ConfigureTest(BINNING_MR_REF_TEST mr/mr_ref_binning_tests.cpp GPUS 1 PERCENT 50)
+# Pre-allocating resources (50% of free device memory, so we use 100% as a safety margin)
+ConfigureTest(POOL_MR_REF_TEST mr/mr_ref_pool_tests.cpp GPUS 1 PERCENT 100)
+ConfigureTest(ARENA_MR_REF_TEST mr/mr_ref_arena_tests.cpp GPUS 1 PERCENT 100)
+ConfigureTest(BINNING_MR_REF_TEST mr/mr_ref_binning_tests.cpp GPUS 1 PERCENT 100)
 
 # Partial test suites without multi-threading (~500MB max = 5%)
 ConfigureTest(SYSTEM_MR_REF_TEST mr/mr_ref_system_tests.cpp GPUS 1 PERCENT 5)
@@ -154,6 +154,9 @@ ConfigureTest(PINNED_POOL_MR_REF_TEST mr/mr_ref_pinned_pool_tests.cpp GPUS 1 PER
 # Small test suites (minimal allocations = 5%)
 ConfigureTest(FIXED_SIZE_MR_REF_TEST mr/mr_ref_fixed_size_tests.cpp GPUS 1 PERCENT 5)
 ConfigureTest(DEFAULT_MR_REF_TEST mr/mr_ref_default_tests.cpp GPUS 1 PERCENT 5)
+
+# device_memory_resource_view tests
+ConfigureTest(DEVICE_MEMORY_RESOURCE_VIEW_TEST mr/device_memory_resource_view_tests.cpp)
 
 # general adaptor tests
 ConfigureTest(ADAPTOR_TEST mr/adaptor_tests.cpp)
@@ -240,5 +243,10 @@ ConfigureTest(CONTAINER_MULTIDEVICE_TEST container_multidevice_tests.cu)
 
 # error macros tests
 ConfigureTest(ERROR_MACROS_TEST error_macros_tests.cpp)
+
+# Resource ref construction and conversion tests
+ConfigureTest(RESOURCE_REF_CONVERSION_TEST mr/resource_ref_conversion_tests.cpp)
+set_target_properties(RESOURCE_REF_CONVERSION_TEST PROPERTIES CXX_STANDARD 20)
+set_target_properties(RESOURCE_REF_CONVERSION_PTDS_TEST PROPERTIES CXX_STANDARD 20)
 
 rapids_test_install_relocatable(INSTALL_COMPONENT_SET testing DESTINATION bin/gtests/librmm)

@@ -52,13 +52,13 @@ cdef class Stream:
     def __cuda_stream__(self):
         # Implementation of the CUDA stream protocol
         # https://nvidia.github.io/cuda-python/cuda-core/latest/interoperability.html#cuda-stream-protocol
-        return (0, int(<uintptr_t>self._cuda_stream))
+        return (0, int(<uintptr_t>(self._cuda_stream)))
 
     cdef cuda_stream_view view(self) noexcept nogil:
         """
         Generate a rmm::cuda_stream_view from this Stream instance
         """
-        return cuda_stream_view(<cudaStream_t><uintptr_t>(self._cuda_stream))
+        return cuda_stream_view(<cudaStream_t>(<uintptr_t>(self._cuda_stream)))
 
     cdef void c_synchronize(self) except * nogil:
         """
@@ -93,7 +93,7 @@ cdef class Stream:
         """
         version, ptr = obj.__cuda_stream__()
         if version == 0:
-            self._cuda_stream = <cudaStream_t><uintptr_t>(ptr)
+            self._cuda_stream = <cudaStream_t>(<uintptr_t>(ptr))
             self._owner = obj
         else:
             raise NotImplementedError(
@@ -105,7 +105,7 @@ cdef class Stream:
         try:
             from numba import cuda
             if isinstance(obj, cuda.cudadrv.driver.Stream):
-                self._cuda_stream = <cudaStream_t><uintptr_t>(int(obj))
+                self._cuda_stream = <cudaStream_t>(<uintptr_t>(int(obj)))
                 self._owner = obj
                 return
         except ImportError:
@@ -117,7 +117,7 @@ cdef class Stream:
             import cupy
             if isinstance(obj, (cupy.cuda.stream.Stream,
                                 cupy.cuda.stream.ExternalStream)):
-                self._cuda_stream = <cudaStream_t><uintptr_t>(obj.ptr)
+                self._cuda_stream = <cudaStream_t>(<uintptr_t>(obj.ptr))
                 self._owner = obj
                 return
         except ImportError:
@@ -126,11 +126,11 @@ cdef class Stream:
 
     def __eq__(self, other):
         if isinstance(other, Stream):
-            return self.view() == (<Stream>other).view()
+            return self.view() == (<Stream>(other)).view()
         return False
 
     def __hash__(self):
-        return hash(int(<uintptr_t>self._cuda_stream))
+        return hash(int(<uintptr_t>(self._cuda_stream)))
 
     cdef void _init_with_new_cuda_stream(self) except *:
         cdef CudaStream stream = CudaStream()
