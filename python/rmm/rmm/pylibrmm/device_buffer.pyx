@@ -87,7 +87,7 @@ cdef class DeviceBuffer:
 
         mr_ptr = self.mr.get_mr()
         with nogil:
-            c_ptr = <const void*>ptr
+            c_ptr = <const void*>(ptr)
 
             if c_ptr == NULL or size == 0:
                 self.c_obj.reset(new device_buffer(size, stream.view(), mr_ptr))
@@ -126,7 +126,7 @@ cdef class DeviceBuffer:
     @property
     def ptr(self):
         """Gets a pointer to the underlying data."""
-        return int(<uintptr_t>self.c_data())
+        return int(<uintptr_t>(self.c_data()))
 
     @property
     def size(self):
@@ -264,7 +264,7 @@ cdef class DeviceBuffer:
                 "Argument `ary` is too small. Need space for %i bytes." % s
             )
 
-        copy_ptr_to_host(<uintptr_t>dbp.data(), hb[:s], stream)
+        copy_ptr_to_host(<uintptr_t>(dbp.data()), hb[:s], stream)
 
         return ary
 
@@ -298,7 +298,7 @@ cdef class DeviceBuffer:
                 "Argument `ary` is too large. Need space for %i bytes." % s
             )
 
-        copy_host_to_ptr(hb[:s], <uintptr_t>dbp.data(), stream)
+        copy_host_to_ptr(hb[:s], <uintptr_t>(dbp.data()), stream)
 
     cpdef copy_from_device(self, cuda_ary,
                            Stream stream=DEFAULT_STREAM):
@@ -356,8 +356,8 @@ cdef class DeviceBuffer:
         cdef device_buffer* dbp = self.c_obj.get()
 
         copy_device_to_ptr(
-            <uintptr_t>src_ptr,
-            <uintptr_t>dbp.data(),
+            <uintptr_t>(src_ptr),
+            <uintptr_t>(dbp.data()),
             s,
             stream
         )
@@ -369,7 +369,7 @@ cdef class DeviceBuffer:
 
         cdef bytes b = PyBytes_FromStringAndSize(NULL, s)
         cdef unsigned char* p = b
-        cdef unsigned char[::1] mv = (<unsigned char[:(s + 1):1]>p)[:s]
+        cdef unsigned char[::1] mv = (<unsigned char[:(s + 1):1]>(p))[:s]
         self.copy_to_host(mv, stream)
 
         return b
@@ -431,7 +431,7 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
             " (expected bytes-like, got NoneType)"
         )
 
-    cdef uintptr_t p = <uintptr_t>&b[0]
+    cdef uintptr_t p = <uintptr_t>(&b[0])
     cdef size_t s = len(b)
     return DeviceBuffer(ptr=p, size=s, stream=stream)
 
@@ -459,7 +459,7 @@ cdef void _copy_async(const void* src,
     cdef cudaError_t err
     with nogil:
         err = cudaMemcpyAsync(dst, src, count, kind,
-                              <cudaStream_t>stream)
+                              <cudaStream_t>(stream))
 
     if err != cudaError.cudaSuccess:
         raise RuntimeError(f"Memcpy failed with error: {err}")
@@ -501,7 +501,7 @@ cpdef void copy_ptr_to_host(uintptr_t db,
         )
 
     with nogil:
-        _copy_async(<const void*>db, <void*>&hb[0], len(hb),
+        _copy_async(<const void*>(db), <void*>(&hb[0]), len(hb),
                     cudaMemcpyKind.cudaMemcpyDeviceToHost, stream.view())
 
     if stream.c_is_default():
@@ -545,7 +545,7 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
         )
 
     with nogil:
-        _copy_async(<const void*>&hb[0], <void*>db, len(hb),
+        _copy_async(<const void*>(&hb[0]), <void*>(db), len(hb),
                     cudaMemcpyKind.cudaMemcpyHostToDevice, stream.view())
 
     if stream.c_is_default():
@@ -579,5 +579,5 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
     stream = as_stream(stream)
 
     with nogil:
-        _copy_async(<const void*>d_src, <void*>d_dst, count,
+        _copy_async(<const void*>(d_src), <void*>(d_dst), count,
                     cudaMemcpyKind.cudaMemcpyDeviceToDevice, stream.view())

@@ -98,7 +98,7 @@ cdef class DeviceMemoryResource:
         stream = as_stream(stream)
         cdef uintptr_t ptr
         with nogil:
-            ptr = <uintptr_t>self.c_obj.get().allocate(stream.view(), nbytes)
+            ptr = <uintptr_t>(self.c_obj.get().allocate(stream.view(), nbytes))
         return ptr
 
     def deallocate(self, uintptr_t ptr, size_t nbytes, Stream stream=DEFAULT_STREAM):
@@ -212,13 +212,13 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
         cdef allocation_handle_type descriptor = allocation_handle_type.none
         if enable_ipc:
             descriptor = <allocation_handle_type>(
-                <int32_t?>descriptor |
-                <int32_t?>allocation_handle_type.posix_file_descriptor
+                <int32_t?>(descriptor) |
+                <int32_t?>(allocation_handle_type.posix_file_descriptor)
             )
         if enable_fabric:
             descriptor = <allocation_handle_type>(
-                <int32_t?>descriptor |
-                <int32_t?>allocation_handle_type.fabric
+                <int32_t?>(descriptor) |
+                <int32_t?>(allocation_handle_type.fabric)
             )
 
         cdef optional[allocation_handle_type] c_export_handle_type = (
@@ -264,7 +264,7 @@ cdef class CudaAsyncViewMemoryResource(DeviceMemoryResource):
             raise ValueError("pool_handle must be a cudaMemPool_t or CUmemoryPool")
 
         cdef cyruntime.cudaMemPool_t c_pool_handle
-        c_pool_handle = <cyruntime.cudaMemPool_t><uintptr_t>int(pool_handle)
+        c_pool_handle = <cyruntime.cudaMemPool_t>(<uintptr_t>(int(pool_handle)))
 
         self.c_obj.reset(
             new cuda_async_view_memory_resource(c_pool_handle)
@@ -272,8 +272,8 @@ cdef class CudaAsyncViewMemoryResource(DeviceMemoryResource):
 
     def pool_handle(self):
         cdef cuda_async_view_memory_resource* c_mr = \
-            <cuda_async_view_memory_resource*>self.c_obj.get()
-        return <uintptr_t>c_mr.pool_handle()
+            <cuda_async_view_memory_resource*>(self.c_obj.get())
+        return <uintptr_t>(c_mr.pool_handle())
 
 
 cdef class ManagedMemoryResource(DeviceMemoryResource):
@@ -590,10 +590,10 @@ cdef void* _allocate_callback_wrapper(
     cdef CppExcept err
     with gil:
         try:
-            return <void*><uintptr_t>((<object>ctx)(
+            return <void*>(<uintptr_t>((<object>(ctx))(
                 nbytes,
                 Stream._from_cudaStream_t(stream.value())
-            ))
+            )))
         except BaseException as e:
             err = translate_python_except_to_cpp(e)
     throw_cpp_except(err)
@@ -604,7 +604,7 @@ cdef void _deallocate_callback_wrapper(
     cuda_stream_view stream,
     void* ctx
 ) except * with gil:
-    (<object>ctx)(<uintptr_t>(ptr), nbytes, Stream._from_cudaStream_t(stream.value()))
+    (<object>(ctx))(<uintptr_t>(ptr), nbytes, Stream._from_cudaStream_t(stream.value()))
 
 
 cdef class CallbackMemoryResource(DeviceMemoryResource):
@@ -965,7 +965,7 @@ cdef bool _oom_callback_function(size_t bytes, void *callback_arg) noexcept nogi
     cdef CppExcept err
     with gil:
         try:
-            return (<object>callback_arg)(bytes)
+            return (<object>(callback_arg))(bytes)
         except BaseException as e:
             err = translate_python_except_to_cpp(e)
     throw_cpp_except(err)
@@ -982,8 +982,8 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
         self.c_obj.reset(
             new failure_callback_resource_adaptor[device_memory_resource](
                 upstream_mr.get_mr(),
-                <failure_callback_t>_oom_callback_function,
-                <void*>callback
+                <failure_callback_t>(_oom_callback_function),
+                <void*>(callback)
             )
         )
 
@@ -1241,7 +1241,7 @@ def enable_logging(log_file_name=None):
     devices = [0] if not _per_device_mrs.keys() else _per_device_mrs.keys()
 
     for device in devices:
-        each_mr = <DeviceMemoryResource>_per_device_mrs[device]
+        each_mr = <DeviceMemoryResource>(_per_device_mrs[device])
         if not isinstance(each_mr, LoggingResourceAdaptor):
             set_per_device_resource(
                 device,

@@ -110,7 +110,7 @@ outputs:
           - "test -d \"${PREFIX}/include/rmm\""
     about:
       homepage: ${{ load_from_file("python/librmm/pyproject.toml").project.urls.Homepage }}
-      license: ${{ load_from_file("python/librmm/pyproject.toml").project.license.text }}
+      license: ${{ load_from_file("python/librmm/pyproject.toml").project.license }}
       summary: ${{ load_from_file("python/librmm/pyproject.toml").project.description }}
 
   - package:
@@ -144,7 +144,7 @@ outputs:
           - cuda-version
     about:
       homepage: ${{ load_from_file("python/librmm/pyproject.toml").project.urls.Homepage }}
-      license: ${{ load_from_file("python/librmm/pyproject.toml").project.license.text | replace(" ", "-") }}
+      license: ${{ load_from_file("python/librmm/pyproject.toml").project.license }}
       summary: librmm test & benchmark executables
 
   - package:
@@ -204,5 +204,5 @@ outputs:
           - librmm
     about:
       homepage: ${{ load_from_file("python/librmm/pyproject.toml").project.urls.Homepage }}
-      license: ${{ load_from_file("python/librmm/pyproject.toml").project.license.text | replace(" ", "-") }}
+      license: ${{ load_from_file("python/librmm/pyproject.toml").project.license }}
       summary: librmm example executables

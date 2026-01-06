@@ -36,5 +36,5 @@ cdef class CudaAsyncManagedMemoryResource(DeviceMemoryResource):
             Handle to the underlying CUDA memory pool
         """
         cdef cuda_async_managed_memory_resource* c_mr = \
-            <cuda_async_managed_memory_resource*>self.c_obj.get()
-        return <uintptr_t>c_mr.pool_handle()
+            <cuda_async_managed_memory_resource*>(self.c_obj.get())
+        return <uintptr_t>(c_mr.pool_handle())

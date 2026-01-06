@@ -106,7 +106,7 @@ by migratable memory.
 `cuda.core.`.
 
 ```python
->>> from cuda.core.experimental import Device
+>>> from cuda.core import Device
 >>> import rmm.pylibrmm.stream
 >>> device = Device()
 >>> device.set_current()

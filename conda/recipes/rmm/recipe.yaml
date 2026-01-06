@@ -73,7 +73,7 @@ requirements:
     - librmm =${{ version }}
     - python =${{ py_version }}
     - pip
-    - scikit-build-core >=0.10.0
+    - scikit-build-core>=0.11.0
   run:
     - cuda-cudart
     - if: cuda_major == "12"
@@ -97,5 +97,5 @@ tests:
 
 about:
   homepage: ${{ load_from_file("python/rmm/pyproject.toml").project.urls.Homepage }}
-  license: ${{ load_from_file("python/rmm/pyproject.toml").project.license.text }}
+  license: ${{ load_from_file("python/rmm/pyproject.toml").project.license }}
   summary: ${{ load_from_file("python/rmm/pyproject.toml").project.description }}

@@ -20,8 +20,8 @@ class CudaStreamFlags(IntEnum):
     NON_BLOCKING : int
         Created stream does not synchronize with the default stream.
     """
-    SYNC_DEFAULT = <int>cuda_stream_flags.sync_default
-    NON_BLOCKING = <int>cuda_stream_flags.non_blocking
+    SYNC_DEFAULT = <int>(cuda_stream_flags.sync_default)
+    NON_BLOCKING = <int>(cuda_stream_flags.non_blocking)
 
 
 @cython.final
