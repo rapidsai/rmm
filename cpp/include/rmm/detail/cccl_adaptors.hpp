@@ -16,6 +16,7 @@
 #include <rmm/mr/detail/device_memory_resource_view.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/std/optional>
 
 #include <cstddef>
@@ -352,6 +353,20 @@ class cccl_async_resource_ref {
   }
 
   /**
+   * @brief Constructs a resource reference from a CCCL any_resource.
+   *
+   * This constructor enables constructing a resource_ref from an any_resource,
+   * which is useful when retrieving resources from containers that store any_resource.
+   *
+   * @param res A CCCL any_resource to reference
+   */
+  template <typename... Properties>
+  cccl_async_resource_ref(cuda::mr::any_resource<Properties...>& res)
+    : view_{cuda::std::nullopt}, ref_{res}
+  {
+  }
+
+  /**
    * @brief Copy constructor that properly reconstructs the ref to point to the new view.
    *
    * If the view is present (e.g., when constructed from device_memory_resource*), we reconstruct
@@ -398,24 +413,27 @@ class cccl_async_resource_ref {
    * @brief Construct a ref from a resource.
    *
    * This constructor accepts CCCL resource types but NOT CCCL resource_ref types,
-   * our own wrapper types, or device_memory_resource derived types. The exclusions
-   * are checked FIRST to prevent recursive constraint satisfaction.
+   * our own wrapper types, any_resource types, or device_memory_resource derived types.
+   * The exclusions are checked FIRST to prevent recursive constraint satisfaction.
    *
-   * @tparam OtherResourceType A CCCL resource type (not a resource_ref, wrapper, or DMR)
+   * @tparam OtherResourceType A CCCL resource type (not a resource_ref, wrapper, any_resource, or
+   * DMR)
    * @param other The resource to construct a ref from
    */
-  template <typename OtherResourceType,
-            std::enable_if_t<not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                                        cuda::mr::synchronous_resource_ref> and
-                             not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                                        cuda::mr::resource_ref> and
-                             not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                                        ::rmm::detail::cccl_resource_ref> and
-                             not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                                        ::rmm::detail::cccl_async_resource_ref> and
-                             not std::is_base_of_v<rmm::mr::device_memory_resource,
-                                                   std::remove_cv_t<OtherResourceType>> and
-                             cuda::mr::resource<OtherResourceType>>* = nullptr>
+  template <
+    typename OtherResourceType,
+    std::enable_if_t<
+      not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
+                                 cuda::mr::synchronous_resource_ref> and
+      not is_specialization_of_v<std::remove_cv_t<OtherResourceType>, cuda::mr::resource_ref> and
+      not is_specialization_of_v<std::remove_cv_t<OtherResourceType>, cuda::mr::any_resource> and
+      not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
+                                 ::rmm::detail::cccl_resource_ref> and
+      not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
+                                 ::rmm::detail::cccl_async_resource_ref> and
+      not std::is_base_of_v<rmm::mr::device_memory_resource,
+                            std::remove_cv_t<OtherResourceType>> and
+      cuda::mr::resource<OtherResourceType>>* = nullptr>
   cccl_async_resource_ref(OtherResourceType& other) : view_{}, ref_{ResourceType{other}}
   {
   }
@@ -536,6 +554,18 @@ class cccl_async_resource_ref {
     -> decltype(try_get_property(std::declval<ResourceType const&>(), prop))
   {
     return try_get_property(ref.ref_, prop);
+  }
+
+  /**
+   * @brief Implicit conversion to cuda::mr::any_resource<>.
+   *
+   * This enables reification of the resource_ref to an owning any_resource type.
+   * The conversion copies the underlying resource into the any_resource.
+   */
+  template <typename... Properties>
+  operator cuda::mr::any_resource<Properties...>() const
+  {
+    return cuda::mr::any_resource<Properties...>{ref_};
   }
 
  protected:

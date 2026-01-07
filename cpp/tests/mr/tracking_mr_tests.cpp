@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -94,24 +94,24 @@ TEST(TrackingTest, AllocationsLeftWithoutStacks)
 
 TEST(TrackingTest, MultiTracking)
 {
+  // Test stacking multiple tracking adaptors, using explicit resource refs
+  // to avoid lifetime issues with the global device resource map
   auto orig_device_resource = rmm::mr::get_current_device_resource_ref();
   tracking_adaptor mr{orig_device_resource, true};
-  rmm::mr::set_current_device_resource_ref(mr);
 
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
     allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default));
+      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, &mr));
   }
 
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations);
 
-  tracking_adaptor inner_mr{rmm::mr::get_current_device_resource_ref()};
-  rmm::mr::set_current_device_resource_ref(inner_mr);
+  tracking_adaptor inner_mr{&mr};
 
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
     allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default));
+      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, &inner_mr));
   }
 
   // Check the allocated bytes for both MRs
@@ -132,9 +132,6 @@ TEST(TrackingTest, MultiTracking)
 
   EXPECT_EQ(mr.get_allocated_bytes(), 0);
   EXPECT_EQ(inner_mr.get_allocated_bytes(), 0);
-
-  // Reset the current device resource
-  rmm::mr::set_current_device_resource_ref(orig_device_resource);
 }
 
 TEST(TrackingTest, NegativeInnerTracking)
