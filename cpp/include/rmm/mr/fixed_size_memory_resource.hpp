@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -190,7 +190,7 @@ class fixed_size_memory_resource
    * @return A pair comprising the allocated pointer and any unallocated remainder of the input
    * block.
    */
-  split_block allocate_from_block(block_type const& block, std::size_t size)
+  split_block allocate_from_block(block_type const& block, [[maybe_unused]] std::size_t size)
   {
     return {block, block_type{nullptr}};
   }
@@ -203,7 +203,7 @@ class fixed_size_memory_resource
    * @return The (now freed) block associated with `ptr`. The caller is expected to return the block
    * to the pool.
    */
-  block_type free_block(void* ptr, std::size_t size) noexcept
+  block_type free_block(void* ptr, [[maybe_unused]] std::size_t size) noexcept
   {
     // Deallocating a fixed-size block just inserts it in the free list, which is
     // handled by the parent class

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -115,7 +115,13 @@ inline std::chrono::time_point<std::chrono::system_clock> parse_time(std::string
   int microseconds     = std::stoi(str_time.substr(current + 1, str_time.length()));
 
   auto const epoch_year{1970};
-  std::tm time{seconds, minutes, hours, 1, 0, epoch_year, 0, 0, 0};
+  std::tm time{};
+  time.tm_sec  = seconds;
+  time.tm_min  = minutes;
+  time.tm_hour = hours;
+  time.tm_mday = 1;
+  time.tm_mon  = 0;
+  time.tm_year = epoch_year;
 
   auto timepoint = std::chrono::system_clock::from_time_t(std::mktime(&time));
   timepoint += std::chrono::microseconds{microseconds};

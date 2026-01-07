@@ -1,6 +1,6 @@
 # =============================================================================
 # cmake-format: off
-# SPDX-FileCopyrightText: Copyright (c) 2018-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 # cmake-format: on
 # =============================================================================
@@ -8,6 +8,9 @@
 # Build options
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 option(CODE_COVERAGE "Enable generating code coverage with gcov." OFF)
+
+set(RMM_TESTS_CXX_FLAGS -Wall -Werror -Wextra -Wno-unknown-pragmas)
+set(RMM_TESTS_CUDA_FLAGS -Werror=all-warnings -Xcompiler=-Wall,-Werror,-Wextra)
 
 include(rapids-test)
 rapids_test_init()
@@ -29,18 +32,14 @@ function(ConfigureTestInternal TEST_NAME)
                RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gtests>"
                CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
                INSTALL_RPATH "\$ORIGIN/../../../lib"
-               CXX_STANDARD 17
+               CXX_STANDARD 20
                CXX_STANDARD_REQUIRED ON
-               CUDA_STANDARD 17
+               CUDA_STANDARD 20
                CUDA_STANDARD_REQUIRED ON)
   target_compile_definitions(
     ${TEST_NAME} PUBLIC "RMM_LOG_ACTIVE_LEVEL=RAPIDS_LOGGER_LOG_LEVEL_${RMM_LOGGING_LEVEL}")
-  target_compile_options(
-    ${TEST_NAME}
-    PRIVATE
-      "$<$<COMPILE_LANGUAGE:CXX>:-Wall;-Werror;-Wno-unknown-pragmas;-Wno-error=deprecated-declarations>"
-      "$<$<COMPILE_LANGUAGE:CUDA>:-Werror=all-warnings;-Xcompiler=-Wall,-Werror,-Wno-error=deprecated-declarations>"
-  )
+  target_compile_options(${TEST_NAME} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${RMM_TESTS_CXX_FLAGS}>"
+                                              "$<$<COMPILE_LANGUAGE:CUDA>:${RMM_TESTS_CUDA_FLAGS}>")
 
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(
@@ -246,7 +245,5 @@ ConfigureTest(ERROR_MACROS_TEST error_macros_tests.cpp)
 
 # Resource ref construction and conversion tests
 ConfigureTest(RESOURCE_REF_CONVERSION_TEST mr/resource_ref_conversion_tests.cpp)
-set_target_properties(RESOURCE_REF_CONVERSION_TEST PROPERTIES CXX_STANDARD 20)
-set_target_properties(RESOURCE_REF_CONVERSION_PTDS_TEST PROPERTIES CXX_STANDARD 20)
 
 rapids_test_install_relocatable(INSTALL_COMPONENT_SET testing DESTINATION bin/gtests/librmm)
