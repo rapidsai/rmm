@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -286,6 +286,13 @@ class cccl_resource_ref {
  *
  * @tparam ResourceType The underlying CCCL resource_ref type (async)
  */
+// Suppress spurious warning about calling a __host__ function from __host__ __device__ context
+// when this class is used as a member in thrust allocators that inherit __host__ __device__
+// attributes.
+#ifdef __CUDACC__
+#pragma nv_diagnostic push
+#pragma nv_diag_suppress 20011
+#endif
 template <typename ResourceType>
 class cccl_async_resource_ref {
  public:
@@ -535,6 +542,9 @@ class cccl_async_resource_ref {
   cuda::std::optional<rmm::mr::detail::device_memory_resource_view> view_;
   ResourceType ref_;
 };
+#ifdef __CUDACC__
+#pragma nv_diagnostic pop
+#endif
 
 #else  // CCCL < 3.2: Use simpler inheritance-based implementation
 
