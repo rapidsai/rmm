@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -84,9 +84,10 @@ struct export_handle_type {
  * @return true if supported
  * @return false if unsupported
  */
-#ifdef __CUDACC__
 // This suppression was needed due to a false positive warning from nvcc. We
 // should be able to remove it altogether once we rework the thrust allocator.
+#ifdef __CUDACC__
+#pragma nv_diagnostic push
 #pragma nv_diag_suppress 20011
 #endif
 struct hwdecompress {
@@ -106,7 +107,7 @@ struct hwdecompress {
   }
 };
 #ifdef __CUDACC__
-#pragma nv_diag_default 20011
+#pragma nv_diagnostic pop
 #endif
 
 /**
