@@ -361,7 +361,7 @@ class cccl_async_resource_ref {
    * @param res A CCCL any_resource to reference
    */
   template <typename... Properties>
-  cccl_async_resource_ref(cuda::mr::any_resource<Properties...> const& res)
+  cccl_async_resource_ref(cuda::mr::any_resource<Properties...>& res)
     : view_{cuda::std::nullopt}, ref_{res}
   {
   }
