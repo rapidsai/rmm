@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -22,7 +22,7 @@ cuda_stream::cuda_stream(cuda_stream::flags flags)
               return stream;
             }(),
             [](cudaStream_t* stream) {
-              RMM_ASSERT_CUDA_SUCCESS(cudaStreamDestroy(*stream));
+              RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamDestroy(*stream));
               delete stream;  // NOLINT(cppcoreguidelines-owning-memory)
             }}
 {

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -93,8 +93,9 @@ class pinned_host_memory_resource final : public device_memory_resource {
   {
     // TODO: Use the alignment parameter as an argument to do_deallocate
     std::size_t constexpr alignment = rmm::CUDA_ALLOCATION_ALIGNMENT;
-    rmm::detail::aligned_host_deallocate(
-      ptr, bytes, alignment, [](void* ptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeHost(ptr)); });
+    rmm::detail::aligned_host_deallocate(ptr, bytes, alignment, [](void* ptr) {
+      RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaFreeHost(ptr));
+    });
   }
 
   /**

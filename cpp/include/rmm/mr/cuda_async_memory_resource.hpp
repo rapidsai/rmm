@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -147,7 +147,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
 
   ~cuda_async_memory_resource() override
   {
-    RMM_ASSERT_CUDA_SUCCESS(cudaMemPoolDestroy(pool_handle()));
+    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaMemPoolDestroy(pool_handle()));
   }
   cuda_async_memory_resource(cuda_async_memory_resource const&)            = delete;
   cuda_async_memory_resource(cuda_async_memory_resource&&)                 = delete;
