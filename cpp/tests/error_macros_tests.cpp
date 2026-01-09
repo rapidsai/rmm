@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -98,6 +98,24 @@ TEST(ErrorMacrosTest, AssertCudaSuccess)
 #ifdef NDEBUG
   // In release builds, this should not crash
   EXPECT_NO_FATAL_FAILURE(RMM_ASSERT_CUDA_SUCCESS([]() { return cudaErrorInvalidValue; }()));
+#endif
+}
+
+// Test RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN macro
+// This variant also accepts cudaErrorCudartUnloading as success
+TEST(ErrorMacrosTest, AssertCudaSuccessSafeShutdown)
+{
+  // cudaSuccess should always work
+  EXPECT_NO_FATAL_FAILURE(RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN([]() { return cudaSuccess; }()));
+
+  // cudaErrorCudartUnloading should be treated as success (the key difference from the base macro)
+  EXPECT_NO_FATAL_FAILURE(
+    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN([]() { return cudaErrorCudartUnloading; }()));
+
+#ifdef NDEBUG
+  // In release builds, other errors should not crash (macro just executes the call)
+  EXPECT_NO_FATAL_FAILURE(
+    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN([]() { return cudaErrorInvalidValue; }()));
 #endif
 }
 
