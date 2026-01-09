@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -56,7 +56,7 @@ struct fixed_size_free_list : free_list<block_base> {
    * @param size The size in bytes of the desired block (unused).
    * @return A block large enough to store `size` bytes.
    */
-  block_type get_block(std::size_t size)
+  block_type get_block(std::size_t /*size*/)
   {
     if (is_empty()) { return block_type{}; }
     block_type block = *begin();

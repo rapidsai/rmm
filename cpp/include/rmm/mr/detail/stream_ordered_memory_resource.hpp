@@ -288,7 +288,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     auto const iter = stream_events_.find(stream_to_store);
     return (iter != stream_events_.end()) ? iter->second : [&]() {
-      stream_event_pair stream_event{stream_to_store};
+      stream_event_pair stream_event{stream_to_store, nullptr};
       RMM_ASSERT_CUDA_SUCCESS(
         cudaEventCreateWithFlags(&stream_event.event, cudaEventDisableTiming));
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)

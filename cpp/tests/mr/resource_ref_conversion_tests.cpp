@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -49,7 +49,7 @@ class new_delete_memory_resource {
     deallocate_sync(ptr, bytes, alignment);
   }
 
-  bool operator==(new_delete_memory_resource const& other) const { return true; }
+  bool operator==(new_delete_memory_resource const& /*other*/) const { return true; }
 
   bool operator!=(new_delete_memory_resource const& other) const { return !operator==(other); }
 
