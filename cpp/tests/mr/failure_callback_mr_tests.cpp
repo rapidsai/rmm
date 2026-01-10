@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -45,11 +45,13 @@ TEST(FailureCallbackTest, RetryAllocationOnce)
 template <typename ExceptionType>
 class always_throw_memory_resource final : public mr::device_memory_resource {
  private:
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
+  void* do_allocate(std::size_t /*bytes*/, cuda_stream_view /*stream*/) override
   {
     throw ExceptionType{"foo"};
   }
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override {};
+  void do_deallocate(void* /*ptr*/,
+                     std::size_t /*bytes*/,
+                     cuda_stream_view /*stream*/) noexcept override {};
 };
 
 TEST(FailureCallbackTest, DifferentExceptionTypes)

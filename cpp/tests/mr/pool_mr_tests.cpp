@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -183,17 +183,20 @@ class fake_async_resource {
  public:
   // To model `async_resource`
   void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
-  void deallocate_sync(void* ptr, std::size_t, std::size_t) noexcept {}
+  void deallocate_sync(void* /*ptr*/, std::size_t, std::size_t) noexcept {}
   void* allocate(cuda_stream_view, std::size_t, std::size_t) { return nullptr; }
   void deallocate(cuda_stream_view, void*, std::size_t, std::size_t) noexcept { return; }
 
-  bool operator==(const fake_async_resource& other) const { return true; }
-  bool operator!=(const fake_async_resource& other) const { return false; }
+  bool operator==(const fake_async_resource& /*other*/) const { return true; }
+  bool operator!=(const fake_async_resource& /*other*/) const { return false; }
 
  private:
-  static void* do_allocate(std::size_t bytes, cuda_stream_view) { return nullptr; }
-  static void do_deallocate(void* ptr, std::size_t, cuda_stream_view) noexcept {}
-  [[nodiscard]] static bool do_is_equal(fake_async_resource const& other) noexcept { return true; }
+  static void* do_allocate(std::size_t /*bytes*/, cuda_stream_view) { return nullptr; }
+  static void do_deallocate(void* /*ptr*/, std::size_t, cuda_stream_view) noexcept {}
+  [[nodiscard]] static bool do_is_equal(fake_async_resource const& /*other*/) noexcept
+  {
+    return true;
+  }
 };
 
 // static property checks

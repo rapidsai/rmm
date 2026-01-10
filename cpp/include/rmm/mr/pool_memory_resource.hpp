@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -302,7 +302,9 @@ class pool_memory_resource final
    * @param stream The stream on which the memory is to be used.
    * @return block_type a block of at least `size` bytes
    */
-  block_type expand_pool(std::size_t size, free_list& blocks, cuda_stream_view stream)
+  block_type expand_pool(std::size_t size,
+                         [[maybe_unused]] free_list& blocks,
+                         cuda_stream_view stream)
   {
     // Strategy: If maximum_pool_size_ is set, then grow geometrically, e.g. by halfway to the
     // limit each time. If it is not set, grow exponentially, e.g. by doubling the pool size each

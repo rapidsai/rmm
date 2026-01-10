@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -87,7 +87,9 @@ struct AdaptorTest : public ::testing::Test {
   {
     if constexpr (std::is_same_v<adaptor_type, failure_callback_resource_adaptor<cuda_mr>>) {
       return std::make_shared<adaptor_type>(
-        upstream, [](std::size_t bytes, void* arg) { return false; }, nullptr);
+        upstream,
+        []([[maybe_unused]] std::size_t bytes, [[maybe_unused]] void* arg) { return false; },
+        nullptr);
     } else if constexpr (std::is_same_v<adaptor_type, limiting_resource_adaptor<cuda_mr>>) {
       return std::make_shared<adaptor_type>(upstream, 64_MiB);
     } else if constexpr (std::is_same_v<adaptor_type, logging_resource_adaptor<cuda_mr>>) {

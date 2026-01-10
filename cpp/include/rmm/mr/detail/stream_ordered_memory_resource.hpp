@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -288,7 +288,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     auto const iter = stream_events_.find(stream_to_store);
     return (iter != stream_events_.end()) ? iter->second : [&]() {
-      stream_event_pair stream_event{stream_to_store};
+      stream_event_pair stream_event{stream_to_store, nullptr};
       RMM_ASSERT_CUDA_SUCCESS(
         cudaEventCreateWithFlags(&stream_event.event, cudaEventDisableTiming));
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
@@ -442,8 +442,8 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     lock_guard lock(mtx_);
 
     for (auto s_e : stream_events_) {
-      RMM_ASSERT_CUDA_SUCCESS(cudaEventSynchronize(s_e.second.event));
-      RMM_ASSERT_CUDA_SUCCESS(cudaEventDestroy(s_e.second.event));
+      RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaEventSynchronize(s_e.second.event));
+      RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaEventDestroy(s_e.second.event));
     }
 
     stream_events_.clear();

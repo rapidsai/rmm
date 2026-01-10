@@ -1,6 +1,6 @@
 # =============================================================================
 # cmake-format: off
-# SPDX-FileCopyrightText: Copyright (c) 2018-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 # cmake-format: on
 # =============================================================================
@@ -8,6 +8,9 @@
 # Build options
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
+
+set(RMM_BENCHMARKS_CXX_FLAGS -Wall -Werror -Wextra -Wno-unknown-pragmas)
+set(RMM_BENCHMARKS_CUDA_FLAGS -Werror=all-warnings -Xcompiler=-Wall,-Werror,-Wextra)
 
 if(PER_THREAD_DEFAULT_STREAM)
   message(STATUS "RMM: Building benchmarks with per-thread default stream")
@@ -26,6 +29,8 @@ function(ConfigureBench BENCH_NAME)
     PROPERTIES POSITION_INDEPENDENT_CODE ON
                CXX_STANDARD 20
                CXX_STANDARD_REQUIRED ON
+               CUDA_STANDARD 20
+               CUDA_STANDARD_REQUIRED ON
                RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gbenchmarks>"
                CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
                INSTALL_RPATH "\$ORIGIN/../../../lib")
@@ -37,8 +42,9 @@ function(ConfigureBench BENCH_NAME)
     target_compile_definitions(${BENCH_NAME} PUBLIC CUDA_API_PER_THREAD_DEFAULT_STREAM)
   endif()
 
-  target_compile_options(${BENCH_NAME} PUBLIC $<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-Wall -Werror
-                                              -Wno-unknown-pragmas>)
+  target_compile_options(
+    ${BENCH_NAME} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${RMM_BENCHMARKS_CXX_FLAGS}>"
+                          "$<$<COMPILE_LANGUAGE:CUDA>:${RMM_BENCHMARKS_CUDA_FLAGS}>")
 
   if(DISABLE_DEPRECATION_WARNING)
     target_compile_options(

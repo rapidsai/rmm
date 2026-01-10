@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -43,7 +43,7 @@ using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resou
 static void run_prewarm(rmm::cuda_stream_pool& stream_pool, rmm::device_async_resource_ref mr)
 {
   auto buffers = std::vector<rmm::device_uvector<int64_t>>();
-  for (int32_t i = 0; i < stream_pool.get_pool_size(); i++) {
+  for (std::size_t i = 0; i < stream_pool.get_pool_size(); i++) {
     auto stream = stream_pool.get_stream(i);
     buffers.emplace_back(rmm::device_uvector<int64_t>(1, stream, mr));
   }
@@ -53,7 +53,7 @@ static void run_test(std::size_t num_kernels,
                      rmm::cuda_stream_pool& stream_pool,
                      rmm::device_async_resource_ref mr)
 {
-  for (int32_t i = 0; i < num_kernels; i++) {
+  for (std::size_t i = 0; i < num_kernels; i++) {
     auto stream = stream_pool.get_stream(i);
     auto buffer = rmm::device_uvector<int64_t>(1, stream, mr);
     compute_bound_kernel<<<1, 1, 0, stream.value()>>>(buffer.data());

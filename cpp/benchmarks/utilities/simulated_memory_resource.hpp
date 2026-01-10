@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -71,7 +71,7 @@ class simulated_memory_resource final : public device_memory_resource {
    *
    * @param ptr Pointer to be deallocated
    */
-  void do_deallocate(void* ptr, std::size_t, cuda_stream_view) noexcept override {}
+  void do_deallocate(void* /*ptr*/, std::size_t, cuda_stream_view) noexcept override {}
 
   char* begin_{};
   char* end_{};

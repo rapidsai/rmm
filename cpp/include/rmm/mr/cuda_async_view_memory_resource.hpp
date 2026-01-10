@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -102,7 +102,9 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
                      [[maybe_unused]] std::size_t bytes,
                      rmm::cuda_stream_view stream) noexcept override
   {
-    if (ptr != nullptr) { RMM_ASSERT_CUDA_SUCCESS(cudaFreeAsync(ptr, stream.value())); }
+    if (ptr != nullptr) {
+      RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaFreeAsync(ptr, stream.value()));
+    }
   }
 
   /**
