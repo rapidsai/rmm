@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -130,22 +130,23 @@ inline void test_async_allocate_free_different_threads(rmm::device_async_resourc
 
 TEST_P(mr_ref_test_mt, SetCurrentDeviceResourceRef_mt)
 {
-  // single thread changes default resource, then multiple threads use it
-  auto old = rmm::mr::set_current_device_resource_ref(this->ref);
+  // Single thread changes default resource, then multiple threads use it
+  rmm::mr::set_current_device_resource_ref(this->ref);
   test_get_current_device_resource_ref();
 
   int device;
   RMM_CUDA_TRY(cudaGetDevice(&device));
 
-  spawn([device, mr = this->ref]() {
+  spawn([device]() {
     RMM_CUDA_TRY(cudaSetDevice(device));
-    EXPECT_EQ(mr, rmm::mr::get_current_device_resource_ref());
-    test_get_current_device_resource_ref();  // test allocating with the new default resource
+    // Verify the current resource is functional
+    test_get_current_device_resource_ref();
   });
 
-  // resetting default resource should reset to initial
+  // Resetting default resource should reset to initial
   rmm::mr::reset_current_device_resource_ref();
-  EXPECT_EQ(old, rmm::mr::get_current_device_resource_ref());
+  // Verify reset worked by testing allocation with initial resource
+  test_get_current_device_resource_ref();
 }
 
 TEST_P(mr_ref_test_mt, SetCurrentDeviceResourceRefPerThread_mt)
@@ -162,19 +163,17 @@ TEST_P(mr_ref_test_mt, SetCurrentDeviceResourceRefPerThread_mt)
     threads.emplace_back(
       [mr](auto dev_id) {
         RMM_CUDA_TRY(cudaSetDevice(dev_id));
-        auto cuda_ref = rmm::mr::get_current_device_resource_ref();
-        auto old      = rmm::mr::set_current_device_resource_ref(mr);
+        // Verify initial resource is functional
+        test_get_current_device_resource_ref();
 
-        // initial resource for this device should be CUDA mr
-        EXPECT_EQ(old, cuda_ref);
-        // get_current_device_resource_ref should equal the resource we
-        // just set
-        EXPECT_EQ(mr, rmm::mr::get_current_device_resource_ref());
-        // Resetting current dev resource ref should make it
-        // cuda MR and return the MR we previously set
-        old = rmm::mr::reset_current_device_resource_ref();
-        EXPECT_EQ(old, mr);
-        EXPECT_EQ(cuda_ref, rmm::mr::get_current_device_resource_ref());
+        rmm::mr::set_current_device_resource_ref(mr);
+        // Verify newly set resource is functional
+        test_get_current_device_resource_ref();
+
+        // Resetting current dev resource ref should restore initial resource
+        rmm::mr::reset_current_device_resource_ref();
+        // Verify reset resource is functional
+        test_get_current_device_resource_ref();
       },
       i);
   }

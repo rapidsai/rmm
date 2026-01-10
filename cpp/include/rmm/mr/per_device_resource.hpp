@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,6 +10,8 @@
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <map>
 #include <mutex>
@@ -140,12 +142,13 @@ RMM_EXPORT inline std::mutex& ref_map_lock()
 
 // This symbol must have default visibility, see: https://github.com/rapidsai/rmm/issues/826
 /**
- * @briefreturn{Reference to the map from device id -> resource_ref}
+ * @briefreturn{Reference to the map from device id -> any_resource}
  */
 RMM_EXPORT inline auto& get_ref_map()
 {
-  static std::map<cuda_device_id::value_type, device_async_resource_ref> device_id_to_resource_ref;
-  return device_id_to_resource_ref;
+  static std::map<cuda_device_id::value_type, cuda::mr::any_resource<cuda::mr::device_accessible>>
+    device_id_to_resource;
+  return device_id_to_resource;
 }
 
 }  // namespace detail
@@ -192,17 +195,17 @@ namespace detail {
 inline device_async_resource_ref set_per_device_resource_ref_unsafe(
   cuda_device_id device_id, device_async_resource_ref new_resource_ref)
 {
-  auto& map          = detail::get_ref_map();
-  auto const old_itr = map.find(device_id.value());
-  // If a resource didn't previously exist for `device_id`, return pointer to initial_resource
-  // Note: because resource_ref is not default-constructible, we can't use std::map::operator[]
+  using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
+  auto& map                 = detail::get_ref_map();
+  auto const old_itr        = map.find(device_id.value());
+  // If a resource didn't previously exist for `device_id`, return ref to initial_resource
   if (old_itr == map.end()) {
-    map.insert({device_id.value(), new_resource_ref});
+    map.emplace(device_id.value(), static_cast<any_device_resource>(new_resource_ref));
     return device_async_resource_ref{*detail::initial_resource()};
   }
 
-  auto old_resource_ref = old_itr->second;
-  old_itr->second       = new_resource_ref;  // update map directly via iterator
+  device_async_resource_ref old_resource_ref{old_itr->second};
+  old_itr->second = static_cast<any_device_resource>(new_resource_ref);  // reify and store
   return old_resource_ref;
 }
 }  // namespace detail
@@ -333,15 +336,18 @@ inline device_memory_resource* set_current_device_resource(device_memory_resourc
  */
 inline device_async_resource_ref get_per_device_resource_ref(cuda_device_id device_id)
 {
+  using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
   std::lock_guard<std::mutex> lock{detail::ref_map_lock()};
   auto& map = detail::get_ref_map();
   // If a resource was never set for `id`, set to the initial resource
   auto const found = map.find(device_id.value());
   if (found == map.end()) {
-    auto item = map.insert({device_id.value(), *detail::initial_resource()});
-    return item.first->second;
+    // Create a resource_ref from the initial resource, then reify it to any_resource
+    device_async_resource_ref initial_ref{*detail::initial_resource()};
+    auto item = map.emplace(device_id.value(), static_cast<any_device_resource>(initial_ref));
+    return device_async_resource_ref{item.first->second};
   }
-  return found->second;
+  return device_async_resource_ref{found->second};
 }
 
 /**
