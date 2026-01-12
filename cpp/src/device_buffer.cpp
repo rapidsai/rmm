@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -44,7 +44,7 @@ device_buffer::device_buffer(device_buffer&& other) noexcept
     _size{other._size},
     _capacity{other._capacity},
     _stream{other.stream()},
-    _mr{std::move(other._mr)},
+    _mr{other._mr},
     _device{other._device}
 {
   other._data     = nullptr;
@@ -64,7 +64,7 @@ device_buffer& device_buffer::operator=(device_buffer&& other) noexcept
     _size     = other._size;
     _capacity = other._capacity;
     set_stream(other.stream());
-    _mr     = std::move(other._mr);
+    _mr     = other._mr;
     _device = other._device;
 
     other._data     = nullptr;

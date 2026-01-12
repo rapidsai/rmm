@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -602,7 +602,7 @@ class device_uvector {
    * @briefreturn{The resource used to allocate and deallocate the device
    * storage}
    */
-  [[nodiscard]] rmm::device_async_resource_ref memory_resource() noexcept
+  [[nodiscard]] rmm::device_async_resource_ref memory_resource() const noexcept
   {
     return _storage.memory_resource();
   }

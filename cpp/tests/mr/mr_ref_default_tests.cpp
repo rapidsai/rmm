@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -61,34 +61,6 @@ TEST(DefaultTest, GetCurrentDeviceResourceRef)
 {
   auto mr = rmm::mr::get_current_device_resource_ref();
   EXPECT_EQ(mr, rmm::device_async_resource_ref{rmm::mr::detail::initial_resource()});
-}
-
-TEST(DefaultTest, SetCurrentDeviceResourceRefFromPointer)
-{
-  // Construct a cuda_memory_resource
-  rmm::mr::cuda_memory_resource cuda_mr{};
-
-  // Get a pointer to it (device_memory_resource*)
-  rmm::mr::device_memory_resource* mr_ptr = &cuda_mr;
-
-  // Set with set_current_device_resource_ref using the pointer
-  rmm::mr::set_current_device_resource_ref(mr_ptr);
-
-  // Get the ref with get_current_device_resource_ref
-  auto ref = rmm::mr::get_current_device_resource_ref();
-
-  // Use that ref to allocate
-  constexpr std::size_t size{1024};
-  void* ptr = ref.allocate_sync(size);
-  EXPECT_NE(ptr, nullptr);
-  EXPECT_TRUE(is_properly_aligned(ptr));
-  EXPECT_TRUE(is_device_accessible_memory(ptr));
-
-  // Deallocate
-  ref.deallocate_sync(ptr, size);
-
-  // Reset to initial resource
-  rmm::mr::reset_current_device_resource_ref();
 }
 
 // Multi-threaded default resource tests
