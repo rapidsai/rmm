@@ -602,7 +602,7 @@ class device_uvector {
    * @briefreturn{The resource used to allocate and deallocate the device
    * storage}
    */
-  [[nodiscard]] rmm::device_async_resource_ref memory_resource() noexcept
+  [[nodiscard]] rmm::device_async_resource_ref memory_resource() const noexcept
   {
     return _storage.memory_resource();
   }
