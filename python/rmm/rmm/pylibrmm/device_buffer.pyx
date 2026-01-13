@@ -1,9 +1,10 @@
-# SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 import numpy as np
 
 cimport cython
 from cpython.bytes cimport PyBytes_FromStringAndSize
+from cython.operator cimport dereference as deref
 from libc.stdint cimport uintptr_t
 from libcpp.memory cimport unique_ptr
 from libcpp.utility cimport move
@@ -28,7 +29,7 @@ from rmm.librmm.device_buffer cimport (
     get_current_cuda_device,
     prefetch,
 )
-from rmm.librmm.memory_resource cimport device_memory_resource
+from rmm.librmm.per_device_resource cimport device_async_resource_ref
 from rmm.pylibrmm.memory_resource cimport (
     DeviceMemoryResource,
     get_current_device_resource,
@@ -79,20 +80,32 @@ cdef class DeviceBuffer:
         >>> db = rmm.DeviceBuffer(size=5)
         """
         cdef const void* c_ptr
-        cdef device_memory_resource * mr_ptr
         stream = as_stream(stream)
         # Save a reference to the MR and stream used for allocation
         self.mr = get_current_device_resource() if mr is None else mr
         self.stream = stream
 
-        mr_ptr = self.mr.get_mr()
         with nogil:
             c_ptr = <const void*>(ptr)
 
+            # Construct device_async_resource_ref inline from device_memory_resource
             if c_ptr == NULL or size == 0:
-                self.c_obj.reset(new device_buffer(size, stream.view(), mr_ptr))
+                self.c_obj.reset(
+                    new device_buffer(
+                        size,
+                        stream.view(),
+                        device_async_resource_ref(deref(self.mr.get_mr()))
+                    )
+                )
             else:
-                self.c_obj.reset(new device_buffer(c_ptr, size, stream.view(), mr_ptr))
+                self.c_obj.reset(
+                    new device_buffer(
+                        c_ptr,
+                        size,
+                        stream.view(),
+                        device_async_resource_ref(deref(self.mr.get_mr()))
+                    )
+                )
 
                 if stream.c_is_default():
                     stream.c_synchronize()
