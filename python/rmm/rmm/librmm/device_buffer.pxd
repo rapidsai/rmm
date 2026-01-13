@@ -1,8 +1,9 @@
-# SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 from rmm.librmm.memory_resource cimport device_memory_resource
+from rmm.librmm.per_device_resource cimport device_async_resource_ref
 
 
 cdef extern from "rmm/mr/per_device_resource.hpp" namespace "rmm" nogil:
@@ -26,18 +27,18 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
         device_buffer(
             size_t size,
             cuda_stream_view stream,
-            device_memory_resource *
+            device_async_resource_ref mr
         ) except +
         device_buffer(
             const void* source_data,
             size_t size,
             cuda_stream_view stream,
-            device_memory_resource *
+            device_async_resource_ref mr
         ) except +
         device_buffer(
             const device_buffer buf,
             cuda_stream_view stream,
-            device_memory_resource *
+            device_async_resource_ref mr
         ) except +
         void reserve(size_t new_capacity, cuda_stream_view stream) except +
         void resize(size_t new_size, cuda_stream_view stream) except +
