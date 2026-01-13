@@ -1,9 +1,17 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 from libcpp.memory cimport shared_ptr
 
 from rmm.librmm.memory_resource cimport device_memory_resource
+from rmm.librmm.per_device_resource cimport device_async_resource_ref
+
+
+# Import C++ helper function to create resource_ref from pointer
+cdef extern from "rmm/resource_ref.hpp" namespace "rmm" nogil:
+    cdef device_async_resource_ref to_device_async_resource_ref_checked[
+        Resource
+    ](Resource* res)
 
 
 cdef class DeviceMemoryResource:
