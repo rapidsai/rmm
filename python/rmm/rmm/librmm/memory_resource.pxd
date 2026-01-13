@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 # This import is needed for Cython typing in translate_python_except_to_cpp
@@ -15,6 +15,7 @@ from libcpp.string cimport string
 
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 from rmm.librmm.memory_resource cimport device_memory_resource
+from rmm.librmm.per_device_resource cimport device_async_resource_ref
 
 
 cdef extern from "rmm/mr/device_memory_resource.hpp" \
@@ -197,7 +198,7 @@ cdef extern from "rmm/mr/binning_memory_resource.hpp" \
         void add_bin(size_t allocation_size) except +
         void add_bin(
             size_t allocation_size,
-            device_memory_resource* bin_resource) except +
+            device_async_resource_ref bin_resource) except +
 
 cdef extern from "rmm/mr/limiting_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
