@@ -569,10 +569,11 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
             # Save the ref to the new bin resource to ensure its lifetime
             self._bin_mrs.append(bin_resource)
 
+            # Construct device_async_resource_ref inline from device_memory_resource
             (<binning_memory_resource[device_memory_resource]*>(
                 self.c_obj.get()))[0].add_bin(
                     allocation_size,
-                    bin_resource.get_mr())
+                    device_async_resource_ref(deref(bin_resource.get_mr())))
 
     @property
     def bin_mrs(self) -> list:
