@@ -14,6 +14,7 @@
 #include <rmm/mr/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda_runtime_api.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -66,7 +67,7 @@ class fixed_size_memory_resource
     // NOLINTNEXTLINE bugprone-easily-swappable-parameters
     std::size_t block_size            = default_block_size,
     std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
-    : upstream_mr_{upstream_mr},
+    : upstream_mr_{cuda::mr::any_resource<cuda::mr::device_accessible>{upstream_mr}},
       block_size_{align_up(block_size, CUDA_ALLOCATION_ALIGNMENT)},
       upstream_chunk_size_{block_size_ * blocks_to_preallocate}
   {
@@ -90,7 +91,8 @@ class fixed_size_memory_resource
     // NOLINTNEXTLINE bugprone-easily-swappable-parameters
     std::size_t block_size            = default_block_size,
     std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
-    : upstream_mr_{to_device_async_resource_ref_checked(upstream_mr)},
+    : upstream_mr_{cuda::mr::any_resource<cuda::mr::device_accessible>{
+        to_device_async_resource_ref_checked(upstream_mr)}},
       block_size_{align_up(block_size, CUDA_ALLOCATION_ALIGNMENT)},
       upstream_chunk_size_{block_size_ * blocks_to_preallocate}
   {
@@ -115,7 +117,7 @@ class fixed_size_memory_resource
    */
   [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return upstream_mr_;
+    return device_async_resource_ref{upstream_mr_};
   }
 
   /**
@@ -261,7 +263,9 @@ class fixed_size_memory_resource
   }
 
  private:
-  device_async_resource_ref upstream_mr_;  // The resource from which to allocate new blocks
+  cuda::mr::any_resource<cuda::mr::device_accessible> mutable upstream_mr_;  // The resource from
+                                                                             // which to allocate
+                                                                             // new blocks
 
   std::size_t block_size_;           // size of blocks this MR allocates
   std::size_t upstream_chunk_size_;  // size of chunks allocated from heap MR

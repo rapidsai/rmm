@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -11,6 +11,8 @@
 #include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <atomic>
 #include <cstddef>
@@ -48,7 +50,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
   limiting_resource_adaptor(device_async_resource_ref upstream,
                             std::size_t allocation_limit,
                             std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT)
-    : upstream_{upstream},
+    : upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{upstream}},
       allocation_limit_{allocation_limit},
       allocated_bytes_(0),
       alignment_(alignment)
@@ -68,7 +70,8 @@ class limiting_resource_adaptor final : public device_memory_resource {
   limiting_resource_adaptor(Upstream* upstream,
                             std::size_t allocation_limit,
                             std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT)
-    : upstream_{to_device_async_resource_ref_checked(upstream)},
+    : upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{
+        to_device_async_resource_ref_checked(upstream)}},
       allocation_limit_{allocation_limit},
       allocated_bytes_(0),
       alignment_(alignment)
@@ -89,7 +92,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    */
   [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return upstream_;
+    return device_async_resource_ref{upstream_};
   }
 
   /**
@@ -175,7 +178,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
   }
 
   // The upstream resource used for satisfying allocation requests
-  device_async_resource_ref upstream_;
+  cuda::mr::any_resource<cuda::mr::device_accessible> mutable upstream_;
 
   // maximum bytes this allocator is allowed to allocate.
   std::size_t allocation_limit_;

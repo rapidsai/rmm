@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -8,6 +8,8 @@
 #include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/prefetch.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <cstddef>
 
@@ -33,7 +35,10 @@ class prefetch_resource_adaptor final : public device_memory_resource {
    *
    * @param upstream The resource_ref used for allocating/deallocating device memory
    */
-  prefetch_resource_adaptor(device_async_resource_ref upstream) : upstream_{upstream} {}
+  prefetch_resource_adaptor(device_async_resource_ref upstream)
+    : upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{upstream}}
+  {
+  }
 
   /**
    * @brief Construct a new prefetch resource adaptor using `upstream` to satisfy
@@ -44,7 +49,8 @@ class prefetch_resource_adaptor final : public device_memory_resource {
    * @param upstream The resource used for allocating/deallocating device memory
    */
   prefetch_resource_adaptor(Upstream* upstream)
-    : upstream_{to_device_async_resource_ref_checked(upstream)}
+    : upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{
+        to_device_async_resource_ref_checked(upstream)}}
   {
   }
 
@@ -62,7 +68,7 @@ class prefetch_resource_adaptor final : public device_memory_resource {
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return upstream_;
+    return device_async_resource_ref{upstream_};
   }
 
  private:
@@ -114,7 +120,7 @@ class prefetch_resource_adaptor final : public device_memory_resource {
   }
 
   // the upstream resource used for satisfying allocation requests
-  device_async_resource_ref upstream_;
+  cuda::mr::any_resource<cuda::mr::device_accessible> mutable upstream_;
 };
 
 /** @} */  // end of group
