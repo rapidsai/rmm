@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -23,8 +23,11 @@ struct allocator_test : public ::testing::Test {
 TEST_F(allocator_test, default_resource)
 {
   rmm::mr::polymorphic_allocator<int> allocator{};
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(allocator.get_upstream_resource(),
             rmm::device_async_resource_ref{rmm::mr::get_current_device_resource()});
+#pragma GCC diagnostic pop
 }
 
 TEST_F(allocator_test, custom_resource)
