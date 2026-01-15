@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 set -euo pipefail
@@ -23,7 +23,21 @@ sccache --stop-server 2>/dev/null || true
 source rapids-telemetry-setup
 
 dist_dir="$(mktemp -d)"
-rapids-telemetry-record build.log rapids-pip-retry wheel . -w "${dist_dir}" -v --no-deps --disable-pip-version-check
+
+RAPIDS_PIP_WHEEL_ARGS=(
+  -w "${dist_dir}"
+  -v
+  --no-deps
+  --disable-pip-version-check
+  --build-constraint="${PIP_CONSTRAINT}"
+)
+
+# unset PIP_CONSTRAINT (set by rapids-init-pip)... it doesn't affect builds as of pip 25.3, and
+# results in an error from 'pip wheel' when set and --build-constraint is also passed
+unset PIP_CONSTRAINT
+rapids-telemetry-record build.log rapids-pip-retry wheel \
+  "${RAPIDS_PIP_WHEEL_ARGS[@]}" \
+  .
 
 rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
 sccache --stop-server >/dev/null 2>&1 || true
