@@ -104,8 +104,9 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
     cdef unique_ptr[tracking_resource_adaptor[device_async_resource_ref]] _typed_mr
 
 cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
-    cdef unique_ptr[failure_callback_resource_adaptor[device_async_resource_ref]] \
-        _typed_mr
+    cdef unique_ptr[
+        failure_callback_resource_adaptor[device_async_resource_ref]
+    ] _typed_mr
     cdef object _callback
 
 cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
