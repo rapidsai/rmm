@@ -37,7 +37,7 @@ cdef extern from *:
     using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
 
     // Helper to create arena_memory_resource with optional
-    // avoids Cython varargs issues
+    // Avoids Cython varargs issues
     inline std::unique_ptr<
         rmm::mr::arena_memory_resource<
             rmm::device_async_resource_ref>>
@@ -53,7 +53,7 @@ cdef extern from *:
     }
 
     // Helper to create logging_resource_adaptor with string
-    // avoids Cython varargs issues
+    // Avoids Cython varargs issues
     inline std::unique_ptr<
         rmm::mr::logging_resource_adaptor<
             rmm::device_async_resource_ref>>
@@ -68,7 +68,7 @@ cdef extern from *:
     }
 
     // Helper to allocate from any_device_resource
-    // avoids Cython return value issues
+    // Avoids Cython return value issues
     inline void* allocate_from_any_device_resource(
         any_device_resource& res,
         rmm::cuda_stream_view stream,
@@ -79,7 +79,7 @@ cdef extern from *:
     }
 
     // Helper to deallocate from any_device_resource
-    // avoids Cython return value issues
+    // Avoids Cython return value issues
     inline void deallocate_from_any_device_resource(
         any_device_resource& res,
         rmm::cuda_stream_view stream,

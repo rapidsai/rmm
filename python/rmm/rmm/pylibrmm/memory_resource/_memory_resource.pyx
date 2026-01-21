@@ -159,7 +159,9 @@ cdef class CudaMemoryResource(DeviceMemoryResource):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(self):
@@ -239,7 +241,9 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
 
@@ -278,7 +282,9 @@ cdef class CudaAsyncViewMemoryResource(DeviceMemoryResource):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def pool_handle(self):
@@ -292,7 +298,9 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(self):
@@ -310,7 +318,9 @@ cdef class SystemMemoryResource(DeviceMemoryResource):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(self):
@@ -328,7 +338,9 @@ cdef class PinnedHostMemoryResource(DeviceMemoryResource):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(self):
@@ -352,7 +364,9 @@ cdef class SamHeadroomMemoryResource(DeviceMemoryResource):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(
@@ -402,7 +416,9 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(
@@ -455,7 +471,9 @@ cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(
@@ -499,14 +517,16 @@ cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(
-            self,
-            DeviceMemoryResource upstream_mr,
-            size_t block_size=1<<20,
-            size_t blocks_to_preallocate=128
+        self,
+        DeviceMemoryResource upstream_mr,
+        size_t block_size=1<<20,
+        size_t blocks_to_preallocate=128
     ):
         """
         Memory resource which allocates memory blocks of a single fixed size.
@@ -556,7 +576,9 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(
@@ -717,7 +739,9 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
 
@@ -755,7 +779,9 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(
@@ -829,7 +855,9 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(
@@ -871,7 +899,9 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(
@@ -979,7 +1009,9 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(
@@ -1017,7 +1049,11 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         stack trace are shown.
         """
 
-        return self._typed_mr.get()[0].get_outstanding_allocations_str().decode('UTF-8')
+        return (
+            self._typed_mr.get()[0]
+            .get_outstanding_allocations_str()
+            .decode('UTF-8')
+        )
 
     def log_outstanding_allocations(self):
         """
@@ -1025,7 +1061,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         current RMM log file if enabled.
         """
 
-        (self._typed_mr.get())[0].log_outstanding_allocations()
+        self._typed_mr.get()[0].log_outstanding_allocations()
 
 
 # Note that this function is specifically designed to rethrow Python exceptions
@@ -1061,7 +1097,9 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(
@@ -1096,7 +1134,9 @@ cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
 
         # Copy into any_resource by constructing from resource_ref
         self.c_obj = any_device_resource(
-            to_device_async_resource_ref_checked(self._typed_mr.get())
+            to_device_async_resource_ref_checked(
+                self._typed_mr.get()
+            )
         )
 
     def __init__(
