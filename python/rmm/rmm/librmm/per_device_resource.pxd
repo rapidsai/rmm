@@ -1,11 +1,19 @@
 # SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
-from rmm.librmm.memory_resource cimport device_memory_resource
+from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.memory_resource cimport (
+    any_device_resource,
+    device_memory_resource,
+)
 
 
 cdef extern from "rmm/resource_ref.hpp" namespace "rmm" nogil:
     cdef cppclass device_async_resource_ref:
         device_async_resource_ref(device_memory_resource&)
+        device_async_resource_ref(any_device_resource&)
+        # Allocate and deallocate methods
+        void* allocate(cuda_stream_view stream, size_t bytes) except +
+        void deallocate(cuda_stream_view stream, void* ptr, size_t bytes) noexcept
 
 
 cdef extern from "rmm/mr/per_device_resource.hpp" namespace "rmm" nogil:
