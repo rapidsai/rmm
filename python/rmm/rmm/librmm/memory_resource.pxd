@@ -9,6 +9,7 @@ from cuda.bindings.cyruntime cimport cudaMemPool_t
 from libc.stddef cimport size_t
 from libc.stdint cimport int8_t, int32_t, int64_t
 from libcpp cimport bool
+from libcpp.memory cimport unique_ptr
 from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 from libcpp.string cimport string
@@ -16,6 +17,108 @@ from libcpp.string cimport string
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 from rmm.librmm.memory_resource cimport device_memory_resource
 from rmm.librmm.per_device_resource cimport device_async_resource_ref
+
+
+# Type alias for any_resource to avoid Cython template complexity
+# Also includes C++ helpers to work around Cython varargs limitations and
+# resource_ref operations and to handle resource_ref operations without Cython
+# needing default constructors
+cdef extern from *:
+    """
+    #include <cuda/memory_resource>
+    #include <rmm/mr/arena_memory_resource.hpp>
+    #include <rmm/mr/logging_resource_adaptor.hpp>
+    #include <rmm/resource_ref.hpp>
+    #include <rmm/cuda_stream_view.hpp>
+    #include <memory>
+    #include <string>
+    #include <optional>
+
+    using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
+
+    // Helper to create arena_memory_resource with optional
+    // avoids Cython varargs issues
+    inline std::unique_ptr<
+        rmm::mr::arena_memory_resource<
+            rmm::device_async_resource_ref>>
+    make_arena_memory_resource(
+        rmm::device_async_resource_ref upstream_ref,
+        std::optional<std::size_t> arena_size,
+        bool dump_log_on_failure)
+    {
+        return std::make_unique<
+            rmm::mr::arena_memory_resource<
+                rmm::device_async_resource_ref>>(
+            upstream_ref, arena_size, dump_log_on_failure);
+    }
+
+    // Helper to create logging_resource_adaptor with string
+    // avoids Cython varargs issues
+    inline std::unique_ptr<
+        rmm::mr::logging_resource_adaptor<
+            rmm::device_async_resource_ref>>
+    make_logging_resource_adaptor(
+        rmm::device_async_resource_ref upstream_ref,
+        const std::string& filename)
+    {
+        return std::make_unique<
+            rmm::mr::logging_resource_adaptor<
+                rmm::device_async_resource_ref>>(
+            upstream_ref, filename);
+    }
+
+    // Helper to allocate from any_device_resource
+    // avoids Cython return value issues
+    inline void* allocate_from_any_device_resource(
+        any_device_resource& res,
+        rmm::cuda_stream_view stream,
+        std::size_t bytes)
+    {
+        rmm::device_async_resource_ref ref{res};
+        return ref.allocate(stream, bytes);
+    }
+
+    // Helper to deallocate from any_device_resource
+    // avoids Cython return value issues
+    inline void deallocate_from_any_device_resource(
+        any_device_resource& res,
+        rmm::cuda_stream_view stream,
+        void* ptr,
+        std::size_t bytes)
+    {
+        rmm::device_async_resource_ref ref{res};
+        ref.deallocate(stream, ptr, bytes);
+    }
+
+    // Helper to get resource_ref from any_device_resource
+    // for passing to constructors
+    inline rmm::device_async_resource_ref get_resource_ref_from_any(
+        any_device_resource& res)
+    {
+        return rmm::device_async_resource_ref{res};
+    }
+    """
+    cdef cppclass any_device_resource:
+        any_device_resource() except +
+        any_device_resource(device_async_resource_ref) except +
+
+    # C++ helper functions to avoid Cython issues with resource_ref
+    cdef void* allocate_from_any_device_resource(
+        any_device_resource& res,
+        cuda_stream_view stream,
+        size_t bytes
+    ) except + nogil
+
+    cdef void deallocate_from_any_device_resource(
+        any_device_resource& res,
+        cuda_stream_view stream,
+        void* ptr,
+        size_t bytes
+    ) noexcept nogil
+
+    cdef device_async_resource_ref get_resource_ref_from_any(
+        any_device_resource& res
+    ) noexcept nogil
 
 
 cdef extern from "rmm/mr/device_memory_resource.hpp" \
@@ -218,6 +321,24 @@ cdef extern from "rmm/mr/logging_resource_adaptor.hpp" \
             string filename) except +
 
         void flush() except +
+
+# C++ helper functions to avoid varargs issues with optional and string parameters
+# Declared here after the type declarations to avoid template resolution issues
+cdef extern from *:
+    cdef unique_ptr[
+        arena_memory_resource[device_async_resource_ref]
+    ] make_arena_memory_resource(
+        device_async_resource_ref upstream_ref,
+        optional[size_t] arena_size,
+        bool dump_log_on_failure
+    ) except +
+
+    cdef unique_ptr[
+        logging_resource_adaptor[device_async_resource_ref]
+    ] make_logging_resource_adaptor(
+        device_async_resource_ref upstream_ref,
+        const string& filename
+    ) except +
 
 cdef extern from "rmm/mr/statistics_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:

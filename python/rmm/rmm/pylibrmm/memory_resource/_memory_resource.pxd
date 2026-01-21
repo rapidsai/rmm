@@ -1,9 +1,30 @@
 # SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
-from libcpp.memory cimport shared_ptr
+from libcpp.memory cimport shared_ptr, unique_ptr
 
-from rmm.librmm.memory_resource cimport device_memory_resource
+from rmm.librmm.memory_resource cimport (
+    any_device_resource,
+    arena_memory_resource,
+    binning_memory_resource,
+    callback_memory_resource,
+    cuda_async_memory_resource,
+    cuda_async_view_memory_resource,
+    cuda_memory_resource,
+    device_memory_resource,
+    failure_callback_resource_adaptor,
+    fixed_size_memory_resource,
+    limiting_resource_adaptor,
+    logging_resource_adaptor,
+    managed_memory_resource,
+    pinned_host_memory_resource,
+    pool_memory_resource,
+    prefetch_resource_adaptor,
+    sam_headroom_memory_resource,
+    statistics_resource_adaptor,
+    system_memory_resource,
+    tracking_resource_adaptor,
+)
 from rmm.librmm.per_device_resource cimport device_async_resource_ref
 
 
@@ -15,7 +36,7 @@ cdef extern from "rmm/resource_ref.hpp" namespace "rmm" nogil:
 
 
 cdef class DeviceMemoryResource:
-    cdef shared_ptr[device_memory_resource] c_obj
+    cdef any_device_resource c_obj
     cdef device_memory_resource* get_mr(self) noexcept nogil
 
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
@@ -24,37 +45,37 @@ cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
     cpdef DeviceMemoryResource get_upstream(self)
 
 cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
-    pass
+    cdef unique_ptr[arena_memory_resource[device_async_resource_ref]] _typed_mr
 
 cdef class CudaMemoryResource(DeviceMemoryResource):
-    pass
+    cdef unique_ptr[cuda_memory_resource] _typed_mr
 
 cdef class ManagedMemoryResource(DeviceMemoryResource):
-    pass
+    cdef unique_ptr[managed_memory_resource] _typed_mr
 
 cdef class SystemMemoryResource(DeviceMemoryResource):
-    pass
+    cdef unique_ptr[system_memory_resource] _typed_mr
 
 cdef class PinnedHostMemoryResource(DeviceMemoryResource):
-    pass
+    cdef unique_ptr[pinned_host_memory_resource] _typed_mr
 
 cdef class SamHeadroomMemoryResource(DeviceMemoryResource):
-    pass
+    cdef unique_ptr[sam_headroom_memory_resource] _typed_mr
 
 cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
-    pass
+    cdef unique_ptr[cuda_async_memory_resource] _typed_mr
 
 cdef class CudaAsyncViewMemoryResource(DeviceMemoryResource):
-    pass
+    cdef unique_ptr[cuda_async_view_memory_resource] _typed_mr
 
 cdef class PoolMemoryResource(UpstreamResourceAdaptor):
-    pass
+    cdef unique_ptr[pool_memory_resource[device_async_resource_ref]] _typed_mr
 
 cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
-    pass
+    cdef unique_ptr[fixed_size_memory_resource[device_async_resource_ref]] _typed_mr
 
 cdef class BinningMemoryResource(UpstreamResourceAdaptor):
-
+    cdef unique_ptr[binning_memory_resource[device_async_resource_ref]] _typed_mr
     cdef readonly list _bin_mrs
 
     cpdef add_bin(
@@ -63,27 +84,31 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         DeviceMemoryResource bin_resource=*)
 
 cdef class CallbackMemoryResource(DeviceMemoryResource):
+    cdef unique_ptr[callback_memory_resource] _typed_mr
     cdef object _allocate_func
     cdef object _deallocate_func
 
 cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
-    pass
+    cdef unique_ptr[limiting_resource_adaptor[device_async_resource_ref]] _typed_mr
 
 cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
+    cdef unique_ptr[logging_resource_adaptor[device_async_resource_ref]] _typed_mr
     cdef object _log_file_name
     cpdef get_file_name(self)
     cpdef flush(self)
 
 cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
-    pass
+    cdef unique_ptr[statistics_resource_adaptor[device_async_resource_ref]] _typed_mr
 
 cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
-    pass
+    cdef unique_ptr[tracking_resource_adaptor[device_async_resource_ref]] _typed_mr
 
 cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
+    cdef unique_ptr[failure_callback_resource_adaptor[device_async_resource_ref]] \
+        _typed_mr
     cdef object _callback
 
 cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
-    pass
+    cdef unique_ptr[prefetch_resource_adaptor[device_async_resource_ref]] _typed_mr
 
 cpdef DeviceMemoryResource get_current_device_resource()
