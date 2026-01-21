@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -14,7 +14,7 @@
 #include <functional>
 #include <utility>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace mr {
 /**
  * @addtogroup memory_resource_adaptors
@@ -198,4 +198,4 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

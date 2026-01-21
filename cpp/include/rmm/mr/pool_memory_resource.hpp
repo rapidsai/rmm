@@ -29,7 +29,7 @@
 #include <optional>
 #include <set>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace mr {
 /**
  * @addtogroup memory_resources
@@ -492,4 +492,4 @@ class pool_memory_resource final
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

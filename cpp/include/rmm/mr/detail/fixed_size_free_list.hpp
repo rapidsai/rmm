@@ -10,7 +10,7 @@
 
 #include <cstddef>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace mr::detail {
 
 struct fixed_size_free_list : free_list<block_base> {
@@ -66,4 +66,4 @@ struct fixed_size_free_list : free_list<block_base> {
 };
 
 }  // namespace mr::detail
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

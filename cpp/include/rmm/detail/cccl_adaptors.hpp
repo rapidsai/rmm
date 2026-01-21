@@ -24,7 +24,7 @@
 #include <utility>
 #endif
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 
 namespace detail {
 
@@ -661,4 +661,4 @@ class cccl_async_resource_ref : public ResourceType {
 #endif  // CCCL version check
 
 }  // namespace detail
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

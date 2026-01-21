@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -10,7 +10,7 @@
 #include <memory>
 #include <utility>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace mr {
 namespace detail {
 /**
@@ -260,4 +260,4 @@ auto make_owning_wrapper(std::shared_ptr<Upstream> upstream, Args&&... args)
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

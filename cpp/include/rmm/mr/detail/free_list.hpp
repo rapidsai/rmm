@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -13,7 +13,7 @@
 #endif
 #include <list>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace mr::detail {
 
 struct block_base {
@@ -174,4 +174,4 @@ class free_list {
 };
 
 }  // namespace mr::detail
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

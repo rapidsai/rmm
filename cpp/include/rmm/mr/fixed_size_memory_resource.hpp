@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace mr {
 /**
  * @addtogroup memory_resources
@@ -272,4 +272,4 @@ class fixed_size_memory_resource
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

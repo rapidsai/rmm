@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -19,7 +19,7 @@
 
 #include <cuda/memory_resource>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace detail {
 namespace polyfill {
 
@@ -34,4 +34,4 @@ inline constexpr bool async_resource_with = cuda::mr::resource_with<Resource, Pr
 
 }  // namespace polyfill
 }  // namespace detail
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

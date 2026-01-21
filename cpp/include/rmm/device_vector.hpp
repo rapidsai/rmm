@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -11,7 +11,7 @@
 
 #include <thrust/device_vector.h>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 /**
  * @addtogroup thrust_integrations
  * @{
@@ -25,4 +25,4 @@ template <typename T>
 using device_vector = thrust::device_vector<T, rmm::mr::thrust_allocator<T>>;
 
 /** @} */  // end of group
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

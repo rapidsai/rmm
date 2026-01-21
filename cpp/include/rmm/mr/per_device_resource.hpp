@@ -82,7 +82,7 @@
  * @endcode
  */
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace mr {
 /**
  * @addtogroup memory_resources
@@ -475,4 +475,4 @@ inline device_async_resource_ref reset_current_device_resource_ref()
 }
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -12,7 +12,7 @@
 #include <cstddef>
 #include <memory>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace detail {
 
 /**
@@ -104,4 +104,4 @@ void aligned_host_deallocate(void* ptr,
   }
 }
 }  // namespace detail
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

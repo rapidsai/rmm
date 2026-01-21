@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -12,7 +12,7 @@
 #include <sstream>
 #include <string>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace detail {
 
 // Stringify a size in bytes to a human-readable value
@@ -39,4 +39,4 @@ inline std::string format_stream(rmm::cuda_stream_view stream)
 }
 
 }  // namespace detail
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

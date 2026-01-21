@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -14,7 +14,7 @@
 #include <cstddef>
 #include <string>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace mr {
 
 namespace detail {
@@ -160,4 +160,4 @@ static_assert(
   rmm::detail::polyfill::async_resource_with<system_memory_resource, cuda::mr::host_accessible>);
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

@@ -18,7 +18,7 @@
 
 #include <cstddef>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace mr {
 
 /**
@@ -138,4 +138,4 @@ static_assert(rmm::detail::polyfill::async_resource_with<pinned_host_memory_reso
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

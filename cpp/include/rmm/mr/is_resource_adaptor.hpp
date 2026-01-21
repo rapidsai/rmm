@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -9,7 +9,7 @@
 
 #include <cuda/std/type_traits>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace mr {
 
 /**
@@ -33,4 +33,4 @@ inline constexpr bool is_resource_adaptor<
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

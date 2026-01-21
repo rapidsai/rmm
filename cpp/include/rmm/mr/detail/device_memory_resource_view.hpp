@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -13,7 +13,7 @@
 #include <cstddef>
 #include <type_traits>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace mr::detail {
 
 /**
@@ -177,4 +177,4 @@ static_assert(cuda::std::copy_constructible<device_memory_resource_view>,
               "device_memory_resource_view must be copy constructible");
 
 }  // namespace mr::detail
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

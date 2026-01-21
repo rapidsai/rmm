@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -25,7 +25,7 @@
 #include <vector>
 #endif
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace detail {
 
 /**
@@ -93,4 +93,4 @@ class stack_trace {
 };
 
 }  // namespace detail
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

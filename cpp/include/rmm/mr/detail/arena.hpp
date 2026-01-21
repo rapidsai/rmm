@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -26,7 +26,7 @@
 #include <optional>
 #include <set>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 namespace mr::detail::arena {
 
 /**
@@ -983,4 +983,4 @@ class arena_cleaner {
 };
 
 }  // namespace mr::detail::arena
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm

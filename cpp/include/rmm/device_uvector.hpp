@@ -20,7 +20,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace RMM_NAMESPACE {
+namespace rmm {
 /**
  * @addtogroup data_containers
  * @{
@@ -640,4 +640,4 @@ class device_uvector {
 };
 
 /** @} */  // end of group
-}  // namespace RMM_NAMESPACE
+}  // namespace rmm
