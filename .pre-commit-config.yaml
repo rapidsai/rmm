@@ -97,7 +97,7 @@ repos:
         pass_filenames: false
         verbose: true
   - repo: https://github.com/rapidsai/pre-commit-hooks
-    rev: v1.2.1
+    rev: v1.3.1
     hooks:
       - id: verify-copyright
         args: [--fix, --spdx]
@@ -119,6 +119,7 @@ repos:
             cpp/benchmarks/utilities/rapidcsv[.]h$
           )
       - id: verify-alpha-spec
+      - id: verify-hardcoded-version
   - repo: https://github.com/rapidsai/dependency-file-generator
     rev: v1.20.2
     hooks:
