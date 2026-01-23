@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 set -euo pipefail
@@ -35,10 +35,6 @@ rapids-print-env
 
 rapids-logger "Check GPU usage"
 nvidia-smi
-
-# Run the libcudacxx flag test
-rapids-logger "Run libcudacxx_flag_test"
-./cpp/tests/libcudacxx_flag_test/libcudacxx_flag_test.sh
 
 # Run librmm gtests from librmm-tests package
 rapids-logger "Run gtests"
