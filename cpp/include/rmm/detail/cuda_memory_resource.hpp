@@ -6,8 +6,8 @@
 
 #include <cuda/version>
 
-#if CCCL_MAJOR_VERSION < 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION < 1)
-#error "RMM requires CCCL version 3.1 or newer."
+#if CCCL_MAJOR_VERSION < 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION < 2)
+#error "RMM requires CCCL version 3.2 or newer."
 #endif
 
 #include <rmm/detail/export.hpp>
