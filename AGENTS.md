@@ -2,13 +2,28 @@
 
 RMM (RAPIDS Memory Manager) is a CUDA memory management library providing C++ and Python APIs.
 
+## Safety Rules for Agents
+
+- **Minimal diffs**: Change only what's necessary; avoid drive-by refactors.
+- **No mass reformatting**: Don't run formatters over unrelated code.
+- **No API invention**: Align with existing RMM patterns and documented APIs.
+- **Don't bypass CI**: Don't suggest skipping checks or using `--no-verify`.
+- **CUDA/GPU hygiene**: Keep operations stream-ordered, use RMM allocators (never raw `new`/`delete` for device memory).
+
+### Before Finalizing a Change
+
+Ask yourself:
+- What scenarios must be covered? (happy path, edge cases, failure modes)
+- What's the expected behavior contract? (inputs/outputs, errors)
+- Where should tests live? (C++ gtests under `cpp/tests/`, Python pytest under `python/rmm/rmm/tests/`)
+
 ## Build Commands
 
 ### Devcontainer (username: coder)
 ```bash
-build-rmm-cpp -j0              # Build C++ library
-build-rmm-python -j0           # Build Python package
-build-rmm -j0                  # Build both C++ and Python
+build-rmm-cpp -j0      # Build C++ library, accepts CMake flags (-D...)
+build-rmm-python -j0   # Build Python package
+build-rmm -j0          # Build both C++ and Python, accepts CMake flags (-D...)
 ```
 
 ### Standard Environment (requires conda env from conda/environments/)
@@ -32,8 +47,8 @@ cmake --build cpp/build -j$(nproc)
 
 ### Devcontainer (username: coder)
 ```bash
-test-rmm-cpp                   # Run all C++ tests
-test-rmm-python                # Run all Python tests
+test-rmm-cpp      # Run all C++ tests, accepts ctest flags
+test-rmm-python   # Run all Python tests, accepts pytest flags
 ```
 
 ### C++ Tests (GoogleTest)
@@ -200,3 +215,32 @@ rmm.mr.set_current_device_resource(mr)
 ref = rmm.mr.get_current_device_resource()
 buf = rmm.DeviceBuffer(size=size)
 ```
+
+## Memory Management Guidelines
+
+- Never use raw CUDA memory APIs for device memory - use memory resources (except in memory resource implementations)
+- Prefer `rmm::device_uvector<T>` for typed device memory
+- Prefer `rmm::device_buffer` for untyped device memory
+- All operations should be stream-ordered - accept `rmm::cuda_stream_view`
+- Views (`*_view` suffix) are non-owning - don't manage their lifetime
+
+## Key Files Reference
+
+| Purpose | Location |
+|---------|----------|
+| Main build script (never used in devcontainers) | `build.sh` |
+| CMake configuration | `cpp/CMakeLists.txt` |
+| C++ public headers | `cpp/include/rmm/` |
+| Memory resources | `cpp/include/rmm/mr/` |
+| Device containers | `cpp/include/rmm/device_uvector.hpp`, `device_buffer.hpp` |
+| Stream utilities | `cpp/include/rmm/cuda_stream.hpp`, `cuda_stream_view.hpp` |
+| Error handling | `cpp/include/rmm/error.hpp` |
+| Python bindings | `python/rmm/rmm/` |
+| C++ tests | `cpp/tests/` |
+| Python tests | `python/rmm/rmm/tests/` |
+| CI configuration | `ci/` |
+
+## Resources
+
+- **Documentation**: https://docs.rapids.ai/api/rmm/stable/
+- **GitHub Issues**: https://github.com/rapidsai/rmm/issues
