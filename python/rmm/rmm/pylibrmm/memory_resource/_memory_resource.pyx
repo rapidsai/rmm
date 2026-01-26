@@ -55,7 +55,6 @@ from rmm.librmm.memory_resource cimport (
     failure_callback_resource_adaptor,
     failure_callback_t,
     fixed_size_memory_resource,
-    get_resource_ref_from_any,
     limiting_resource_adaptor,
     make_arena_memory_resource,
     make_logging_resource_adaptor,
@@ -403,7 +402,7 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         # Get resource_ref from upstream
         # Create the typed resource and store it
         self._typed_mr = make_unique[pool_memory_resource[device_async_resource_ref]](
-            get_resource_ref_from_any(upstream_mr.c_obj),
+            <device_async_resource_ref>(upstream_mr.c_obj),
             c_initial_pool_size,
             c_maximum_pool_size
         )
@@ -458,7 +457,7 @@ cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
         # Create typed resource using helper function
         # to avoid varargs issues
         self._typed_mr = make_arena_memory_resource(
-            get_resource_ref_from_any(upstream_mr.c_obj),
+            <device_async_resource_ref>(upstream_mr.c_obj),
             c_arena_size,
             dump_log_on_failure
         )
@@ -504,7 +503,7 @@ cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
         # Create the typed resource and store it
         self._typed_mr = \
             make_unique[fixed_size_memory_resource[device_async_resource_ref]](
-                get_resource_ref_from_any(upstream_mr.c_obj),
+                <device_async_resource_ref>(upstream_mr.c_obj),
                 block_size,
                 blocks_to_preallocate
             )
@@ -558,12 +557,12 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         if (min_size_exponent == -1 or max_size_exponent == -1):
             self._typed_mr = \
                 make_unique[binning_memory_resource[device_async_resource_ref]](
-                    get_resource_ref_from_any(upstream_mr.c_obj)
+                    upstream_mr.c_obj
                 )
         else:
             self._typed_mr = \
                 make_unique[binning_memory_resource[device_async_resource_ref]](
-                    get_resource_ref_from_any(upstream_mr.c_obj),
+                    <device_async_resource_ref>(upstream_mr.c_obj),
                     min_size_exponent,
                     max_size_exponent
                 )
@@ -635,7 +634,7 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
             # Get resource_ref from bin_resource
             self._typed_mr.get()[0].add_bin(
                 allocation_size,
-                get_resource_ref_from_any(bin_resource.c_obj)
+                <device_async_resource_ref>(bin_resource.c_obj)
             )
 
     @property
@@ -767,7 +766,7 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
         # Create the typed resource and store it
         self._typed_mr = \
             make_unique[limiting_resource_adaptor[device_async_resource_ref]](
-                get_resource_ref_from_any(upstream_mr.c_obj),
+                <device_async_resource_ref>(upstream_mr.c_obj),
                 allocation_limit
             )
 
@@ -843,7 +842,7 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
         # Create typed resource using helper function
         # to avoid varargs issues
         self._typed_mr = make_logging_resource_adaptor(
-            get_resource_ref_from_any(upstream_mr.c_obj),
+            <device_async_resource_ref>(upstream_mr.c_obj),
             cpp_log_file_name
         )
 
@@ -888,7 +887,7 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         # resource
         self._typed_mr = \
             make_unique[statistics_resource_adaptor[device_async_resource_ref]](
-                get_resource_ref_from_any(upstream_mr.c_obj)
+                upstream_mr.c_obj
             )
 
         # Copy into any_resource by constructing from resource_ref
@@ -997,7 +996,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         # Create the typed resource and store it
         self._typed_mr = \
             make_unique[tracking_resource_adaptor[device_async_resource_ref]](
-                get_resource_ref_from_any(upstream_mr.c_obj),
+                <device_async_resource_ref>(upstream_mr.c_obj),
                 capture_stacks
             )
 
@@ -1084,7 +1083,7 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
         # Create the typed resource and store it
         self._typed_mr = \
             make_unique[failure_callback_resource_adaptor[device_async_resource_ref]](
-                get_resource_ref_from_any(upstream_mr.c_obj),
+                <device_async_resource_ref>(upstream_mr.c_obj),
                 <failure_callback_t>(_oom_callback_function),
                 <void*>(callback)
             )
@@ -1123,7 +1122,7 @@ cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
         # resource
         self._typed_mr = \
             make_unique[prefetch_resource_adaptor[device_async_resource_ref]](
-                get_resource_ref_from_any(upstream_mr.c_obj)
+                upstream_mr.c_obj
             )
 
         # Copy into any_resource by constructing from resource_ref
@@ -1258,10 +1257,9 @@ cpdef set_per_device_resource(int device, DeviceMemoryResource mr):
     cdef unique_ptr[cuda_device_id] device_id = \
         make_unique[cuda_device_id](device)
 
-    # Use resource_ref-based API with get_resource_ref_from_any helper
     cpp_set_per_device_resource_ref(
         deref(device_id),
-        get_resource_ref_from_any(mr.c_obj)
+        <device_async_resource_ref>(mr.c_obj)
     )
 
 

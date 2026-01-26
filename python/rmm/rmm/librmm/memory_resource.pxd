@@ -66,14 +66,6 @@ cdef extern from *:
                 rmm::device_async_resource_ref>>(
             upstream_ref, filename);
     }
-
-    // Helper to get resource_ref from any_device_resource
-    // for passing to constructors
-    inline rmm::device_async_resource_ref get_resource_ref_from_any(
-        any_device_resource& res)
-    {
-        return rmm::device_async_resource_ref{res};
-    }
     """
     cdef cppclass any_device_resource:
         any_device_resource() except +
@@ -89,10 +81,6 @@ cdef extern from *:
             void* ptr,
             size_t bytes
         ) noexcept nogil
-
-    cdef device_async_resource_ref get_resource_ref_from_any(
-        any_device_resource& res
-    ) noexcept nogil
 
 
 cdef extern from "rmm/mr/device_memory_resource.hpp" \
