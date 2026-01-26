@@ -83,20 +83,35 @@ cdef extern from *:
         ) noexcept nogil
 
 
+cdef extern from "<cuda/memory_resource>" \
+        namespace "cuda::mr" nogil:
+    cdef cppclass shared_resource[T]:
+        shared_resource() except +
+        shared_resource(const shared_resource&) noexcept
+        shared_resource(shared_resource&&) noexcept
+        shared_resource& operator=(const shared_resource&) noexcept
+        shared_resource& operator=(shared_resource&&) noexcept
+        void* allocate_sync(size_t bytes, size_t alignment) except + nogil
+        void deallocate_sync(void* ptr, size_t bytes, size_t alignment) noexcept nogil
+        void* allocate(
+            cuda_stream_view stream,
+            size_t bytes,
+            size_t alignment
+        ) except + nogil
+        void deallocate(
+            cuda_stream_view stream,
+            void* ptr,
+            size_t bytes,
+            size_t alignment
+        ) noexcept nogil
+        void swap(shared_resource&) noexcept nogil
+        bool operator==(const shared_resource&) noexcept nogil
+        bool operator!=(const shared_resource&) noexcept nogil
+
+
 cdef extern from "rmm/mr/device_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass device_memory_resource:
-        # Legacy functions
-        void* allocate(size_t bytes) except +
-        void* allocate(size_t bytes, cuda_stream_view stream) except +
-        void deallocate(void* ptr, size_t bytes) noexcept
-        void deallocate(
-            void* ptr,
-            size_t bytes,
-            cuda_stream_view stream
-        ) noexcept
-        # End legacy functions
-
         void* allocate_sync(size_t bytes) except +
         void deallocate_sync(void* ptr, size_t bytes) noexcept
         void* allocate(
