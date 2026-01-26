@@ -79,7 +79,7 @@ cdef extern from *:
         ) noexcept nogil
 
 
-cdef extern from "<cuda/memory_resource>" \
+cdef extern from "rmm/detail/cccl_shared_resource.hpp" \
         namespace "cuda::mr" nogil:
     cdef cppclass shared_resource[T]:
         shared_resource() except +
@@ -87,6 +87,10 @@ cdef extern from "<cuda/memory_resource>" \
         shared_resource(shared_resource&&) noexcept
         shared_resource& operator=(const shared_resource&) noexcept
         shared_resource& operator=(shared_resource&&) noexcept
+        T& get() noexcept nogil
+        const T& get() noexcept nogil
+        T* operator_arrow "operator->"() noexcept nogil
+        T& operator_star "operator*"() noexcept nogil
         void* allocate_sync(size_t bytes, size_t alignment) except + nogil
         void deallocate_sync(void* ptr, size_t bytes, size_t alignment) noexcept nogil
         void* allocate(

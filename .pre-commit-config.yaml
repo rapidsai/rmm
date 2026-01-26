@@ -48,7 +48,8 @@ repos:
         args: ["-fallback-style=none", "-style=file", "-i"]
         exclude: |
           (?x)^(
-            ^cpp/benchmarks/utilities/cxxopts.hpp
+            ^cpp/benchmarks/utilities/cxxopts.hpp$|
+            ^cpp/include/rmm/detail/cccl_shared_resource.hpp$
           )
   - repo: https://github.com/sirosen/texthooks
     rev: 0.7.1
@@ -115,8 +116,9 @@ repos:
             dependencies[.]yaml$
         exclude: |
           (?x)^(
-            cpp/benchmarks/utilities/cxxopts[.]hpp$|
-            cpp/benchmarks/utilities/rapidcsv[.]h$
+            ^cpp/benchmarks/utilities/cxxopts[.]hpp$|
+            ^cpp/benchmarks/utilities/rapidcsv[.]h$|
+            ^cpp/include/rmm/detail/cccl_shared_resource.hpp$
           )
       - id: verify-alpha-spec
       - id: verify-hardcoded-version
