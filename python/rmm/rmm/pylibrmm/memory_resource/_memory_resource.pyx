@@ -43,7 +43,6 @@ from rmm.statistics import Statistics
 from rmm.librmm.memory_resource cimport (
     CppExcept,
     allocate_callback_t,
-    allocate_from_any_device_resource,
     allocation_handle_type,
     available_device_memory as c_available_device_memory,
     binning_memory_resource,
@@ -52,7 +51,6 @@ from rmm.librmm.memory_resource cimport (
     cuda_async_view_memory_resource,
     cuda_memory_resource,
     deallocate_callback_t,
-    deallocate_from_any_device_resource,
     device_memory_resource,
     failure_callback_resource_adaptor,
     failure_callback_t,
@@ -107,9 +105,7 @@ cdef class DeviceMemoryResource:
         stream = as_stream(stream)
         cdef uintptr_t ptr
         with nogil:
-            ptr = <uintptr_t>(allocate_from_any_device_resource(
-                self.c_obj, stream.view(), nbytes
-            ))
+            ptr = <uintptr_t>self.c_obj.allocate(stream.view(), nbytes)
         return ptr
 
     def deallocate(self, uintptr_t ptr, size_t nbytes, Stream stream=DEFAULT_STREAM):
@@ -126,9 +122,7 @@ cdef class DeviceMemoryResource:
         """
         stream = as_stream(stream)
         with nogil:
-            deallocate_from_any_device_resource(
-                self.c_obj, stream.view(), <void*>(ptr), nbytes
-            )
+            self.c_obj.deallocate(stream.view(), <void*>ptr, nbytes)
 
 
 # See the note about `no_gc_clear` in `device_buffer.pyx`.
