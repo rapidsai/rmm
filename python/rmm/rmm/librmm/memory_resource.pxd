@@ -39,31 +39,27 @@ cdef extern from *:
     // Helper to create arena_memory_resource with optional
     // Avoids Cython varargs issues
     inline std::unique_ptr<
-        rmm::mr::arena_memory_resource<
-            rmm::device_async_resource_ref>>
+        rmm::mr::arena_memory_resource<any_device_resource>>
     make_arena_memory_resource(
         rmm::device_async_resource_ref upstream_ref,
         std::optional<std::size_t> arena_size,
         bool dump_log_on_failure)
     {
         return std::make_unique<
-            rmm::mr::arena_memory_resource<
-                rmm::device_async_resource_ref>>(
+            rmm::mr::arena_memory_resource<any_device_resource>>(
             upstream_ref, arena_size, dump_log_on_failure);
     }
 
     // Helper to create logging_resource_adaptor with string
     // Avoids Cython varargs issues
     inline std::unique_ptr<
-        rmm::mr::logging_resource_adaptor<
-            rmm::device_async_resource_ref>>
+        rmm::mr::logging_resource_adaptor<any_device_resource>>
     make_logging_resource_adaptor(
         rmm::device_async_resource_ref upstream_ref,
         const std::string& filename)
     {
         return std::make_unique<
-            rmm::mr::logging_resource_adaptor<
-                rmm::device_async_resource_ref>>(
+            rmm::mr::logging_resource_adaptor<any_device_resource>>(
             upstream_ref, filename);
     }
     """
@@ -303,7 +299,7 @@ cdef extern from "rmm/mr/logging_resource_adaptor.hpp" \
 # Declared here after the type declarations to avoid template resolution issues
 cdef extern from *:
     cdef unique_ptr[
-        arena_memory_resource[device_async_resource_ref]
+        arena_memory_resource[any_device_resource]
     ] make_arena_memory_resource(
         device_async_resource_ref upstream_ref,
         optional[size_t] arena_size,
@@ -311,7 +307,7 @@ cdef extern from *:
     ) except +
 
     cdef unique_ptr[
-        logging_resource_adaptor[device_async_resource_ref]
+        logging_resource_adaptor[any_device_resource]
     ] make_logging_resource_adaptor(
         device_async_resource_ref upstream_ref,
         const string& filename
