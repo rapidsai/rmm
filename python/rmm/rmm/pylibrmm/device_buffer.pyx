@@ -28,8 +28,7 @@ from rmm.librmm.device_buffer cimport (
     get_current_cuda_device,
     prefetch,
 )
-# Import C++ helpers (declared in librmm/memory_resource.pxd)
-from rmm.librmm.memory_resource cimport get_resource_ref_from_any
+from rmm.librmm.per_device_resource cimport device_async_resource_ref
 from rmm.pylibrmm.memory_resource cimport (
     DeviceMemoryResource,
     get_current_device_resource,
@@ -94,7 +93,7 @@ cdef class DeviceBuffer:
                     new device_buffer(
                         size,
                         stream.view(),
-                        get_resource_ref_from_any(self.mr.c_obj)
+                        <device_async_resource_ref>(self.mr.c_obj)
                     )
                 )
             else:
@@ -103,7 +102,7 @@ cdef class DeviceBuffer:
                         c_ptr,
                         size,
                         stream.view(),
-                        get_resource_ref_from_any(self.mr.c_obj)
+                        <device_async_resource_ref>(self.mr.c_obj)
                     )
                 )
 
