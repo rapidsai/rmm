@@ -67,29 +67,6 @@ cdef extern from *:
             upstream_ref, filename);
     }
 
-    // Helper to allocate from any_device_resource
-    // Avoids Cython return value issues
-    inline void* allocate_from_any_device_resource(
-        any_device_resource& res,
-        rmm::cuda_stream_view stream,
-        std::size_t bytes)
-    {
-        rmm::device_async_resource_ref ref{res};
-        return ref.allocate(stream, bytes);
-    }
-
-    // Helper to deallocate from any_device_resource
-    // Avoids Cython return value issues
-    inline void deallocate_from_any_device_resource(
-        any_device_resource& res,
-        rmm::cuda_stream_view stream,
-        void* ptr,
-        std::size_t bytes)
-    {
-        rmm::device_async_resource_ref ref{res};
-        ref.deallocate(stream, ptr, bytes);
-    }
-
     // Helper to get resource_ref from any_device_resource
     // for passing to constructors
     inline rmm::device_async_resource_ref get_resource_ref_from_any(
@@ -101,20 +78,17 @@ cdef extern from *:
     cdef cppclass any_device_resource:
         any_device_resource() except +
         any_device_resource(device_async_resource_ref) except +
-
-    # C++ helper functions to avoid Cython issues with resource_ref
-    cdef void* allocate_from_any_device_resource(
-        any_device_resource& res,
-        cuda_stream_view stream,
-        size_t bytes
-    ) except + nogil
-
-    cdef void deallocate_from_any_device_resource(
-        any_device_resource& res,
-        cuda_stream_view stream,
-        void* ptr,
-        size_t bytes
-    ) noexcept nogil
+        void* allocate_sync(size_t bytes) except +
+        void deallocate_sync(void* ptr, size_t bytes) noexcept
+        void* allocate(
+            cuda_stream_view stream,
+            size_t bytes
+        ) except + nogil
+        void deallocate(
+            cuda_stream_view stream,
+            void* ptr,
+            size_t bytes
+        ) noexcept nogil
 
     cdef device_async_resource_ref get_resource_ref_from_any(
         any_device_resource& res
