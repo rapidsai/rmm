@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -50,6 +50,15 @@ struct DeviceBufferTest : public ::testing::Test {
 using resources = ::testing::Types<rmm::mr::cuda_memory_resource, rmm::mr::managed_memory_resource>;
 
 TYPED_TEST_SUITE(DeviceBufferTest, resources);
+
+// Test creating device_buffer with explicit resource_ref
+TEST(DeviceBufferSimpleTest, ExplicitResourceRef)
+{
+  auto mr = rmm::mr::cuda_memory_resource{};
+  rmm::device_async_resource_ref ref{mr};
+  auto buf = rmm::device_buffer(10, rmm::cuda_stream_default, ref);
+  EXPECT_EQ(buf.size(), 10);
+}
 
 TYPED_TEST(DeviceBufferTest, EmptyBuffer)
 {
