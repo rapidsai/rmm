@@ -31,8 +31,7 @@ into three categories:
 5. When done, [create your pull request](https://github.com/rapidsai/rmm/compare)
 6. Verify that CI passes all [status checks](https://help.github.com/articles/about-status-checks/). Fix if needed
 7. Wait for other developers to review your code and update code as needed
-8. Once reviewed and approved, a RAPIDS developer will merge your pull request. Note that for C++ code, two reviewers
-are required.
+8. Once reviewed and approved, a RAPIDS developer will merge your pull request.
 
 To set up a development environment, follow the steps in the [README](https://github.com/rapidsai/rmm/blob/main/README.md) for cloning the repository and creating the conda environment.
 Once the environment is created, you can build and install RMM using
