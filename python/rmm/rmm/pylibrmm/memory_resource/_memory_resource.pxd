@@ -21,7 +21,10 @@ from rmm.librmm.memory_resource cimport (
     pool_memory_resource,
     prefetch_resource_adaptor,
     sam_headroom_memory_resource,
+    shared_resource,
+    shared_resource_wrapper,
     statistics_resource_adaptor,
+    statistics_resource_adaptor_t,
     system_memory_resource,
     tracking_resource_adaptor,
 )
@@ -98,7 +101,7 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
     cpdef flush(self)
 
 cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
-    cdef unique_ptr[statistics_resource_adaptor[device_async_resource_ref]] _typed_mr
+    cdef unique_ptr[shared_resource_wrapper[statistics_resource_adaptor_t]] c_shared_mr
 
 cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
     cdef unique_ptr[tracking_resource_adaptor[device_async_resource_ref]] _typed_mr

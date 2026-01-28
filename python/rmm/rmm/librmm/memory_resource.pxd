@@ -85,9 +85,7 @@ cdef extern from "<cuda/memory_resource>" \
     cdef cppclass shared_resource[T]:
         shared_resource() except +
         shared_resource(const shared_resource&) noexcept
-        shared_resource(shared_resource&&) noexcept
         shared_resource& operator=(const shared_resource&) noexcept
-        shared_resource& operator=(shared_resource&&) noexcept
         void* allocate_sync(size_t bytes, size_t alignment) except + nogil
         void deallocate_sync(void* ptr, size_t bytes, size_t alignment) noexcept nogil
         void* allocate(
@@ -104,6 +102,40 @@ cdef extern from "<cuda/memory_resource>" \
         void swap(shared_resource&) noexcept nogil
         bool operator==(const shared_resource&) noexcept nogil
         bool operator!=(const shared_resource&) noexcept nogil
+        T& get() noexcept nogil
+
+    shared_resource[T] make_shared_resource[T](...) except +
+
+
+cdef extern from *:
+    """
+    #include <cuda/memory_resource>
+    #include <memory>
+    #include <utility>
+
+    template <typename T>
+    class shared_resource_wrapper {
+    public:
+        shared_resource_wrapper() : mr_(nullptr) {}
+
+        template <typename... Args>
+        explicit shared_resource_wrapper(Args&&... args)
+            : mr_(std::make_unique<cuda::mr::shared_resource<T>>(
+                  cuda::std::in_place_type<T>, std::forward<Args>(args)...)) {}
+
+        cuda::mr::shared_resource<T>& get() { return *mr_; }
+
+        T& resource() { return mr_->get(); }
+
+    private:
+        std::unique_ptr<cuda::mr::shared_resource<T>> mr_;
+    };
+    """
+    cdef cppclass shared_resource_wrapper[T]:
+        shared_resource_wrapper() except +
+        shared_resource_wrapper(...) except +
+        shared_resource[T]& get() noexcept nogil
+        T& resource() noexcept nogil
 
 
 cdef extern from "rmm/mr/device_memory_resource.hpp" \
@@ -330,6 +362,9 @@ cdef extern from "rmm/mr/statistics_resource_adaptor.hpp" \
         counter get_allocations_counter() except +
         pair[counter, counter] pop_counters() except +
         pair[counter, counter] push_counters() except +
+
+ctypedef statistics_resource_adaptor[device_async_resource_ref] \
+    statistics_resource_adaptor_t
 
 cdef extern from "rmm/mr/tracking_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:

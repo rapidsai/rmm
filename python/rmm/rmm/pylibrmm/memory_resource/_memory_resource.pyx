@@ -64,7 +64,8 @@ from rmm.librmm.memory_resource cimport (
     pool_memory_resource,
     prefetch_resource_adaptor,
     sam_headroom_memory_resource,
-    statistics_resource_adaptor,
+    shared_resource_wrapper,
+    statistics_resource_adaptor_t,
     system_memory_resource,
     throw_cpp_except,
     tracking_resource_adaptor,
@@ -883,18 +884,15 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         self,
         DeviceMemoryResource upstream_mr
     ):
-        # Get resource_ref from upstream and create typed
-        # resource
-        self._typed_mr = \
-            make_unique[statistics_resource_adaptor[device_async_resource_ref]](
+        # Create shared_resource_wrapper which owns the statistics_resource_adaptor
+        self.c_shared_mr = \
+            make_unique[shared_resource_wrapper[statistics_resource_adaptor_t]](
                 <device_async_resource_ref>(upstream_mr.c_any_mr)
             )
 
-        # Copy into any_resource by constructing from resource_ref
+        # Use the shared_resource as the any_device_resource
         self.c_any_mr = any_device_resource(
-            to_device_async_resource_ref_checked(
-                self._typed_mr.get()
-            )
+            <device_async_resource_ref>(deref(self.c_shared_mr).get())
         )
 
     def __init__(
@@ -928,11 +926,8 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         Returns:
             dict: Dictionary containing allocation counts and bytes.
         """
-        cdef statistics_resource_adaptor[device_async_resource_ref]* mr = \
-            self._typed_mr.get()
-
-        counts = deref(mr).get_allocations_counter()
-        byte_counts = deref(mr).get_bytes_counter()
+        counts = deref(self.c_shared_mr).resource().get_allocations_counter()
+        byte_counts = deref(self.c_shared_mr).resource().get_bytes_counter()
         return Statistics(
             current_bytes=byte_counts.value,
             current_count=counts.value,
@@ -950,10 +945,7 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         -------
         The popped statistics
         """
-        cdef statistics_resource_adaptor[device_async_resource_ref]* mr = \
-            self._typed_mr.get()
-
-        bytes_and_allocs = deref(mr).pop_counters()
+        bytes_and_allocs = deref(self.c_shared_mr).resource().pop_counters()
         return Statistics(
             current_bytes=bytes_and_allocs.first.value,
             current_count=bytes_and_allocs.second.value,
@@ -971,11 +963,7 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         -------
         The statistics _before_ the push
         """
-
-        cdef statistics_resource_adaptor[device_async_resource_ref]* mr = \
-            self._typed_mr.get()
-
-        bytes_and_allocs = deref(mr).push_counters()
+        bytes_and_allocs = deref(self.c_shared_mr).resource().push_counters()
         return Statistics(
             current_bytes=bytes_and_allocs.first.value,
             current_count=bytes_and_allocs.second.value,
