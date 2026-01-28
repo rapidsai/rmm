@@ -33,7 +33,7 @@ cdef class CudaAsyncManagedMemoryResource(DeviceMemoryResource):
         self._typed_mr = make_unique[cuda_async_managed_memory_resource]()
 
         # Copy into any_resource by constructing from resource_ref
-        self.c_obj = any_device_resource(
+        self.c_any_mr = any_device_resource(
             to_device_async_resource_ref_checked(self._typed_mr.get())
         )
 

@@ -93,7 +93,7 @@ cdef class DeviceBuffer:
                     new device_buffer(
                         size,
                         stream.view(),
-                        <device_async_resource_ref>(self.mr.c_obj)
+                        <device_async_resource_ref>(self.mr.c_any_mr)
                     )
                 )
             else:
@@ -102,7 +102,7 @@ cdef class DeviceBuffer:
                         c_ptr,
                         size,
                         stream.view(),
-                        <device_async_resource_ref>(self.mr.c_obj)
+                        <device_async_resource_ref>(self.mr.c_any_mr)
                     )
                 )
 

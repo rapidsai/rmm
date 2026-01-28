@@ -36,7 +36,7 @@ cdef extern from "rmm/resource_ref.hpp" namespace "rmm" nogil:
 
 
 cdef class DeviceMemoryResource:
-    cdef any_device_resource c_obj
+    cdef any_device_resource c_any_mr
     cdef device_memory_resource* get_mr(self) noexcept nogil
 
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
