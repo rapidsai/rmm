@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -9,6 +9,8 @@
 #include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <cstddef>
 #include <functional>
@@ -96,7 +98,9 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   failure_callback_resource_adaptor(device_async_resource_ref upstream,
                                     failure_callback_t callback,
                                     void* callback_arg)
-    : upstream_{upstream}, callback_{std::move(callback)}, callback_arg_{callback_arg}
+    : upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{upstream}},
+      callback_{std::move(callback)},
+      callback_arg_{callback_arg}
   {
   }
 
@@ -113,7 +117,8 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   failure_callback_resource_adaptor(Upstream* upstream,
                                     failure_callback_t callback,
                                     void* callback_arg)
-    : upstream_{to_device_async_resource_ref_checked(upstream)},
+    : upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{
+        to_device_async_resource_ref_checked(upstream)}},
       callback_{std::move(callback)},
       callback_arg_{callback_arg}
   {
@@ -133,7 +138,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return upstream_;
+    return device_async_resource_ref{upstream_};
   }
 
  private:
@@ -191,7 +196,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
   }
 
   // the upstream resource used for satisfying allocation requests
-  device_async_resource_ref upstream_;
+  cuda::mr::any_resource<cuda::mr::device_accessible> mutable upstream_;
   failure_callback_t callback_;
   void* callback_arg_;
 };

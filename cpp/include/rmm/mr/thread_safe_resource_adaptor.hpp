@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -9,6 +9,8 @@
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <cstddef>
 #include <mutex>
@@ -42,7 +44,10 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    *
    * @param upstream The resource used for allocating/deallocating device memory.
    */
-  thread_safe_resource_adaptor(device_async_resource_ref upstream) : upstream_{upstream} {}
+  thread_safe_resource_adaptor(device_async_resource_ref upstream)
+    : upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{upstream}}
+  {
+  }
 
   /**
    * @brief Construct a new thread safe resource adaptor using `upstream` to satisfy
@@ -55,7 +60,8 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    * @param upstream The resource used for allocating/deallocating device memory.
    */
   thread_safe_resource_adaptor(Upstream* upstream)
-    : upstream_{to_device_async_resource_ref_checked(upstream)}
+    : upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{
+        to_device_async_resource_ref_checked(upstream)}}
   {
   }
 
@@ -71,7 +77,7 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return upstream_;
+    return device_async_resource_ref{upstream_};
   }
 
  private:
@@ -121,8 +127,9 @@ class thread_safe_resource_adaptor final : public device_memory_resource {
   }
 
   std::mutex mutable mtx;  // mutex for thread safe access to upstream
-  device_async_resource_ref
-    upstream_;  ///< The upstream resource used for satisfying allocation requests
+  cuda::mr::any_resource<cuda::mr::device_accessible> mutable upstream_;  ///< The upstream resource
+                                                                          ///< used for satisfying
+                                                                          ///< allocation requests
 };
 
 /** @} */  // end of group

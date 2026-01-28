@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -11,6 +11,8 @@
 #include <rmm/logger.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <cstddef>
 #include <cstdio>
@@ -188,7 +190,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return upstream_;
+    return device_async_resource_ref{upstream_};
   }
 
   /**
@@ -240,7 +242,7 @@ class logging_resource_adaptor final : public device_memory_resource {
   logging_resource_adaptor(std::shared_ptr<rapids_logger::logger> logger,
                            device_async_resource_ref upstream,
                            bool auto_flush)
-    : logger_{logger}, upstream_{upstream}
+    : logger_{logger}, upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{upstream}}
   {
     if (auto_flush) { logger_->flush_on(rapids_logger::level_enum::info); }
     logger_->set_pattern("%v");
@@ -323,8 +325,9 @@ class logging_resource_adaptor final : public device_memory_resource {
 
   std::shared_ptr<rapids_logger::logger> logger_{};
 
-  device_async_resource_ref upstream_;  ///< The upstream resource used for satisfying
-                                        ///< allocation requests
+  cuda::mr::any_resource<cuda::mr::device_accessible> mutable upstream_;  ///< The upstream resource
+                                                                          ///< used for satisfying
+                                                                          ///< allocation requests
 };
 
 /** @} */  // end of group

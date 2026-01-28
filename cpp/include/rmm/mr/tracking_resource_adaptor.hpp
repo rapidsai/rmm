@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -11,6 +11,8 @@
 #include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <atomic>
 #include <cstddef>
@@ -79,7 +81,9 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @param capture_stacks If true, capture stacks for allocation calls
    */
   tracking_resource_adaptor(device_async_resource_ref upstream, bool capture_stacks = false)
-    : capture_stacks_{capture_stacks}, allocated_bytes_{0}, upstream_{upstream}
+    : capture_stacks_{capture_stacks},
+      allocated_bytes_{0},
+      upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{upstream}}
   {
   }
 
@@ -95,7 +99,8 @@ class tracking_resource_adaptor final : public device_memory_resource {
   tracking_resource_adaptor(Upstream* upstream, bool capture_stacks = false)
     : capture_stacks_{capture_stacks},
       allocated_bytes_{0},
-      upstream_{to_device_async_resource_ref_checked(upstream)}
+      upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{
+        to_device_async_resource_ref_checked(upstream)}}
   {
   }
 
@@ -113,7 +118,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return upstream_;
+    return device_async_resource_ref{upstream_};
   }
 
   /**
@@ -268,8 +273,9 @@ class tracking_resource_adaptor final : public device_memory_resource {
   std::map<void*, allocation_info> allocations_;  // map of active allocations
   std::atomic<std::size_t> allocated_bytes_;      // number of bytes currently allocated
   std::shared_mutex mutable mtx_;                 // mutex for thread safe access to allocations_
-  device_async_resource_ref upstream_;            // the upstream resource used for satisfying
-                                                  // allocation requests
+  cuda::mr::any_resource<cuda::mr::device_accessible> mutable upstream_;  // the upstream resource
+                                                                          // used for satisfying
+                                                                          // allocation requests
 };
 
 /** @} */  // end of group

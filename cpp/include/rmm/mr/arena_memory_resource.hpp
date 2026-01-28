@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -14,6 +14,7 @@
 #include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda_runtime_api.h>
 
 #include <cstddef>

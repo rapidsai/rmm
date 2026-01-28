@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -11,6 +11,8 @@
 #include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <algorithm>
 #include <cstddef>
@@ -64,7 +66,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
   explicit aligned_resource_adaptor(device_async_resource_ref upstream,
                                     std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT,
                                     std::size_t alignment_threshold = default_alignment_threshold)
-    : upstream_{upstream},
+    : upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{upstream}},
       alignment_{std::max(alignment, rmm::CUDA_ALLOCATION_ALIGNMENT)},
       alignment_threshold_{alignment_threshold}
   {
@@ -87,7 +89,8 @@ class aligned_resource_adaptor final : public device_memory_resource {
   explicit aligned_resource_adaptor(Upstream* upstream,
                                     std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT,
                                     std::size_t alignment_threshold = default_alignment_threshold)
-    : upstream_{to_device_async_resource_ref_checked(upstream)},
+    : upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{
+        to_device_async_resource_ref_checked(upstream)}},
       alignment_{std::max(alignment, rmm::CUDA_ALLOCATION_ALIGNMENT)},
       alignment_threshold_{alignment_threshold}
   {
@@ -107,7 +110,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return upstream_;
+    return device_async_resource_ref{upstream_};
   }
 
   /**
@@ -216,7 +219,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
   }
 
   /// The upstream resource used for satisfying allocation requests
-  device_async_resource_ref upstream_;
+  cuda::mr::any_resource<cuda::mr::device_accessible> mutable upstream_;
   std::unordered_map<void*, void*> pointers_;  ///< Map of aligned pointers to upstream pointers.
   std::size_t alignment_;                      ///< The size used for allocation alignment
   std::size_t alignment_threshold_;  ///< The size above which allocations should be aligned

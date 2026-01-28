@@ -18,6 +18,7 @@
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/std/type_traits>
 #include <cuda_runtime_api.h>
 #include <thrust/iterator/counting_iterator.h>
@@ -113,7 +114,7 @@ class pool_memory_resource final
   explicit pool_memory_resource(device_async_resource_ref upstream_mr,
                                 std::size_t initial_pool_size,
                                 std::optional<std::size_t> maximum_pool_size = std::nullopt)
-    : upstream_mr_{upstream_mr}
+    : upstream_mr_{cuda::mr::any_resource<cuda::mr::device_accessible>{upstream_mr}}
   {
     RMM_EXPECTS(rmm::is_aligned(initial_pool_size, rmm::CUDA_ALLOCATION_ALIGNMENT),
                 "Error, Initial pool size required to be a multiple of 256 bytes");
@@ -141,7 +142,8 @@ class pool_memory_resource final
   explicit pool_memory_resource(Upstream* upstream_mr,
                                 std::size_t initial_pool_size,
                                 std::optional<std::size_t> maximum_pool_size = std::nullopt)
-    : upstream_mr_{to_device_async_resource_ref_checked(upstream_mr)}
+    : upstream_mr_{cuda::mr::any_resource<cuda::mr::device_accessible>{
+        to_device_async_resource_ref_checked(upstream_mr)}}
   {
     RMM_EXPECTS(rmm::is_aligned(initial_pool_size, rmm::CUDA_ALLOCATION_ALIGNMENT),
                 "Error, Initial pool size required to be a multiple of 256 bytes");
@@ -191,7 +193,7 @@ class pool_memory_resource final
    */
   [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return upstream_mr_;
+    return device_async_resource_ref{upstream_mr_};
   }
 
   /**
@@ -478,7 +480,7 @@ class pool_memory_resource final
 
  private:
   // The "heap" to allocate the pool from
-  device_async_resource_ref upstream_mr_;
+  cuda::mr::any_resource<cuda::mr::device_accessible> mutable upstream_mr_;
   std::size_t current_pool_size_{};
   std::optional<std::size_t> maximum_pool_size_{};
 
@@ -488,7 +490,7 @@ class pool_memory_resource final
 
   // blocks allocated from upstream
   std::set<block_type, rmm::mr::detail::compare_blocks<block_type>> upstream_blocks_;
-};  // namespace mr
+};
 
 /** @} */  // end of group
 }  // namespace mr

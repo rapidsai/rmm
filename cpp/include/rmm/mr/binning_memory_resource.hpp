@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -10,6 +10,7 @@
 #include <rmm/mr/fixed_size_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda_runtime_api.h>
 
 #include <cassert>
@@ -44,7 +45,7 @@ class binning_memory_resource final : public device_memory_resource {
    * @param upstream_resource The upstream memory resource used to allocate bin pools.
    */
   explicit binning_memory_resource(device_async_resource_ref upstream_resource)
-    : upstream_mr_{upstream_resource}
+    : upstream_mr_{cuda::mr::any_resource<cuda::mr::device_accessible>{upstream_resource}}
   {
   }
 
@@ -59,7 +60,8 @@ class binning_memory_resource final : public device_memory_resource {
    * @param upstream_resource The upstream memory resource used to allocate bin pools.
    */
   explicit binning_memory_resource(Upstream* upstream_resource)
-    : upstream_mr_{to_device_async_resource_ref_checked(upstream_resource)}
+    : upstream_mr_{cuda::mr::any_resource<cuda::mr::device_accessible>{
+        to_device_async_resource_ref_checked(upstream_resource)}}
   {
   }
 
@@ -78,7 +80,7 @@ class binning_memory_resource final : public device_memory_resource {
   binning_memory_resource(device_async_resource_ref upstream_resource,
                           int8_t min_size_exponent,  // NOLINT(bugprone-easily-swappable-parameters)
                           int8_t max_size_exponent)
-    : upstream_mr_{upstream_resource}
+    : upstream_mr_{cuda::mr::any_resource<cuda::mr::device_accessible>{upstream_resource}}
   {
     for (auto i = min_size_exponent; i <= max_size_exponent; i++) {
       add_bin(1 << i);
@@ -102,7 +104,8 @@ class binning_memory_resource final : public device_memory_resource {
   binning_memory_resource(Upstream* upstream_resource,
                           int8_t min_size_exponent,  // NOLINT(bugprone-easily-swappable-parameters)
                           int8_t max_size_exponent)
-    : upstream_mr_{to_device_async_resource_ref_checked(upstream_resource)}
+    : upstream_mr_{cuda::mr::any_resource<cuda::mr::device_accessible>{
+        to_device_async_resource_ref_checked(upstream_resource)}}
   {
     for (auto i = min_size_exponent; i <= max_size_exponent; i++) {
       add_bin(1 << i);
@@ -126,7 +129,7 @@ class binning_memory_resource final : public device_memory_resource {
    */
   [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return upstream_mr_;
+    return device_async_resource_ref{upstream_mr_};
   }
 
   /**
@@ -201,8 +204,9 @@ class binning_memory_resource final : public device_memory_resource {
     get_resource_ref(bytes).deallocate(stream, ptr, bytes);
   }
 
-  device_async_resource_ref
-    upstream_mr_;  // The upstream memory_resource from which to allocate blocks.
+  cuda::mr::any_resource<
+    cuda::mr::device_accessible> mutable upstream_mr_;  // The upstream memory_resource from which
+                                                        // to allocate blocks.
 
   std::vector<std::unique_ptr<fixed_size_memory_resource<Upstream>>> owned_bin_resources_;
 
