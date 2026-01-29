@@ -7,19 +7,24 @@ from rmm.librmm.memory_resource cimport (
     any_device_resource,
     arena_memory_resource,
     binning_memory_resource,
+    binning_memory_resource_t,
     callback_memory_resource,
     cuda_async_memory_resource,
     cuda_async_view_memory_resource,
     cuda_memory_resource,
     device_memory_resource,
     failure_callback_resource_adaptor,
+    failure_callback_resource_adaptor_t,
     fixed_size_memory_resource,
+    fixed_size_memory_resource_t,
     limiting_resource_adaptor,
+    limiting_resource_adaptor_t,
     logging_resource_adaptor,
     managed_memory_resource,
     pinned_host_memory_resource,
     pool_memory_resource,
     prefetch_resource_adaptor,
+    prefetch_resource_adaptor_t,
     sam_headroom_memory_resource,
     shared_resource,
     shared_resource_wrapper,
@@ -27,6 +32,7 @@ from rmm.librmm.memory_resource cimport (
     statistics_resource_adaptor_t,
     system_memory_resource,
     tracking_resource_adaptor,
+    tracking_resource_adaptor_t,
 )
 from rmm.librmm.per_device_resource cimport device_async_resource_ref
 
@@ -75,10 +81,10 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
     cdef unique_ptr[pool_memory_resource[device_async_resource_ref]] _typed_mr
 
 cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
-    cdef unique_ptr[fixed_size_memory_resource[device_async_resource_ref]] _typed_mr
+    cdef unique_ptr[shared_resource_wrapper[fixed_size_memory_resource_t]] c_shared_mr
 
 cdef class BinningMemoryResource(UpstreamResourceAdaptor):
-    cdef unique_ptr[binning_memory_resource[device_async_resource_ref]] _typed_mr
+    cdef unique_ptr[shared_resource_wrapper[binning_memory_resource_t]] c_shared_mr
     cdef readonly list _bin_mrs
 
     cpdef add_bin(
@@ -87,12 +93,12 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         DeviceMemoryResource bin_resource=*)
 
 cdef class CallbackMemoryResource(DeviceMemoryResource):
-    cdef unique_ptr[callback_memory_resource] _typed_mr
+    cdef unique_ptr[shared_resource_wrapper[callback_memory_resource]] c_shared_mr
     cdef object _allocate_func
     cdef object _deallocate_func
 
 cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
-    cdef unique_ptr[limiting_resource_adaptor[device_async_resource_ref]] _typed_mr
+    cdef unique_ptr[shared_resource_wrapper[limiting_resource_adaptor_t]] c_shared_mr
 
 cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
     cdef unique_ptr[logging_resource_adaptor[device_async_resource_ref]] _typed_mr
@@ -104,15 +110,14 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
     cdef unique_ptr[shared_resource_wrapper[statistics_resource_adaptor_t]] c_shared_mr
 
 cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
-    cdef unique_ptr[tracking_resource_adaptor[device_async_resource_ref]] _typed_mr
+    cdef unique_ptr[shared_resource_wrapper[tracking_resource_adaptor_t]] c_shared_mr
 
 cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
-    cdef unique_ptr[
-        failure_callback_resource_adaptor[device_async_resource_ref]
-    ] _typed_mr
+    cdef unique_ptr[shared_resource_wrapper[failure_callback_resource_adaptor_t]] \
+        c_shared_mr
     cdef object _callback
 
 cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
-    cdef unique_ptr[prefetch_resource_adaptor[device_async_resource_ref]] _typed_mr
+    cdef unique_ptr[shared_resource_wrapper[prefetch_resource_adaptor_t]] c_shared_mr
 
 cpdef DeviceMemoryResource get_current_device_resource()

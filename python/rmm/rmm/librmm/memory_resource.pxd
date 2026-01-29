@@ -282,6 +282,9 @@ cdef extern from "rmm/mr/fixed_size_memory_resource.hpp" \
             size_t block_size,
             size_t block_to_preallocate) except +
 
+ctypedef fixed_size_memory_resource[device_async_resource_ref] \
+    fixed_size_memory_resource_t
+
 cdef extern from "rmm/mr/callback_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     ctypedef void* (*allocate_callback_t)(size_t, cuda_stream_view, void*)
@@ -309,6 +312,9 @@ cdef extern from "rmm/mr/binning_memory_resource.hpp" \
             size_t allocation_size,
             device_async_resource_ref bin_resource) except +
 
+ctypedef binning_memory_resource[device_async_resource_ref] \
+    binning_memory_resource_t
+
 cdef extern from "rmm/mr/limiting_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass limiting_resource_adaptor[Upstream](device_memory_resource):
@@ -318,6 +324,9 @@ cdef extern from "rmm/mr/limiting_resource_adaptor.hpp" \
 
         size_t get_allocated_bytes() except +
         size_t get_allocation_limit() except +
+
+ctypedef limiting_resource_adaptor[device_async_resource_ref] \
+    limiting_resource_adaptor_t
 
 cdef extern from "rmm/mr/logging_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
@@ -377,6 +386,9 @@ cdef extern from "rmm/mr/tracking_resource_adaptor.hpp" \
         string get_outstanding_allocations_str() except +
         void log_outstanding_allocations() except +
 
+ctypedef tracking_resource_adaptor[device_async_resource_ref] \
+    tracking_resource_adaptor_t
+
 cdef extern from "rmm/mr/failure_callback_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
     ctypedef bool (*failure_callback_t)(size_t, void*)
@@ -389,7 +401,13 @@ cdef extern from "rmm/mr/failure_callback_resource_adaptor.hpp" \
             void* callback_arg
         ) except +
 
+ctypedef failure_callback_resource_adaptor[device_async_resource_ref] \
+    failure_callback_resource_adaptor_t
+
 cdef extern from "rmm/mr/prefetch_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass prefetch_resource_adaptor[Upstream](device_memory_resource):
         prefetch_resource_adaptor(device_async_resource_ref upstream_mr) except +
+
+ctypedef prefetch_resource_adaptor[device_async_resource_ref] \
+    prefetch_resource_adaptor_t

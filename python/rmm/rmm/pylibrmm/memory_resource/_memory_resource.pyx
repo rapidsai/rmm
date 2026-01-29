@@ -45,30 +45,30 @@ from rmm.librmm.memory_resource cimport (
     allocate_callback_t,
     allocation_handle_type,
     available_device_memory as c_available_device_memory,
-    binning_memory_resource,
+    binning_memory_resource_t,
     callback_memory_resource,
     cuda_async_memory_resource,
     cuda_async_view_memory_resource,
     cuda_memory_resource,
     deallocate_callback_t,
     device_memory_resource,
-    failure_callback_resource_adaptor,
+    failure_callback_resource_adaptor_t,
     failure_callback_t,
-    fixed_size_memory_resource,
-    limiting_resource_adaptor,
+    fixed_size_memory_resource_t,
+    limiting_resource_adaptor_t,
     make_arena_memory_resource,
     make_logging_resource_adaptor,
     managed_memory_resource,
     percent_of_free_device_memory as c_percent_of_free_device_memory,
     pinned_host_memory_resource,
     pool_memory_resource,
-    prefetch_resource_adaptor,
+    prefetch_resource_adaptor_t,
     sam_headroom_memory_resource,
     shared_resource_wrapper,
     statistics_resource_adaptor_t,
     system_memory_resource,
     throw_cpp_except,
-    tracking_resource_adaptor,
+    tracking_resource_adaptor_t,
     translate_python_except_to_cpp,
 )
 
@@ -500,20 +500,15 @@ cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
             size_t block_size=1<<20,
             size_t blocks_to_preallocate=128
     ):
-        # Get resource_ref from upstream
-        # Create the typed resource and store it
-        self._typed_mr = \
-            make_unique[fixed_size_memory_resource[device_async_resource_ref]](
+        self.c_shared_mr = \
+            make_unique[shared_resource_wrapper[fixed_size_memory_resource_t]](
                 <device_async_resource_ref>(upstream_mr.c_any_mr),
                 block_size,
                 blocks_to_preallocate
             )
 
-        # Copy into any_resource by constructing from resource_ref
         self.c_any_mr = any_device_resource(
-            to_device_async_resource_ref_checked(
-                self._typed_mr.get()
-            )
+            <device_async_resource_ref>(deref(self.c_shared_mr).get())
         )
 
     def __init__(
@@ -553,26 +548,21 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
         self._bin_mrs = []
 
-        # Get resource_ref from upstream and create typed
-        # resource
         if (min_size_exponent == -1 or max_size_exponent == -1):
-            self._typed_mr = \
-                make_unique[binning_memory_resource[device_async_resource_ref]](
+            self.c_shared_mr = \
+                make_unique[shared_resource_wrapper[binning_memory_resource_t]](
                     <device_async_resource_ref>(upstream_mr.c_any_mr)
                 )
         else:
-            self._typed_mr = \
-                make_unique[binning_memory_resource[device_async_resource_ref]](
+            self.c_shared_mr = \
+                make_unique[shared_resource_wrapper[binning_memory_resource_t]](
                     <device_async_resource_ref>(upstream_mr.c_any_mr),
                     min_size_exponent,
                     max_size_exponent
                 )
 
-        # Copy into any_resource by constructing from resource_ref
         self.c_any_mr = any_device_resource(
-            to_device_async_resource_ref_checked(
-                self._typed_mr.get()
-            )
+            <device_async_resource_ref>(deref(self.c_shared_mr).get())
         )
 
     def __init__(
@@ -627,13 +617,12 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
             The resource to use for this bin (optional)
         """
         if bin_resource is None:
-            self._typed_mr.get()[0].add_bin(allocation_size)
+            deref(self.c_shared_mr).resource().add_bin(allocation_size)
         else:
             # Save the ref to the new bin resource to ensure its lifetime
             self._bin_mrs.append(bin_resource)
 
-            # Get resource_ref from bin_resource
-            self._typed_mr.get()[0].add_bin(
+            deref(self.c_shared_mr).resource().add_bin(
                 allocation_size,
                 <device_async_resource_ref>(bin_resource.c_any_mr)
             )
@@ -723,19 +712,16 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
         self._allocate_func = allocate_func
         self._deallocate_func = deallocate_func
 
-        # Create the typed resource and store it
-        self._typed_mr = make_unique[callback_memory_resource](
-            <allocate_callback_t>(_allocate_callback_wrapper),
-            <deallocate_callback_t>(_deallocate_callback_wrapper),
-            <void*>(allocate_func),
-            <void*>(deallocate_func)
-        )
-
-        # Copy into any_resource by constructing from resource_ref
-        self.c_any_mr = any_device_resource(
-            to_device_async_resource_ref_checked(
-                self._typed_mr.get()
+        self.c_shared_mr = \
+            make_unique[shared_resource_wrapper[callback_memory_resource]](
+                <allocate_callback_t>(_allocate_callback_wrapper),
+                <deallocate_callback_t>(_deallocate_callback_wrapper),
+                <void*>(allocate_func),
+                <void*>(deallocate_func)
             )
+
+        self.c_any_mr = any_device_resource(
+            <device_async_resource_ref>(deref(self.c_shared_mr).get())
         )
 
 
@@ -763,19 +749,14 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
         DeviceMemoryResource upstream_mr,
         size_t allocation_limit
     ):
-        # Get resource_ref from upstream
-        # Create the typed resource and store it
-        self._typed_mr = \
-            make_unique[limiting_resource_adaptor[device_async_resource_ref]](
+        self.c_shared_mr = \
+            make_unique[shared_resource_wrapper[limiting_resource_adaptor_t]](
                 <device_async_resource_ref>(upstream_mr.c_any_mr),
                 allocation_limit
             )
 
-        # Copy into any_resource by constructing from resource_ref
         self.c_any_mr = any_device_resource(
-            to_device_async_resource_ref_checked(
-                self._typed_mr.get()
-            )
+            <device_async_resource_ref>(deref(self.c_shared_mr).get())
         )
 
     def __init__(
@@ -803,7 +784,7 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
         possible fragmentation and also internal page sizes and alignment that
         is not tracked by this allocator.
         """
-        return self._typed_mr.get()[0].get_allocated_bytes()
+        return deref(self.c_shared_mr).resource().get_allocated_bytes()
 
     def get_allocation_limit(self) -> size_t:
         """
@@ -812,7 +793,7 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
         of the underlying device. The device may not be able to support this
         limit.
         """
-        return self._typed_mr.get()[0].get_allocation_limit()
+        return deref(self.c_shared_mr).resource().get_allocation_limit()
 
 
 cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
@@ -980,19 +961,14 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         DeviceMemoryResource upstream_mr,
         bool capture_stacks=False
     ):
-        # Get resource_ref from upstream
-        # Create the typed resource and store it
-        self._typed_mr = \
-            make_unique[tracking_resource_adaptor[device_async_resource_ref]](
+        self.c_shared_mr = \
+            make_unique[shared_resource_wrapper[tracking_resource_adaptor_t]](
                 <device_async_resource_ref>(upstream_mr.c_any_mr),
                 capture_stacks
             )
 
-        # Copy into any_resource by constructing from resource_ref
         self.c_any_mr = any_device_resource(
-            to_device_async_resource_ref_checked(
-                self._typed_mr.get()
-            )
+            <device_async_resource_ref>(deref(self.c_shared_mr).get())
         )
 
     def __init__(
@@ -1021,7 +997,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         possible fragmentation and also internal page sizes and alignment that
         is not tracked by this allocator.
         """
-        return self._typed_mr.get()[0].get_allocated_bytes()
+        return deref(self.c_shared_mr).resource().get_allocated_bytes()
 
     def get_outstanding_allocations_str(self) -> str:
         """
@@ -1031,7 +1007,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         """
 
         return (
-            self._typed_mr.get()[0]
+            deref(self.c_shared_mr).resource()
             .get_outstanding_allocations_str()
             .decode('UTF-8')
         )
@@ -1042,7 +1018,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         current RMM log file if enabled.
         """
 
-        self._typed_mr.get()[0].log_outstanding_allocations()
+        deref(self.c_shared_mr).resource().log_outstanding_allocations()
 
 
 # Note that this function is specifically designed to rethrow Python exceptions
@@ -1067,20 +1043,15 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
     ):
         self._callback = callback
 
-        # Get resource_ref from upstream
-        # Create the typed resource and store it
-        self._typed_mr = \
-            make_unique[failure_callback_resource_adaptor[device_async_resource_ref]](
+        self.c_shared_mr = \
+            make_unique[shared_resource_wrapper[failure_callback_resource_adaptor_t]](
                 <device_async_resource_ref>(upstream_mr.c_any_mr),
                 <failure_callback_t>(_oom_callback_function),
                 <void*>(callback)
             )
 
-        # Copy into any_resource by constructing from resource_ref
         self.c_any_mr = any_device_resource(
-            to_device_async_resource_ref_checked(
-                self._typed_mr.get()
-            )
+            <device_async_resource_ref>(deref(self.c_shared_mr).get())
         )
 
     def __init__(
@@ -1106,18 +1077,13 @@ cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
         self,
         DeviceMemoryResource upstream_mr
     ):
-        # Get resource_ref from upstream and create typed
-        # resource
-        self._typed_mr = \
-            make_unique[prefetch_resource_adaptor[device_async_resource_ref]](
+        self.c_shared_mr = \
+            make_unique[shared_resource_wrapper[prefetch_resource_adaptor_t]](
                 <device_async_resource_ref>(upstream_mr.c_any_mr)
             )
 
-        # Copy into any_resource by constructing from resource_ref
         self.c_any_mr = any_device_resource(
-            to_device_async_resource_ref_checked(
-                self._typed_mr.get()
-            )
+            <device_async_resource_ref>(deref(self.c_shared_mr).get())
         )
 
     def __init__(
