@@ -44,12 +44,12 @@ cmake -S cpp -B cpp/build \
 
 cmake --build cpp/build -j
 
+sccache --show-adv-stats
+
 rapids-logger "Run gtests"
 export GTEST_OUTPUT=xml:${RAPIDS_TESTS_DIR}/
 cd cpp/build
 ctest --no-tests=error --output-on-failure -j20 && EXITCODE=$? || EXITCODE=$?
-
-sccache --show-adv-stats
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit "${EXITCODE}"
