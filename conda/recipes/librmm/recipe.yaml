@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2018-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 schema_version: 1
 
@@ -26,6 +26,10 @@ cache:
         export CFLAGS=$(echo $CFLAGS | sed -E 's@\-fdebug\-prefix\-map[^ ]*@@g')
         export CXXFLAGS=$(echo $CXXFLAGS | sed -E 's@\-fdebug\-prefix\-map[^ ]*@@g')
         set +x
+
+        # Unset CUDAARCHS set by conda-forge's cuda-nvcc activation script
+        # so that rapids-cmake selects the default RAPIDS architectures.
+        unset CUDAARCHS
 
         ./build.sh -n -v clean librmm tests benchmarks
       secrets:
@@ -154,6 +158,10 @@ outputs:
       string: cuda${{ cuda_major }}_${{ date_string }}_${{ head_rev }}
       script:
         content: |
+          # Unset CUDAARCHS set by conda-forge's cuda-nvcc activation script
+          # so that rapids-cmake selects the default RAPIDS architectures.
+          unset CUDAARCHS
+
           ./cpp/examples/build.sh --install
         env:
           CMAKE_C_COMPILER_LAUNCHER: ${{ env.get("CMAKE_C_COMPILER_LAUNCHER") }}
