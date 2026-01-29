@@ -565,6 +565,7 @@ class cccl_async_resource_ref {
   template <typename... Properties>
   operator cuda::mr::any_resource<Properties...>() const
   {
+    if (view_.has_value()) { return cuda::mr::any_resource<Properties...>{*view_}; }
     return cuda::mr::any_resource<Properties...>{ref_};
   }
 
