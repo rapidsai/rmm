@@ -20,19 +20,11 @@ mkdir -p "${RAPIDS_TESTS_DIR}"
 rapids-logger "Generate C++ build and test dependencies"
 rapids-dependency-file-generator \
   --output conda \
-  --file-key test_cpp \
+  --file-key all \
   --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch)" \
   | tee env.yaml
 
-# Add build dependencies to the environment
-rapids-dependency-file-generator \
-  --output conda \
-  --file-key all \
-  --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch)" \
-  | tee build_env.yaml
-
-# Merge build dependencies into test environment
-rapids-mamba-retry env create --yes -f build_env.yaml -n test
+rapids-mamba-retry env create --yes -f env.yaml -n test
 
 # Temporarily allow unbound variables for conda activation.
 set +u
