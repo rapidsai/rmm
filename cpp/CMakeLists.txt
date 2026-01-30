@@ -141,7 +141,8 @@ if((BUILD_TESTS OR BUILD_BENCHMARKS) AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAM
   # Since RMM only enables CUDA optionally we need to manually include the file that
   # rapids_cuda_init_architectures relies on `project` calling
   include("${CMAKE_PROJECT_RMM_INCLUDE}")
-  message(STATUS "RMM: Building benchmarks with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
+  message(
+    STATUS "RMM: Building tests/benchmarks with GPU Architectures: ${CMAKE_CUDA_ARCHITECTURES}")
 endif()
 
 # ##################################################################################################
