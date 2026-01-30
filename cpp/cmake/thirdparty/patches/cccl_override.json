@@ -1,10 +1,10 @@
 {
   "packages": {
     "CCCL": {
-      "version": "3.3.0",
+      "version": "3.2.1",
       "git_shallow": false,
-      "git_url": "https://github.com/ericniebler/cccl.git",
-      "git_tag": "88a1c9a7edd0fb84588b3d63eba64b152a59a1b1"
+      "git_url": "https://github.com/NVIDIA/cccl.git",
+      "git_tag": "e380dcdd367f55c1c2d199dc130be77c38a78fb5"
     }
   }
 }
