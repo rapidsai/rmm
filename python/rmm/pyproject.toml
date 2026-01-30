@@ -17,7 +17,7 @@ authors = [
     { name = "NVIDIA Corporation" },
 ]
 license = "Apache-2.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "cuda-python>=13.0.1,<14.0",
     "librmm==26.4.*,>=0.0.0a0",
@@ -28,7 +28,6 @@ classifiers = [
     "Topic :: Database",
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -36,7 +35,7 @@ classifiers = [
 
 [project.optional-dependencies]
 test = [
-    "numba-cuda>=0.22.1,<0.23.0",
+    "numba-cuda>=0.22.1",
     "numba>=0.60.0,<0.62.0",
     "packaging",
     "pytest-cov",
@@ -111,8 +110,8 @@ select = [
     "distro-too-large-compressed",
 ]
 
-# PyPI limit is 100 MiB, fail CI before we get too close to that
-max_allowed_size_compressed = '75M'
+# PyPI hard limit is 1GiB, but try to keep this as small as possible
+max_allowed_size_compressed = '10Mi'
 
 [tool.pytest.ini_options]
 # treat warnings as errors
