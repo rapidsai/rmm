@@ -28,6 +28,24 @@ files:
       - test_python
       - depends_on_librmm
       - depends_on_rmm
+  test_pytorch:
+    output: none
+    includes:
+      - cuda_version
+      - py_version
+      - test_python
+      - depends_on_pytorch
+      - depends_on_librmm
+      - depends_on_rmm
+  test_cupy:
+    output: none
+    includes:
+      - cuda_version
+      - py_version
+      - test_python
+      - depends_on_cupy
+      - depends_on_librmm
+      - depends_on_rmm
   test_cpp:
     output: none
     includes:
@@ -367,3 +385,38 @@ dependencies:
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
           - --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple
+  depends_on_pytorch:
+    common:
+      - output_types: conda
+        packages:
+          - pytorch-gpu>=2.10.0
+    specific:
+      - output_types: [requirements, pyproject]
+        matrices:
+          - matrix:
+              cuda: "12.*"
+            packages:
+              - --index-url=https://download.pytorch.org/whl/cu128
+          - matrix:
+            packages:
+              - --index-url=https://download.pytorch.org/whl/cu130
+      - output_types: [requirements, pyproject]
+        matrices:
+          - matrix:
+            packages:
+              - torch>=2.10.0
+  depends_on_cupy:
+    common:
+      - output_types: conda
+        packages:
+          - cupy>=13.6.0
+    specific:
+      - output_types: [requirements, pyproject]
+        matrices:
+          - matrix:
+              cuda: "12.*"
+            packages:
+              - cupy-cuda12x>=13.6.0
+          - matrix:
+            packages:
+              - cupy-cuda13x>=13.6.0
