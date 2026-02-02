@@ -9,6 +9,7 @@ context:
   head_rev: '${{ git.head_rev(".")[:8] }}'
   py_abi_min: "3.11"
   py_buildstring : ${{ py_abi_min | version_to_buildstring }}
+  py_runtime_latest: "3.13"
 
 package:
   name: rmm
@@ -96,7 +97,7 @@ tests:
   - python:
       imports:
         - rmm
-      python_version: "3.13.*"
+      python_version: ${{ py_runtime_latest }}.*
       pip_check: false
 
 about:
