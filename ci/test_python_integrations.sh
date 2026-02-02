@@ -27,38 +27,46 @@ nvidia-smi
 
 EXITCODE=0
 
+# Check CUDA version for PyTorch compatibility (requires CUDA 12.9+)
+CUDA_MAJOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f1)
+CUDA_MINOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f2)
+
 echo "::group::PyTorch Tests"
 
-rapids-logger "pytest rmm with PyTorch"
+if [ "${CUDA_MAJOR}" -gt 12 ] || { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR}" -ge 9 ]; }; then
+    rapids-logger "pytest rmm with PyTorch"
 
-rapids-logger "Generate PyTorch testing dependencies"
-rapids-dependency-file-generator \
-  --output conda \
-  --file-key test_pytorch \
-  --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION};dependencies=${RAPIDS_DEPENDENCIES}" \
-  --prepend-channel "${CPP_CHANNEL}" \
-  --prepend-channel "${PYTHON_CHANNEL}" \
-  | tee env.yaml
+    rapids-logger "Generate PyTorch testing dependencies"
+    rapids-dependency-file-generator \
+      --output conda \
+      --file-key test_pytorch \
+      --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION};dependencies=${RAPIDS_DEPENDENCIES}" \
+      --prepend-channel "${CPP_CHANNEL}" \
+      --prepend-channel "${PYTHON_CHANNEL}" \
+      | tee env.yaml
 
-rapids-mamba-retry env create --yes -f env.yaml -n test_pytorch
+    rapids-mamba-retry env create --yes -f env.yaml -n test_pytorch
 
-set +u
-conda activate test_pytorch
-set -u
+    set +u
+    conda activate test_pytorch
+    set -u
 
-rapids-print-env
+    rapids-print-env
 
-timeout 10m ./ci/run_pytests.sh \
-    -k "torch" \
-    --junitxml="${RAPIDS_TESTS_DIR}/junit-rmm-pytorch.xml" \
-    --cov-config=.coveragerc \
-    --cov=rmm \
-    --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/rmm-pytorch-coverage.xml" \
-    --cov-report term \
- && EXITCODE_PYTORCH=$? || EXITCODE_PYTORCH=$?;
+    timeout 10m ./ci/run_pytests.sh \
+        -k "torch" \
+        --junitxml="${RAPIDS_TESTS_DIR}/junit-rmm-pytorch.xml" \
+        --cov-config=.coveragerc \
+        --cov=rmm \
+        --cov-report=xml:"${RAPIDS_COVERAGE_DIR}/rmm-pytorch-coverage.xml" \
+        --cov-report term \
+     && EXITCODE_PYTORCH=$? || EXITCODE_PYTORCH=$?;
 
-if [ "${EXITCODE_PYTORCH}" != "0" ]; then
-    EXITCODE="${EXITCODE_PYTORCH}"
+    if [ "${EXITCODE_PYTORCH}" != "0" ]; then
+        EXITCODE="${EXITCODE_PYTORCH}"
+    fi
+else
+    rapids-logger "Skipping PyTorch tests (requires CUDA 12.9+, found ${RAPIDS_CUDA_VERSION})"
 fi
 
 echo "::endgroup::"

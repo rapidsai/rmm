@@ -30,25 +30,33 @@ rapids-pip-retry install \
 
 EXITCODE=0
 
+# Check CUDA version for PyTorch compatibility (requires CUDA 12.8+)
+CUDA_MAJOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f1)
+CUDA_MINOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f2)
+
 echo "::group::PyTorch Tests"
 
-rapids-logger "Generating PyTorch test requirements"
-rapids-dependency-file-generator \
-    --output requirements \
-    --file-key test_pytorch \
-    --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" \
-    | tee test-pytorch-requirements.txt
+if [ "${CUDA_MAJOR}" -gt 12 ] || { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR}" -ge 8 ]; }; then
+    rapids-logger "Generating PyTorch test requirements"
+    rapids-dependency-file-generator \
+        --output requirements \
+        --file-key test_pytorch \
+        --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" \
+        | tee test-pytorch-requirements.txt
 
-rapids-logger "Installing PyTorch test requirements"
-rapids-pip-retry install \
-    -v \
-    -r test-pytorch-requirements.txt
+    rapids-logger "Installing PyTorch test requirements"
+    rapids-pip-retry install \
+        -v \
+        -r test-pytorch-requirements.txt
 
-timeout 15m python -m pytest -k "torch" ./python/rmm/rmm/tests \
-    && EXITCODE_PYTORCH=$? || EXITCODE_PYTORCH=$?
+    timeout 15m python -m pytest -k "torch" ./python/rmm/rmm/tests \
+        && EXITCODE_PYTORCH=$? || EXITCODE_PYTORCH=$?
 
-if [ "${EXITCODE_PYTORCH}" != "0" ]; then
-    EXITCODE="${EXITCODE_PYTORCH}"
+    if [ "${EXITCODE_PYTORCH}" != "0" ]; then
+        EXITCODE="${EXITCODE_PYTORCH}"
+    fi
+else
+    rapids-logger "Skipping PyTorch tests (requires CUDA 12.8+, found ${RAPIDS_CUDA_VERSION})"
 fi
 
 echo "::endgroup::"
