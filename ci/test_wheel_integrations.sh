@@ -40,7 +40,7 @@ if [ "${CUDA_MAJOR}" -gt 12 ] || { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR
     rapids-logger "Generating PyTorch test requirements"
     rapids-dependency-file-generator \
         --output requirements \
-        --file-key test_pytorch \
+        --file-key test_wheels_pytorch \
         --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" \
         | tee test-pytorch-requirements.txt
 
@@ -66,7 +66,7 @@ echo "::group::CuPy Tests"
 rapids-logger "Generating CuPy test requirements"
 rapids-dependency-file-generator \
     --output requirements \
-    --file-key test_cupy \
+    --file-key test_wheels_cupy \
     --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" \
     | tee test-cupy-requirements.txt
 

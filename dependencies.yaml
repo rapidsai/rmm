@@ -46,6 +46,14 @@ files:
       - depends_on_cupy
       - depends_on_librmm
       - depends_on_rmm
+  test_wheels_pytorch:
+    output: none
+    includes:
+      - depends_on_pytorch
+  test_wheels_cupy:
+    output: none
+    includes:
+      - depends_on_cupy
   test_cpp:
     output: none
     includes:
