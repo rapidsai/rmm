@@ -155,6 +155,7 @@ jobs:
           - '!ci/check_style.sh'
           - '!ci/release/update-version.sh'
           - '!ci/test_cpp.sh'
+          - '!ci/test_cpp_debug.sh'
           - '!ci/test_python.sh'
           - '!conda/**'
           - '!cpp/.clang-tidy'
