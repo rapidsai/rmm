@@ -16,12 +16,12 @@ jobs:
       - conda-cpp-tests
       - conda-python-build
       - conda-python-tests
-      - conda-python-tests-integrations
+      - conda-python-tests-integration-optional
       - docs-build
       - wheel-build-cpp
       - wheel-build-python
       - wheel-tests
-      - wheel-tests-integrations
+      - wheel-tests-integration-optional
       - devcontainer
       - telemetry-setup
     secrets: inherit
@@ -164,7 +164,7 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@main
     with:
       enable_check_generated_files: false
-      ignored_pr_jobs: "telemetry-summarize"
+      ignored_pr_jobs: "telemetry-summarize conda-python-tests-integration-optional wheel-tests-integration-optional"
   conda-cpp-build:
     needs: checks
     secrets: inherit
@@ -200,7 +200,7 @@ jobs:
       build_type: pull-request
       script: ci/test_python.sh
       sccache-dist-token-secret-name: GIST_REPO_READ_ORG_GITHUB_TOKEN
-  conda-python-tests-integrations:
+  conda-python-tests-integration-optional:
     needs: [conda-python-build, changed-files]
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@main
@@ -252,7 +252,7 @@ jobs:
       build_type: pull-request
       script: ci/test_wheel.sh
       sccache-dist-token-secret-name: GIST_REPO_READ_ORG_GITHUB_TOKEN
-  wheel-tests-integrations:
+  wheel-tests-integration-optional:
     needs: [wheel-build-python, changed-files]
     secrets: inherit
     uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@main
