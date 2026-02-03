@@ -8,7 +8,7 @@ RMM (RAPIDS Memory Manager) is a CUDA memory management library providing C++ an
 - **No mass reformatting**: Don't run formatters over unrelated code.
 - **No API invention**: Align with existing RMM patterns and documented APIs.
 - **Don't bypass CI**: Don't suggest skipping checks or using `--no-verify`.
-- **CUDA/GPU hygiene**: Keep operations stream-ordered, use RMM allocators (never raw `new`/`delete` for device memory).
+- **CUDA/GPU hygiene**: Keep operations stream-ordered, use RMM allocators (never use raw cudaMalloc or other CUDA APIs for device memory, except in the implementation of an RMMmemory resource).
 
 ### Before Finalizing a Change
 
@@ -94,27 +94,7 @@ pre-commit run ruff-format --all-files   # Python formatting only
 
 ## Code Style Guidelines
 
-### C++ Style
-- **Standard**: C++20
-- **Line length**: 100 characters
-- **Indentation**: 2 spaces, no tabs
-- **Braces**: WebKit style (same line for control statements)
-- **Pointers**: Left-aligned (`int* ptr`, not `int *ptr`)
-- **Namespaces**: No indentation inside namespaces
-- **Include order** (enforced by clang-format):
-  1. Quoted includes (`"local.hpp"`)
-  2. RMM includes (`<rmm/...>`)
-  3. CCCL includes (`<thrust/...>`, `<cub/...>`, `<cuda/...>`)
-  4. CUDA includes (`<cuda_runtime.h>`)
-  5. Other system includes (with `.` in name)
-  6. STL includes (no `.` in name)
-
-### Python Style
-- **Line length**: 79 characters
-- **Formatter**: ruff (replaces black, isort)
-- **Type hints**: Required (enforced by mypy)
-- **Imports**: Sorted by ruff/isort, grouped as stdlib → third-party → first-party
-- **Docstrings**: NumPy style, triple double quotes
+Use `pre-commit run --all-files` to run linter and style checks. It will call clang-format, ruff, and other tools.
 
 ### Naming Conventions
 - **C++ classes**: `snake_case` (e.g., `device_buffer`, `cuda_stream_view`)
@@ -132,16 +112,18 @@ pre-commit run ruff-format --all-files   # Python formatting only
 - **Python**: Use `RMMError` or standard Python exceptions
 
 ### File Headers (SPDX format, required)
+
+C++ and CUDA:
 ```cpp
-// C++/CUDA
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 ```
+
+Python:
 ```python
-# Python
-# SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 ```
 
