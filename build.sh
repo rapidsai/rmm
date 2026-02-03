@@ -55,7 +55,13 @@ RAN_CMAKE=0
 # CONDA_PREFIX, then fall back to install inside of $LIBRMM_BUILD_DIR
 INSTALL_PREFIX=${INSTALL_PREFIX:=${PREFIX:=${CONDA_PREFIX:=$LIBRMM_BUILD_DIR/install}}}
 export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
-PYTHON_ARGS_FOR_INSTALL=("-v" "--no-build-isolation" "--no-deps" "--config-settings" "rapidsai.disable-cuda=true")
+PYTHON_ARGS_FOR_INSTALL=(
+    -v
+    --no-build-isolation
+    --no-deps
+    --config-settings="rapidsai.disable-cuda=true"
+)
+
 
 function hasArg {
     (( NUMARGS != 0 )) && (echo " ${ARGS} " | grep -q " $1 ")
