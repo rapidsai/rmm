@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 # This import is needed for Cython typing in translate_python_except_to_cpp
@@ -9,28 +9,138 @@ from cuda.bindings.cyruntime cimport cudaMemPool_t
 from libc.stddef cimport size_t
 from libc.stdint cimport int8_t, int32_t, int64_t
 from libcpp cimport bool
+from libcpp.memory cimport unique_ptr
 from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 from rmm.librmm.memory_resource cimport device_memory_resource
+from rmm.librmm.per_device_resource cimport device_async_resource_ref
+
+
+# Type alias for any_resource to avoid Cython template complexity
+# Also includes C++ helpers to work around Cython varargs limitations and
+# resource_ref operations and to handle resource_ref operations without Cython
+# needing default constructors
+cdef extern from *:
+    """
+    #include <cuda/memory_resource>
+    #include <rmm/mr/arena_memory_resource.hpp>
+    #include <rmm/mr/logging_resource_adaptor.hpp>
+    #include <rmm/resource_ref.hpp>
+    #include <rmm/cuda_stream_view.hpp>
+    #include <memory>
+    #include <string>
+    #include <optional>
+
+    using any_device_resource =
+        cuda::mr::any_resource<cuda::mr::device_accessible>;
+
+    // Helper to create arena_memory_resource with optional
+    // Avoids Cython varargs issues
+    inline std::unique_ptr<
+        rmm::mr::arena_memory_resource<rmm::device_async_resource_ref>>
+    make_arena_memory_resource(
+        rmm::device_async_resource_ref upstream_ref,
+        std::optional<std::size_t> arena_size,
+        bool dump_log_on_failure)
+    {
+        return std::make_unique<
+            rmm::mr::arena_memory_resource<rmm::device_async_resource_ref>>(
+            upstream_ref, arena_size, dump_log_on_failure);
+    }
+
+    // Helper to create logging_resource_adaptor with string
+    // Avoids Cython varargs issues
+    inline std::unique_ptr<
+        rmm::mr::logging_resource_adaptor<rmm::device_async_resource_ref>>
+    make_logging_resource_adaptor(
+        rmm::device_async_resource_ref upstream_ref,
+        const std::string& filename)
+    {
+        return std::make_unique<
+            rmm::mr::logging_resource_adaptor<rmm::device_async_resource_ref>>(
+            upstream_ref, filename);
+    }
+    """
+    cdef cppclass any_device_resource:
+        any_device_resource() except +
+        any_device_resource(device_async_resource_ref) except +
+        void* allocate_sync(size_t bytes) except +
+        void deallocate_sync(void* ptr, size_t bytes) noexcept
+        void* allocate(
+            cuda_stream_view stream,
+            size_t bytes
+        ) except + nogil
+        void deallocate(
+            cuda_stream_view stream,
+            void* ptr,
+            size_t bytes
+        ) noexcept nogil
+
+
+cdef extern from "<cuda/memory_resource>" \
+        namespace "cuda::mr" nogil:
+    cdef cppclass shared_resource[T]:
+        shared_resource() except +
+        shared_resource(const shared_resource&) noexcept
+        shared_resource& operator=(const shared_resource&) noexcept
+        void* allocate_sync(size_t bytes, size_t alignment) except + nogil
+        void deallocate_sync(void* ptr, size_t bytes, size_t alignment) noexcept nogil
+        void* allocate(
+            cuda_stream_view stream,
+            size_t bytes,
+            size_t alignment
+        ) except + nogil
+        void deallocate(
+            cuda_stream_view stream,
+            void* ptr,
+            size_t bytes,
+            size_t alignment
+        ) noexcept nogil
+        void swap(shared_resource&) noexcept nogil
+        bool operator==(const shared_resource&) noexcept nogil
+        bool operator!=(const shared_resource&) noexcept nogil
+        T& get() noexcept nogil
+
+    shared_resource[T] make_shared_resource[T](...) except +
+
+
+cdef extern from *:
+    """
+    #include <cuda/memory_resource>
+    #include <memory>
+    #include <utility>
+
+    template <typename T>
+    class shared_resource_wrapper {
+    public:
+        shared_resource_wrapper() : mr_(nullptr) {}
+
+        template <typename... Args>
+        explicit shared_resource_wrapper(Args&&... args)
+            : mr_(std::make_unique<cuda::mr::shared_resource<T>>(
+                  cuda::std::in_place_type<T>, std::forward<Args>(args)...)) {}
+
+        cuda::mr::shared_resource<T>& get() { return *mr_; }
+
+        T& resource() { return mr_->get(); }
+
+    private:
+        std::unique_ptr<cuda::mr::shared_resource<T>> mr_;
+    };
+    """
+    cdef cppclass shared_resource_wrapper[T]:
+        shared_resource_wrapper() except +
+        shared_resource_wrapper(...) except +
+        shared_resource[T]& get() noexcept nogil
+        T& resource() noexcept nogil
 
 
 cdef extern from "rmm/mr/device_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass device_memory_resource:
-        # Legacy functions
-        void* allocate(size_t bytes) except +
-        void* allocate(size_t bytes, cuda_stream_view stream) except +
-        void deallocate(void* ptr, size_t bytes) noexcept
-        void deallocate(
-            void* ptr,
-            size_t bytes,
-            cuda_stream_view stream
-        ) noexcept
-        # End legacy functions
-
         void* allocate_sync(size_t bytes) except +
         void deallocate_sync(void* ptr, size_t bytes) noexcept
         void* allocate(
@@ -150,7 +260,7 @@ cdef extern from "rmm/mr/pool_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass pool_memory_resource[Upstream](device_memory_resource):
         pool_memory_resource(
-            Upstream* upstream_mr,
+            device_async_resource_ref upstream_mr,
             size_t initial_pool_size,
             optional[size_t] maximum_pool_size) except +
         size_t pool_size()
@@ -159,7 +269,7 @@ cdef extern from "rmm/mr/arena_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass arena_memory_resource[Upstream](device_memory_resource):
         arena_memory_resource(
-            Upstream* upstream_mr,
+            device_async_resource_ref upstream_mr,
             optional[size_t] arena_size,
             bool dump_log_on_failure
         ) except +
@@ -168,9 +278,12 @@ cdef extern from "rmm/mr/fixed_size_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass fixed_size_memory_resource[Upstream](device_memory_resource):
         fixed_size_memory_resource(
-            Upstream* upstream_mr,
+            device_async_resource_ref upstream_mr,
             size_t block_size,
             size_t block_to_preallocate) except +
+
+ctypedef fixed_size_memory_resource[device_async_resource_ref] \
+    fixed_size_memory_resource_t
 
 cdef extern from "rmm/mr/callback_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
@@ -188,35 +301,59 @@ cdef extern from "rmm/mr/callback_memory_resource.hpp" \
 cdef extern from "rmm/mr/binning_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass binning_memory_resource[Upstream](device_memory_resource):
-        binning_memory_resource(Upstream* upstream_mr) except +
+        binning_memory_resource(device_async_resource_ref upstream_mr) except +
         binning_memory_resource(
-            Upstream* upstream_mr,
+            device_async_resource_ref upstream_mr,
             int8_t min_size_exponent,
             int8_t max_size_exponent) except +
 
         void add_bin(size_t allocation_size) except +
         void add_bin(
             size_t allocation_size,
-            device_memory_resource* bin_resource) except +
+            device_async_resource_ref bin_resource) except +
+
+ctypedef binning_memory_resource[device_async_resource_ref] \
+    binning_memory_resource_t
 
 cdef extern from "rmm/mr/limiting_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass limiting_resource_adaptor[Upstream](device_memory_resource):
         limiting_resource_adaptor(
-            Upstream* upstream_mr,
+            device_async_resource_ref upstream_mr,
             size_t allocation_limit) except +
 
         size_t get_allocated_bytes() except +
         size_t get_allocation_limit() except +
 
+ctypedef limiting_resource_adaptor[device_async_resource_ref] \
+    limiting_resource_adaptor_t
+
 cdef extern from "rmm/mr/logging_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass logging_resource_adaptor[Upstream](device_memory_resource):
         logging_resource_adaptor(
-            Upstream* upstream_mr,
+            device_async_resource_ref upstream_mr,
             string filename) except +
 
         void flush() except +
+
+# C++ helper functions to avoid varargs issues with optional and string parameters
+# Declared here after the type declarations to avoid template resolution issues
+cdef extern from *:
+    cdef unique_ptr[
+        arena_memory_resource[device_async_resource_ref]
+    ] make_arena_memory_resource(
+        device_async_resource_ref upstream_ref,
+        optional[size_t] arena_size,
+        bool dump_log_on_failure
+    ) except +
+
+    cdef unique_ptr[
+        logging_resource_adaptor[device_async_resource_ref]
+    ] make_logging_resource_adaptor(
+        device_async_resource_ref upstream_ref,
+        const string& filename
+    ) except +
 
 cdef extern from "rmm/mr/statistics_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
@@ -228,23 +365,29 @@ cdef extern from "rmm/mr/statistics_resource_adaptor.hpp" \
             int64_t peak
             int64_t total
 
-        statistics_resource_adaptor(Upstream* upstream_mr) except +
+        statistics_resource_adaptor(device_async_resource_ref upstream_mr) except +
 
         counter get_bytes_counter() except +
         counter get_allocations_counter() except +
         pair[counter, counter] pop_counters() except +
         pair[counter, counter] push_counters() except +
 
+ctypedef statistics_resource_adaptor[device_async_resource_ref] \
+    statistics_resource_adaptor_t
+
 cdef extern from "rmm/mr/tracking_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass tracking_resource_adaptor[Upstream](device_memory_resource):
         tracking_resource_adaptor(
-            Upstream* upstream_mr,
+            device_async_resource_ref upstream_mr,
             bool capture_stacks) except +
 
         size_t get_allocated_bytes() except +
         string get_outstanding_allocations_str() except +
         void log_outstanding_allocations() except +
+
+ctypedef tracking_resource_adaptor[device_async_resource_ref] \
+    tracking_resource_adaptor_t
 
 cdef extern from "rmm/mr/failure_callback_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
@@ -253,12 +396,18 @@ cdef extern from "rmm/mr/failure_callback_resource_adaptor.hpp" \
         device_memory_resource
     ):
         failure_callback_resource_adaptor(
-            Upstream* upstream_mr,
+            device_async_resource_ref upstream_mr,
             failure_callback_t callback,
             void* callback_arg
         ) except +
 
+ctypedef failure_callback_resource_adaptor[device_async_resource_ref] \
+    failure_callback_resource_adaptor_t
+
 cdef extern from "rmm/mr/prefetch_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
     cdef cppclass prefetch_resource_adaptor[Upstream](device_memory_resource):
-        prefetch_resource_adaptor(Upstream* upstream_mr) except +
+        prefetch_resource_adaptor(device_async_resource_ref upstream_mr) except +
+
+ctypedef prefetch_resource_adaptor[device_async_resource_ref] \
+    prefetch_resource_adaptor_t
