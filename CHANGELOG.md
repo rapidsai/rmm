@@ -1,3 +1,59 @@
+# rmm 26.02.00 (4 Feb 2026)
+
+### 🚨 Breaking Changes
+* Remove host memory resources by @bdice in https://github.com/rapidsai/rmm/pull/2149
+* Remove legacy memory resource interface in favor of CCCL interface by @bdice in https://github.com/rapidsai/rmm/pull/2150
+* Remove default host alignment by @bdice in https://github.com/rapidsai/rmm/pull/2161
+* Compatibility updates for CCCL 3.2 by @bdice in https://github.com/rapidsai/rmm/pull/2162
+* Default to static linking of libcudart by @bdice in https://github.com/rapidsai/rmm/pull/2178
+* CCCL 3.2 resource ref compatibility by @bdice in https://github.com/rapidsai/rmm/pull/2176
+* Store any_resource in device_buffer and device_uvector by @bdice in https://github.com/rapidsai/rmm/pull/2201
+### 🐛 Bug Fixes
+* Fix flaky system memory resource tests on integrated memory system by @bdice in https://github.com/rapidsai/rmm/pull/2160
+* Fix device_memory_resource_view. by @bdice in https://github.com/rapidsai/rmm/pull/2166
+* Revert 2162 and 2166 by @bdice in https://github.com/rapidsai/rmm/pull/2167
+* Fix allocate_sync usage with non-blocking streams by @bdice in https://github.com/rapidsai/rmm/pull/2165
+* Revert "Default to static linking of libcudart" by @vyasr in https://github.com/rapidsai/rmm/pull/2182
+* Fix arena test for CCCL 3.2 by @bdice in https://github.com/rapidsai/rmm/pull/2186
+* Fix injected class name bug in cccl_resource_ref constraints, use cuda::std::optional by @bdice in https://github.com/rapidsai/rmm/pull/2188
+* Add RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN macro for destructor cleanup by @bdice in https://github.com/rapidsai/rmm/pull/2202
+* Fix vtable cast error when converting resource_ref to any_resource by @bdice in https://github.com/rapidsai/rmm/pull/2231
+### 📖 Documentation
+* Improve docstrings by @bdice in https://github.com/rapidsai/rmm/pull/2169
+* Update changelog for 25.12 by @bdice in https://github.com/rapidsai/rmm/pull/2198
+### 🚀 New Features
+* Store any_resource in device-resource global mapping by @bdice in https://github.com/rapidsai/rmm/pull/2200
+### 🛠️ Improvements
+* Remove deprecated device memory resource headers by @bdice in https://github.com/rapidsai/rmm/pull/2151
+* Update pre-commit hooks by @bdice in https://github.com/rapidsai/rmm/pull/2148
+* Add type annotations for RMM by @TomAugspurger in https://github.com/rapidsai/rmm/pull/2144
+* Use strict priority in CI conda tests by @bdice in https://github.com/rapidsai/rmm/pull/2158
+* Add job-specific timeouts to GHA test jobs by @bdice in https://github.com/rapidsai/rmm/pull/2163
+* Use strict priority in CI conda tests by @bdice in https://github.com/rapidsai/rmm/pull/2170
+* Remove alpha specs from non-RAPIDS dependencies by @bdice in https://github.com/rapidsai/rmm/pull/2173
+* Enable merge barriers by @KyleFromNVIDIA in https://github.com/rapidsai/rmm/pull/2177
+* Update to numba-cuda `>=0.22.1,<0.23.0` by @brandon-b-miller in https://github.com/rapidsai/rmm/pull/2168
+* Add devcontainer fallback for C++ test location by @bdice in https://github.com/rapidsai/rmm/pull/2181
+* Require CCCL version 3.1 or newer by @bdice in https://github.com/rapidsai/rmm/pull/2180
+* Split MR_REF tests by @bdice in https://github.com/rapidsai/rmm/pull/2175
+* Update cuda.core imports from experimental to stable by @bdice in https://github.com/rapidsai/rmm/pull/2187
+* Rebuild with CCCL 3.2.0 by @bdice in https://github.com/rapidsai/rmm/pull/2191
+* Suppress host/device usage warning  by @vyasr in https://github.com/rapidsai/rmm/pull/2192
+* Use SPDX license identifiers in pyproject.toml, bump build dependency floors by @jameslamb in https://github.com/rapidsai/rmm/pull/2194
+* Add CUDA 13.1 support by @bdice in https://github.com/rapidsai/rmm/pull/2183
+* build and test against CUDA 13.1.0 by @jameslamb in https://github.com/rapidsai/rmm/pull/2195
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/rapidsai/rmm/pull/2196
+* Improve host-device ignores for Thrust allocator by @bdice in https://github.com/rapidsai/rmm/pull/2197
+* Upgrade tests and benchmarks to C++20 and enable stricter warnings by @bdice in https://github.com/rapidsai/rmm/pull/2199
+* Empty commit to trigger a build by @jameslamb in https://github.com/rapidsai/rmm/pull/2206
+* Use main shared-workflows branch by @jameslamb in https://github.com/rapidsai/rmm/pull/2211
+* wheel builds: react to changes in pip's handling of build constraints by @jameslamb in https://github.com/rapidsai/rmm/pull/2214
+* fix(build): build package on merge to `release/*` branch by @gforsyth in https://github.com/rapidsai/rmm/pull/2225
+* Fallback to numba-cuda with no extra CUDA packages if 'cuda_suffixed' isn't true by @trxcllnt in https://github.com/rapidsai/rmm/pull/2227
+
+
+**Full Changelog**: https://github.com/rapidsai/rmm/compare/v26.02.00a...release/26.02
+
 # rmm 25.12.00 (10 Dec 2025)
 
 ### 🚨 Breaking Changes
