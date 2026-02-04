@@ -129,6 +129,8 @@ jobs:
           - '!ci/release/update-version.sh'
           - '!ci/test_wheel.sh'
           - '!ci/validate_wheel.sh'
+          - '!cpp/.clang-tidy'
+          - '!cpp/doxygen/**'
           - '!docs/**'
           - '!img/**'
         test_python_wheels:
@@ -153,6 +155,9 @@ jobs:
           - '!ci/release/update-version.sh'
           - '!ci/test_cpp.sh'
           - '!ci/test_python.sh'
+          - '!conda/**'
+          - '!cpp/.clang-tidy'
+          - '!cpp/doxygen/**'
           - '!docs/**'
           - '!img/**'
   checks:
