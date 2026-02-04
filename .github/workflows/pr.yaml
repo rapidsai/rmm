@@ -66,7 +66,8 @@ jobs:
       files_yaml: |
         build_docs:
           - '**'
-          - '!**/*/AGENTS.md'
+          - '!AGENTS.md'
+          - '!**/*/REVIEW_GUIDELINES.md'
           - '!.coderabbit.yaml'
           - '!.devcontainer/**'
           - '!.github/ISSUE_TEMPLATE/**'
@@ -87,7 +88,8 @@ jobs:
           - '!ci/validate_wheel.sh'
         test_cpp:
           - '**'
-          - '!**/*/AGENTS.md'
+          - '!AGENTS.md'
+          - '!**/*/REVIEW_GUIDELINES.md'
           - '!.coderabbit.yaml'
           - '!.devcontainer/**'
           - '!.github/ISSUE_TEMPLATE/**'
@@ -115,7 +117,8 @@ jobs:
           - '!python/**'
         test_python_conda:
           - '**'
-          - '!**/*/AGENTS.md'
+          - '!AGENTS.md'
+          - '!**/*/REVIEW_GUIDELINES.md'
           - '!.coderabbit.yaml'
           - '!.devcontainer/**'
           - '!.github/ISSUE_TEMPLATE/**'
@@ -141,7 +144,8 @@ jobs:
           - '!img/**'
         test_python_wheels:
           - '**'
-          - '!**/*/AGENTS.md'
+          - '!AGENTS.md'
+          - '!**/*/REVIEW_GUIDELINES.md'
           - '!.coderabbit.yaml'
           - '!.devcontainer/**'
           - '!.github/ISSUE_TEMPLATE/**'

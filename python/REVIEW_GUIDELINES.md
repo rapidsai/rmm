@@ -6,6 +6,8 @@
 
 **Context**: RMM Python layer provides Pythonic interfaces for GPU memory management, including device arrays, memory resources, and integration with CuPy, Numba, and other CUDA-aware Python libraries.
 
+For general development guidance including build commands, test commands, code style, and project structure, see the top-level `AGENTS.md`.
+
 ## IGNORE These Issues
 
 - Style/formatting (pre-commit hooks handle this)

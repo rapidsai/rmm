@@ -6,6 +6,8 @@
 
 **Context**: RMM (RAPIDS Memory Manager) is a C++ library providing GPU memory allocators and memory resources for CUDA applications. It provides RAII-based device memory management, memory pools, and custom allocator interfaces used throughout the RAPIDS ecosystem.
 
+For general development guidance including build commands, test commands, code style, and project structure, see the top-level `AGENTS.md`.
+
 ## IGNORE These Issues
 
 - Style/formatting (clang-format handles this)

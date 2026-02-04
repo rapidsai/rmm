@@ -17,6 +17,12 @@ Ask yourself:
 - What's the expected behavior contract? (inputs/outputs, errors)
 - Where should tests live? (C++ gtests under `cpp/tests/`, Python pytest under `python/rmm/rmm/tests/`)
 
+## Code Review Guidelines
+
+For AI-assisted code review (CodeRabbit), see language-specific review guidelines:
+- C++/CUDA: `cpp/REVIEW_GUIDELINES.md`
+- Python: `python/REVIEW_GUIDELINES.md`
+
 ## Build Commands
 
 ### Devcontainer (username: coder)
