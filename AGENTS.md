@@ -8,7 +8,7 @@ RMM (RAPIDS Memory Manager) is a CUDA memory management library providing C++ an
 - **No mass reformatting**: Don't run formatters over unrelated code.
 - **No API invention**: Align with existing RMM patterns and documented APIs.
 - **Don't bypass CI**: Don't suggest skipping checks or using `--no-verify`.
-- **CUDA/GPU hygiene**: Keep operations stream-ordered, use RMM allocators (never use raw cudaMalloc or other CUDA APIs for device memory, except in the implementation of an RMMmemory resource).
+- **CUDA/GPU hygiene**: Keep operations stream-ordered, use RMM allocators (never use raw cudaMalloc or other CUDA APIs for device memory, except in the implementation of an RMM memory resource).
 
 ### Before Finalizing a Change
 
