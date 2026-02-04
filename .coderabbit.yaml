@@ -15,10 +15,6 @@ reviews:
       - "^hotfix/.*"
     ignore_usernames: ["rapids-bot", "GPUtester", "nv-automation-bot", "copy-pr-bot"]
   tools:
-    markdownlint:
-      enabled: true
-    shellcheck:
-      enabled: true
     gitleaks:
       enabled: true
   sequence_diagrams: false
