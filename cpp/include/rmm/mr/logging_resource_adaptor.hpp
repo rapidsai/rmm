@@ -4,10 +4,12 @@
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/logger.hpp>
+#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
@@ -167,8 +169,39 @@ class RMM_EXPORT logging_resource_adaptor_impl {
  * multiple instances to safely reference the same underlying resource and logger.
  */
 class RMM_EXPORT logging_resource_adaptor
-  : public cuda::mr::shared_resource<detail::logging_resource_adaptor_impl> {
+  : public device_memory_resource,
+    public cuda::mr::shared_resource<detail::logging_resource_adaptor_impl> {
+  using shared_base = cuda::mr::shared_resource<detail::logging_resource_adaptor_impl>;
+
  public:
+  // Begin legacy device_memory_resource compatibility layer
+  using device_memory_resource::allocate;
+  using device_memory_resource::allocate_sync;
+  using device_memory_resource::deallocate;
+  using device_memory_resource::deallocate_sync;
+
+  /**
+   * @brief Equality comparison operator.
+   *
+   * @param other The other logging_resource_adaptor to compare against.
+   * @return true if both adaptors share the same underlying state.
+   */
+  [[nodiscard]] bool operator==(logging_resource_adaptor const& other) const noexcept
+  {
+    return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(other);
+  }
+
+  /**
+   * @brief Inequality comparison operator.
+   *
+   * @param other The other logging_resource_adaptor to compare against.
+   * @return true if the adaptors do not share the same underlying state.
+   */
+  [[nodiscard]] bool operator!=(logging_resource_adaptor const& other) const noexcept
+  {
+    return !(*this == other);
+  }
+  // End legacy device_memory_resource compatibility layer
   /**
    * @brief Construct a new logging resource adaptor using `upstream` to satisfy
    * allocation requests and logging information about each allocation/free to
@@ -250,6 +283,32 @@ class RMM_EXPORT logging_resource_adaptor
    * @return The value of RMM_LOG_FILE as `std::string`.
    */
   static std::string get_default_filename();
+
+  // Begin legacy device_memory_resource compatibility layer
+ private:
+  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
+  {
+    return cuda::mr::shared_resource<detail::logging_resource_adaptor_impl>::allocate(
+      stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  }
+
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
+  {
+    cuda::mr::shared_resource<detail::logging_resource_adaptor_impl>::deallocate(
+      stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  }
+
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
+  {
+    if (this == &other) { return true; }
+    auto const* cast = dynamic_cast<logging_resource_adaptor const*>(&other);
+    if (cast == nullptr) { return false; }
+    return static_cast<cuda::mr::shared_resource<detail::logging_resource_adaptor_impl> const&>(
+             *this) ==
+           static_cast<cuda::mr::shared_resource<detail::logging_resource_adaptor_impl> const&>(
+             *cast);
+  }
+  // End legacy device_memory_resource compatibility layer
 };
 
 /** @} */  // end of group
