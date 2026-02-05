@@ -13,6 +13,7 @@ python/            @rapidsai/rmm-python-codeowners
 #CI code owners
 /.github/                @rapidsai/ci-codeowners
 /ci/                     @rapidsai/ci-codeowners
+/.coderabbit.yaml        @rapidsai/ci-codeowners
 /.pre-commit-config.yaml @rapidsai/ci-codeowners
 /.shellcheckrc           @rapidsai/ci-codeowners
 
