@@ -14,6 +14,7 @@ jobs:
       - checks
       - conda-cpp-build
       - conda-cpp-tests
+      - conda-cpp-debug-tests
       - conda-python-build
       - conda-python-tests
       - docs-build
@@ -154,6 +155,7 @@ jobs:
           - '!ci/check_style.sh'
           - '!ci/release/update-version.sh'
           - '!ci/test_cpp.sh'
+          - '!ci/test_cpp_debug.sh'
           - '!ci/test_python.sh'
           - '!conda/**'
           - '!cpp/.clang-tidy'
@@ -185,6 +187,18 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_cpp.sh
+      sccache-dist-token-secret-name: GIST_REPO_READ_ORG_GITHUB_TOKEN
+  conda-cpp-debug-tests:
+    needs: [checks, changed-files]
+    secrets: inherit
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@main
+    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_cpp
+    with:
+      build_type: pull-request
+      node_type: "gpu-l4-latest-1"
+      arch: "amd64"
+      container_image: "rapidsai/ci-conda:26.04-latest"
+      script: "ci/test_cpp_debug.sh"
       sccache-dist-token-secret-name: GIST_REPO_READ_ORG_GITHUB_TOKEN
   conda-python-build:
     needs: conda-cpp-build
