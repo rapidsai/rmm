@@ -19,6 +19,8 @@ source:
   - path: ../../..
 
 build:
+  python:
+    version_independent: true
   string: cuda${{ cuda_major }}_cp${{ py_buildstring }}_abi3_${{ date_string }}_${{ head_rev }}
   script:
     content:
@@ -36,7 +38,7 @@ build:
       NVCC_APPEND_FLAGS: ${{ env.get("NVCC_APPEND_FLAGS", default="") }}
       PARALLEL_LEVEL: ${{ env.get("PARALLEL_LEVEL", default="8") }}
       RAPIDS_ARTIFACTS_DIR: ${{ env.get("RAPIDS_ARTIFACTS_DIR", default="") }}
-      RAPIDS_PY_VERSION: ${{ env.get("RAPIDS_PY_VERSION") }}
+      RAPIDS_PY_VERSION: ${{ py_abi_min }}
       SCCACHE_BUCKET: ${{ env.get("SCCACHE_BUCKET", default="") }}
       SCCACHE_DIST_AUTH_TYPE: ${{ env.get("SCCACHE_DIST_AUTH_TYPE", default="token") }}
       SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: ${{ env.get("SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE", default="false") }}
@@ -54,8 +56,6 @@ build:
       SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE: ${{ env.get("SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE", default="true") }}
       SCCACHE_S3_USE_SSL: ${{ env.get("SCCACHE_S3_USE_SSL", default="true") }}
       SCCACHE_SERVER_LOG: ${{ env.get("SCCACHE_SERVER_LOG", default="sccache=debug") }}
-  python:
-    version_independent: true
 
 requirements:
   build:
@@ -76,9 +76,9 @@ requirements:
     - rapids-build-backend >=0.4.0,<0.5.0
     - librmm =${{ version }}
     - python =${{ py_abi_min }}
+    - python-abi3 ${{ py_abi_min }}.*
     - pip
     - scikit-build-core>=0.11.0
-    - python-abi3 ${{ py_abi_min }}.*
   run:
     - cuda-cudart
     - if: cuda_major == "12"
