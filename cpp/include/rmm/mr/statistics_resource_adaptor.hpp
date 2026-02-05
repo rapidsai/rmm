@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -9,8 +9,11 @@
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
+
 #include <cstddef>
 #include <mutex>
+#include <optional>
 #include <shared_mutex>
 #include <stack>
 
@@ -107,9 +110,12 @@ class statistics_resource_adaptor final : public device_memory_resource {
    * @brief Construct a new statistics resource adaptor using `upstream` to satisfy
    * allocation requests.
    *
-   * @param upstream The resource_ref used for allocating/deallocating device memory.
+   * @param upstream The resource used for allocating/deallocating device memory.
    */
-  statistics_resource_adaptor(device_async_resource_ref upstream) : upstream_{upstream} {}
+  statistics_resource_adaptor(device_async_resource_ref upstream)
+    : upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{upstream}}
+  {
+  }
 
   /**
    * @brief Construct a new statistics resource adaptor using `upstream` to satisfy
@@ -120,7 +126,8 @@ class statistics_resource_adaptor final : public device_memory_resource {
    * @param upstream The resource used for allocating/deallocating device memory.
    */
   statistics_resource_adaptor(Upstream* upstream)
-    : upstream_{to_device_async_resource_ref_checked(upstream)}
+    : upstream_{cuda::mr::any_resource<cuda::mr::device_accessible>{
+        to_device_async_resource_ref_checked(upstream)}}
   {
   }
 
@@ -138,7 +145,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return upstream_;
+    return device_async_resource_ref{upstream_};
   }
 
   /**
@@ -272,8 +279,9 @@ class statistics_resource_adaptor final : public device_memory_resource {
   // Invariant: the stack always contains at least one entry
   std::stack<std::pair<counter, counter>> counter_stack_{{std::make_pair(counter{}, counter{})}};
   std::shared_mutex mutable mtx_;  // mutex for thread safe access to allocations_
-  // the upstream resource used for satisfying allocation requests
-  device_async_resource_ref upstream_;
+  cuda::mr::any_resource<cuda::mr::device_accessible> mutable upstream_;  // the upstream resource
+                                                                          // used for satisfying
+                                                                          // allocation requests
 };
 
 /** @} */  // end of group
