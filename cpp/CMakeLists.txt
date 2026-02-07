@@ -90,6 +90,7 @@ add_library(
   src/error.cpp
   src/exec_policy.cpp
   src/logger.cpp
+  src/mr/logging_resource_adaptor.cpp
   src/prefetch.cpp)
 add_library(rmm::rmm ALIAS rmm)
 
