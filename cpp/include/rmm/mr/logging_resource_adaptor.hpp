@@ -4,7 +4,6 @@
  */
 #pragma once
 
-#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
@@ -38,7 +37,7 @@ namespace detail {
  * the actual logging functionality. It is held by `logging_resource_adaptor`
  * via `cuda::mr::shared_resource` for reference-counted ownership.
  */
-class RMM_EXPORT logging_resource_adaptor_impl {
+class logging_resource_adaptor_impl {
  public:
   /**
    * @brief Construct a logging resource adaptor impl.
@@ -286,28 +285,11 @@ class RMM_EXPORT logging_resource_adaptor
 
   // Begin legacy device_memory_resource compatibility layer
  private:
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
-  {
-    return cuda::mr::shared_resource<detail::logging_resource_adaptor_impl>::allocate(
-      stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  }
+  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override;
 
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
-  {
-    cuda::mr::shared_resource<detail::logging_resource_adaptor_impl>::deallocate(
-      stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  }
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override;
 
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
-  {
-    if (this == &other) { return true; }
-    auto const* cast = dynamic_cast<logging_resource_adaptor const*>(&other);
-    if (cast == nullptr) { return false; }
-    return static_cast<cuda::mr::shared_resource<detail::logging_resource_adaptor_impl> const&>(
-             *this) ==
-           static_cast<cuda::mr::shared_resource<detail::logging_resource_adaptor_impl> const&>(
-             *cast);
-  }
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override;
   // End legacy device_memory_resource compatibility layer
 };
 

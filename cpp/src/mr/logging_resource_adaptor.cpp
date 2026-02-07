@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/aligned.hpp>
 #include <rmm/detail/format.hpp>
 #include <rmm/mr/logging_resource_adaptor.hpp>
 
@@ -148,6 +149,33 @@ std::string logging_resource_adaptor::get_default_filename()
               "RMM logging requested without an explicit file name, but RMM_LOG_FILE is unset");
   return std::string{filename};
 }
+
+// Begin legacy device_memory_resource compatibility layer
+void* logging_resource_adaptor::do_allocate(std::size_t bytes, cuda_stream_view stream)
+{
+  return cuda::mr::shared_resource<detail::logging_resource_adaptor_impl>::allocate(
+    stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+}
+
+void logging_resource_adaptor::do_deallocate(void* ptr,
+                                             std::size_t bytes,
+                                             cuda_stream_view stream) noexcept
+{
+  cuda::mr::shared_resource<detail::logging_resource_adaptor_impl>::deallocate(
+    stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+}
+
+bool logging_resource_adaptor::do_is_equal(device_memory_resource const& other) const noexcept
+{
+  if (this == &other) { return true; }
+  auto const* cast = dynamic_cast<logging_resource_adaptor const*>(&other);
+  if (cast == nullptr) { return false; }
+  return static_cast<cuda::mr::shared_resource<detail::logging_resource_adaptor_impl> const&>(
+           *this) ==
+         static_cast<cuda::mr::shared_resource<detail::logging_resource_adaptor_impl> const&>(
+           *cast);
+}
+// End legacy device_memory_resource compatibility layer
 
 }  // namespace mr
 }  // namespace RMM_NAMESPACE
