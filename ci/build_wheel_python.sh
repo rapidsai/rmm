@@ -31,12 +31,17 @@ sccache --stop-server 2>/dev/null || true
 # Creates artifacts directory for telemetry
 source rapids-telemetry-setup
 
+# TODO: move this variable into `ci-wheel`
+# Format Python limited API version string
+RAPIDS_PY_API="cp${RAPIDS_PY_VERSION//./}"
+
 RAPIDS_PIP_WHEEL_ARGS=(
   -w dist
   -v
   --no-deps
   --disable-pip-version-check
   --build-constraint="${PIP_CONSTRAINT}"
+  --config-settings "skbuild.wheel.py-api=${RAPIDS_PY_API}"
 )
 
 # unset PIP_CONSTRAINT (set by rapids-init-pip)... it doesn't affect builds as of pip 25.3, and
@@ -64,3 +69,6 @@ absolute_wheel_dir=$(realpath "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}")
 # switch back to the root of the repo and check symbol visibility
 popd
 ci/check_symbols.sh "$(echo "${absolute_wheel_dir}"/rmm_*.whl)"
+
+RAPIDS_PACKAGE_NAME="$(rapids-package-name wheel_python rmm --stable --cuda)"
+export RAPIDS_PACKAGE_NAME

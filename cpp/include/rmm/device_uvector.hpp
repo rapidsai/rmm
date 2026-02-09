@@ -587,7 +587,7 @@ class device_uvector {
    */
   [[nodiscard]] operator cuda::std::span<T const>() const noexcept
   {
-    return cuda::std::span<T const>{data(), size()};
+    return cuda::std::span<T const>(data(), size());
   }
 
   /**
@@ -595,7 +595,7 @@ class device_uvector {
    */
   [[nodiscard]] operator cuda::std::span<T>() noexcept
   {
-    return cuda::std::span<T>{data(), size()};
+    return cuda::std::span<T>(data(), size());
   }
 
   /**
