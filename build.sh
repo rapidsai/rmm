@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 # rmm build script
@@ -55,6 +55,13 @@ RAN_CMAKE=0
 # CONDA_PREFIX, then fall back to install inside of $LIBRMM_BUILD_DIR
 INSTALL_PREFIX=${INSTALL_PREFIX:=${PREFIX:=${CONDA_PREFIX:=$LIBRMM_BUILD_DIR/install}}}
 export PARALLEL_LEVEL=${PARALLEL_LEVEL:-4}
+PYTHON_ARGS_FOR_INSTALL=(
+    -v
+    --no-build-isolation
+    --no-deps
+    --config-settings="rapidsai.disable-cuda=true"
+)
+
 
 function hasArg {
     (( NUMARGS != 0 )) && (echo " ${ARGS} " | grep -q " $1 ")
@@ -169,12 +176,16 @@ if (( NUMARGS == 0 )) || hasArg librmm; then
     fi
 fi
 
+# If `RAPIDS_PY_VERSION` is set, use that as the lower-bound for the stable ABI CPython version
+if [ -n "${RAPIDS_PY_VERSION:-}" ]; then
+    RAPIDS_PY_API="cp${RAPIDS_PY_VERSION//./}"
+    PYTHON_ARGS_FOR_INSTALL+=("--config-settings" "skbuild.wheel.py-api=${RAPIDS_PY_API}")
+fi
+
 # Build and install the rmm Python package
 if (( NUMARGS == 0 )) || hasArg rmm; then
     echo "building and installing rmm..."
     SKBUILD_CMAKE_ARGS="-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX};$(IFS=';'; echo "${EXTRA_CMAKE_ARGS[*]}")" python -m pip install \
-        --no-build-isolation \
-        --no-deps \
-        --config-settings rapidsai.disable-cuda=true \
+        "${PYTHON_ARGS_FOR_INSTALL[@]}" \
         "${REPODIR}"/python/rmm
 fi
