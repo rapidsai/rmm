@@ -7,15 +7,13 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/logger.hpp>
+#include <rmm/mr/detail/logging_resource_adaptor_impl.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
-#include <cstddef>
 #include <initializer_list>
-#include <memory>
 #include <ostream>
 #include <string>
 
@@ -27,134 +25,6 @@ namespace mr {
  * @{
  * @file
  */
-
-namespace detail {
-
-/**
- * @brief Implementation class for logging_resource_adaptor.
- *
- * This class satisfies the CCCL `cuda::mr::resource` concept and provides
- * the actual logging functionality. It is held by `logging_resource_adaptor`
- * via `cuda::mr::shared_resource` for reference-counted ownership.
- */
-class logging_resource_adaptor_impl {
- public:
-  /**
-   * @brief Construct a logging resource adaptor impl.
-   *
-   * @param logger The logger to use for logging allocations/deallocations
-   * @param upstream The upstream resource used for allocating/deallocating device memory
-   * @param auto_flush If true, flushes the log for every (de)allocation
-   */
-  logging_resource_adaptor_impl(std::shared_ptr<rapids_logger::logger> logger,
-                                device_async_resource_ref upstream,
-                                bool auto_flush);
-
-  /**
-   * @brief Allocate memory synchronously.
-   *
-   * @param bytes The size in bytes of the allocation
-   * @param alignment The alignment of the allocation
-   * @return Pointer to the newly allocated memory
-   */
-  void* allocate_sync(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t));
-
-  /**
-   * @brief Deallocate memory synchronously.
-   *
-   * @param ptr Pointer to be deallocated
-   * @param bytes The size in bytes of the allocation
-   * @param alignment The alignment of the allocation
-   */
-  void deallocate_sync(void* ptr,
-                       std::size_t bytes,
-                       std::size_t alignment = alignof(std::max_align_t)) noexcept;
-
-  /**
-   * @brief Allocate memory asynchronously on a stream.
-   *
-   * @param stream The stream on which to perform the allocation
-   * @param bytes The size in bytes of the allocation
-   * @param alignment The alignment of the allocation
-   * @return Pointer to the newly allocated memory
-   */
-  void* allocate(cuda::stream_ref stream,
-                 std::size_t bytes,
-                 std::size_t alignment = alignof(std::max_align_t));
-
-  /**
-   * @brief Deallocate memory asynchronously on a stream.
-   *
-   * @param stream The stream on which to perform the deallocation
-   * @param ptr Pointer to be deallocated
-   * @param bytes The size in bytes of the allocation
-   * @param alignment The alignment of the allocation
-   */
-  void deallocate(cuda::stream_ref stream,
-                  void* ptr,
-                  std::size_t bytes,
-                  std::size_t alignment = alignof(std::max_align_t)) noexcept;
-
-  /**
-   * @brief Equality comparison.
-   *
-   * Two logging_resource_adaptor_impl instances are equal if they have the
-   * same upstream resource AND the same logger.
-   *
-   * @param other The other impl to compare to
-   * @return true If the two impls are equivalent
-   * @return false If the two impls are not equivalent
-   */
-  bool operator==(logging_resource_adaptor_impl const& other) const noexcept
-  {
-    return upstream_ == other.upstream_ && logger_ == other.logger_;
-  }
-
-  /**
-   * @brief Inequality comparison.
-   *
-   * @param other The other impl to compare to
-   * @return true If the two impls are not equivalent
-   * @return false If the two impls are equivalent
-   */
-  bool operator!=(logging_resource_adaptor_impl const& other) const noexcept
-  {
-    return !(*this == other);
-  }
-
-  /**
-   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
-   */
-  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept;
-
-  /**
-   * @brief Flush logger contents.
-   */
-  void flush();
-
-  /**
-   * @brief Return the CSV header string
-   *
-   * @return CSV formatted header string of column names
-   */
-  [[nodiscard]] std::string header() const;
-
-  /**
-   * @brief Enables the `cuda::mr::device_accessible` property
-   *
-   * This property declares that a `logging_resource_adaptor_impl` provides device accessible memory
-   */
-  friend void get_property(logging_resource_adaptor_impl const&,
-                           cuda::mr::device_accessible) noexcept
-  {
-  }
-
- private:
-  std::shared_ptr<rapids_logger::logger> logger_{};
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_;
-};
-
-}  // namespace detail
 
 /**
  * @brief Resource that uses an upstream resource to allocate memory and logs information
@@ -169,7 +39,7 @@ class logging_resource_adaptor_impl {
  */
 class RMM_EXPORT logging_resource_adaptor
   : public device_memory_resource,
-    public cuda::mr::shared_resource<detail::logging_resource_adaptor_impl> {
+    private cuda::mr::shared_resource<detail::logging_resource_adaptor_impl> {
   using shared_base = cuda::mr::shared_resource<detail::logging_resource_adaptor_impl>;
 
  public:
@@ -201,6 +71,14 @@ class RMM_EXPORT logging_resource_adaptor
     return !(*this == other);
   }
   // End legacy device_memory_resource compatibility layer
+
+  /**
+   * @brief Enables the `cuda::mr::device_accessible` property
+   *
+   * This property declares that a `logging_resource_adaptor` provides device accessible memory
+   */
+  friend void get_property(logging_resource_adaptor const&, cuda::mr::device_accessible) noexcept {}
+
   /**
    * @brief Construct a new logging resource adaptor using `upstream` to satisfy
    * allocation requests and logging information about each allocation/free to
@@ -292,6 +170,9 @@ class RMM_EXPORT logging_resource_adaptor
   [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override;
   // End legacy device_memory_resource compatibility layer
 };
+
+static_assert(cuda::mr::resource_with<logging_resource_adaptor, cuda::mr::device_accessible>,
+              "logging_resource_adaptor does not satisfy the cuda::mr::resource concept");
 
 /** @} */  // end of group
 }  // namespace mr
