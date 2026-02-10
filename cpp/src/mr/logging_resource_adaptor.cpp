@@ -33,18 +33,16 @@ auto make_logger(std::initializer_list<rapids_logger::sink_ptr> sinks)
 logging_resource_adaptor::logging_resource_adaptor(device_async_resource_ref upstream,
                                                    std::string const& filename,
                                                    bool auto_flush)
-  : cuda::mr::shared_resource<detail::logging_resource_adaptor_impl>(
-      cuda::mr::make_shared_resource<detail::logging_resource_adaptor_impl>(
-        make_logger(filename), upstream, auto_flush))
+  : shared_base(cuda::mr::make_shared_resource<detail::logging_resource_adaptor_impl>(
+      make_logger(filename), upstream, auto_flush))
 {
 }
 
 logging_resource_adaptor::logging_resource_adaptor(device_async_resource_ref upstream,
                                                    std::ostream& stream,
                                                    bool auto_flush)
-  : cuda::mr::shared_resource<detail::logging_resource_adaptor_impl>(
-      cuda::mr::make_shared_resource<detail::logging_resource_adaptor_impl>(
-        make_logger(stream), upstream, auto_flush))
+  : shared_base(cuda::mr::make_shared_resource<detail::logging_resource_adaptor_impl>(
+      make_logger(stream), upstream, auto_flush))
 {
 }
 
@@ -52,9 +50,8 @@ logging_resource_adaptor::logging_resource_adaptor(
   device_async_resource_ref upstream,
   std::initializer_list<rapids_logger::sink_ptr> sinks,
   bool auto_flush)
-  : cuda::mr::shared_resource<detail::logging_resource_adaptor_impl>(
-      cuda::mr::make_shared_resource<detail::logging_resource_adaptor_impl>(
-        make_logger(sinks), upstream, auto_flush))
+  : shared_base(cuda::mr::make_shared_resource<detail::logging_resource_adaptor_impl>(
+      make_logger(sinks), upstream, auto_flush))
 {
 }
 
@@ -78,16 +75,14 @@ std::string logging_resource_adaptor::get_default_filename()
 // Begin legacy device_memory_resource compatibility layer
 void* logging_resource_adaptor::do_allocate(std::size_t bytes, cuda_stream_view stream)
 {
-  return cuda::mr::shared_resource<detail::logging_resource_adaptor_impl>::allocate(
-    stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  return shared_base::allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 void logging_resource_adaptor::do_deallocate(void* ptr,
                                              std::size_t bytes,
                                              cuda_stream_view stream) noexcept
 {
-  cuda::mr::shared_resource<detail::logging_resource_adaptor_impl>::deallocate(
-    stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  shared_base::deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 bool logging_resource_adaptor::do_is_equal(device_memory_resource const& other) const noexcept
@@ -95,10 +90,7 @@ bool logging_resource_adaptor::do_is_equal(device_memory_resource const& other) 
   if (this == &other) { return true; }
   auto const* cast = dynamic_cast<logging_resource_adaptor const*>(&other);
   if (cast == nullptr) { return false; }
-  return static_cast<cuda::mr::shared_resource<detail::logging_resource_adaptor_impl> const&>(
-           *this) ==
-         static_cast<cuda::mr::shared_resource<detail::logging_resource_adaptor_impl> const&>(
-           *cast);
+  return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(*cast);
 }
 // End legacy device_memory_resource compatibility layer
 
