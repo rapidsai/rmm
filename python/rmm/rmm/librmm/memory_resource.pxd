@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 # This import is needed for Cython typing in translate_python_except_to_cpp
@@ -211,9 +211,9 @@ cdef extern from "rmm/mr/limiting_resource_adaptor.hpp" \
 
 cdef extern from "rmm/mr/logging_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass logging_resource_adaptor[Upstream](device_memory_resource):
+    cdef cppclass logging_resource_adaptor(device_memory_resource):
         logging_resource_adaptor(
-            Upstream* upstream_mr,
+            device_memory_resource* upstream_mr,
             string filename) except +
 
         void flush() except +

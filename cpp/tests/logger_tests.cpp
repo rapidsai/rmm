@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,6 +7,7 @@
 
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/logging_resource_adaptor.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <thrust/iterator/zip_iterator.h>
 
@@ -118,7 +119,7 @@ TEST(Adaptor, FilenameConstructor)
   raii_temp_directory temp_dir;
   std::string filename{temp_dir.generate_path("test.txt")};
   rmm::mr::cuda_memory_resource upstream;
-  rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream, filename};
+  rmm::mr::logging_resource_adaptor log_mr{upstream, filename};
 
   auto const size0{100};
   auto const size1{42};
@@ -150,8 +151,7 @@ TEST(Adaptor, MultiSinkConstructor)
   auto file_sink1 = std::make_shared<rapids_logger::basic_file_sink_mt>(filename1, true);
   auto file_sink2 = std::make_shared<rapids_logger::basic_file_sink_mt>(filename2, true);
 
-  rmm::mr::logging_resource_adaptor<rmm::mr::cuda_memory_resource> log_mr{&upstream,
-                                                                          {file_sink1, file_sink2}};
+  rmm::mr::logging_resource_adaptor log_mr{upstream, {file_sink1, file_sink2}};
 
   auto const size0{100};
   auto const size1{42};
@@ -180,7 +180,7 @@ TEST(Adaptor, Factory)
   std::string filename{temp_dir.generate_path("test.txt")};
   rmm::mr::cuda_memory_resource upstream;
 
-  auto log_mr = rmm::mr::logging_resource_adaptor(&upstream, filename);
+  auto log_mr = rmm::mr::logging_resource_adaptor(upstream, filename);
 
   auto const size0{99};
   auto const size1{42};
@@ -213,14 +213,14 @@ TEST(Adaptor, EnvironmentPath)
   unsetenv("RMM_LOG_FILE");
 
   // expect logging adaptor to fail if RMM_LOG_FILE is unset
-  EXPECT_THROW(rmm::mr::logging_resource_adaptor{&upstream}, rmm::logic_error);
+  EXPECT_THROW(rmm::mr::logging_resource_adaptor{upstream}, rmm::logic_error);
 
   std::string filename{temp_dir.generate_path("test.txt")};
 
   setenv("RMM_LOG_FILE", filename.c_str(), 1);
 
   // use log file location specified in environment variable RMM_LOG_FILE
-  auto log_mr = rmm::mr::logging_resource_adaptor(&upstream);
+  auto log_mr = rmm::mr::logging_resource_adaptor(upstream);
 
   auto const size{100};
 
@@ -246,7 +246,7 @@ TEST(Adaptor, AllocateFailure)
   std::string filename{temp_dir.generate_path("failure.txt")};
   rmm::mr::cuda_memory_resource upstream;
 
-  auto log_mr = rmm::mr::logging_resource_adaptor(&upstream, filename);
+  auto log_mr = rmm::mr::logging_resource_adaptor(upstream, filename);
 
   auto const size0{99};
   auto const size1{1_TiB};
@@ -254,7 +254,7 @@ TEST(Adaptor, AllocateFailure)
   auto* ptr0 = log_mr.allocate_sync(size0);
   log_mr.deallocate_sync(ptr0, size0);
   try {
-    log_mr.allocate_sync(size1);
+    static_cast<void*>(log_mr.allocate_sync(size1));
   } catch (...) {
   }
   log_mr.flush();
@@ -275,7 +275,7 @@ TEST(Adaptor, STDOUT)
 
   rmm::mr::cuda_memory_resource upstream;
 
-  auto log_mr = rmm::mr::logging_resource_adaptor(&upstream, std::cout);
+  auto log_mr = rmm::mr::logging_resource_adaptor(upstream, std::cout);
 
   auto const size{100};
 
@@ -293,7 +293,7 @@ TEST(Adaptor, STDERR)
 
   rmm::mr::cuda_memory_resource upstream;
 
-  auto log_mr = rmm::mr::logging_resource_adaptor(&upstream, std::cerr);
+  auto log_mr = rmm::mr::logging_resource_adaptor(upstream, std::cerr);
 
   auto const size{100};
 
