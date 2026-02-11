@@ -21,12 +21,12 @@ rapids-generate-pip-constraints test_python ./constraints.txt
 #   * need to provide --constraint="${PIP_CONSTRAINT}" because that environment variable is
 #     ignored if any other --constraint are passed via the CLI
 #
-rapids-pip-retry install \
-    -v \
-    --constraint ./constraints.txt \
-    --constraint "${PIP_CONSTRAINT}" \
-    "$(echo "${LIBRMM_WHEELHOUSE}"/librmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)" \
+PIP_INSTALL_SHARED_ARGS=(
+    --constraint=./constraints.txt
+    --constraint="${PIP_CONSTRAINT}"
+    "$(echo "${LIBRMM_WHEELHOUSE}"/librmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)"
     "$(echo "${RMM_WHEELHOUSE}"/rmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)[test]"
+)
 
 EXITCODE=0
 
@@ -47,6 +47,7 @@ if [ "${CUDA_MAJOR}" -gt 12 ] || { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR
     rapids-logger "Installing PyTorch test requirements"
     rapids-pip-retry install \
         -v \
+        "${PIP_INSTALL_SHARED_ARGS[@]}" \
         -r test-pytorch-requirements.txt
 
     timeout 15m python -m pytest -k "torch" ./python/rmm/rmm/tests \
@@ -73,6 +74,7 @@ rapids-dependency-file-generator \
 rapids-logger "Installing CuPy test requirements"
 rapids-pip-retry install \
     -v \
+    "${PIP_INSTALL_SHARED_ARGS[@]}" \
     -r test-cupy-requirements.txt
 
 timeout 15m python -m pytest -k "cupy" ./python/rmm/rmm/tests \
