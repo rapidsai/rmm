@@ -130,6 +130,7 @@ jobs:
           - '!ci/check_style.sh'
           - '!ci/release/update-version.sh'
           - '!ci/test_wheel.sh'
+          - '!ci/test_wheel_integrations.sh'
           - '!ci/validate_wheel.sh'
           - '!docs/**'
           - '!img/**'
@@ -155,6 +156,7 @@ jobs:
           - '!ci/release/update-version.sh'
           - '!ci/test_cpp.sh'
           - '!ci/test_python.sh'
+          - '!ci/test_python_integrations.sh'
           - '!docs/**'
           - '!img/**'
   checks:
@@ -208,7 +210,6 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_python_integrations.sh
-      sccache-dist-token-secret-name: GIST_REPO_READ_ORG_GITHUB_TOKEN
   docs-build:
     needs: [conda-python-build, changed-files]
     secrets: inherit
