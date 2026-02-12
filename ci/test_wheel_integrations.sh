@@ -30,6 +30,9 @@ PIP_INSTALL_SHARED_ARGS=(
 
 EXITCODE=0
 
+rapids-logger "Check GPU usage"
+nvidia-smi
+
 # Check CUDA version for PyTorch compatibility (requires CUDA 12.8+)
 CUDA_MAJOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f1)
 CUDA_MINOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f2)
