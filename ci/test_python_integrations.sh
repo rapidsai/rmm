@@ -16,7 +16,7 @@ conda config --set channel_priority strict
 
 rapids-logger "Downloading artifacts from previous jobs"
 CPP_CHANNEL=$(rapids-download-conda-from-github cpp)
-PYTHON_CHANNEL=$(rapids-download-conda-from-github python)
+PYTHON_CHANNEL=$(rapids-download-from-github "$(rapids-package-name "conda_python" rmm --stable --cuda "$RAPIDS_CUDA_VERSION")")
 
 RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}
 RAPIDS_COVERAGE_DIR=${RAPIDS_COVERAGE_DIR:-"${PWD}/coverage-results"}
