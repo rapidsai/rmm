@@ -8,8 +8,6 @@ package_dir="python/rmm"
 
 source rapids-configure-sccache
 source rapids-date-string
-RAPIDS_INIT_PIP_REMOVE_NVIDIA_INDEX="true"
-export RAPIDS_INIT_PIP_REMOVE_NVIDIA_INDEX
 source rapids-init-pip
 
 export SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX="rmm-${RAPIDS_CONDA_ARCH}-cuda${RAPIDS_CUDA_VERSION%%.*}-wheel-preprocessor-cache"
@@ -33,12 +31,17 @@ sccache --stop-server 2>/dev/null || true
 # Creates artifacts directory for telemetry
 source rapids-telemetry-setup
 
+# TODO: move this variable into `ci-wheel`
+# Format Python limited API version string
+RAPIDS_PY_API="cp${RAPIDS_PY_VERSION//./}"
+
 RAPIDS_PIP_WHEEL_ARGS=(
   -w dist
   -v
   --no-deps
   --disable-pip-version-check
   --build-constraint="${PIP_CONSTRAINT}"
+  --config-settings "skbuild.wheel.py-api=${RAPIDS_PY_API}"
 )
 
 # unset PIP_CONSTRAINT (set by rapids-init-pip)... it doesn't affect builds as of pip 25.3, and
@@ -66,3 +69,6 @@ absolute_wheel_dir=$(realpath "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}")
 # switch back to the root of the repo and check symbol visibility
 popd
 ci/check_symbols.sh "$(echo "${absolute_wheel_dir}"/rmm_*.whl)"
+
+RAPIDS_PACKAGE_NAME="$(rapids-package-name wheel_python rmm --stable --cuda)"
+export RAPIDS_PACKAGE_NAME
