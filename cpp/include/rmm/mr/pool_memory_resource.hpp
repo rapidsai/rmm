@@ -20,8 +20,6 @@
 
 #include <cuda/std/type_traits>
 #include <cuda_runtime_api.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
 
 #include <algorithm>
 #include <cstddef>
