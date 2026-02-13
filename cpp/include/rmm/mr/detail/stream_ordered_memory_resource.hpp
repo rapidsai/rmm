@@ -80,6 +80,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   using block_type = typename free_list::block_type;
   using lock_guard = std::lock_guard<std::mutex>;
 
+  using stream_id_type = unsigned long long;  ///< Stream identifier returned by cudaStreamGetId
   // Derived classes must implement these four methods
 
   /*
@@ -285,14 +286,15 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     // non-PTDS mode.
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
     auto* const stream_to_store = stream.is_default() ? cudaStreamLegacy : stream.value();
-
-    auto const iter = stream_events_.find(stream_to_store);
+    stream_id_type stream_id{};
+    RMM_ASSERT_CUDA_SUCCESS(cudaStreamGetId(stream_to_store, &stream_id));
+    auto const iter = stream_events_.find(stream_id);
     return (iter != stream_events_.end()) ? iter->second : [&]() {
       stream_event_pair stream_event{stream_to_store, nullptr};
       RMM_ASSERT_CUDA_SUCCESS(
         cudaEventCreateWithFlags(&stream_event.event, cudaEventDisableTiming));
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-      stream_events_[stream_to_store] = stream_event;
+      stream_events_[stream_id] = stream_event;
       return stream_event;
     }();
   }
@@ -478,7 +480,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
   std::map<stream_event_pair, free_list> stream_free_blocks_;
 
   // bidirectional mapping between non-default streams and events
-  std::unordered_map<cudaStream_t, stream_event_pair> stream_events_;
+  std::unordered_map<stream_id_type, stream_event_pair> stream_events_;
 
   std::mutex mtx_;  // mutex for thread-safe access
 
