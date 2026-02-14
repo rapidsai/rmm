@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -9,7 +9,6 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/runtime_capabilities.hpp>
-#include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/cuda_async_view_memory_resource.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 

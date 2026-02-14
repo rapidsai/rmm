@@ -13,8 +13,8 @@
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/std/iterator>
 #include <cuda/std/span>
-#include <thrust/iterator/reverse_iterator.h>
 
 #include <cstddef>
 #include <type_traits>
@@ -80,9 +80,10 @@ class device_uvector {
   using iterator       = pointer;            ///< The type of the iterator returned by begin()
   using const_iterator = const_pointer;  ///< The type of the const iterator returned by cbegin()
   using reverse_iterator =
-    thrust::reverse_iterator<iterator>;  ///< The type of the iterator returned by rbegin()
+    cuda::std::reverse_iterator<iterator>;  ///< The type of the iterator returned by rbegin()
   using const_reverse_iterator =
-    thrust::reverse_iterator<const_iterator>;  ///< The type of the iterator returned by crbegin()
+    cuda::std::reverse_iterator<const_iterator>;  ///< The type of the iterator returned by
+                                                  ///< crbegin()
 
   RMM_EXEC_CHECK_DISABLE
   ~device_uvector() = default;

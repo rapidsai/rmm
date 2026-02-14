@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -14,9 +14,8 @@
 #include <rmm/mr/owning_wrapper.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 
+#include <cuda/iterator>
 #include <thrust/execution_policy.h>
-#include <thrust/iterator/constant_iterator.h>
-#include <thrust/iterator/discard_iterator.h>
 #include <thrust/reduce.h>
 
 #include <benchmark/benchmark.h>
@@ -277,8 +276,8 @@ std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string
     thrust::host,
     all_events.begin(),
     all_events.end(),
-    thrust::make_constant_iterator(1),
-    thrust::make_discard_iterator(),
+    cuda::make_constant_iterator(1),
+    cuda::make_discard_iterator(),
     std::back_inserter(events_per_thread),
     [](event const& lhs, event const& rhs) { return lhs.thread_id == rhs.thread_id; });
 

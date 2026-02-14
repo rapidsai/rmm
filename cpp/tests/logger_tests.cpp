@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,7 +8,7 @@
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/logging_resource_adaptor.hpp>
 
-#include <thrust/iterator/zip_iterator.h>
+#include <cuda/iterator>
 
 #include <benchmarks/utilities/log_parser.hpp>
 #include <gtest/gtest.h>
@@ -96,10 +96,10 @@ void expect_log_events(std::string const& filename,
 {
   auto actual_events = rmm::detail::parse_csv(filename);
 
-  auto begin = thrust::make_zip_iterator(
-    cuda::std::make_tuple(expected_events.begin(), actual_events.begin()));
+  auto begin =
+    cuda::make_zip_iterator(cuda::std::make_tuple(expected_events.begin(), actual_events.begin()));
   auto end =
-    thrust::make_zip_iterator(cuda::std::make_tuple(expected_events.end(), actual_events.end()));
+    cuda::make_zip_iterator(cuda::std::make_tuple(expected_events.end(), actual_events.end()));
 
   std::for_each(begin, end, [](auto const& zipped) {
     auto [expected, actual] = zipped;
