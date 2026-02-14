@@ -9,7 +9,6 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/logging_assert.hpp>
-#include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/detail/fixed_size_free_list.hpp>
 #include <rmm/mr/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
