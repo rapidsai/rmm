@@ -1,11 +1,21 @@
 # SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
+cimport cython
 from cuda.bindings.cyruntime cimport cudaStream_t
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
+from libcpp.memory cimport unique_ptr
 
+from rmm.librmm.cuda_stream cimport cuda_stream
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+
+
+@cython.final
+cdef class CudaStream:
+    cdef unique_ptr[cuda_stream] c_obj
+    cdef cudaStream_t value(self) except * nogil
+    cdef bool is_valid(self) except * nogil
 
 
 cdef class Stream:

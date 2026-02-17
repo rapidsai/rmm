@@ -1,7 +1,18 @@
 # SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
+from enum import IntEnum
 from typing import Any, Optional
+
+
+class CudaStreamFlags(IntEnum):
+    SYNC_DEFAULT: int
+    NON_BLOCKING: int
+
+
+class CudaStream:
+    def __init__(self) -> None: ...
+
 
 class Stream:
     def __init__(self, obj: Optional[Any] = None) -> None: ...
