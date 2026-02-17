@@ -4,15 +4,12 @@
 from enum import IntEnum
 from typing import Any, Optional
 
-
 class CudaStreamFlags(IntEnum):
-    SYNC_DEFAULT: int
-    NON_BLOCKING: int
-
+    SYNC_DEFAULT = ...
+    NON_BLOCKING = ...
 
 class CudaStream:
     def __init__(self) -> None: ...
-
 
 class Stream:
     def __init__(self, obj: Optional[Any] = None) -> None: ...

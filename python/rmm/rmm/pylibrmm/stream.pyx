@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 cimport cython
@@ -6,7 +6,6 @@ from enum import IntEnum
 from cuda.bindings.cyruntime cimport cudaStream_t
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
-from libcpp.memory cimport unique_ptr
 
 from rmm.librmm.cuda_stream cimport cuda_stream, cuda_stream_flags
 from rmm.librmm.cuda_stream_view cimport (
