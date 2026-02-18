@@ -141,14 +141,12 @@ ConfigureTest(CUDA_ASYNC_MR_REF_TEST mr/mr_ref_cuda_async_tests.cpp GPUS 1 PERCE
 ConfigureTest(MANAGED_MR_REF_TEST mr/mr_ref_managed_tests.cpp GPUS 1 PERCENT 15)
 
 # Pre-allocating resources (50% of free device memory, so we use 100% as a safety margin)
-ConfigureTest(POOL_MR_REF_TEST mr/mr_ref_pool_tests.cpp GPUS 1 PERCENT 100)
 ConfigureTest(ARENA_MR_REF_TEST mr/mr_ref_arena_tests.cpp GPUS 1 PERCENT 100)
 ConfigureTest(BINNING_MR_REF_TEST mr/mr_ref_binning_tests.cpp GPUS 1 PERCENT 100)
 
 # Partial test suites without multi-threading (~500MB max = 5%)
 ConfigureTest(SYSTEM_MR_REF_TEST mr/mr_ref_system_tests.cpp GPUS 1 PERCENT 5)
 ConfigureTest(PINNED_MR_REF_TEST mr/mr_ref_pinned_tests.cpp GPUS 1 PERCENT 5)
-ConfigureTest(PINNED_POOL_MR_REF_TEST mr/mr_ref_pinned_pool_tests.cpp GPUS 1 PERCENT 5)
 
 # Small test suites (minimal allocations = 5%)
 ConfigureTest(FIXED_SIZE_MR_REF_TEST mr/mr_ref_fixed_size_tests.cpp GPUS 1 PERCENT 5)

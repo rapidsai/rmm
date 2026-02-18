@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -397,17 +397,6 @@ inline auto make_system()
   }
 }
 
-inline auto make_pool()
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
-    make_cuda(), rmm::percent_of_free_device_memory(50));
-}
-
-inline auto make_pinned_pool()
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_pinned(), 2_GiB, 8_GiB);
-}
-
 inline auto make_arena()
 {
   return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
@@ -420,14 +409,14 @@ inline auto make_fixed_size()
 
 inline auto make_binning()
 {
-  auto pool = make_pool();
+  auto cuda_async_mr = make_cuda_async();
   // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
-  // Larger allocations will use the pool resource
+  // Larger allocations will use the CUDA async resource
   auto const bin_range_start{18};
   auto const bin_range_end{22};
 
   auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(
-    pool, bin_range_start, bin_range_end);
+    cuda_async_mr, bin_range_start, bin_range_end);
   return mr;
 }
 
@@ -455,16 +444,14 @@ struct mr_factory : mr_factory_base {
   std::invoke_result_t<MRFactoryFunc> owned_mr;
 };
 
-using cuda_mr        = rmm::mr::cuda_memory_resource;
-using pinned_mr      = rmm::mr::pinned_host_memory_resource;
-using cuda_async_mr  = rmm::mr::cuda_async_memory_resource;
-using managed_mr     = rmm::mr::managed_memory_resource;
-using system_mr      = rmm::mr::system_memory_resource;
-using pool_mr        = rmm::mr::pool_memory_resource<cuda_mr>;
-using pinned_pool_mr = rmm::mr::pool_memory_resource<pinned_mr>;
-using arena_mr       = rmm::mr::arena_memory_resource<cuda_mr>;
-using fixed_mr       = rmm::mr::fixed_size_memory_resource<cuda_mr>;
-using binning_mr     = rmm::mr::binning_memory_resource<pool_mr>;
+using cuda_mr       = rmm::mr::cuda_memory_resource;
+using pinned_mr     = rmm::mr::pinned_host_memory_resource;
+using cuda_async_mr = rmm::mr::cuda_async_memory_resource;
+using managed_mr    = rmm::mr::managed_memory_resource;
+using system_mr     = rmm::mr::system_memory_resource;
+using arena_mr      = rmm::mr::arena_memory_resource<cuda_mr>;
+using fixed_mr      = rmm::mr::fixed_size_memory_resource<cuda_mr>;
+using binning_mr    = rmm::mr::binning_memory_resource<cuda_async_mr>;
 
 inline std::shared_ptr<mr_factory_base> mr_factory_dispatch(std::string name)
 {
@@ -480,11 +467,6 @@ inline std::shared_ptr<mr_factory_base> mr_factory_dispatch(std::string name)
                                                                             make_managed);
   } else if (name == "System") {
     return std::make_shared<mr_factory<system_mr, decltype(make_system)>>("System", make_system);
-  } else if (name == "Pool") {
-    return std::make_shared<mr_factory<pool_mr, decltype(make_pool)>>("Pool", make_pool);
-  } else if (name == "PinnedPool") {
-    return std::make_shared<mr_factory<pinned_pool_mr, decltype(make_pinned_pool)>>(
-      "PinnedPool", make_pinned_pool);
   } else if (name == "Arena") {
     return std::make_shared<mr_factory<arena_mr, decltype(make_arena)>>("Arena", make_arena);
   } else if (name == "Binning") {

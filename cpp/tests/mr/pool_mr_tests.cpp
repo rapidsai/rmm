@@ -19,19 +19,13 @@
 #include <vector>
 
 // explicit instantiation for test coverage purposes
-template class rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+template class rmm::mr::limiting_resource_adaptor<rmm::mr::cuda_memory_resource>;
 
 namespace rmm::test {
 namespace {
 using cuda_mr     = rmm::mr::cuda_memory_resource;
-using pool_mr     = rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>;
+using pool_mr     = rmm::mr::pool_memory_resource;
 using limiting_mr = rmm::mr::limiting_resource_adaptor<rmm::mr::cuda_memory_resource>;
-
-TEST(PoolTest, ThrowOnNullUpstream)
-{
-  auto construct_nullptr = []() { pool_mr mr{nullptr, 0}; };
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
-}
 
 TEST(PoolTest, ThrowMaxLessThanInitial)
 {
@@ -75,7 +69,7 @@ TEST(PoolTest, ForceGrowth)
   {
     auto const max_size{6000};
     limiting_mr limiter{&cuda, max_size};
-    pool_mr mr{&limiter, 0};
+    pool_mr mr{rmm::device_async_resource_ref{limiter}, 0};
     EXPECT_NO_THROW(mr.allocate_sync(1000));
     EXPECT_NO_THROW(mr.allocate_sync(4000));
     EXPECT_NO_THROW(mr.allocate_sync(500));
@@ -85,7 +79,7 @@ TEST(PoolTest, ForceGrowth)
     // with max pool size
     auto const max_size{6000};
     limiting_mr limiter{&cuda, max_size};
-    pool_mr mr{&limiter, 0, 8192};
+    pool_mr mr{rmm::device_async_resource_ref{limiter}, 0, 8192};
     EXPECT_NO_THROW(mr.allocate_sync(1000));
     EXPECT_THROW(mr.allocate_sync(4000), rmm::out_of_memory);  // too much
     EXPECT_NO_THROW(mr.allocate_sync(500));
@@ -133,16 +127,14 @@ TEST(PoolTest, NonAlignedPoolSize)
 TEST(PoolTest, UpstreamDoesntSupportMemInfo)
 {
   cuda_mr cuda;
-  pool_mr mr1(&cuda, 0);
-  pool_mr mr2(&mr1, 0);
+  pool_mr mr1{rmm::device_async_resource_ref{cuda}, 0};
+  pool_mr mr2{rmm::device_async_resource_ref{mr1}, 0};
   auto* ptr = mr2.allocate_sync(1024);
   mr2.deallocate_sync(ptr, 1024);
 }
 
 TEST(PoolTest, MultidevicePool)
 {
-  using MemoryResource = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
-
   // Get the number of CUDA devices
   int num_devices = rmm::get_num_cuda_devices();
 
@@ -153,11 +145,12 @@ TEST(PoolTest, MultidevicePool)
     // initializing pool_memory_resource of multiple devices
     int devices      = 2;
     size_t pool_size = 1024;
-    std::vector<std::shared_ptr<MemoryResource>> mrs;
+    std::vector<std::shared_ptr<pool_mr>> mrs;
 
     for (int i = 0; i < devices; ++i) {
       RMM_CUDA_TRY(cudaSetDevice(i));
-      auto mr = std::make_shared<MemoryResource>(&general_mr, pool_size, pool_size);
+      auto mr =
+        std::make_shared<pool_mr>(rmm::device_async_resource_ref{general_mr}, pool_size, pool_size);
       rmm::mr::set_per_device_resource(rmm::cuda_device_id{i}, mr.get());
       mrs.emplace_back(mr);
     }
@@ -176,44 +169,51 @@ TEST(PoolTest, MultidevicePool)
   }
 }
 
+class PoolMemoryResourceTest : public ::testing::Test {
+ protected:
+  rmm::mr::pool_memory_resource pool{rmm::mr::get_current_device_resource_ref(), 1024 * 1024};
+};
+
+TEST_F(PoolMemoryResourceTest, GetUpstreamResource)
+{
+  [[maybe_unused]] auto ref = pool.get_upstream_resource();
+}
+
+TEST_F(PoolMemoryResourceTest, AllocateDeallocate)
+{
+  constexpr std::size_t size{4096};
+  auto* ptr = pool.allocate_sync(size);
+  EXPECT_NE(ptr, nullptr);
+  EXPECT_NO_THROW(pool.deallocate_sync(ptr, size));
+}
+
+TEST_F(PoolMemoryResourceTest, SharedOwnership)
+{
+  auto copy = pool;  // copy shares the same underlying state
+  constexpr std::size_t size{4096};
+  auto* ptr = pool.allocate_sync(size);
+  EXPECT_NE(ptr, nullptr);
+  EXPECT_NO_THROW(copy.deallocate_sync(ptr, size));  // deallocate through the copy
+}
+
+TEST_F(PoolMemoryResourceTest, Equality)
+{
+  auto copy = pool;
+  EXPECT_EQ(pool, copy);
+
+  rmm::mr::pool_memory_resource other{rmm::mr::get_current_device_resource_ref(), 1024 * 1024};
+  EXPECT_NE(pool, other);
+}
+
+TEST_F(PoolMemoryResourceTest, PoolSize) { EXPECT_GE(pool.pool_size(), 1024 * 1024); }
+
 }  // namespace
 
 namespace test_properties {
-class fake_async_resource {
- public:
-  // To model `async_resource`
-  void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
-  void deallocate_sync(void* /*ptr*/, std::size_t, std::size_t) noexcept {}
-  void* allocate(cuda_stream_view, std::size_t, std::size_t) { return nullptr; }
-  void deallocate(cuda_stream_view, void*, std::size_t, std::size_t) noexcept { return; }
 
-  bool operator==(const fake_async_resource& /*other*/) const { return true; }
-  bool operator!=(const fake_async_resource& /*other*/) const { return false; }
+// pool_memory_resource is now non-template; verify it satisfies the resource concept
+// and always has device_accessible (since upstream is any_resource<device_accessible>)
+static_assert(cuda::mr::resource_with<rmm::mr::pool_memory_resource, cuda::mr::device_accessible>);
 
- private:
-  static void* do_allocate(std::size_t /*bytes*/, cuda_stream_view) { return nullptr; }
-  static void do_deallocate(void* /*ptr*/, std::size_t, cuda_stream_view) noexcept {}
-  [[nodiscard]] static bool do_is_equal(fake_async_resource const& /*other*/) noexcept
-  {
-    return true;
-  }
-};
-
-// static property checks
-static_assert(rmm::detail::polyfill::resource<fake_async_resource>);
-static_assert(rmm::detail::polyfill::resource<rmm::mr::pool_memory_resource<fake_async_resource>>);
-
-// Ensure that we forward the property if it is there
-class fake_async_resource_device_accessible : public fake_async_resource {
-  friend void get_property(const fake_async_resource_device_accessible&,
-                           cuda::mr::device_accessible)
-  {
-  }
-};
-static_assert(
-  cuda::has_property<fake_async_resource_device_accessible, cuda::mr::device_accessible>);
-static_assert(
-  cuda::has_property<rmm::mr::pool_memory_resource<fake_async_resource_device_accessible>,
-                     cuda::mr::device_accessible>);
 }  // namespace test_properties
 }  // namespace rmm::test
