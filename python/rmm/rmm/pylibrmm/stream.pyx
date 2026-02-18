@@ -32,10 +32,10 @@ class CudaStreamFlags(IntEnum):
 
 
 @cython.final
-cdef class CudaStream:
+cdef class _OwningStream:
     """
     Wrapper around a CUDA stream with RAII semantics.
-    When a CudaStream instance is GC'd, the underlying
+    When an _OwningStream instance is GC'd, the underlying
     CUDA stream is destroyed.
     """
     def __cinit__(self):
@@ -51,6 +51,9 @@ cdef class CudaStream:
 
     cdef bool is_valid(self) except * nogil:
         return self.c_obj.get()[0].is_valid()
+
+
+CudaStream = _OwningStream
 
 
 cdef class Stream:
@@ -172,7 +175,7 @@ cdef class Stream:
         return hash(int(<uintptr_t>(self._cuda_stream)))
 
     cdef void _init_with_new_cuda_stream(self) except *:
-        cdef CudaStream stream = CudaStream()
+        cdef _OwningStream stream = _OwningStream()
         self._cuda_stream = stream.value()
         self._owner = stream
 

@@ -3,18 +3,16 @@
 
 import warnings
 
-# Re-export from stream for backward compat
-# prefer from rmm.pylibrmm.stream import CudaStream, CudaStreamFlags
-from rmm.pylibrmm.stream import CudaStream, CudaStreamFlags
+# Re-export from stream for backward compat.
+from rmm.pylibrmm.stream import CudaStreamFlags
 
 warnings.warn(
     "rmm.pylibrmm.cuda_stream is deprecated; use rmm.pylibrmm.stream for "
-    "CudaStream and CudaStreamFlags.",
+    "CudaStreamFlags.",
     DeprecationWarning,
     stacklevel=2,
 )
 
 __all__ = [
-    "CudaStream",
     "CudaStreamFlags",
 ]
