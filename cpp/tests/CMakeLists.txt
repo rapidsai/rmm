@@ -141,14 +141,13 @@ ConfigureTest(CUDA_ASYNC_MR_REF_TEST mr/mr_ref_cuda_async_tests.cpp GPUS 1 PERCE
 ConfigureTest(MANAGED_MR_REF_TEST mr/mr_ref_managed_tests.cpp GPUS 1 PERCENT 15)
 
 # Pre-allocating resources (50% of free device memory, so we use 100% as a safety margin)
-ConfigureTest(POOL_MR_REF_TEST mr/mr_ref_pool_tests.cpp GPUS 1 PERCENT 100)
 ConfigureTest(ARENA_MR_REF_TEST mr/mr_ref_arena_tests.cpp GPUS 1 PERCENT 100)
 ConfigureTest(BINNING_MR_REF_TEST mr/mr_ref_binning_tests.cpp GPUS 1 PERCENT 100)
 
 # Partial test suites without multi-threading (~500MB max = 5%)
 ConfigureTest(SYSTEM_MR_REF_TEST mr/mr_ref_system_tests.cpp GPUS 1 PERCENT 5)
 ConfigureTest(PINNED_MR_REF_TEST mr/mr_ref_pinned_tests.cpp GPUS 1 PERCENT 5)
-ConfigureTest(PINNED_POOL_MR_REF_TEST mr/mr_ref_pinned_pool_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(LOGGING_MR_REF_TEST mr/mr_ref_logging_tests.cpp GPUS 1 PERCENT 5)
 
 # Small test suites (minimal allocations = 5%)
 ConfigureTest(FIXED_SIZE_MR_REF_TEST mr/mr_ref_fixed_size_tests.cpp GPUS 1 PERCENT 5)
@@ -158,10 +157,13 @@ ConfigureTest(DEFAULT_MR_REF_TEST mr/mr_ref_default_tests.cpp GPUS 1 PERCENT 5)
 ConfigureTest(DEVICE_MEMORY_RESOURCE_VIEW_TEST mr/device_memory_resource_view_tests.cpp)
 
 # general adaptor tests
-ConfigureTest(ADAPTOR_TEST mr/adaptor_tests.cpp)
+ConfigureTest(ADAPTOR_TEST mr/adaptor_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(CCCL_ADAPTOR_TEST mr/cccl_adaptor_tests.cpp GPUS 1 PERCENT 5)
 
 # pool mr tests
 ConfigureTest(POOL_MR_TEST mr/pool_mr_tests.cpp GPUS 1 PERCENT 100)
+ConfigureTest(POOL_MR_REF_TEST mr/mr_ref_pool_tests.cpp GPUS 1 PERCENT 100)
+ConfigureTest(PINNED_POOL_MR_REF_TEST mr/mr_ref_pinned_pool_tests.cpp GPUS 1 PERCENT 5)
 
 ConfigureTest(HWDECOMPRESS_TEST mr/hwdecompress_tests.cpp LINK_DRIVER)
 

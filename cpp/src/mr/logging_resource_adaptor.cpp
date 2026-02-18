@@ -6,7 +6,11 @@
 #include <rmm/aligned.hpp>
 #include <rmm/mr/logging_resource_adaptor.hpp>
 
+#include <cstddef>
 #include <cstdlib>
+#include <initializer_list>
+#include <memory>
+#include <string>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -87,7 +91,7 @@ void logging_resource_adaptor::do_deallocate(void* ptr,
 
 bool logging_resource_adaptor::do_is_equal(device_memory_resource const& other) const noexcept
 {
-  if (this == &other) { return true; }
+  if (this == std::addressof(other)) { return true; }
   auto const* cast = dynamic_cast<logging_resource_adaptor const*>(&other);
   if (cast == nullptr) { return false; }
   return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(*cast);

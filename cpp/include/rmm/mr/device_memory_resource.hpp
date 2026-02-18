@@ -70,7 +70,7 @@ namespace mr {
  * device.
  *
  * @code{.cpp}
- * using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+ * using pool_mr = rmm::mr::pool_memory_resource;
  * std::vector<unique_ptr<pool_mr>> per_device_pools;
  * for(int i = 0; i < N; ++i) {
  *   cudaSetDevice(i);

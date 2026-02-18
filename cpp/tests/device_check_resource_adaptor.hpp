@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,6 +10,9 @@
 #include <rmm/resource_ref.hpp>
 
 #include <gtest/gtest.h>
+
+#include <cstddef>
+#include <memory>
 
 class device_check_resource_adaptor final : public rmm::mr::device_memory_resource {
  public:
@@ -47,7 +50,7 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
   [[nodiscard]] bool do_is_equal(
     rmm::mr::device_memory_resource const& other) const noexcept override
   {
-    if (this == &other) { return true; }
+    if (this == std::addressof(other)) { return true; }
     auto const* cast = dynamic_cast<device_check_resource_adaptor const*>(&other);
     if (cast == nullptr) { return false; }
     return get_upstream_resource() == cast->get_upstream_resource();
