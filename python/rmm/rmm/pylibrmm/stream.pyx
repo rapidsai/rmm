@@ -53,9 +53,6 @@ cdef class _OwningStream:
         return self.c_obj.get()[0].is_valid()
 
 
-CudaStream = _OwningStream
-
-
 cdef class Stream:
     def __init__(self, obj=None):
         """
