@@ -1,10 +1,9 @@
-# SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 
 import pytest
 
-import rmm.pylibrmm.cuda_stream
 import rmm.pylibrmm.cuda_stream_pool
 import rmm.pylibrmm.stream
 
@@ -94,8 +93,8 @@ def test_cuda_core_buffer(current_device):
 @pytest.mark.parametrize(
     "flags",
     [
-        rmm.pylibrmm.cuda_stream.CudaStreamFlags.SYNC_DEFAULT,
-        rmm.pylibrmm.cuda_stream.CudaStreamFlags.NON_BLOCKING,
+        rmm.pylibrmm.stream.CudaStreamFlags.SYNC_DEFAULT,
+        rmm.pylibrmm.stream.CudaStreamFlags.NON_BLOCKING,
     ],
 )
 def test_cuda_stream_pool(current_device, flags):
