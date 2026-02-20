@@ -148,9 +148,9 @@ cdef extern from "rmm/mr/cuda_async_memory_resource.hpp" \
 
 cdef extern from "rmm/mr/pool_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass pool_memory_resource[Upstream](device_memory_resource):
+    cdef cppclass pool_memory_resource(device_memory_resource):
         pool_memory_resource(
-            Upstream* upstream_mr,
+            device_memory_resource* upstream_mr,
             size_t initial_pool_size,
             optional[size_t] maximum_pool_size) except +
         size_t pool_size()

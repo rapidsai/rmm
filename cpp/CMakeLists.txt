@@ -91,7 +91,9 @@ add_library(
   src/exec_policy.cpp
   src/logger.cpp
   src/mr/detail/logging_resource_adaptor_impl.cpp
+  src/mr/detail/pool_memory_resource_impl.cpp
   src/mr/logging_resource_adaptor.cpp
+  src/mr/pool_memory_resource.cpp
   src/prefetch.cpp)
 add_library(rmm::rmm ALIAS rmm)
 

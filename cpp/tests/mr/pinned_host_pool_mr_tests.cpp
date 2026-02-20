@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -9,18 +9,9 @@
 
 #include <gtest/gtest.h>
 
-// explicit instantiation for test coverage purposes
-template class rmm::mr::pool_memory_resource<rmm::mr::pinned_host_memory_resource>;
-
 namespace rmm::test {
 namespace {
-using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::pinned_host_memory_resource>;
-
-TEST(PinnedPoolTest, ThrowOnNullUpstream)
-{
-  auto construct_nullptr = []() { pool_mr mr{nullptr, 1024}; };
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
-}
+using pool_mr = rmm::mr::pool_memory_resource;
 
 TEST(PinnedPoolTest, ThrowMaxLessThanInitial)
 {
@@ -30,7 +21,7 @@ TEST(PinnedPoolTest, ThrowMaxLessThanInitial)
     rmm::mr::pinned_host_memory_resource pinned_mr{};
     const auto initial{1024};
     const auto maximum{256};
-    pool_mr mr{&pinned_mr, initial, maximum};
+    pool_mr mr{pinned_mr, initial, maximum};
   };
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }

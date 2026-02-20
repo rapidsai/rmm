@@ -365,7 +365,7 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
             else optional[size_t](<size_t> parse_bytes(maximum_pool_size))
         )
         self.c_obj.reset(
-            new pool_memory_resource[device_memory_resource](
+            new pool_memory_resource(
                 upstream_mr.get_mr(),
                 c_initial_pool_size,
                 c_maximum_pool_size
@@ -396,8 +396,8 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         pass
 
     def pool_size(self):
-        cdef pool_memory_resource[device_memory_resource]* c_mr = (
-            <pool_memory_resource[device_memory_resource]*>(self.get_mr())
+        cdef pool_memory_resource* c_mr = (
+            <pool_memory_resource*>(self.get_mr())
         )
         return c_mr.pool_size()
 

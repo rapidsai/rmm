@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -69,7 +69,7 @@ namespace mr {
  * device.
  *
  * @code{.cpp}
- * using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
+ * using pool_mr = rmm::mr::pool_memory_resource;
  * std::vector<unique_ptr<pool_mr>> per_device_pools;
  * for(int i = 0; i < N; ++i) {
  *   cudaSetDevice(i);
