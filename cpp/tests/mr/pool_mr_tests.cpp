@@ -18,9 +18,6 @@
 #include <memory>
 #include <vector>
 
-// explicit instantiation for test coverage purposes
-template class rmm::mr::limiting_resource_adaptor<rmm::mr::cuda_memory_resource>;
-
 namespace rmm::test {
 namespace {
 using cuda_mr     = rmm::mr::cuda_memory_resource;
@@ -69,7 +66,7 @@ TEST(PoolTest, ForceGrowth)
   {
     auto const max_size{6000};
     limiting_mr limiter{&cuda, max_size};
-    pool_mr mr{rmm::device_async_resource_ref{limiter}, 0};
+    pool_mr mr{limiter, 0};
     EXPECT_NO_THROW(mr.allocate_sync(1000));
     EXPECT_NO_THROW(mr.allocate_sync(4000));
     EXPECT_NO_THROW(mr.allocate_sync(500));
@@ -79,7 +76,7 @@ TEST(PoolTest, ForceGrowth)
     // with max pool size
     auto const max_size{6000};
     limiting_mr limiter{&cuda, max_size};
-    pool_mr mr{rmm::device_async_resource_ref{limiter}, 0, 8192};
+    pool_mr mr{limiter, 0, 8192};
     EXPECT_NO_THROW(mr.allocate_sync(1000));
     EXPECT_THROW(mr.allocate_sync(4000), rmm::out_of_memory);  // too much
     EXPECT_NO_THROW(mr.allocate_sync(500));
@@ -127,8 +124,8 @@ TEST(PoolTest, NonAlignedPoolSize)
 TEST(PoolTest, UpstreamDoesntSupportMemInfo)
 {
   cuda_mr cuda;
-  pool_mr mr1{rmm::device_async_resource_ref{cuda}, 0};
-  pool_mr mr2{rmm::device_async_resource_ref{mr1}, 0};
+  pool_mr mr1{cuda, 0};
+  pool_mr mr2{mr1, 0};
   auto* ptr = mr2.allocate_sync(1024);
   mr2.deallocate_sync(ptr, 1024);
 }
@@ -145,23 +142,22 @@ TEST(PoolTest, MultidevicePool)
     // initializing pool_memory_resource of multiple devices
     int devices      = 2;
     size_t pool_size = 1024;
-    std::vector<std::shared_ptr<pool_mr>> mrs;
+    std::vector<pool_mr> mrs;
 
     for (int i = 0; i < devices; ++i) {
       RMM_CUDA_TRY(cudaSetDevice(i));
-      auto mr =
-        std::make_shared<pool_mr>(rmm::device_async_resource_ref{general_mr}, pool_size, pool_size);
-      rmm::mr::set_per_device_resource(rmm::cuda_device_id{i}, mr.get());
+      auto mr = pool_mr{general_mr, pool_size, pool_size};
+      rmm::mr::set_per_device_resource_ref(rmm::cuda_device_id{i}, mr);
       mrs.emplace_back(mr);
     }
 
     {
       RMM_CUDA_TRY(cudaSetDevice(0));
-      rmm::device_buffer buf_a(16, rmm::cuda_stream_per_thread, mrs[0].get());
+      rmm::device_buffer buf_a(16, rmm::cuda_stream_per_thread, mrs[0]);
 
       {
         RMM_CUDA_TRY(cudaSetDevice(1));
-        rmm::device_buffer buf_b(16, rmm::cuda_stream_per_thread, mrs[1].get());
+        rmm::device_buffer buf_b(16, rmm::cuda_stream_per_thread, mrs[1]);
       }
 
       RMM_CUDA_TRY(cudaSetDevice(0));
