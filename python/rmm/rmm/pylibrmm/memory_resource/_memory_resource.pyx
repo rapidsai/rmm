@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -762,7 +762,7 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
         self._log_file_name = log_file_name
 
         self.c_obj.reset(
-            new logging_resource_adaptor[device_memory_resource](
+            new logging_resource_adaptor(
                 upstream_mr.get_mr(),
                 log_file_name.encode()
             )
@@ -787,7 +787,7 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
         pass
 
     cpdef flush(self):
-        (<logging_resource_adaptor[device_memory_resource]*>(
+        (<logging_resource_adaptor*>(
             self.get_mr()))[0].flush()
 
     cpdef get_file_name(self):

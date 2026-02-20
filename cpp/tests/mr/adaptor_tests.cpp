@@ -40,7 +40,6 @@ using owning_wrapper = rmm::mr::owning_wrapper<aligned_resource_adaptor<cuda_mr>
 template class rmm::mr::aligned_resource_adaptor<cuda_mr>;
 template class rmm::mr::failure_callback_resource_adaptor<cuda_mr>;
 template class rmm::mr::limiting_resource_adaptor<cuda_mr>;
-template class rmm::mr::logging_resource_adaptor<cuda_mr>;
 template class rmm::mr::statistics_resource_adaptor<cuda_mr>;
 template class rmm::mr::thread_safe_resource_adaptor<cuda_mr>;
 template class rmm::mr::tracking_resource_adaptor<cuda_mr>;
@@ -50,7 +49,6 @@ namespace rmm::test {
 using adaptors = ::testing::Types<aligned_resource_adaptor<cuda_mr>,
                                   failure_callback_resource_adaptor<cuda_mr>,
                                   limiting_resource_adaptor<cuda_mr>,
-                                  logging_resource_adaptor<cuda_mr>,
                                   owning_wrapper,
                                   statistics_resource_adaptor<cuda_mr>,
                                   thread_safe_resource_adaptor<cuda_mr>,
@@ -64,8 +62,8 @@ static_assert(
                                        cuda::mr::device_accessible>);
 static_assert(rmm::detail::polyfill::resource_with<rmm::mr::limiting_resource_adaptor<cuda_mr>,
                                                    cuda::mr::device_accessible>);
-static_assert(rmm::detail::polyfill::resource_with<rmm::mr::logging_resource_adaptor<cuda_mr>,
-                                                   cuda::mr::device_accessible>);
+static_assert(rmm::detail::polyfill::async_resource_with<rmm::mr::logging_resource_adaptor,
+                                                         cuda::mr::device_accessible>);
 static_assert(rmm::detail::polyfill::resource_with<rmm::mr::owning_wrapper<cuda_mr>,
                                                    cuda::mr::device_accessible>);
 static_assert(rmm::detail::polyfill::resource_with<rmm::mr::statistics_resource_adaptor<cuda_mr>,
@@ -92,8 +90,6 @@ struct AdaptorTest : public ::testing::Test {
         nullptr);
     } else if constexpr (std::is_same_v<adaptor_type, limiting_resource_adaptor<cuda_mr>>) {
       return std::make_shared<adaptor_type>(upstream, 64_MiB);
-    } else if constexpr (std::is_same_v<adaptor_type, logging_resource_adaptor<cuda_mr>>) {
-      return std::make_shared<adaptor_type>(upstream, "rmm_adaptor_test_log.txt");
     } else if constexpr (std::is_same_v<adaptor_type, owning_wrapper>) {
       return mr::make_owning_wrapper<aligned_resource_adaptor>(std::make_shared<cuda_mr>());
     } else {
@@ -144,6 +140,50 @@ TYPED_TEST(AdaptorTest, AllocFree)
   EXPECT_NO_THROW(ptr = this->mr->allocate_sync(1024));
   EXPECT_NE(ptr, nullptr);
   EXPECT_NO_THROW(this->mr->deallocate_sync(ptr, 1024));
+}
+
+class LoggingAdaptorTest : public ::testing::Test {
+ protected:
+  cuda_mr upstream{};
+  std::string log_file{"rmm_logging_adaptor_test.txt"};
+};
+
+TEST_F(LoggingAdaptorTest, Equality)
+{
+  logging_resource_adaptor mr1{upstream, log_file};
+  logging_resource_adaptor mr2{mr1};
+
+  EXPECT_TRUE(mr1 == mr2);
+
+  logging_resource_adaptor mr3{upstream, "different_file.txt"};
+  EXPECT_FALSE(mr1 == mr3);
+}
+
+TEST_F(LoggingAdaptorTest, GetUpstreamResource)
+{
+  logging_resource_adaptor mr{upstream, log_file};
+  rmm::device_async_resource_ref expected{upstream};
+  EXPECT_TRUE(mr.get_upstream_resource() == expected);
+}
+
+TEST_F(LoggingAdaptorTest, AllocateDeallocate)
+{
+  logging_resource_adaptor mr{upstream, log_file};
+  void* ptr{nullptr};
+  EXPECT_NO_THROW(ptr = mr.allocate_sync(1024));
+  EXPECT_NE(ptr, nullptr);
+  EXPECT_NO_THROW(mr.deallocate_sync(ptr, 1024));
+}
+
+TEST_F(LoggingAdaptorTest, SharedOwnership)
+{
+  logging_resource_adaptor mr1{upstream, log_file};
+  logging_resource_adaptor mr2{mr1};
+
+  void* ptr{nullptr};
+  EXPECT_NO_THROW(ptr = mr1.allocate_sync(1024));
+  EXPECT_NE(ptr, nullptr);
+  EXPECT_NO_THROW(mr2.deallocate_sync(ptr, 1024));
 }
 
 }  // namespace rmm::test
