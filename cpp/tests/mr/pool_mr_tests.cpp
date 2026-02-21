@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "cccl_mr_ref_test_allocation.hpp"
+#include "cccl_mr_ref_test_basic.hpp"
+#include "cccl_mr_ref_test_mt.hpp"
+
 #include <rmm/cuda_device.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
@@ -212,4 +216,15 @@ namespace test_properties {
 static_assert(cuda::mr::resource_with<rmm::mr::pool_memory_resource, cuda::mr::device_accessible>);
 
 }  // namespace test_properties
+
+struct PoolMRFixture : public ::testing::Test {
+  rmm::mr::pool_memory_resource mr{rmm::mr::get_current_device_resource_ref(), 0};
+  rmm::device_async_resource_ref ref{mr};
+  rmm::cuda_stream stream{};
+};
+
+INSTANTIATE_TYPED_TEST_SUITE_P(PoolMR, CcclMrRefTest, PoolMRFixture);
+INSTANTIATE_TYPED_TEST_SUITE_P(PoolMR, CcclMrRefAllocationTest, PoolMRFixture);
+INSTANTIATE_TYPED_TEST_SUITE_P(PoolMR, CcclMrRefTestMT, PoolMRFixture);
+
 }  // namespace rmm::test

@@ -4,6 +4,8 @@
  */
 
 #include "../byte_literals.hpp"
+#include "cccl_mr_ref_test_allocation.hpp"
+#include "cccl_mr_ref_test_basic.hpp"
 
 #include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/error.hpp>
@@ -185,5 +187,15 @@ TEST_F(LoggingAdaptorTest, SharedOwnership)
   EXPECT_NE(ptr, nullptr);
   EXPECT_NO_THROW(mr2.deallocate_sync(ptr, 1024));
 }
+
+struct LoggingMRFixture : public ::testing::Test {
+  rmm::mr::cuda_memory_resource upstream{};
+  rmm::mr::logging_resource_adaptor mr{upstream, "rmm_logging_ref_test.txt"};
+  rmm::device_async_resource_ref ref{mr};
+  rmm::cuda_stream stream{};
+};
+
+INSTANTIATE_TYPED_TEST_SUITE_P(LoggingMR, CcclMrRefTest, LoggingMRFixture);
+INSTANTIATE_TYPED_TEST_SUITE_P(LoggingMR, CcclMrRefAllocationTest, LoggingMRFixture);
 
 }  // namespace rmm::test
