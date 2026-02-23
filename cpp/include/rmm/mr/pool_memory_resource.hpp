@@ -86,7 +86,7 @@ class RMM_EXPORT pool_memory_resource
    * @param upstream_mr The memory_resource from which to allocate blocks for the pool.
    * @param initial_pool_size Minimum size, in bytes, of the initial pool.
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
-   * of the available from the upstream resource.
+   * of the available memory from the upstream resource.
    */
   explicit pool_memory_resource(device_async_resource_ref upstream_mr,
                                 std::size_t initial_pool_size,
