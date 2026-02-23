@@ -26,7 +26,7 @@ dependencies:
 - nbsphinx
 - ninja
 - numba-cuda>=0.22.1
-- numba>=0.60.0,<0.62.0
+- numba>=0.60.0,<0.65.0
 - numpy>=1.23,<3.0
 - numpydoc
 - packaging

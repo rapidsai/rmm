@@ -37,7 +37,7 @@ classifiers = [
 [project.optional-dependencies]
 test = [
     "numba-cuda>=0.22.1",
-    "numba>=0.60.0,<0.62.0",
+    "numba>=0.60.0,<0.65.0",
     "packaging",
     "pytest-cov",
     "pytest<9.0.0",

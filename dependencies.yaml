@@ -289,7 +289,7 @@ dependencies:
           - make
           - myst-parser
           - nbsphinx
-          - &numba numba>=0.60.0,<0.62.0
+          - &numba numba>=0.60.0,<0.65.0
           - &numba_cuda numba-cuda>=0.22.1
           - numpydoc
           - pydata-sphinx-theme>=0.15.4
