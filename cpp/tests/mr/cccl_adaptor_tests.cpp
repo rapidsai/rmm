@@ -102,9 +102,4 @@ INSTANTIATE_TYPED_TEST_SUITE_P(LoggingAdaptor,
                                CcclMrRefAllocationTest,
                                CcclAdaptorTest<logging_resource_adaptor>);
 
-INSTANTIATE_TYPED_TEST_SUITE_P(PoolMRAdaptor, CcclMrRefTest, CcclAdaptorTest<pool_memory_resource>);
-INSTANTIATE_TYPED_TEST_SUITE_P(PoolMRAdaptor,
-                               CcclMrRefAllocationTest,
-                               CcclAdaptorTest<pool_memory_resource>);
-
 }  // namespace rmm::test

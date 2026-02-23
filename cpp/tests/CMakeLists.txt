@@ -161,6 +161,8 @@ ConfigureTest(CCCL_ADAPTOR_TEST mr/cccl_adaptor_tests.cpp)
 
 # pool mr tests
 ConfigureTest(POOL_MR_TEST mr/pool_mr_tests.cpp GPUS 1 PERCENT 100)
+ConfigureTest(POOL_MR_REF_TEST mr/mr_ref_pool_tests.cpp GPUS 1 PERCENT 100)
+ConfigureTest(PINNED_POOL_MR_REF_TEST mr/mr_ref_pinned_pool_tests.cpp GPUS 1 PERCENT 5)
 
 ConfigureTest(HWDECOMPRESS_TEST mr/hwdecompress_tests.cpp LINK_DRIVER)
 
