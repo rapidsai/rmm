@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -27,8 +27,7 @@
 void BM_UvectorSizeConstruction(benchmark::State& state)
 {
   rmm::mr::cuda_memory_resource cuda_mr{};
-  rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{
-    &cuda_mr, rmm::percent_of_free_device_memory(50)};
+  rmm::mr::pool_memory_resource mr{cuda_mr, rmm::percent_of_free_device_memory(50)};
   rmm::mr::set_current_device_resource_ref(mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
@@ -49,8 +48,7 @@ BENCHMARK(BM_UvectorSizeConstruction)
 void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 {
   rmm::mr::cuda_memory_resource cuda_mr{};
-  rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{
-    &cuda_mr, rmm::percent_of_free_device_memory(50)};
+  rmm::mr::pool_memory_resource mr{cuda_mr, rmm::percent_of_free_device_memory(50)};
   rmm::mr::set_current_device_resource_ref(mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)

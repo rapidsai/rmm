@@ -53,10 +53,15 @@ std::shared_ptr<rmm::mr::device_memory_resource> make_simulated(std::size_t simu
 inline auto make_pool(std::size_t simulated_size)
 {
   if (simulated_size > 0) {
-    return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
-      make_simulated(simulated_size), simulated_size, simulated_size);
+    auto upstream = make_simulated(simulated_size);
+    auto* pool    = new rmm::mr::pool_memory_resource(*upstream, simulated_size, simulated_size);
+    return std::shared_ptr<rmm::mr::pool_memory_resource>(
+      pool, [upstream](rmm::mr::pool_memory_resource* p) mutable { delete p; });
   }
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_cuda(), 0);
+  auto upstream = make_cuda();
+  auto* pool    = new rmm::mr::pool_memory_resource(*upstream, 0);
+  return std::shared_ptr<rmm::mr::pool_memory_resource>(
+    pool, [upstream](rmm::mr::pool_memory_resource* p) mutable { delete p; });
 }
 
 inline auto make_arena(std::size_t simulated_size)

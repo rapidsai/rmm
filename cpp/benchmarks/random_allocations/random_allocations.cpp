@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -154,8 +154,10 @@ inline auto make_cuda_async() { return std::make_shared<rmm::mr::cuda_async_memo
 
 inline auto make_pool()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
-    make_cuda(), rmm::percent_of_free_device_memory(50));
+  auto cuda  = make_cuda();
+  auto* pool = new rmm::mr::pool_memory_resource(*cuda, rmm::percent_of_free_device_memory(50));
+  return std::shared_ptr<rmm::mr::pool_memory_resource>(
+    pool, [cuda](rmm::mr::pool_memory_resource* p) mutable { delete p; });
 }
 
 inline auto make_arena()
