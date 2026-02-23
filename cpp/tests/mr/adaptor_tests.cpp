@@ -4,8 +4,6 @@
  */
 
 #include "../byte_literals.hpp"
-#include "cccl_mr_ref_test_allocation.hpp"
-#include "cccl_mr_ref_test_basic.hpp"
 
 #include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/error.hpp>
@@ -15,7 +13,6 @@
 #include <rmm/mr/failure_callback_resource_adaptor.hpp>
 #include <rmm/mr/is_resource_adaptor.hpp>
 #include <rmm/mr/limiting_resource_adaptor.hpp>
-#include <rmm/mr/logging_resource_adaptor.hpp>
 #include <rmm/mr/owning_wrapper.hpp>
 #include <rmm/mr/statistics_resource_adaptor.hpp>
 #include <rmm/mr/thread_safe_resource_adaptor.hpp>
@@ -32,7 +29,6 @@ using cuda_mr = rmm::mr::cuda_memory_resource;
 using rmm::mr::aligned_resource_adaptor;
 using rmm::mr::failure_callback_resource_adaptor;
 using rmm::mr::limiting_resource_adaptor;
-using rmm::mr::logging_resource_adaptor;
 using rmm::mr::statistics_resource_adaptor;
 using rmm::mr::thread_safe_resource_adaptor;
 using rmm::mr::tracking_resource_adaptor;
@@ -64,8 +60,6 @@ static_assert(
                                        cuda::mr::device_accessible>);
 static_assert(rmm::detail::polyfill::resource_with<rmm::mr::limiting_resource_adaptor<cuda_mr>,
                                                    cuda::mr::device_accessible>);
-static_assert(rmm::detail::polyfill::async_resource_with<rmm::mr::logging_resource_adaptor,
-                                                         cuda::mr::device_accessible>);
 static_assert(rmm::detail::polyfill::resource_with<rmm::mr::owning_wrapper<cuda_mr>,
                                                    cuda::mr::device_accessible>);
 static_assert(rmm::detail::polyfill::resource_with<rmm::mr::statistics_resource_adaptor<cuda_mr>,
@@ -143,59 +137,5 @@ TYPED_TEST(AdaptorTest, AllocFree)
   EXPECT_NE(ptr, nullptr);
   EXPECT_NO_THROW(this->mr->deallocate_sync(ptr, 1024));
 }
-
-class LoggingAdaptorTest : public ::testing::Test {
- protected:
-  cuda_mr upstream{};
-  std::string log_file{"rmm_logging_adaptor_test.txt"};
-};
-
-TEST_F(LoggingAdaptorTest, Equality)
-{
-  logging_resource_adaptor mr1{upstream, log_file};
-  logging_resource_adaptor mr2{mr1};
-
-  EXPECT_TRUE(mr1 == mr2);
-
-  logging_resource_adaptor mr3{upstream, "different_file.txt"};
-  EXPECT_FALSE(mr1 == mr3);
-}
-
-TEST_F(LoggingAdaptorTest, GetUpstreamResource)
-{
-  logging_resource_adaptor mr{upstream, log_file};
-  rmm::device_async_resource_ref expected{upstream};
-  EXPECT_TRUE(mr.get_upstream_resource() == expected);
-}
-
-TEST_F(LoggingAdaptorTest, AllocateDeallocate)
-{
-  logging_resource_adaptor mr{upstream, log_file};
-  void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = mr.allocate_sync(1024));
-  EXPECT_NE(ptr, nullptr);
-  EXPECT_NO_THROW(mr.deallocate_sync(ptr, 1024));
-}
-
-TEST_F(LoggingAdaptorTest, SharedOwnership)
-{
-  logging_resource_adaptor mr1{upstream, log_file};
-  logging_resource_adaptor mr2{mr1};
-
-  void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = mr1.allocate_sync(1024));
-  EXPECT_NE(ptr, nullptr);
-  EXPECT_NO_THROW(mr2.deallocate_sync(ptr, 1024));
-}
-
-struct LoggingMRFixture : public ::testing::Test {
-  rmm::mr::cuda_memory_resource upstream{};
-  rmm::mr::logging_resource_adaptor mr{upstream, "rmm_logging_ref_test.txt"};
-  rmm::device_async_resource_ref ref{mr};
-  rmm::cuda_stream stream{};
-};
-
-INSTANTIATE_TYPED_TEST_SUITE_P(LoggingMR, CcclMrRefTest, LoggingMRFixture);
-INSTANTIATE_TYPED_TEST_SUITE_P(LoggingMR, CcclMrRefAllocationTest, LoggingMRFixture);
 
 }  // namespace rmm::test
