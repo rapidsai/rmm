@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 

@@ -11,6 +11,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cstddef>
+#include <memory>
 #include <mutex>
 
 namespace RMM_NAMESPACE {

@@ -10,6 +10,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cstddef>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <stack>

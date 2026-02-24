@@ -12,6 +12,7 @@
 #include <rmm/detail/nvtx/ranges.hpp>
 
 #include <cstddef>
+#include <memory>
 
 namespace RMM_NAMESPACE {
 namespace mr {

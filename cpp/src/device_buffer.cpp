@@ -8,6 +8,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <memory>
+
 namespace rmm {
 
 device_buffer::device_buffer() : _mr{rmm::mr::get_current_device_resource_ref()} {}

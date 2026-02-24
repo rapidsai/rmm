@@ -10,6 +10,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cstddef>
+#include <memory>
 
 namespace RMM_NAMESPACE {
 namespace mr {

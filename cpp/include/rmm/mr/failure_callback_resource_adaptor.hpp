@@ -12,6 +12,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <memory>
 #include <utility>
 
 namespace RMM_NAMESPACE {
