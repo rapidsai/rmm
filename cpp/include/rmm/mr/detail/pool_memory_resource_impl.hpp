@@ -23,7 +23,7 @@ namespace detail {
 /**
  * @brief Implementation class for pool_memory_resource.
  *
- * A coalescing best-fit suballocator which uses a pool of memory allocated from
+ * A coalescing best-fit suballocator that uses a pool of memory allocated from
  * an upstream memory resource. This class satisfies the CCCL `cuda::mr::resource`
  * concept and is held by `pool_memory_resource` via `cuda::mr::shared_resource`
  * for reference-counted ownership.
