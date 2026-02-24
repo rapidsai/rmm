@@ -53,8 +53,7 @@ class pool_memory_resource_impl final
 
   [[nodiscard]] std::size_t pool_size() const noexcept;
 
-  friend constexpr void get_property(pool_memory_resource_impl const&,
-                                     cuda::mr::device_accessible) noexcept
+  friend void get_property(pool_memory_resource_impl const&, cuda::mr::device_accessible) noexcept
   {
   }
 

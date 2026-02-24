@@ -61,8 +61,8 @@ class logging_resource_adaptor_impl {
 
   [[nodiscard]] std::string header() const;
 
-  friend constexpr void get_property(logging_resource_adaptor_impl const&,
-                                     cuda::mr::device_accessible) noexcept
+  friend void get_property(logging_resource_adaptor_impl const&,
+                           cuda::mr::device_accessible) noexcept
   {
   }
 
