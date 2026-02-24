@@ -154,10 +154,8 @@ inline auto make_cuda_async() { return std::make_shared<rmm::mr::cuda_async_memo
 
 inline auto make_pool()
 {
-  auto cuda  = make_cuda();
-  auto* pool = new rmm::mr::pool_memory_resource(*cuda, rmm::percent_of_free_device_memory(50));
-  return std::shared_ptr<rmm::mr::pool_memory_resource>(
-    pool, [cuda](rmm::mr::pool_memory_resource* p) mutable { delete p; });
+  return std::make_shared<rmm::mr::pool_memory_resource>(*make_cuda(),
+                                                         rmm::percent_of_free_device_memory(50));
 }
 
 inline auto make_arena()
