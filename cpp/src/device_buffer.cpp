@@ -56,7 +56,7 @@ device_buffer::device_buffer(device_buffer&& other) noexcept
 
 device_buffer& device_buffer::operator=(device_buffer&& other) noexcept
 {
-  if (&other != this) {
+  if (this != std::addressof(other)) {
     cuda_set_device_raii dev{_device};
     deallocate_async();
 

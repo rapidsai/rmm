@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -127,7 +127,7 @@ class sam_headroom_memory_resource final : public device_memory_resource {
    */
   [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
-    if (this == &other) { return true; }
+    if (this == std::addressof(other)) { return true; }
     auto cast = dynamic_cast<sam_headroom_memory_resource const*>(&other);
     if (cast == nullptr) { return false; }
     return headroom_ == cast->headroom_;
