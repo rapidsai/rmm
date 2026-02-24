@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -187,7 +187,7 @@ class owning_wrapper : public device_memory_resource {
    */
   [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
-    if (this == &other) { return true; }
+    if (this == std::addressof(other)) { return true; }
     auto casted = dynamic_cast<owning_wrapper<Resource, Upstreams...> const*>(&other);
     if (nullptr != casted) { return wrapped().is_equal(casted->wrapped()); }
     return wrapped().is_equal(other);
