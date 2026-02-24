@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -10,6 +10,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cstddef>
+#include <memory>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -107,7 +108,7 @@ class prefetch_resource_adaptor final : public device_memory_resource {
    */
   bool do_is_equal(device_memory_resource const& other) const noexcept override
   {
-    if (this == &other) { return true; }
+    if (this == std::addressof(other)) { return true; }
     auto cast = dynamic_cast<prefetch_resource_adaptor<Upstream> const*>(&other);
     if (cast == nullptr) { return false; }
     return get_upstream_resource() == cast->get_upstream_resource();

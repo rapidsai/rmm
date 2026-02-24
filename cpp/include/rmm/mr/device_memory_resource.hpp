@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -12,6 +12,7 @@
 #include <rmm/detail/nvtx/ranges.hpp>
 
 #include <cstddef>
+#include <memory>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -270,7 +271,7 @@ class device_memory_resource {
    */
   [[nodiscard]] virtual bool do_is_equal(device_memory_resource const& other) const noexcept
   {
-    return this == &other;
+    return this == std::addressof(other);
   }
 };
 

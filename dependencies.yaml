@@ -289,7 +289,7 @@ dependencies:
           - make
           - myst-parser
           - nbsphinx
-          - &numba numba>=0.60.0,<0.62.0
+          - &numba numba>=0.60.0,<0.65.0
           - &numba_cuda numba-cuda>=0.22.1
           - numpydoc
           - pydata-sphinx-theme>=0.15.4
@@ -314,8 +314,12 @@ dependencies:
             packages:
               - python=3.13
           - matrix:
+              py: "3.14"
             packages:
-              - python>=3.11,<3.14
+              - python=3.14
+          - matrix:
+            packages:
+              - python>=3.11
   run:
     common:
       - output_types: [conda, requirements, pyproject]
