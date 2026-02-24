@@ -77,7 +77,10 @@ class RMM_EXPORT logging_resource_adaptor
    *
    * This property declares that a `logging_resource_adaptor` provides device accessible memory
    */
-  friend void get_property(logging_resource_adaptor const&, cuda::mr::device_accessible) noexcept {}
+  friend constexpr void get_property(logging_resource_adaptor const&,
+                                     cuda::mr::device_accessible) noexcept
+  {
+  }
 
   /**
    * @brief Construct a new logging resource adaptor using `upstream` to satisfy
