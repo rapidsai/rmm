@@ -39,7 +39,10 @@ class pool_memory_resource_impl final
 
   ~pool_memory_resource_impl() override;
 
-  bool operator==(pool_memory_resource_impl const& other) const noexcept { return this == &other; }
+  bool operator==(pool_memory_resource_impl const& other) const noexcept
+  {
+    return this == std::addressof(other);
+  }
 
   bool operator!=(pool_memory_resource_impl const& other) const noexcept
   {
