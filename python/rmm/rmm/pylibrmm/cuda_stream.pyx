@@ -14,8 +14,9 @@ from rmm.pylibrmm.stream import CudaStreamFlags, _OwningStream
 sys.modules[__name__].CudaStream = _OwningStream
 
 warnings.warn(
-    "rmm.pylibrmm.cuda_stream is deprecated; use rmm.pylibrmm.stream for "
-    "CudaStreamFlags.",
+    "rmm.pylibrmm.cuda_stream is deprecated; "
+    "use the new rmm.pylibrmm.stream module for "
+    "CudaStreamFlags and CudaStream.",
     DeprecationWarning,
     stacklevel=2,
 )
