@@ -61,16 +61,16 @@ TYPED_TEST_SUITE(CcclAdaptorTest, cccl_adaptors);
 TYPED_TEST(CcclAdaptorTest, Equality)
 {
   auto copy = this->mr;
-  EXPECT_TRUE(this->mr == copy);
+  EXPECT_EQ(this->mr, copy);
 
   auto other = this->make_mr();
-  EXPECT_FALSE(this->mr == other);
+  EXPECT_NE(this->mr, other);
 }
 
 TYPED_TEST(CcclAdaptorTest, GetUpstreamResource)
 {
   rmm::device_async_resource_ref expected{this->cuda};
-  EXPECT_TRUE(this->mr.get_upstream_resource() == expected);
+  EXPECT_EQ(this->mr.get_upstream_resource(), expected);
   EXPECT_TRUE(rmm::mr::is_resource_adaptor<TypeParam>);
 }
 

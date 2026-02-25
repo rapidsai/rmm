@@ -122,10 +122,10 @@ TYPED_TEST(AdaptorTest, GetUpstreamResource)
 {
   rmm::device_async_resource_ref expected{this->cuda};
   if constexpr (std::is_same_v<TypeParam, owning_wrapper>) {
-    EXPECT_TRUE(this->mr->wrapped().get_upstream_resource() == expected);
+    EXPECT_EQ(this->mr->wrapped().get_upstream_resource(), expected);
     EXPECT_TRUE(rmm::mr::is_resource_adaptor<decltype(this->mr->wrapped())>);
   } else {
-    EXPECT_TRUE(this->mr->get_upstream_resource() == expected);
+    EXPECT_EQ(this->mr->get_upstream_resource(), expected);
     EXPECT_TRUE(rmm::mr::is_resource_adaptor<decltype(*this->mr)>);
   }
 }
