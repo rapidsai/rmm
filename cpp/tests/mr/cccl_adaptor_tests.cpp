@@ -3,9 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "cccl_mr_ref_test_allocation.hpp"
-#include "cccl_mr_ref_test_basic.hpp"
-
 #include <rmm/cuda_stream.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/is_resource_adaptor.hpp>
