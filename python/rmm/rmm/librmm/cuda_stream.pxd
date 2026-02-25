@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 from cuda.bindings.cyruntime cimport cudaStream_t
@@ -15,6 +15,7 @@ cdef extern from "rmm/cuda_stream.hpp" namespace "rmm" nogil:
         non_blocking "rmm::cuda_stream::flags::non_blocking"
     cdef cppclass cuda_stream:
         cuda_stream() except +
+        cuda_stream(cuda_stream_flags flags) except +
         bool is_valid() except +
         cudaStream_t value() except +
         cuda_stream_view view() except +

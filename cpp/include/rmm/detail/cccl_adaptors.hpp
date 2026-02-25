@@ -14,6 +14,7 @@
 #include <cuda/std/optional>
 
 #include <cstddef>
+#include <memory>
 #include <type_traits>
 #include <utility>
 
@@ -180,7 +181,7 @@ class cccl_resource_ref {
    */
   cccl_resource_ref& operator=(cccl_resource_ref const& other)
   {
-    if (this != &other) {
+    if (this != std::addressof(other)) {
       view_ = other.view_;
       ref_  = view_.has_value() ? ResourceType{*view_} : other.ref_;
     }
@@ -195,7 +196,7 @@ class cccl_resource_ref {
    */
   cccl_resource_ref& operator=(cccl_resource_ref&& other) noexcept
   {
-    if (this != &other) {
+    if (this != std::addressof(other)) {
       view_ = std::move(other.view_);
       ref_  = view_.has_value() ? ResourceType{*view_} : std::move(other.ref_);
     }
@@ -437,7 +438,7 @@ class cccl_async_resource_ref {
    */
   cccl_async_resource_ref& operator=(cccl_async_resource_ref const& other)
   {
-    if (this != &other) {
+    if (this != std::addressof(other)) {
       view_ = other.view_;
       ref_  = view_.has_value() ? ResourceType{*view_} : other.ref_;
     }
@@ -452,7 +453,7 @@ class cccl_async_resource_ref {
    */
   cccl_async_resource_ref& operator=(cccl_async_resource_ref&& other) noexcept
   {
-    if (this != &other) {
+    if (this != std::addressof(other)) {
       view_ = std::move(other.view_);
       ref_  = view_.has_value() ? ResourceType{*view_} : std::move(other.ref_);
     }
