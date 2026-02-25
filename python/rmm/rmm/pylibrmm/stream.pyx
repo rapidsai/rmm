@@ -55,26 +55,35 @@ cdef class _OwningStream:
 
 
 cdef class Stream:
-    def __init__(self, obj=None, flags=CudaStreamFlags.SYNC_DEFAULT):
+    def __init__(self, obj=None, flags=None):
         """
         A Stream represents a CUDA stream.
 
         Parameters
         ----------
-        obj: optional
-            * If None (the default), a new CUDA stream is created.
-            * If a Numba or CuPy stream is provided, we make a thin
-              wrapper around it.
-        flags: CudaStreamFlags, optional
-            Stream creation flags. Only used when obj is None.
-            Default is CudaStreamFlags.SYNC_DEFAULT.
+        obj : object, optional
+            If None (the default), a new CUDA stream is created.
+            Otherwise a thin wrapper is created around an existing
+            stream from Numba, CuPy, or any object implementing the
+            CUDA stream protocol (``__cuda_stream__``).
+        flags : CudaStreamFlags, optional
+            Stream creation flags. Only valid when ``obj`` is None;
+            raises ``ValueError`` if provided alongside ``obj``.
+            Defaults to ``CudaStreamFlags.SYNC_DEFAULT``.
         """
         if obj is None:
-            self._init_with_new_cuda_stream(flags)
-        elif isinstance(obj, Stream):
-            self._init_from_stream(obj)
+            self._init_with_new_cuda_stream(
+                CudaStreamFlags.SYNC_DEFAULT if flags is None else flags
+            )
         else:
-            if hasattr(obj, "__cuda_stream__"):
+            if flags is not None:
+                raise ValueError(
+                    "flags may only be specified when obj is None; "
+                    "flags cannot be applied to an existing stream."
+                )
+            if isinstance(obj, Stream):
+                self._init_from_stream(obj)
+            elif hasattr(obj, "__cuda_stream__"):
                 self._init_from_cuda_stream_protocol(obj)
             else:
                 try:
