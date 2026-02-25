@@ -451,7 +451,7 @@ cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
             size_t blocks_to_preallocate=128
     ):
         self.c_obj.reset(
-            new fixed_size_memory_resource[device_memory_resource](
+            new fixed_size_memory_resource(
                 upstream_mr.get_mr(),
                 block_size,
                 blocks_to_preallocate
@@ -497,13 +497,13 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
         if (min_size_exponent == -1 or max_size_exponent == -1):
             self.c_obj.reset(
-                new binning_memory_resource[device_memory_resource](
+                new binning_memory_resource(
                     upstream_mr.get_mr()
                 )
             )
         else:
             self.c_obj.reset(
-                new binning_memory_resource[device_memory_resource](
+                new binning_memory_resource(
                     upstream_mr.get_mr(),
                     min_size_exponent,
                     max_size_exponent
@@ -562,13 +562,13 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
             The resource to use for this bin (optional)
         """
         if bin_resource is None:
-            (<binning_memory_resource[device_memory_resource]*>(
+            (<binning_memory_resource*>(
                 self.c_obj.get()))[0].add_bin(allocation_size)
         else:
             # Save the ref to the new bin resource to ensure its lifetime
             self._bin_mrs.append(bin_resource)
 
-            (<binning_memory_resource[device_memory_resource]*>(
+            (<binning_memory_resource*>(
                 self.c_obj.get()))[0].add_bin(
                     allocation_size,
                     bin_resource.get_mr())

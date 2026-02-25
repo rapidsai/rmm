@@ -166,9 +166,9 @@ cdef extern from "rmm/mr/arena_memory_resource.hpp" \
 
 cdef extern from "rmm/mr/fixed_size_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass fixed_size_memory_resource[Upstream](device_memory_resource):
+    cdef cppclass fixed_size_memory_resource(device_memory_resource):
         fixed_size_memory_resource(
-            Upstream* upstream_mr,
+            device_memory_resource* upstream_mr,
             size_t block_size,
             size_t block_to_preallocate) except +
 
@@ -187,10 +187,10 @@ cdef extern from "rmm/mr/callback_memory_resource.hpp" \
 
 cdef extern from "rmm/mr/binning_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass binning_memory_resource[Upstream](device_memory_resource):
-        binning_memory_resource(Upstream* upstream_mr) except +
+    cdef cppclass binning_memory_resource(device_memory_resource):
+        binning_memory_resource(device_memory_resource* upstream_mr) except +
         binning_memory_resource(
-            Upstream* upstream_mr,
+            device_memory_resource* upstream_mr,
             int8_t min_size_exponent,
             int8_t max_size_exponent) except +
 

@@ -4,7 +4,9 @@
  */
 
 #include <rmm/cuda_stream.hpp>
+#include <rmm/mr/binning_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/fixed_size_memory_resource.hpp>
 #include <rmm/mr/is_resource_adaptor.hpp>
 #include <rmm/mr/logging_resource_adaptor.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
@@ -15,12 +17,16 @@
 #include <type_traits>
 
 using cuda_mr = rmm::mr::cuda_memory_resource;
+using rmm::mr::binning_memory_resource;
+using rmm::mr::fixed_size_memory_resource;
 using rmm::mr::logging_resource_adaptor;
 using rmm::mr::pool_memory_resource;
 
 // static property checks
 static_assert(cuda::mr::resource_with<logging_resource_adaptor, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<pool_memory_resource, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<fixed_size_memory_resource, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<binning_memory_resource, cuda::mr::device_accessible>);
 
 namespace rmm::test {
 
@@ -47,11 +53,18 @@ struct CcclAdaptorTest : public ::testing::Test {
       return AdaptorType{cuda, "rmm_cccl_adaptor_test.txt"};
     } else if constexpr (std::is_same_v<AdaptorType, pool_memory_resource>) {
       return AdaptorType{cuda, 0};
+    } else if constexpr (std::is_same_v<AdaptorType, fixed_size_memory_resource>) {
+      return AdaptorType{cuda};
+    } else if constexpr (std::is_same_v<AdaptorType, binning_memory_resource>) {
+      return AdaptorType{cuda, 18, 22};
     }
   }
 };
 
-using cccl_adaptors = ::testing::Types<logging_resource_adaptor, pool_memory_resource>;
+using cccl_adaptors = ::testing::Types<logging_resource_adaptor,
+                                       pool_memory_resource,
+                                       fixed_size_memory_resource,
+                                       binning_memory_resource>;
 
 TYPED_TEST_SUITE(CcclAdaptorTest, cccl_adaptors);
 

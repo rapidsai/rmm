@@ -404,20 +404,19 @@ inline auto make_arena()
 
 inline auto make_fixed_size()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_size_memory_resource>(make_cuda());
+  return std::make_shared<rmm::mr::fixed_size_memory_resource>(
+    rmm::mr::get_current_device_resource_ref());
 }
 
 inline auto make_binning()
 {
-  auto cuda_async_mr = make_cuda_async();
   // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
-  // Larger allocations will use the CUDA async resource
+  // Larger allocations will use the current device resource
   auto const bin_range_start{18};
   auto const bin_range_end{22};
 
-  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(
-    cuda_async_mr, bin_range_start, bin_range_end);
-  return mr;
+  return std::make_shared<rmm::mr::binning_memory_resource>(
+    rmm::mr::get_current_device_resource_ref(), bin_range_start, bin_range_end);
 }
 
 struct mr_factory_base {
@@ -450,8 +449,8 @@ using cuda_async_mr = rmm::mr::cuda_async_memory_resource;
 using managed_mr    = rmm::mr::managed_memory_resource;
 using system_mr     = rmm::mr::system_memory_resource;
 using arena_mr      = rmm::mr::arena_memory_resource<cuda_mr>;
-using fixed_mr      = rmm::mr::fixed_size_memory_resource<cuda_mr>;
-using binning_mr    = rmm::mr::binning_memory_resource<cuda_async_mr>;
+using fixed_mr      = rmm::mr::fixed_size_memory_resource;
+using binning_mr    = rmm::mr::binning_memory_resource;
 
 inline std::shared_ptr<mr_factory_base> mr_factory_dispatch(std::string name)
 {
