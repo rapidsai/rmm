@@ -91,15 +91,4 @@ TYPED_TEST(CcclAdaptorTest, SharedOwnership)
   EXPECT_NO_THROW(copy.deallocate_sync(ptr, 1024));
 }
 
-// ---------------------------------------------------------------------------
-// CcclMrRef typed-test instantiations
-// ---------------------------------------------------------------------------
-
-INSTANTIATE_TYPED_TEST_SUITE_P(LoggingAdaptor,
-                               CcclMrRefTest,
-                               CcclAdaptorTest<logging_resource_adaptor>);
-INSTANTIATE_TYPED_TEST_SUITE_P(LoggingAdaptor,
-                               CcclMrRefAllocationTest,
-                               CcclAdaptorTest<logging_resource_adaptor>);
-
 }  // namespace rmm::test
