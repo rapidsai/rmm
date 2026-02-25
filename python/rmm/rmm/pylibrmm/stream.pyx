@@ -1,37 +1,89 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
+cimport cython
+from enum import IntEnum
 from cuda.bindings.cyruntime cimport cudaStream_t
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
+from rmm.librmm.cuda_stream cimport cuda_stream, cuda_stream_flags
 from rmm.librmm.cuda_stream_view cimport (
     cuda_stream_default,
     cuda_stream_legacy,
     cuda_stream_per_thread,
     cuda_stream_view,
 )
-from rmm.pylibrmm.cuda_stream cimport CudaStream
+
+
+class CudaStreamFlags(IntEnum):
+    """
+    Enumeration of CUDA stream creation flags.
+
+    Attributes
+    ----------
+    SYNC_DEFAULT : int
+        Created stream synchronizes with the default stream.
+    NON_BLOCKING : int
+        Created stream does not synchronize with the default stream.
+    """
+    SYNC_DEFAULT = <int>(cuda_stream_flags.sync_default)
+    NON_BLOCKING = <int>(cuda_stream_flags.non_blocking)
+
+
+@cython.final
+cdef class _OwningStream:
+    """
+    Wrapper around a CUDA stream with RAII semantics.
+    When an _OwningStream instance is GC'd, the underlying
+    CUDA stream is destroyed.
+    """
+    def __cinit__(self, flags=CudaStreamFlags.SYNC_DEFAULT):
+        cdef cuda_stream_flags c_flags = <cuda_stream_flags>(<int>flags)
+        with nogil:
+            self.c_obj.reset(new cuda_stream(c_flags))
+
+    def __dealloc__(self):
+        with nogil:
+            self.c_obj.reset()
+
+    cdef cudaStream_t value(self) except * nogil:
+        return self.c_obj.get()[0].value()
+
+    cdef bool is_valid(self) except * nogil:
+        return self.c_obj.get()[0].is_valid()
 
 
 cdef class Stream:
-    def __init__(self, obj=None):
+    def __init__(self, obj=None, flags=None):
         """
         A Stream represents a CUDA stream.
 
         Parameters
         ----------
-        obj: optional
-            * If None (the default), a new CUDA stream is created.
-            * If a Numba or CuPy stream is provided, we make a thin
-              wrapper around it.
+        obj : object, optional
+            If None (the default), a new CUDA stream is created.
+            Otherwise a thin wrapper is created around an existing
+            stream from Numba, CuPy, or any object implementing the
+            CUDA stream protocol (``__cuda_stream__``).
+        flags : CudaStreamFlags, optional
+            Stream creation flags. Only valid when ``obj`` is None;
+            raises ``ValueError`` if provided alongside ``obj``.
+            Defaults to ``CudaStreamFlags.SYNC_DEFAULT``.
         """
         if obj is None:
-            self._init_with_new_cuda_stream()
-        elif isinstance(obj, Stream):
-            self._init_from_stream(obj)
+            self._init_with_new_cuda_stream(
+                CudaStreamFlags.SYNC_DEFAULT if flags is None else flags
+            )
         else:
-            if hasattr(obj, "__cuda_stream__"):
+            if flags is not None:
+                raise ValueError(
+                    "flags may only be specified when obj is None; "
+                    "flags cannot be applied to an existing stream."
+                )
+            if isinstance(obj, Stream):
+                self._init_from_stream(obj)
+            elif hasattr(obj, "__cuda_stream__"):
                 self._init_from_cuda_stream_protocol(obj)
             else:
                 try:
@@ -132,8 +184,10 @@ cdef class Stream:
     def __hash__(self):
         return hash(int(<uintptr_t>(self._cuda_stream)))
 
-    cdef void _init_with_new_cuda_stream(self) except *:
-        cdef CudaStream stream = CudaStream()
+    cdef void _init_with_new_cuda_stream(
+        self, flags=CudaStreamFlags.SYNC_DEFAULT
+    ) except *:
+        cdef _OwningStream stream = _OwningStream(flags)
         self._cuda_stream = stream.value()
         self._owner = stream
 
