@@ -28,5 +28,5 @@ cdef class Stream:
     cdef cuda_stream_view view(self) noexcept nogil
     cdef void c_synchronize(self) except * nogil
     cdef bool c_is_default(self) noexcept nogil
-    cdef void _init_with_new_cuda_stream(self) except *
+    cdef void _init_with_new_cuda_stream(self, flags=*) except *
     cdef void _init_from_stream(self, Stream stream) except *

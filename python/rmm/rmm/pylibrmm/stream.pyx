@@ -38,9 +38,10 @@ cdef class _OwningStream:
     When an _OwningStream instance is GC'd, the underlying
     CUDA stream is destroyed.
     """
-    def __cinit__(self):
+    def __cinit__(self, flags=CudaStreamFlags.SYNC_DEFAULT):
+        cdef cuda_stream_flags c_flags = <cuda_stream_flags>(<int>flags)
         with nogil:
-            self.c_obj.reset(new cuda_stream())
+            self.c_obj.reset(new cuda_stream(c_flags))
 
     def __dealloc__(self):
         with nogil:
@@ -54,7 +55,7 @@ cdef class _OwningStream:
 
 
 cdef class Stream:
-    def __init__(self, obj=None):
+    def __init__(self, obj=None, flags=CudaStreamFlags.SYNC_DEFAULT):
         """
         A Stream represents a CUDA stream.
 
@@ -64,9 +65,12 @@ cdef class Stream:
             * If None (the default), a new CUDA stream is created.
             * If a Numba or CuPy stream is provided, we make a thin
               wrapper around it.
+        flags: CudaStreamFlags, optional
+            Stream creation flags. Only used when obj is None.
+            Default is CudaStreamFlags.SYNC_DEFAULT.
         """
         if obj is None:
-            self._init_with_new_cuda_stream()
+            self._init_with_new_cuda_stream(flags)
         elif isinstance(obj, Stream):
             self._init_from_stream(obj)
         else:
@@ -171,8 +175,10 @@ cdef class Stream:
     def __hash__(self):
         return hash(int(<uintptr_t>(self._cuda_stream)))
 
-    cdef void _init_with_new_cuda_stream(self) except *:
-        cdef _OwningStream stream = _OwningStream()
+    cdef void _init_with_new_cuda_stream(
+        self, flags=CudaStreamFlags.SYNC_DEFAULT
+    ) except *:
+        cdef _OwningStream stream = _OwningStream(flags)
         self._cuda_stream = stream.value()
         self._owner = stream
 
