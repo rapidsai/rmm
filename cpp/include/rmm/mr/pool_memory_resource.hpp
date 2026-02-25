@@ -73,7 +73,10 @@ class RMM_EXPORT pool_memory_resource
    *
    * This property declares that a `pool_memory_resource` provides device accessible memory
    */
-  friend void get_property(pool_memory_resource const&, cuda::mr::device_accessible) noexcept {}
+  RMM_CONSTEXPR_FRIEND void get_property(pool_memory_resource const&,
+                                         cuda::mr::device_accessible) noexcept
+  {
+  }
 
   /**
    * @brief Construct a `pool_memory_resource` and allocate the initial device memory pool using
