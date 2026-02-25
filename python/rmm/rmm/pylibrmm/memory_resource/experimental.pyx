@@ -1,13 +1,20 @@
-# SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 """Experimental memory resource features."""
 
 from libc.stdint cimport uintptr_t
+from libcpp.memory cimport make_unique
 
-from rmm.librmm.memory_resource cimport cuda_async_managed_memory_resource
+from rmm.librmm.memory_resource cimport (
+    any_device_resource,
+    cuda_async_managed_memory_resource,
+)
 # import from the private _memory_resource to avoid a circular import
-from rmm.pylibrmm.memory_resource._memory_resource cimport DeviceMemoryResource
+from rmm.pylibrmm.memory_resource._memory_resource cimport (
+    DeviceMemoryResource,
+    to_device_async_resource_ref_checked,
+)
 
 
 cdef class CudaAsyncManagedMemoryResource(DeviceMemoryResource):
@@ -22,8 +29,12 @@ cdef class CudaAsyncManagedMemoryResource(DeviceMemoryResource):
     (not supported on WSL2).
     """
     def __cinit__(self):
-        self.c_obj.reset(
-            new cuda_async_managed_memory_resource()
+        # Create the typed resource and store it
+        self._typed_mr = make_unique[cuda_async_managed_memory_resource]()
+
+        # Copy into any_resource by constructing from resource_ref
+        self.c_any_mr = any_device_resource(
+            to_device_async_resource_ref_checked(self._typed_mr.get())
         )
 
     def pool_handle(self):
@@ -35,6 +46,4 @@ cdef class CudaAsyncManagedMemoryResource(DeviceMemoryResource):
         int
             Handle to the underlying CUDA memory pool
         """
-        cdef cuda_async_managed_memory_resource* c_mr = \
-            <cuda_async_managed_memory_resource*>(self.c_obj.get())
-        return <uintptr_t>(c_mr.pool_handle())
+        return <uintptr_t>(self._typed_mr.get().pool_handle())
