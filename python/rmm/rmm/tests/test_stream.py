@@ -117,6 +117,20 @@ def test_cuda_stream_pool(current_device, flags):
         assert streams[i] == stream_pool.get_stream(i)
 
 
+def test_cuda_stream_module_deprecation():
+    import importlib
+    import sys
+    import warnings
+
+    sys.modules.pop("rmm.pylibrmm.cuda_stream", None)
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        importlib.import_module("rmm.pylibrmm.cuda_stream")
+    assert any(
+        issubclass(warning.category, DeprecationWarning) for warning in w
+    )
+
+
 def test_hashable():
     a = rmm.pylibrmm.stream.Stream()
     b = rmm.pylibrmm.stream.Stream()
