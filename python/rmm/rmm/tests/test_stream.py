@@ -1,10 +1,9 @@
-# SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 
 import pytest
 
-import rmm.pylibrmm.cuda_stream
 import rmm.pylibrmm.cuda_stream_pool
 import rmm.pylibrmm.stream
 
@@ -94,8 +93,8 @@ def test_cuda_core_buffer(current_device):
 @pytest.mark.parametrize(
     "flags",
     [
-        rmm.pylibrmm.cuda_stream.CudaStreamFlags.SYNC_DEFAULT,
-        rmm.pylibrmm.cuda_stream.CudaStreamFlags.NON_BLOCKING,
+        rmm.pylibrmm.stream.CudaStreamFlags.SYNC_DEFAULT,
+        rmm.pylibrmm.stream.CudaStreamFlags.NON_BLOCKING,
     ],
 )
 def test_cuda_stream_pool(current_device, flags):
@@ -132,3 +131,27 @@ def test_hashable():
     a2 = rmm.pylibrmm.stream.Stream(a)
     assert a2 == a
     assert hash(a2) == hash(a)
+
+
+def test_cuda_stream_module_deprecation():
+    import importlib
+    import sys
+    import warnings
+
+    sys.modules.pop("rmm.pylibrmm.cuda_stream", None)
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        importlib.import_module("rmm.pylibrmm.cuda_stream")
+    assert any(
+        issubclass(warning.category, DeprecationWarning) for warning in w
+    )
+
+
+def test_flags_with_obj_raises():
+    existing = rmm.pylibrmm.stream.Stream()
+    with pytest.raises(
+        ValueError, match="flags may only be specified when obj is None"
+    ):
+        rmm.pylibrmm.stream.Stream(
+            existing, flags=rmm.pylibrmm.stream.CudaStreamFlags.NON_BLOCKING
+        )

@@ -1,46 +1,28 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
-cimport cython
-from enum import IntEnum
-from cuda.bindings.cyruntime cimport cudaStream_t
-from libcpp cimport bool
+# backwards compat file reexporting CudaStream and CudaStreamFlags
 
-from rmm.librmm.cuda_stream cimport cuda_stream, cuda_stream_flags
+import warnings
 
+from rmm.pylibrmm.stream cimport _OwningStream as CudaStream
 
-class CudaStreamFlags(IntEnum):
-    """
-    Enumeration of CUDA stream creation flags.
+import sys
 
-    Attributes
-    ----------
-    SYNC_DEFAULT : int
-        Created stream synchronizes with the default stream.
-    NON_BLOCKING : int
-        Created stream does not synchronize with the default stream.
-    """
-    SYNC_DEFAULT = <int>(cuda_stream_flags.sync_default)
-    NON_BLOCKING = <int>(cuda_stream_flags.non_blocking)
+from rmm.pylibrmm.stream import CudaStreamFlags, _OwningStream
 
+sys.modules[__name__].CudaStream = _OwningStream
+del _OwningStream
 
-@cython.final
-cdef class CudaStream:
-    """
-    Wrapper around a CUDA stream with RAII semantics.
-    When a CudaStream instance is GC'd, the underlying
-    CUDA stream is destroyed.
-    """
-    def __cinit__(self):
-        with nogil:
-            self.c_obj.reset(new cuda_stream())
+warnings.warn(
+    "rmm.pylibrmm.cuda_stream is deprecated; "
+    "use rmm.pylibrmm.stream.CudaStreamFlags for stream flags, "
+    "and rmm.pylibrmm.stream.Stream for stream objects.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-    def __dealloc__(self):
-        with nogil:
-            self.c_obj.reset()
-
-    cdef cudaStream_t value(self) except * nogil:
-        return self.c_obj.get()[0].value()
-
-    cdef bool is_valid(self) except * nogil:
-        return self.c_obj.get()[0].is_valid()
+__all__ = [
+    "CudaStream",
+    "CudaStreamFlags",
+]

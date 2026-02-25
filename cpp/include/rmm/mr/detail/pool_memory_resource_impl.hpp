@@ -12,6 +12,7 @@
 #include <cuda/memory_resource>
 
 #include <cstddef>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <set>
