@@ -155,7 +155,7 @@ pool_memory_resource_impl::block_type pool_memory_resource_impl::free_block(
   RMM_LOGGING_ASSERT(iter != allocated_blocks_.end());
 
   auto block = *iter;
-  RMM_LOGGING_ASSERT(block.size() == rmm::align_up(size, allocation_alignment));
+  RMM_LOGGING_ASSERT(block.size() == rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT));
   allocated_blocks_.erase(iter);
 
   return block;

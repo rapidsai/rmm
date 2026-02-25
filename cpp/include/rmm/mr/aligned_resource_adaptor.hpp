@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -53,7 +53,7 @@ class aligned_resource_adaptor final : public device_memory_resource {
   /**
    * @brief Construct an aligned resource adaptor using `upstream` to satisfy allocation requests.
    *
-   * @throws rmm::logic_error if `allocation_alignment` is not a power of 2
+   * @throws rmm::logic_error if `alignment` is not a power of 2
    *
    * @param upstream The resource used for allocating/deallocating device memory.
    * @param alignment The size used for allocation alignment. Values smaller than
