@@ -6,6 +6,10 @@
 #include <rmm/aligned.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 
+#include <cstddef>
+#include <memory>
+#include <optional>
+
 namespace RMM_NAMESPACE {
 namespace mr {
 
@@ -39,7 +43,7 @@ void pool_memory_resource::do_deallocate(void* ptr,
 
 bool pool_memory_resource::do_is_equal(device_memory_resource const& other) const noexcept
 {
-  if (this == &other) { return true; }
+  if (this == std::addressof(other)) { return true; }
   auto const* cast = dynamic_cast<pool_memory_resource const*>(&other);
   if (cast == nullptr) { return false; }
   return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(*cast);
