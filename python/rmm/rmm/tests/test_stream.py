@@ -117,6 +117,22 @@ def test_cuda_stream_pool(current_device, flags):
         assert streams[i] == stream_pool.get_stream(i)
 
 
+def test_hashable():
+    a = rmm.pylibrmm.stream.Stream()
+    b = rmm.pylibrmm.stream.Stream()
+    assert hash(a) == hash(a)
+    assert hash(a) != hash(b)
+
+    assert a == a
+    assert a != b
+
+    assert len({a, b}) == 2
+
+    a2 = rmm.pylibrmm.stream.Stream(a)
+    assert a2 == a
+    assert hash(a2) == hash(a)
+
+
 def test_cuda_stream_module_deprecation():
     import importlib
     import sys
@@ -139,19 +155,3 @@ def test_flags_with_obj_raises():
         rmm.pylibrmm.stream.Stream(
             existing, flags=rmm.pylibrmm.stream.CudaStreamFlags.NON_BLOCKING
         )
-
-
-def test_hashable():
-    a = rmm.pylibrmm.stream.Stream()
-    b = rmm.pylibrmm.stream.Stream()
-    assert hash(a) == hash(a)
-    assert hash(a) != hash(b)
-
-    assert a == a
-    assert a != b
-
-    assert len({a, b}) == 2
-
-    a2 = rmm.pylibrmm.stream.Stream(a)
-    assert a2 == a
-    assert hash(a2) == hash(a)
