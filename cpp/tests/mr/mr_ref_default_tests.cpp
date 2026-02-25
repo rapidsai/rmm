@@ -42,8 +42,11 @@ void spawn(Task task, Arguments&&... args)
 
 TEST(DefaultTest, CurrentDeviceResourceIsCUDA)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
   EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+#pragma GCC diagnostic pop
 }
 
 TEST(DefaultTest, UseCurrentDeviceResource) { test_get_current_device_resource(); }
@@ -52,7 +55,10 @@ TEST(DefaultTest, UseCurrentDeviceResourceRef) { test_get_current_device_resourc
 
 TEST(DefaultTest, GetCurrentDeviceResource)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   auto* mr = rmm::mr::get_current_device_resource();
+#pragma GCC diagnostic pop
   EXPECT_NE(nullptr, mr);
   EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
 }
@@ -100,8 +106,11 @@ TEST(DefaultTest, UseCurrentDeviceResourceRef_mt) { spawn(test_get_current_devic
 TEST(DefaultTest, CurrentDeviceResourceIsCUDA_mt)
 {
   spawn([]() {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
     EXPECT_TRUE(rmm::mr::get_current_device_resource()->is_equal(rmm::mr::cuda_memory_resource{}));
+#pragma GCC diagnostic pop
   });
 }
 
@@ -116,7 +125,10 @@ TEST(DefaultTest, CurrentDeviceResourceRefIsCUDA_mt)
 TEST(DefaultTest, GetCurrentDeviceResource_mt)
 {
   spawn([]() {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     rmm::mr::device_memory_resource* mr = rmm::mr::get_current_device_resource();
+#pragma GCC diagnostic pop
     EXPECT_NE(nullptr, mr);
     EXPECT_TRUE(mr->is_equal(rmm::mr::cuda_memory_resource{}));
   });
