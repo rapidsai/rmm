@@ -12,11 +12,12 @@ import sys
 from rmm.pylibrmm.stream import CudaStreamFlags, _OwningStream
 
 sys.modules[__name__].CudaStream = _OwningStream
+del _OwningStream
 
 warnings.warn(
     "rmm.pylibrmm.cuda_stream is deprecated; "
-    "use the new rmm.pylibrmm.stream module for "
-    "CudaStreamFlags and CudaStream.",
+    "use rmm.pylibrmm.stream.CudaStreamFlags for stream flags, "
+    "and rmm.pylibrmm.stream.Stream for stream objects.",
     DeprecationWarning,
     stacklevel=2,
 )
