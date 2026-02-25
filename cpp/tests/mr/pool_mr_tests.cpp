@@ -207,8 +207,7 @@ TEST_F(PoolMemoryResourceTest, PoolSize) { EXPECT_GE(pool.pool_size(), 1024 * 10
 
 namespace test_properties {
 
-// pool_memory_resource is now non-template; verify it satisfies the resource concept
-// and always has device_accessible (since upstream is any_resource<device_accessible>)
+// static property checks
 static_assert(cuda::mr::resource_with<rmm::mr::pool_memory_resource, cuda::mr::device_accessible>);
 
 }  // namespace test_properties
