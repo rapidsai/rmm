@@ -4,21 +4,18 @@
  */
 #pragma once
 
-#include <rmm/detail/error.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/detail/stack_trace.hpp>
-#include <rmm/logger.hpp>
+#include <rmm/mr/detail/tracking_resource_adaptor_impl.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
-#include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <atomic>
+#include <cuda/memory_resource>
+
 #include <cstddef>
 #include <map>
 #include <memory>
-#include <mutex>
-#include <shared_mutex>
-#include <sstream>
+#include <string>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -28,250 +25,118 @@ namespace mr {
  * @file
  */
 /**
- * @brief Resource that uses `Upstream` to allocate memory and tracks allocations.
+ * @brief Resource that uses an upstream resource to allocate memory and tracks allocations.
  *
- * An instance of this resource can be constructed with an existing, upstream
- * resource in order to satisfy allocation requests, but any existing allocations
- * will be untracked. Tracking stores a size and pointer for every allocation, and a stack
- * frame if `capture_stacks` is true, so it can add significant overhead.
- * `tracking_resource_adaptor` is intended as a debug adaptor and shouldn't be used in
- * performance-sensitive code. Note that callstacks may not contain all symbols unless
- * the project is linked with `-rdynamic`. This can be accomplished with
- * `add_link_options(-rdynamic)` in cmake.
+ * Tracks every allocation (size, pointer, and optionally stack trace). Intended as a debug
+ * adaptor; should not be used in performance-sensitive code.
  *
- * @tparam Upstream Type of the upstream resource used for allocation/deallocation.
+ * This class is copyable and shares ownership of its internal state via
+ * `cuda::mr::shared_resource`.
  */
-template <typename Upstream>
-class tracking_resource_adaptor final : public device_memory_resource {
+class RMM_EXPORT tracking_resource_adaptor
+  : public device_memory_resource,
+    private cuda::mr::shared_resource<detail::tracking_resource_adaptor_impl> {
+  using shared_base = cuda::mr::shared_resource<detail::tracking_resource_adaptor_impl>;
+
  public:
-  using read_lock_t =
-    std::shared_lock<std::shared_mutex>;  ///< Type of lock used to synchronize read access
-  using write_lock_t =
-    std::unique_lock<std::shared_mutex>;  ///< Type of lock used to synchronize write access
-  /**
-   * @brief Information stored about an allocation. Includes the size
-   * and a stack trace if the `tracking_resource_adaptor` was initialized
-   * to capture stacks.
-   *
-   */
-  struct allocation_info {
-    std::unique_ptr<rmm::detail::stack_trace> strace;  ///< Stack trace of the allocation
-    std::size_t allocation_size;                       ///< Size of the allocation
+  /// @brief Allocation info type (pointer, size, optional stack trace).
+  using allocation_info = detail::tracking_resource_adaptor_impl::allocation_info;
+  /// @brief Shared-reader lock type used to protect the allocations map.
+  using read_lock_t = detail::tracking_resource_adaptor_impl::read_lock_t;
+  /// @brief Exclusive-writer lock type used to protect the allocations map.
+  using write_lock_t = detail::tracking_resource_adaptor_impl::write_lock_t;
 
-    allocation_info() = delete;
-    /**
-     * @brief Construct a new allocation info object
-     *
-     * @param size Size of the allocation
-     * @param capture_stack If true, capture the stack trace for the allocation
-     */
-    allocation_info(std::size_t size, bool capture_stack)
-      : strace{[&]() {
-          return capture_stack ? std::make_unique<rmm::detail::stack_trace>() : nullptr;
-        }()},
-        allocation_size{size} {};
-  };
+  // Begin legacy device_memory_resource compatibility layer
+  using device_memory_resource::allocate;
+  using device_memory_resource::allocate_sync;
+  using device_memory_resource::deallocate;
+  using device_memory_resource::deallocate_sync;
 
   /**
-   * @brief Construct a new tracking resource adaptor using `upstream` to satisfy
-   * allocation requests.
+   * @brief Compare two adaptors for equality (shared-impl identity).
    *
-   * @param upstream The resource used for allocating/deallocating device memory
-   * @param capture_stacks If true, capture stacks for allocation calls
+   * @param other The other adaptor to compare against.
+   * @return true if both adaptors share the same underlying impl.
    */
-  tracking_resource_adaptor(device_async_resource_ref upstream, bool capture_stacks = false)
-    : capture_stacks_{capture_stacks}, allocated_bytes_{0}, upstream_{upstream}
+  [[nodiscard]] bool operator==(tracking_resource_adaptor const& other) const noexcept
+  {
+    return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(other);
+  }
+
+  /**
+   * @brief Compare two adaptors for inequality.
+   *
+   * @param other The other adaptor to compare against.
+   * @return true if the adaptors do not share the same underlying impl.
+   */
+  [[nodiscard]] bool operator!=(tracking_resource_adaptor const& other) const noexcept
+  {
+    return !(*this == other);
+  }
+  // End legacy device_memory_resource compatibility layer
+
+  /**
+   * @brief Enables the `cuda::mr::device_accessible` property
+   */
+  RMM_CONSTEXPR_FRIEND void get_property(tracking_resource_adaptor const&,
+                                         cuda::mr::device_accessible) noexcept
   {
   }
 
   /**
-   * @brief Construct a new tracking resource adaptor using `upstream` to satisfy
-   * allocation requests.
+   * @brief Construct a tracking resource adaptor using `upstream` to satisfy allocation requests.
    *
-   * @throws rmm::logic_error if `upstream == nullptr`
-   *
-   * @param upstream The resource used for allocating/deallocating device memory
-   * @param capture_stacks If true, capture stacks for allocation calls
+   * @param upstream The resource used for allocating/deallocating device memory.
+   * @param capture_stacks If true, capture stacks for each allocation.
    */
-  tracking_resource_adaptor(Upstream* upstream, bool capture_stacks = false)
-    : capture_stacks_{capture_stacks},
-      allocated_bytes_{0},
-      upstream_{to_device_async_resource_ref_checked(upstream)}
-  {
-  }
+  tracking_resource_adaptor(device_async_resource_ref upstream, bool capture_stacks = false);
 
-  tracking_resource_adaptor()                                 = delete;
-  ~tracking_resource_adaptor() override                       = default;
-  tracking_resource_adaptor(tracking_resource_adaptor const&) = delete;
-  tracking_resource_adaptor(tracking_resource_adaptor&&) noexcept =
-    default;  ///< @default_move_constructor
-  tracking_resource_adaptor& operator=(tracking_resource_adaptor const&) = delete;
-  tracking_resource_adaptor& operator=(tracking_resource_adaptor&&) noexcept =
-    default;  ///< @default_move_assignment{tracking_resource_adaptor}
+  ~tracking_resource_adaptor() = default;
 
   /**
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_;
-  }
+  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
 
   /**
-   * @brief Get the outstanding allocations map
+   * @brief Get the outstanding allocations map.
    *
-   * @return std::map<void*, allocation_info> const& of a map of allocations. The key
-   * is the allocated memory pointer and the data is the allocation_info structure, which
-   * contains size and, potentially, stack traces.
+   * @return map of outstanding allocations (pointer → allocation_info)
    */
-  std::map<void*, allocation_info> const& get_outstanding_allocations() const noexcept
-  {
-    return allocations_;
-  }
+  [[nodiscard]] std::map<void*, allocation_info> const& get_outstanding_allocations()
+    const noexcept;
 
   /**
-   * @brief Query the number of bytes that have been allocated. Note that
-   * this can not be used to know how large of an allocation is possible due
-   * to both possible fragmentation and also internal page sizes and alignment
-   * that is not tracked by this allocator.
+   * @brief Query the number of bytes currently allocated.
    *
-   * @return std::size_t number of bytes that have been allocated through this
-   * allocator.
+   * @return std::size_t number of bytes currently allocated
    */
-  std::size_t get_allocated_bytes() const noexcept { return allocated_bytes_; }
+  [[nodiscard]] std::size_t get_allocated_bytes() const noexcept;
 
   /**
-   * @brief Gets a string containing the outstanding allocation pointers, their
-   * size, and optionally the stack trace for when each pointer was allocated.
+   * @brief Gets a string describing all outstanding allocations (pointer, size, optional stack).
    *
-   * Stack traces are only included if this resource adaptor was created with
-   * `capture_stack == true`. Otherwise, outstanding allocation pointers will be
-   * shown with their size and empty stack traces.
-   *
-   * @return std::string Containing the outstanding allocation pointers.
+   * @return std::string describing outstanding allocations
    */
-  std::string get_outstanding_allocations_str() const
-  {
-    read_lock_t lock(mtx_);
-
-    std::ostringstream oss;
-
-    if (!allocations_.empty()) {
-      for (auto const& alloc : allocations_) {
-        oss << alloc.first << ": " << alloc.second.allocation_size << " B";
-        if (alloc.second.strace != nullptr) {
-          oss << " : callstack:" << std::endl << *alloc.second.strace;
-        }
-        oss << std::endl;
-      }
-    }
-
-    return oss.str();
-  }
+  [[nodiscard]] std::string get_outstanding_allocations_str() const;
 
   /**
-   * @brief Log any outstanding allocations via RMM_LOG_DEBUG
-   *
+   * @brief Log any outstanding allocations via RMM_LOG_DEBUG.
    */
-  void log_outstanding_allocations() const
-  {
-#if RMM_LOG_ACTIVE_LEVEL <= RMM_LOG_LEVEL_DEBUG
-    RMM_LOG_DEBUG("Outstanding Allocations: %s", get_outstanding_allocations_str());
-#endif  // RMM_LOG_ACTIVE_LEVEL <= RMM_LOG_LEVEL_DEBUG
-  }
+  void log_outstanding_allocations() const;
 
+  // Begin legacy device_memory_resource compatibility layer
  private:
-  /**
-   * @brief Allocates memory of size at least `bytes` using the upstream
-   * resource as long as it fits inside the allocation limit.
-   *
-   * The returned pointer has at least 256B alignment.
-   *
-   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled
-   * by the upstream resource.
-   *
-   * @param bytes The size, in bytes, of the allocation
-   * @param stream Stream on which to perform the allocation
-   * @return void* Pointer to the newly allocated memory
-   */
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
-  {
-    void* ptr = get_upstream_resource().allocate(stream, bytes);
-    // track it.
-    {
-      write_lock_t lock(mtx_);
-      allocations_.emplace(ptr, allocation_info{bytes, capture_stacks_});
-    }
-    allocated_bytes_ += bytes;
+  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override;
 
-    return ptr;
-  }
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override;
 
-  /**
-   * @brief Free allocation of size `bytes` pointed to by `ptr`
-   *
-   * @param ptr Pointer to be deallocated
-   * @param bytes Size of the allocation
-   * @param stream Stream on which to perform the deallocation
-   */
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
-  {
-    get_upstream_resource().deallocate(stream, ptr, bytes);
-    {
-      write_lock_t lock(mtx_);
-
-      const auto found = allocations_.find(ptr);
-
-      // Ensure the allocation is found and the number of bytes match
-      if (found == allocations_.end()) {
-        // Don't throw but log an error. Throwing in a destructor (or any noexcept) will call
-        // std::terminate
-        RMM_LOG_ERROR(
-          "Deallocating a pointer that was not tracked. Ptr: %p [%zuB], Current Num. Allocations: "
-          "%zu",
-          ptr,
-          bytes,
-          this->allocations_.size());
-      } else {
-        auto const allocated_bytes = found->second.allocation_size;
-
-        allocations_.erase(found);
-
-        if (allocated_bytes != bytes) {
-          // Don't throw but log an error. Throwing in a destructor (or any noexcept) will call
-          // std::terminate
-          RMM_LOG_ERROR(
-            "Alloc bytes (%zu) and Dealloc bytes (%zu) do not match", allocated_bytes, bytes);
-
-          bytes = allocated_bytes;
-        }
-      }
-    }
-    allocated_bytes_ -= bytes;
-  }
-
-  /**
-   * @brief Compare the upstream resource to another.
-   *
-   * @param other The other resource to compare to
-   * @return true If the two resources are equivalent
-   * @return false If the two resources are not equal
-   */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
-  {
-    if (this == std::addressof(other)) { return true; }
-    auto cast = dynamic_cast<tracking_resource_adaptor<Upstream> const*>(&other);
-    if (cast == nullptr) { return false; }
-    return get_upstream_resource() == cast->get_upstream_resource();
-  }
-
-  bool capture_stacks_;                           // whether or not to capture call stacks
-  std::map<void*, allocation_info> allocations_;  // map of active allocations
-  std::atomic<std::size_t> allocated_bytes_;      // number of bytes currently allocated
-  std::shared_mutex mutable mtx_;                 // mutex for thread safe access to allocations_
-  device_async_resource_ref upstream_;            // the upstream resource used for satisfying
-                                                  // allocation requests
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override;
+  // End legacy device_memory_resource compatibility layer
 };
+
+static_assert(cuda::mr::resource_with<tracking_resource_adaptor, cuda::mr::device_accessible>,
+              "tracking_resource_adaptor does not satisfy the cuda::mr::resource concept");
 
 /** @} */  // end of group
 }  // namespace mr

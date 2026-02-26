@@ -14,9 +14,7 @@
 #include <rmm/mr/is_resource_adaptor.hpp>
 #include <rmm/mr/limiting_resource_adaptor.hpp>
 #include <rmm/mr/owning_wrapper.hpp>
-#include <rmm/mr/statistics_resource_adaptor.hpp>
 #include <rmm/mr/thread_safe_resource_adaptor.hpp>
-#include <rmm/mr/tracking_resource_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <gtest/gtest.h>
@@ -29,32 +27,22 @@ using cuda_mr = rmm::mr::cuda_memory_resource;
 using rmm::mr::aligned_resource_adaptor;
 using rmm::mr::failure_callback_resource_adaptor;
 using rmm::mr::limiting_resource_adaptor;
-using rmm::mr::statistics_resource_adaptor;
 using rmm::mr::thread_safe_resource_adaptor;
-using rmm::mr::tracking_resource_adaptor;
-using owning_wrapper = rmm::mr::owning_wrapper<aligned_resource_adaptor<cuda_mr>, cuda_mr>;
+using owning_wrapper = rmm::mr::owning_wrapper<limiting_resource_adaptor<cuda_mr>, cuda_mr>;
 
 // explicit instantiations for test coverage purposes
-template class rmm::mr::aligned_resource_adaptor<cuda_mr>;
 template class rmm::mr::failure_callback_resource_adaptor<cuda_mr>;
 template class rmm::mr::limiting_resource_adaptor<cuda_mr>;
-template class rmm::mr::statistics_resource_adaptor<cuda_mr>;
 template class rmm::mr::thread_safe_resource_adaptor<cuda_mr>;
-template class rmm::mr::tracking_resource_adaptor<cuda_mr>;
 
 namespace rmm::test {
 
-using adaptors = ::testing::Types<aligned_resource_adaptor<cuda_mr>,
-                                  failure_callback_resource_adaptor<cuda_mr>,
+using adaptors = ::testing::Types<failure_callback_resource_adaptor<cuda_mr>,
                                   limiting_resource_adaptor<cuda_mr>,
                                   owning_wrapper,
-                                  statistics_resource_adaptor<cuda_mr>,
-                                  thread_safe_resource_adaptor<cuda_mr>,
-                                  tracking_resource_adaptor<cuda_mr>>;
+                                  thread_safe_resource_adaptor<cuda_mr>>;
 
 // static property checks
-static_assert(rmm::detail::polyfill::resource_with<rmm::mr::aligned_resource_adaptor<cuda_mr>,
-                                                   cuda::mr::device_accessible>);
 static_assert(
   rmm::detail::polyfill::resource_with<rmm::mr::failure_callback_resource_adaptor<cuda_mr>,
                                        cuda::mr::device_accessible>);
@@ -62,11 +50,7 @@ static_assert(rmm::detail::polyfill::resource_with<rmm::mr::limiting_resource_ad
                                                    cuda::mr::device_accessible>);
 static_assert(rmm::detail::polyfill::resource_with<rmm::mr::owning_wrapper<cuda_mr>,
                                                    cuda::mr::device_accessible>);
-static_assert(rmm::detail::polyfill::resource_with<rmm::mr::statistics_resource_adaptor<cuda_mr>,
-                                                   cuda::mr::device_accessible>);
 static_assert(rmm::detail::polyfill::resource_with<rmm::mr::thread_safe_resource_adaptor<cuda_mr>,
-                                                   cuda::mr::device_accessible>);
-static_assert(rmm::detail::polyfill::resource_with<rmm::mr::tracking_resource_adaptor<cuda_mr>,
                                                    cuda::mr::device_accessible>);
 
 template <typename MemoryResourceType>
@@ -87,7 +71,8 @@ struct AdaptorTest : public ::testing::Test {
     } else if constexpr (std::is_same_v<adaptor_type, limiting_resource_adaptor<cuda_mr>>) {
       return std::make_shared<adaptor_type>(upstream, 64_MiB);
     } else if constexpr (std::is_same_v<adaptor_type, owning_wrapper>) {
-      return mr::make_owning_wrapper<aligned_resource_adaptor>(std::make_shared<cuda_mr>());
+      return mr::make_owning_wrapper<limiting_resource_adaptor>(std::make_shared<cuda_mr>(),
+                                                                64_MiB);
     } else {
       return std::make_shared<adaptor_type>(upstream);
     }
@@ -113,7 +98,7 @@ TYPED_TEST(AdaptorTest, Equality)
   }
 
   {
-    auto other_mr = aligned_resource_adaptor<rmm::mr::device_memory_resource>{&this->cuda};
+    auto other_mr = aligned_resource_adaptor{this->cuda};
     EXPECT_FALSE(this->mr->is_equal(other_mr));
   }
 }

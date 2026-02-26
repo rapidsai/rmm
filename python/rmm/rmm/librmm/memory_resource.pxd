@@ -220,7 +220,7 @@ cdef extern from "rmm/mr/logging_resource_adaptor.hpp" \
 
 cdef extern from "rmm/mr/statistics_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass statistics_resource_adaptor[Upstream](device_memory_resource):
+    cdef cppclass statistics_resource_adaptor(device_memory_resource):
         struct counter:
             counter()
 
@@ -228,7 +228,7 @@ cdef extern from "rmm/mr/statistics_resource_adaptor.hpp" \
             int64_t peak
             int64_t total
 
-        statistics_resource_adaptor(Upstream* upstream_mr) except +
+        statistics_resource_adaptor(device_memory_resource* upstream_mr) except +
 
         counter get_bytes_counter() except +
         counter get_allocations_counter() except +
@@ -237,9 +237,9 @@ cdef extern from "rmm/mr/statistics_resource_adaptor.hpp" \
 
 cdef extern from "rmm/mr/tracking_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass tracking_resource_adaptor[Upstream](device_memory_resource):
+    cdef cppclass tracking_resource_adaptor(device_memory_resource):
         tracking_resource_adaptor(
-            Upstream* upstream_mr,
+            device_memory_resource* upstream_mr,
             bool capture_stacks) except +
 
         size_t get_allocated_bytes() except +

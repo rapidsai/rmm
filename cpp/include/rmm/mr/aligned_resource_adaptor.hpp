@@ -6,17 +6,14 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/mr/detail/aligned_resource_adaptor_impl.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
-#include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <algorithm>
+#include <cuda/memory_resource>
+
 #include <cstddef>
-#include <memory>
-#include <mutex>
-#include <unordered_map>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -26,203 +23,98 @@ namespace mr {
  * @file
  */
 /**
- * @brief Resource that adapts `Upstream` memory resource to allocate memory in a specified
- * alignment size.
+ * @brief Resource that adapts an upstream resource to allocate memory with a specified alignment.
  *
- * An instance of this resource can be constructed with an existing, upstream resource in order
- * to satisfy allocation requests. This adaptor wraps allocations and deallocations from Upstream
- * using the given alignment size.
+ * If the requested alignment is smaller than `CUDA_ALLOCATION_ALIGNMENT` (256 bytes) it is
+ * increased to `CUDA_ALLOCATION_ALIGNMENT`. An optional threshold controls the minimum size above
+ * which the custom alignment is applied.
  *
- * By default, any address returned by one of the memory allocation routines from the CUDA driver or
- * runtime API is always aligned to at least 256 bytes. For some use cases, such as GPUDirect
- * Storage (GDS), allocations need to be aligned to a larger size (4 KiB for GDS) in order to avoid
- * additional copies to bounce buffers.
- *
- * If the requested alignment is smaller than CUDA_ALLOCATION_ALIGNMENT (256 bytes), the alignment
- * is increased to CUDA_ALLOCATION_ALIGNMENT. This is to ensure that the allocation is always
- * aligned to at least the alignment required for CUDA allocations.
- *
- * Since a larger alignment size has some additional overhead, the user can specify a threshold
- * size. If an allocation's size falls below the threshold, it is aligned to the default size. Only
- * allocations with a size above the threshold are aligned to the custom alignment size.
- *
- * @tparam Upstream Type of the upstream resource used for allocation/deallocation.
+ * This class is copyable and shares ownership of its internal state via
+ * `cuda::mr::shared_resource`.
  */
-template <typename Upstream>
-class aligned_resource_adaptor final : public device_memory_resource {
+class RMM_EXPORT aligned_resource_adaptor
+  : public device_memory_resource,
+    private cuda::mr::shared_resource<detail::aligned_resource_adaptor_impl> {
+  using shared_base = cuda::mr::shared_resource<detail::aligned_resource_adaptor_impl>;
+
  public:
+  // Begin legacy device_memory_resource compatibility layer
+  using device_memory_resource::allocate;
+  using device_memory_resource::allocate_sync;
+  using device_memory_resource::deallocate;
+  using device_memory_resource::deallocate_sync;
+
+  /**
+   * @brief Compare two adaptors for equality (shared-impl identity).
+   *
+   * @param other The other adaptor to compare against.
+   * @return true if both adaptors share the same underlying impl.
+   */
+  [[nodiscard]] bool operator==(aligned_resource_adaptor const& other) const noexcept
+  {
+    return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(other);
+  }
+
+  /**
+   * @brief Compare two adaptors for inequality.
+   *
+   * @param other The other adaptor to compare against.
+   * @return true if the adaptors do not share the same underlying impl.
+   */
+  [[nodiscard]] bool operator!=(aligned_resource_adaptor const& other) const noexcept
+  {
+    return !(*this == other);
+  }
+  // End legacy device_memory_resource compatibility layer
+
+  /**
+   * @brief Enables the `cuda::mr::device_accessible` property
+   */
+  RMM_CONSTEXPR_FRIEND void get_property(aligned_resource_adaptor const&,
+                                         cuda::mr::device_accessible) noexcept
+  {
+  }
+
+  /**
+   * @brief The default alignment threshold used by the adaptor (0 = always align).
+   */
+  static constexpr std::size_t default_alignment_threshold =
+    detail::aligned_resource_adaptor_impl::default_alignment_threshold;
+
   /**
    * @brief Construct an aligned resource adaptor using `upstream` to satisfy allocation requests.
    *
    * @throws rmm::logic_error if `alignment` is not a power of 2
    *
    * @param upstream The resource used for allocating/deallocating device memory.
-   * @param alignment The size used for allocation alignment. Values smaller than
-   * CUDA_ALLOCATION_ALIGNMENT are increased to CUDA_ALLOCATION_ALIGNMENT.
-   * @param alignment_threshold Only allocations with a size larger than or equal to this threshold
-   * are aligned.
+   * @param alignment The size used for allocation alignment (raised to CUDA_ALLOCATION_ALIGNMENT
+   * if smaller).
+   * @param alignment_threshold Only allocations >= this size are aligned to `alignment`.
    */
   explicit aligned_resource_adaptor(device_async_resource_ref upstream,
+                                    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
                                     std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT,
-                                    std::size_t alignment_threshold = default_alignment_threshold)
-    : upstream_{upstream},
-      alignment_{std::max(alignment, rmm::CUDA_ALLOCATION_ALIGNMENT)},
-      alignment_threshold_{alignment_threshold}
-  {
-    RMM_EXPECTS(rmm::is_supported_alignment(alignment),
-                "Allocation alignment is not a power of 2.");
-  }
+                                    std::size_t alignment_threshold = default_alignment_threshold);
 
-  /**
-   * @brief Construct an aligned resource adaptor using `upstream` to satisfy allocation requests.
-   *
-   * @throws rmm::logic_error if `upstream == nullptr`
-   * @throws rmm::logic_error if `alignment` is not a power of 2
-   *
-   * @param upstream The resource used for allocating/deallocating device memory.
-   * @param alignment The size used for allocation alignment. Values smaller than
-   * CUDA_ALLOCATION_ALIGNMENT are increased to CUDA_ALLOCATION_ALIGNMENT.
-   * @param alignment_threshold Only allocations with a size larger than or equal to this threshold
-   * are aligned.
-   */
-  explicit aligned_resource_adaptor(Upstream* upstream,
-                                    std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT,
-                                    std::size_t alignment_threshold = default_alignment_threshold)
-    : upstream_{to_device_async_resource_ref_checked(upstream)},
-      alignment_{std::max(alignment, rmm::CUDA_ALLOCATION_ALIGNMENT)},
-      alignment_threshold_{alignment_threshold}
-  {
-    RMM_EXPECTS(rmm::is_supported_alignment(alignment),
-                "Allocation alignment is not a power of 2.");
-  }
-
-  aligned_resource_adaptor()                                           = delete;
-  ~aligned_resource_adaptor() override                                 = default;
-  aligned_resource_adaptor(aligned_resource_adaptor const&)            = delete;
-  aligned_resource_adaptor(aligned_resource_adaptor&&)                 = delete;
-  aligned_resource_adaptor& operator=(aligned_resource_adaptor const&) = delete;
-  aligned_resource_adaptor& operator=(aligned_resource_adaptor&&)      = delete;
+  ~aligned_resource_adaptor() = default;
 
   /**
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_;
-  }
+  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
 
-  /**
-   * @brief The default alignment used by the adaptor.
-   */
-  static constexpr std::size_t default_alignment_threshold = 0;
-
+  // Begin legacy device_memory_resource compatibility layer
  private:
-  using lock_guard = std::lock_guard<std::mutex>;
+  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override;
 
-  /**
-   * @brief Allocates memory of size at least `bytes` using the upstream resource with the
-   * specified alignment.
-   *
-   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled
-   * by the upstream resource.
-   *
-   * @param bytes The size, in bytes, of the allocation
-   * @param stream Stream on which to perform the allocation
-   * @return void* Pointer to the newly allocated memory
-   */
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
-  {
-    if (alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
-      return get_upstream_resource().allocate(stream, bytes, 1);
-    }
-    auto const size = upstream_allocation_size(bytes);
-    void* pointer   = get_upstream_resource().allocate(stream, size, 1);
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    auto const address         = reinterpret_cast<std::size_t>(pointer);
-    auto const aligned_address = rmm::align_up(address, alignment_);
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
-    void* aligned_pointer = reinterpret_cast<void*>(aligned_address);
-    if (pointer != aligned_pointer) {
-      lock_guard lock(mtx_);
-      pointers_.emplace(aligned_pointer, pointer);
-    }
-    return aligned_pointer;
-  }
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override;
 
-  /**
-   * @brief Free allocation of size `bytes` pointed to by `ptr` and log the deallocation.
-   *
-   * @param ptr Pointer to be deallocated
-   * @param bytes Size of the allocation
-   * @param stream Stream on which to perform the deallocation
-   */
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
-  {
-    if (alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
-      get_upstream_resource().deallocate(stream, ptr, bytes, 1);
-    } else {
-      {
-        lock_guard lock(mtx_);
-        auto const iter = pointers_.find(ptr);
-        if (iter != pointers_.end()) {
-          ptr = iter->second;
-          pointers_.erase(iter);
-        }
-      }
-      get_upstream_resource().deallocate(stream, ptr, upstream_allocation_size(bytes), 1);
-    }
-  }
-
-  /**
-   * @brief Compare this resource to another.
-   *
-   * @param other The other resource to compare to
-   * @return true If the two resources are equivalent
-   * @return false If the two resources are not equivalent
-   */
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
-  {
-    if (this == std::addressof(other)) { return true; }
-    auto cast = dynamic_cast<aligned_resource_adaptor<Upstream> const*>(&other);
-    if (cast == nullptr) { return false; }
-    return get_upstream_resource() == cast->get_upstream_resource() &&
-           alignment_ == cast->alignment_ && alignment_threshold_ == cast->alignment_threshold_;
-  }
-
-  /**
-   * @brief Calculate the allocation size needed from upstream to account for alignments of both
-   * the size and the base pointer.
-   *
-   * The upstream allocator guarantees CUDA_ALLOCATION_ALIGNMENT (256-byte) alignment, but we
-   * may need stronger alignment (e.g., 4096 bytes for GPUDirect Storage). In the worst case,
-   * the upstream pointer could be misaligned by up to (alignment_ - CUDA_ALLOCATION_ALIGNMENT)
-   * bytes relative to our requirements.
-   *
-   * Example: Need 1000 bytes with 4096-byte alignment
-   * - aligned_size = align_up(1000, 4096) = 4096 bytes of usable space needed
-   * - Upstream might return pointer at address 256 (256-aligned but not 4096-aligned)
-   * - Must advance to address 4096 for proper alignment
-   * - Usable region: [4096, 8192), total needed: [256, 8192) = 7936 bytes
-   * - Formula: 4096 + (4096 - 256) = 7936 bytes
-   *
-   * @param bytes The requested allocation size.
-   * @return Allocation size needed from upstream to align both the size and the base pointer.
-   */
-  std::size_t upstream_allocation_size(std::size_t bytes) const
-  {
-    auto const aligned_size = rmm::align_up(bytes, alignment_);
-    // aligned_size: bytes of properly aligned space needed
-    // (alignment_ - rmm::CUDA_ALLOCATION_ALIGNMENT): maximum "waste" due to pointer misalignment
-    return aligned_size + (alignment_ - rmm::CUDA_ALLOCATION_ALIGNMENT);
-  }
-
-  /// The upstream resource used for satisfying allocation requests
-  device_async_resource_ref upstream_;
-  std::unordered_map<void*, void*> pointers_;  ///< Map of aligned pointers to upstream pointers.
-  std::size_t alignment_;                      ///< The size used for allocation alignment
-  std::size_t alignment_threshold_;  ///< The size above which allocations should be aligned
-  mutable std::mutex mtx_;           ///< Mutex for exclusive lock.
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override;
+  // End legacy device_memory_resource compatibility layer
 };
+
+static_assert(cuda::mr::resource_with<aligned_resource_adaptor, cuda::mr::device_accessible>,
+              "aligned_resource_adaptor does not satisfy the cuda::mr::resource concept");
 
 /** @} */  // end of group
 }  // namespace mr

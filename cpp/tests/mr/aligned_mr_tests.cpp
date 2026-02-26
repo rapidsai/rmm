@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -21,8 +21,7 @@ namespace {
 
 using ::testing::Return;
 
-using aligned_mock = rmm::mr::aligned_resource_adaptor<mock_resource>;
-using aligned_real = rmm::mr::aligned_resource_adaptor<rmm::mr::device_memory_resource>;
+using aligned_adaptor = rmm::mr::aligned_resource_adaptor;
 
 void* int_to_address(std::size_t val)
 {
@@ -30,33 +29,27 @@ void* int_to_address(std::size_t val)
   return reinterpret_cast<void*>(val);
 }
 
-TEST(AlignedTest, ThrowOnNullUpstream)
-{
-  auto construct_nullptr = []() { aligned_mock mr{nullptr}; };
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
-}
-
 TEST(AlignedTest, ThrowOnInvalidAllocationAlignment)
 {
   mock_resource mock;
-  auto construct_alignment = [](auto* memres, std::size_t align) {
-    aligned_mock mr{memres, align};
+  auto construct_alignment = [](mock_resource& memres, std::size_t align) {
+    aligned_adaptor mr{memres, align};
   };
-  EXPECT_THROW(construct_alignment(&mock, 255), rmm::logic_error);
-  EXPECT_NO_THROW(construct_alignment(&mock, 256));
-  EXPECT_THROW(construct_alignment(&mock, 768), rmm::logic_error);
+  EXPECT_THROW(construct_alignment(mock, 255), rmm::logic_error);
+  EXPECT_NO_THROW(construct_alignment(mock, 256));
+  EXPECT_THROW(construct_alignment(mock, 768), rmm::logic_error);
 }
 
 TEST(AlignedTest, SupportsGetMemInfo)
 {
   mock_resource mock;
-  aligned_mock mr{mock};
+  aligned_adaptor mr{mock};
 }
 
 TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
 {
   mock_resource mock;
-  aligned_mock mr{mock};
+  aligned_adaptor mr{mock};
 
   cuda_stream_view stream;
   void* const pointer = int_to_address(123);
@@ -79,7 +72,7 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
   mock_resource mock;
   auto const alignment{4096};
   auto const threshold{65536};
-  aligned_mock mr{&mock, alignment, threshold};
+  aligned_adaptor mr{mock, alignment, threshold};
 
   cuda_stream_view stream;
   void* const pointer = int_to_address(123);
@@ -110,7 +103,7 @@ TEST(AlignedTest, UpstreamAddressAlreadyAligned)
   mock_resource mock;
   auto const alignment{4096};
   auto const threshold{65536};
-  aligned_mock mr{&mock, alignment, threshold};
+  aligned_adaptor mr{mock, alignment, threshold};
 
   cuda_stream_view stream;
   void* const pointer = int_to_address(4096);
@@ -133,7 +126,7 @@ TEST(AlignedTest, AlignUpstreamAddress)
   mock_resource mock;
   auto const alignment{4096};
   auto const threshold{65536};
-  aligned_mock mr{&mock, alignment, threshold};
+  aligned_adaptor mr{mock, alignment, threshold};
 
   cuda_stream_view stream;
   {
@@ -156,7 +149,7 @@ TEST(AlignedTest, AlignMultiple)
   mock_resource mock;
   auto const alignment{4096};
   auto const threshold{65536};
-  aligned_mock mr{&mock, alignment, threshold};
+  aligned_adaptor mr{mock, alignment, threshold};
 
   cuda_stream_view stream;
 
@@ -195,7 +188,7 @@ TEST(AlignedTest, AlignRealPointer)
 {
   auto const alignment{4096};
   auto const threshold{65536};
-  aligned_real mr{rmm::mr::get_current_device_resource_ref(), alignment, threshold};
+  aligned_adaptor mr{rmm::mr::get_current_device_resource_ref(), alignment, threshold};
   void* alloc = mr.allocate_sync(threshold);
   EXPECT_TRUE(rmm::is_pointer_aligned(alloc, alignment));
   mr.deallocate_sync(alloc, threshold);
@@ -205,7 +198,7 @@ TEST(AlignedTest, SmallAlignmentsBumpedTo256Bytes)
 {
   // Test various small alignments
   for (auto requested_alignment : {32UL, 64UL, 128UL}) {
-    aligned_real mr{rmm::mr::get_current_device_resource_ref(), requested_alignment};
+    aligned_adaptor mr{rmm::mr::get_current_device_resource_ref(), requested_alignment};
 
     void* ptr = mr.allocate_sync(requested_alignment);
 

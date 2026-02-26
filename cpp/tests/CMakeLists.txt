@@ -187,9 +187,11 @@ ConfigureTest(STREAM_ADAPTOR_TEST mr/stream_allocator_adaptor_tests.cpp)
 
 # statistics adaptor tests
 ConfigureTest(STATISTICS_TEST mr/statistics_mr_tests.cpp)
+ConfigureTest(STATISTICS_MR_REF_TEST mr/mr_ref_statistics_tests.cpp GPUS 1 PERCENT 5)
 
 # tracking adaptor tests
 ConfigureTest(TRACKING_TEST mr/tracking_mr_tests.cpp)
+ConfigureTest(TRACKING_MR_REF_TEST mr/mr_ref_tracking_tests.cpp GPUS 1 PERCENT 5)
 
 # out-of-memory callback adaptor tests
 ConfigureTest(FAILURE_CALLBACK_TEST mr/failure_callback_mr_tests.cpp)
@@ -199,6 +201,7 @@ ConfigureTest(PREFETCH_ADAPTOR_TEST mr/prefetch_resource_adaptor_tests.cpp)
 
 # aligned adaptor tests
 ConfigureTest(ALIGNED_TEST mr/aligned_mr_tests.cpp)
+ConfigureTest(ALIGNED_MR_REF_TEST mr/mr_ref_aligned_tests.cpp GPUS 1 PERCENT 5)
 
 # limiting adaptor tests
 ConfigureTest(LIMITING_TEST mr/limiting_mr_tests.cpp)
