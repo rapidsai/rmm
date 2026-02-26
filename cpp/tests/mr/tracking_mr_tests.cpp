@@ -21,17 +21,11 @@
 namespace rmm::test {
 namespace {
 
-using tracking_adaptor = rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>;
+using tracking_adaptor = rmm::mr::tracking_resource_adaptor;
 
 constexpr auto num_allocations{10};
 constexpr auto num_more_allocations{5};
 constexpr auto ten_MiB{10_MiB};
-
-TEST(TrackingTest, ThrowOnNullUpstream)
-{
-  auto construct_nullptr = []() { tracking_adaptor mr{nullptr}; };
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
-}
 
 TEST(TrackingTest, Empty)
 {
@@ -99,19 +93,21 @@ TEST(TrackingTest, MultiTracking)
   auto orig_device_resource = rmm::mr::get_current_device_resource_ref();
   tracking_adaptor mr{orig_device_resource, true};
 
+  rmm::device_async_resource_ref mr_ref{mr};
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
     allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, &mr));
+      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, mr_ref));
   }
 
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations);
 
-  tracking_adaptor inner_mr{&mr};
+  tracking_adaptor inner_mr{rmm::device_async_resource_ref{mr}};
 
+  rmm::device_async_resource_ref inner_ref{inner_mr};
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
     allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, &inner_mr));
+      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, inner_ref));
   }
 
   // Check the allocated bytes for both MRs
@@ -147,7 +143,7 @@ TEST(TrackingTest, NegativeInnerTracking)
 
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations);
 
-  tracking_adaptor inner_mr{&mr};
+  tracking_adaptor inner_mr{rmm::device_async_resource_ref{mr}};
 
   // Add more allocations
   for (std::size_t i = 0; i < num_more_allocations; ++i) {

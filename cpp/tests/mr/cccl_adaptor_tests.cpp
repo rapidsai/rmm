@@ -4,12 +4,15 @@
  */
 
 #include <rmm/cuda_stream.hpp>
+#include <rmm/mr/aligned_resource_adaptor.hpp>
 #include <rmm/mr/binning_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/fixed_size_memory_resource.hpp>
 #include <rmm/mr/is_resource_adaptor.hpp>
 #include <rmm/mr/logging_resource_adaptor.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
+#include <rmm/mr/statistics_resource_adaptor.hpp>
+#include <rmm/mr/tracking_resource_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <gtest/gtest.h>
@@ -17,16 +20,22 @@
 #include <type_traits>
 
 using cuda_mr = rmm::mr::cuda_memory_resource;
+using rmm::mr::aligned_resource_adaptor;
 using rmm::mr::binning_memory_resource;
 using rmm::mr::fixed_size_memory_resource;
 using rmm::mr::logging_resource_adaptor;
 using rmm::mr::pool_memory_resource;
+using rmm::mr::statistics_resource_adaptor;
+using rmm::mr::tracking_resource_adaptor;
 
 // static property checks
+static_assert(cuda::mr::resource_with<aligned_resource_adaptor, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<binning_memory_resource, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<fixed_size_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<logging_resource_adaptor, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<pool_memory_resource, cuda::mr::device_accessible>);
-static_assert(cuda::mr::resource_with<fixed_size_memory_resource, cuda::mr::device_accessible>);
-static_assert(cuda::mr::resource_with<binning_memory_resource, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<statistics_resource_adaptor, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<tracking_resource_adaptor, cuda::mr::device_accessible>);
 
 namespace rmm::test {
 
@@ -57,6 +66,12 @@ struct CcclAdaptorTest : public ::testing::Test {
       return AdaptorType{cuda};
     } else if constexpr (std::is_same_v<AdaptorType, binning_memory_resource>) {
       return AdaptorType{cuda, 18, 22};
+    } else if constexpr (std::is_same_v<AdaptorType, tracking_resource_adaptor>) {
+      return AdaptorType{cuda};
+    } else if constexpr (std::is_same_v<AdaptorType, statistics_resource_adaptor>) {
+      return AdaptorType{cuda};
+    } else if constexpr (std::is_same_v<AdaptorType, aligned_resource_adaptor>) {
+      return AdaptorType{cuda};
     }
   }
 };
@@ -64,7 +79,10 @@ struct CcclAdaptorTest : public ::testing::Test {
 using cccl_adaptors = ::testing::Types<logging_resource_adaptor,
                                        pool_memory_resource,
                                        fixed_size_memory_resource,
-                                       binning_memory_resource>;
+                                       binning_memory_resource,
+                                       tracking_resource_adaptor,
+                                       statistics_resource_adaptor,
+                                       aligned_resource_adaptor>;
 
 TYPED_TEST_SUITE(CcclAdaptorTest, cccl_adaptors);
 

@@ -83,21 +83,29 @@ add_library(
   rmm
   src/aligned.cpp
   src/cuda_device.cpp
+  src/cuda_stream.cpp
   src/cuda_stream_pool.cpp
   src/cuda_stream_view.cpp
-  src/cuda_stream.cpp
   src/device_buffer.cpp
   src/error.cpp
   src/exec_policy.cpp
   src/logger.cpp
+  src/mr/aligned_resource_adaptor.cpp
+  src/mr/binning_memory_resource.cpp
+  src/mr/detail/aligned_resource_adaptor_impl.cpp
   src/mr/detail/binning_memory_resource_impl.cpp
   src/mr/detail/fixed_size_memory_resource_impl.cpp
   src/mr/detail/logging_resource_adaptor_impl.cpp
+  src/mr/detail/logging_resource_adaptor_impl.cpp
   src/mr/detail/pool_memory_resource_impl.cpp
-  src/mr/binning_memory_resource.cpp
+  src/mr/detail/pool_memory_resource_impl.cpp
+  src/mr/detail/statistics_resource_adaptor_impl.cpp
+  src/mr/detail/tracking_resource_adaptor_impl.cpp
   src/mr/fixed_size_memory_resource.cpp
   src/mr/logging_resource_adaptor.cpp
   src/mr/pool_memory_resource.cpp
+  src/mr/statistics_resource_adaptor.cpp
+  src/mr/tracking_resource_adaptor.cpp
   src/prefetch.cpp)
 add_library(rmm::rmm ALIAS rmm)
 

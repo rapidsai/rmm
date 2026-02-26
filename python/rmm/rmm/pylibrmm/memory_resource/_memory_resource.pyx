@@ -800,7 +800,7 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         DeviceMemoryResource upstream_mr
     ):
         self.c_obj.reset(
-            new statistics_resource_adaptor[device_memory_resource](
+            new statistics_resource_adaptor(
                 upstream_mr.get_mr()
             )
         )
@@ -836,8 +836,8 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         Returns:
             dict: Dictionary containing allocation counts and bytes.
         """
-        cdef statistics_resource_adaptor[device_memory_resource]* mr = \
-            <statistics_resource_adaptor[device_memory_resource]*> self.c_obj.get()
+        cdef statistics_resource_adaptor* mr = \
+            <statistics_resource_adaptor*> self.c_obj.get()
 
         counts = deref(mr).get_allocations_counter()
         byte_counts = deref(mr).get_bytes_counter()
@@ -858,8 +858,8 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         -------
         The popped statistics
         """
-        cdef statistics_resource_adaptor[device_memory_resource]* mr = \
-            <statistics_resource_adaptor[device_memory_resource]*> self.c_obj.get()
+        cdef statistics_resource_adaptor* mr = \
+            <statistics_resource_adaptor*> self.c_obj.get()
 
         bytes_and_allocs = deref(mr).pop_counters()
         return Statistics(
@@ -880,8 +880,8 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         The statistics _before_ the push
         """
 
-        cdef statistics_resource_adaptor[device_memory_resource]* mr = \
-            <statistics_resource_adaptor[device_memory_resource]*> self.c_obj.get()
+        cdef statistics_resource_adaptor* mr = \
+            <statistics_resource_adaptor*> self.c_obj.get()
 
         bytes_and_allocs = deref(mr).push_counters()
         return Statistics(
@@ -901,7 +901,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         bool capture_stacks=False
     ):
         self.c_obj.reset(
-            new tracking_resource_adaptor[device_memory_resource](
+            new tracking_resource_adaptor(
                 upstream_mr.get_mr(),
                 capture_stacks
             )
@@ -933,7 +933,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         possible fragmentation and also internal page sizes and alignment that
         is not tracked by this allocator.
         """
-        return (<tracking_resource_adaptor[device_memory_resource]*>(
+        return (<tracking_resource_adaptor*>(
             self.c_obj.get())
         )[0].get_allocated_bytes()
 
@@ -944,7 +944,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         stack trace are shown.
         """
 
-        return (<tracking_resource_adaptor[device_memory_resource]*>(
+        return (<tracking_resource_adaptor*>(
             self.c_obj.get())
         )[0].get_outstanding_allocations_str().decode('UTF-8')
 
@@ -954,7 +954,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         current RMM log file if enabled.
         """
 
-        (<tracking_resource_adaptor[device_memory_resource]*>(
+        (<tracking_resource_adaptor*>(
             self.c_obj.get()))[0].log_outstanding_allocations()
 
 
