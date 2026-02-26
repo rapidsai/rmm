@@ -93,11 +93,10 @@ TEST(TrackingTest, MultiTracking)
   auto orig_device_resource = rmm::mr::get_current_device_resource_ref();
   tracking_adaptor mr{orig_device_resource, true};
 
-  rmm::device_async_resource_ref mr_ref{mr};
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
     allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, mr_ref));
+      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, mr));
   }
 
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations);

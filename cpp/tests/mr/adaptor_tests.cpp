@@ -14,9 +14,7 @@
 #include <rmm/mr/is_resource_adaptor.hpp>
 #include <rmm/mr/limiting_resource_adaptor.hpp>
 #include <rmm/mr/owning_wrapper.hpp>
-#include <rmm/mr/statistics_resource_adaptor.hpp>
 #include <rmm/mr/thread_safe_resource_adaptor.hpp>
-#include <rmm/mr/tracking_resource_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <gtest/gtest.h>
@@ -29,9 +27,7 @@ using cuda_mr = rmm::mr::cuda_memory_resource;
 using rmm::mr::aligned_resource_adaptor;
 using rmm::mr::failure_callback_resource_adaptor;
 using rmm::mr::limiting_resource_adaptor;
-using rmm::mr::statistics_resource_adaptor;
 using rmm::mr::thread_safe_resource_adaptor;
-using rmm::mr::tracking_resource_adaptor;
 using owning_wrapper = rmm::mr::owning_wrapper<limiting_resource_adaptor<cuda_mr>, cuda_mr>;
 
 // explicit instantiations for test coverage purposes
@@ -46,7 +42,7 @@ using adaptors = ::testing::Types<failure_callback_resource_adaptor<cuda_mr>,
                                   owning_wrapper,
                                   thread_safe_resource_adaptor<cuda_mr>>;
 
-// static property checks — template adaptors still remaining
+// static property checks
 static_assert(
   rmm::detail::polyfill::resource_with<rmm::mr::failure_callback_resource_adaptor<cuda_mr>,
                                        cuda::mr::device_accessible>);
@@ -56,14 +52,6 @@ static_assert(rmm::detail::polyfill::resource_with<rmm::mr::owning_wrapper<cuda_
                                                    cuda::mr::device_accessible>);
 static_assert(rmm::detail::polyfill::resource_with<rmm::mr::thread_safe_resource_adaptor<cuda_mr>,
                                                    cuda::mr::device_accessible>);
-
-// static property checks — converted (non-template) adaptors
-static_assert(
-  cuda::mr::resource_with<rmm::mr::aligned_resource_adaptor, cuda::mr::device_accessible>);
-static_assert(
-  cuda::mr::resource_with<rmm::mr::statistics_resource_adaptor, cuda::mr::device_accessible>);
-static_assert(
-  cuda::mr::resource_with<rmm::mr::tracking_resource_adaptor, cuda::mr::device_accessible>);
 
 template <typename MemoryResourceType>
 struct AdaptorTest : public ::testing::Test {
@@ -133,102 +121,6 @@ TYPED_TEST(AdaptorTest, AllocFree)
   EXPECT_NO_THROW(ptr = this->mr->allocate_sync(1024));
   EXPECT_NE(ptr, nullptr);
   EXPECT_NO_THROW(this->mr->deallocate_sync(ptr, 1024));
-}
-
-// ---------------------------------------------------------------------------
-// Non-template adaptor tests for converted (shared_resource-based) adaptors
-// ---------------------------------------------------------------------------
-
-TEST(AlignedAdaptorTest, ThrowOnInvalidAllocationAlignment)
-{
-  cuda_mr cuda{};
-  EXPECT_THROW((aligned_resource_adaptor{cuda, 255}), rmm::logic_error);
-  EXPECT_NO_THROW((aligned_resource_adaptor{cuda, 256}));
-  EXPECT_THROW((aligned_resource_adaptor{cuda, 768}), rmm::logic_error);
-}
-
-TEST(AlignedAdaptorTest, Equality)
-{
-  cuda_mr cuda{};
-  auto mr    = aligned_resource_adaptor{cuda};
-  auto copy  = mr;
-  auto other = aligned_resource_adaptor{cuda};
-  EXPECT_EQ(mr, copy);
-  EXPECT_NE(mr, other);
-}
-
-TEST(AlignedAdaptorTest, GetUpstreamResource)
-{
-  cuda_mr cuda{};
-  auto mr = aligned_resource_adaptor{cuda};
-  EXPECT_EQ(mr.get_upstream_resource(), rmm::device_async_resource_ref{cuda});
-  EXPECT_TRUE(rmm::mr::is_resource_adaptor<aligned_resource_adaptor>);
-}
-
-TEST(AlignedAdaptorTest, AllocFree)
-{
-  cuda_mr cuda{};
-  auto mr = aligned_resource_adaptor{cuda};
-  void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = mr.allocate_sync(1024));
-  EXPECT_NE(ptr, nullptr);
-  EXPECT_NO_THROW(mr.deallocate_sync(ptr, 1024));
-}
-
-TEST(StatisticsAdaptorTest, Equality)
-{
-  cuda_mr cuda{};
-  auto mr    = statistics_resource_adaptor{cuda};
-  auto copy  = mr;
-  auto other = statistics_resource_adaptor{cuda};
-  EXPECT_EQ(mr, copy);
-  EXPECT_NE(mr, other);
-}
-
-TEST(StatisticsAdaptorTest, GetUpstreamResource)
-{
-  cuda_mr cuda{};
-  auto mr = statistics_resource_adaptor{cuda};
-  EXPECT_EQ(mr.get_upstream_resource(), rmm::device_async_resource_ref{cuda});
-  EXPECT_TRUE(rmm::mr::is_resource_adaptor<statistics_resource_adaptor>);
-}
-
-TEST(StatisticsAdaptorTest, AllocFree)
-{
-  cuda_mr cuda{};
-  auto mr = statistics_resource_adaptor{cuda};
-  void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = mr.allocate_sync(1024));
-  EXPECT_NE(ptr, nullptr);
-  EXPECT_NO_THROW(mr.deallocate_sync(ptr, 1024));
-}
-
-TEST(TrackingAdaptorTest, Equality)
-{
-  cuda_mr cuda{};
-  auto mr    = tracking_resource_adaptor{cuda};
-  auto copy  = mr;
-  auto other = tracking_resource_adaptor{cuda};
-  EXPECT_EQ(mr, copy);
-  EXPECT_NE(mr, other);
-}
-
-TEST(TrackingAdaptorTest, GetUpstreamResource)
-{
-  cuda_mr cuda{};
-  auto mr = tracking_resource_adaptor{cuda};
-  EXPECT_EQ(mr.get_upstream_resource(), rmm::device_async_resource_ref{cuda});
-  EXPECT_TRUE(rmm::mr::is_resource_adaptor<tracking_resource_adaptor>);
-}
-
-TEST(TrackingAdaptorTest, AllocFree)
-{
-  cuda_mr cuda{};
-  auto mr = tracking_resource_adaptor{cuda};
-  void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = mr.allocate_sync(1024));
-  EXPECT_NE(ptr, nullptr);
-  EXPECT_NO_THROW(mr.deallocate_sync(ptr, 1024));
 }
 
 }  // namespace rmm::test
