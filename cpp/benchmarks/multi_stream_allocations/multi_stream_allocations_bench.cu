@@ -101,13 +101,12 @@ inline auto make_arena()
 
 inline auto make_binning()
 {
-  auto pool = make_pool();
   // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
   // Larger allocations will use the pool resource
   constexpr auto min_bin_pow2{18};
   constexpr auto max_bin_pow2{22};
-  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(
-    pool, min_bin_pow2, max_bin_pow2);
+  auto mr =
+    std::make_shared<rmm::mr::binning_memory_resource>(*make_pool(), min_bin_pow2, max_bin_pow2);
   return mr;
 }
 
