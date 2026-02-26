@@ -58,6 +58,7 @@ TEST_P(allocator_test, multi_device)
   }());
 }
 
+// TODO(bdice): Add back test coverage after completing CCCL MR migration
 INSTANTIATE_TEST_SUITE_P(ThrustAllocatorTests,
                          allocator_test,
                          ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool", "Arena"),
