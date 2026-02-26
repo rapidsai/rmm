@@ -70,12 +70,11 @@ inline auto make_arena(std::size_t simulated_size)
 
 inline auto make_binning(std::size_t simulated_size)
 {
-  auto pool = make_pool(simulated_size);
-  auto mr   = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(pool);
+  auto mr = std::make_shared<rmm::mr::binning_memory_resource>(*make_pool(simulated_size));
   const auto min_size_exp{18};
   const auto max_size_exp{22};
   for (std::size_t i = min_size_exp; i <= max_size_exp; i++) {
-    mr->wrapped().add_bin(1 << i);
+    mr->add_bin(1 << i);
   }
   return mr;
 }

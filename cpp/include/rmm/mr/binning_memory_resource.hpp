@@ -1,22 +1,19 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
-#include <rmm/aligned.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/mr/detail/binning_memory_resource_impl.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
-#include <rmm/mr/fixed_size_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <cuda_runtime_api.h>
+#include <cuda/memory_resource>
 
-#include <cassert>
-#include <map>
-#include <memory>
+#include <cstddef>
 #include <optional>
-#include <vector>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -29,22 +26,51 @@ namespace mr {
 /**
  * @brief Allocates memory from upstream resources associated with bin sizes.
  *
- * @tparam UpstreamResource memory_resource to use for allocations that don't fall within any
- * configured bin size. Implements rmm::mr::device_memory_resource interface.
+ * This class is copyable and shares ownership of its internal state, allowing
+ * multiple instances to safely reference the same underlying bins.
  */
-template <typename Upstream>
-class binning_memory_resource final : public device_memory_resource {
+class RMM_EXPORT binning_memory_resource final
+  : public device_memory_resource,
+    private cuda::mr::shared_resource<detail::binning_memory_resource_impl> {
+  using shared_base = cuda::mr::shared_resource<detail::binning_memory_resource_impl>;
+
  public:
+  // Begin legacy device_memory_resource compatibility layer
+  using device_memory_resource::allocate;
+  using device_memory_resource::allocate_sync;
+  using device_memory_resource::deallocate;
+  using device_memory_resource::deallocate_sync;
+
   /**
-   * @brief Construct a new binning memory resource object.
+   * @brief Equality comparison operator.
    *
-   * Initially has no bins, so simply uses the upstream_resource until bin resources are added
-   * with `add_bin`.
-   *
-   * @param upstream_resource The upstream memory resource used to allocate bin pools.
+   * @param other The other binning_memory_resource to compare against.
+   * @return true if both resources share the same underlying state.
    */
-  explicit binning_memory_resource(device_async_resource_ref upstream_resource)
-    : upstream_mr_{upstream_resource}
+  [[nodiscard]] bool operator==(binning_memory_resource const& other) const noexcept
+  {
+    return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(other);
+  }
+
+  /**
+   * @brief Inequality comparison operator.
+   *
+   * @param other The other binning_memory_resource to compare against.
+   * @return true if the resources do not share the same underlying state.
+   */
+  [[nodiscard]] bool operator!=(binning_memory_resource const& other) const noexcept
+  {
+    return !(*this == other);
+  }
+  // End legacy device_memory_resource compatibility layer
+
+  /**
+   * @brief Enables the `cuda::mr::device_accessible` property
+   *
+   * This property declares that a `binning_memory_resource` provides device accessible memory
+   */
+  RMM_CONSTEXPR_FRIEND void get_property(binning_memory_resource const&,
+                                         cuda::mr::device_accessible) noexcept
   {
   }
 
@@ -54,14 +80,9 @@ class binning_memory_resource final : public device_memory_resource {
    * Initially has no bins, so simply uses the upstream_resource until bin resources are added
    * with `add_bin`.
    *
-   * @throws rmm::logic_error if upstream_resource is nullptr
-   *
    * @param upstream_resource The upstream memory resource used to allocate bin pools.
    */
-  explicit binning_memory_resource(Upstream* upstream_resource)
-    : upstream_mr_{to_device_async_resource_ref_checked(upstream_resource)}
-  {
-  }
+  explicit binning_memory_resource(device_async_resource_ref upstream_resource);
 
   /**
    * @brief Construct a new binning memory resource object with a range of initial bins.
@@ -77,57 +98,14 @@ class binning_memory_resource final : public device_memory_resource {
    */
   binning_memory_resource(device_async_resource_ref upstream_resource,
                           int8_t min_size_exponent,  // NOLINT(bugprone-easily-swappable-parameters)
-                          int8_t max_size_exponent)
-    : upstream_mr_{upstream_resource}
-  {
-    for (auto i = min_size_exponent; i <= max_size_exponent; i++) {
-      add_bin(1 << i);
-    }
-  }
+                          int8_t max_size_exponent);
 
-  /**
-   * @brief Construct a new binning memory resource object with a range of initial bins.
-   *
-   * Constructs a new binning memory resource and adds bins backed by `fixed_size_memory_resource`
-   * in the range [2^min_size_exponent, 2^max_size_exponent]. For example if `min_size_exponent==18`
-   * and `max_size_exponent==22`, creates bins of sizes 256KiB, 512KiB, 1024KiB, 2048KiB and
-   * 4096KiB.
-   *
-   * @throws rmm::logic_error if upstream_resource is nullptr
-   *
-   * @param upstream_resource The upstream memory resource used to allocate bin pools.
-   * @param min_size_exponent The minimum base-2 exponent bin size.
-   * @param max_size_exponent The maximum base-2 exponent bin size.
-   */
-  binning_memory_resource(Upstream* upstream_resource,
-                          int8_t min_size_exponent,  // NOLINT(bugprone-easily-swappable-parameters)
-                          int8_t max_size_exponent)
-    : upstream_mr_{to_device_async_resource_ref_checked(upstream_resource)}
-  {
-    for (auto i = min_size_exponent; i <= max_size_exponent; i++) {
-      add_bin(1 << i);
-    }
-  }
-
-  /**
-   * @brief Destroy the binning_memory_resource and free all memory allocated from the upstream
-   * resource.
-   */
-  ~binning_memory_resource() override = default;
-
-  binning_memory_resource()                                          = delete;
-  binning_memory_resource(binning_memory_resource const&)            = delete;
-  binning_memory_resource(binning_memory_resource&&)                 = delete;
-  binning_memory_resource& operator=(binning_memory_resource const&) = delete;
-  binning_memory_resource& operator=(binning_memory_resource&&)      = delete;
+  ~binning_memory_resource() = default;
 
   /**
    * @briefreturn{device_async_resource_ref to the upstream resource}
    */
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_mr_;
-  }
+  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
 
   /**
    * @brief Add a bin allocator to this resource
@@ -145,69 +123,20 @@ class binning_memory_resource final : public device_memory_resource {
    * @param bin_resource The memory resource for the bin
    */
   void add_bin(std::size_t allocation_size,
-               std::optional<device_async_resource_ref> bin_resource = std::nullopt)
-  {
-    allocation_size = align_up(allocation_size, CUDA_ALLOCATION_ALIGNMENT);
+               std::optional<device_async_resource_ref> bin_resource = std::nullopt);
 
-    if (bin_resource.has_value()) {
-      resource_bins_.insert({allocation_size, bin_resource.value()});
-    } else if (resource_bins_.count(allocation_size) == 0) {  // do nothing if bin already exists
-      owned_bin_resources_.push_back(
-        std::make_unique<fixed_size_memory_resource<Upstream>>(upstream_mr_, allocation_size));
-      resource_bins_.insert({allocation_size, owned_bin_resources_.back().get()});
-    }
-  }
-
+  // Begin legacy device_memory_resource compatibility layer
  private:
-  /**
-   * @brief Get the memory resource for the requested size
-   *
-   * Chooses a memory_resource that allocates the smallest blocks at least as large as `bytes`.
-   *
-   * @param bytes Requested allocation size in bytes
-   * @return Get the resource reference for the requested size.
-   */
-  device_async_resource_ref get_resource_ref(std::size_t bytes)
-  {
-    auto iter = resource_bins_.lower_bound(bytes);
-    return (iter != resource_bins_.cend()) ? iter->second : get_upstream_resource();
-  }
+  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override;
 
-  /**
-   * @brief Allocates memory of size at least \p bytes.
-   *
-   * The returned pointer will have at minimum 256 byte alignment.
-   *
-   * @param bytes The size of the allocation
-   * @param stream Stream on which to perform allocation
-   * @return void* Pointer to the newly allocated memory
-   */
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
-  {
-    if (bytes <= 0) { return nullptr; }
-    return get_resource_ref(bytes).allocate(stream, bytes);
-  }
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override;
 
-  /**
-   * @brief Deallocate memory pointed to by \p ptr.
-   *
-   * @param ptr Pointer to be deallocated
-   * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
-   * @param stream Stream on which to perform deallocation
-   */
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
-  {
-    get_resource_ref(bytes).deallocate(stream, ptr, bytes);
-  }
-
-  device_async_resource_ref
-    upstream_mr_;  // The upstream memory_resource from which to allocate blocks.
-
-  std::vector<std::unique_ptr<fixed_size_memory_resource<Upstream>>> owned_bin_resources_;
-
-  std::map<std::size_t, device_async_resource_ref> resource_bins_;
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override;
+  // End legacy device_memory_resource compatibility layer
 };
+
+static_assert(cuda::mr::resource_with<binning_memory_resource, cuda::mr::device_accessible>,
+              "binning_memory_resource does not satisfy the cuda::mr::resource concept");
 
 /** @} */  // end of group
 }  // namespace mr

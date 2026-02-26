@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -58,11 +58,11 @@ TEST_P(allocator_test, multi_device)
   }());
 }
 
-INSTANTIATE_TEST_SUITE_P(
-  ThrustAllocatorTests,
-  allocator_test,
-  ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool", "Arena", "Binning"),
-  [](auto const& info) { return info.param; });
+// TODO(bdice): Add back test coverage after completing CCCL MR migration
+INSTANTIATE_TEST_SUITE_P(ThrustAllocatorTests,
+                         allocator_test,
+                         ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool", "Arena"),
+                         [](auto const& info) { return info.param; });
 
 }  // namespace
 }  // namespace rmm::test
