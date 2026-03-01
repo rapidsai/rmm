@@ -158,7 +158,10 @@ TEST(PoolTest, MultidevicePool)
     for (int i = 0; i < devices; ++i) {
       RMM_CUDA_TRY(cudaSetDevice(i));
       auto mr = std::make_shared<MemoryResource>(&general_mr, pool_size, pool_size);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       rmm::mr::set_per_device_resource(rmm::cuda_device_id{i}, mr.get());
+#pragma GCC diagnostic pop
       mrs.emplace_back(mr);
     }
 

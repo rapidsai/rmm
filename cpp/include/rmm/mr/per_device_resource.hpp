@@ -174,7 +174,10 @@ RMM_EXPORT inline auto& get_ref_map()
  *
  * @param device_id The id of the target device
  * @return Pointer to the current `device_memory_resource` for device `device_id`
+ *
+ * @deprecated Use get_per_device_resource_ref() instead.
  */
+[[deprecated("Use get_per_device_resource_ref() instead")]]
 inline device_memory_resource* get_per_device_resource(cuda_device_id device_id)
 {
   std::lock_guard<std::mutex> lock{detail::map_lock()};
@@ -236,7 +239,10 @@ inline device_async_resource_ref set_per_device_resource_ref_unsafe(
  * @param new_mr If not `nullptr`, pointer to new `device_memory_resource` to use as new resource
  * for `id`
  * @return Pointer to the previous memory resource for `id`
+ *
+ * @deprecated Use set_per_device_resource_ref() instead.
  */
+[[deprecated("Use set_per_device_resource_ref() instead")]]
 inline device_memory_resource* set_per_device_resource(cuda_device_id device_id,
                                                        device_memory_resource* new_mr)
 {
@@ -277,10 +283,16 @@ inline device_memory_resource* set_per_device_resource(cuda_device_id device_id,
  * device_memory_resource was created.
  *
  * @return Pointer to the resource for the current device
+ *
+ * @deprecated Use get_current_device_resource_ref() instead.
  */
+[[deprecated("Use get_current_device_resource_ref() instead")]]
 inline device_memory_resource* get_current_device_resource()
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   return get_per_device_resource(rmm::get_current_cuda_device());
+#pragma GCC diagnostic pop
 }
 
 /**
@@ -306,10 +318,16 @@ inline device_memory_resource* get_current_device_resource()
  *
  * @param new_mr If not `nullptr`, pointer to new resource to use for the current device
  * @return Pointer to the previous resource for the current device
+ *
+ * @deprecated Use set_current_device_resource_ref() instead.
  */
+[[deprecated("Use set_current_device_resource_ref() instead")]]
 inline device_memory_resource* set_current_device_resource(device_memory_resource* new_mr)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   return set_per_device_resource(rmm::get_current_cuda_device(), new_mr);
+#pragma GCC diagnostic pop
 }
 
 /**

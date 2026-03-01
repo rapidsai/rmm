@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -93,12 +93,15 @@ struct allocation {
 
 inline void test_get_current_device_resource()
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
   void* ptr = rmm::mr::get_current_device_resource()->allocate_sync(1_MiB);
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_properly_aligned(ptr));
   EXPECT_TRUE(is_device_accessible_memory(ptr));
   rmm::mr::get_current_device_resource()->deallocate_sync(ptr, 1_MiB);
+#pragma GCC diagnostic pop
 }
 
 inline void test_get_current_device_resource_ref()
