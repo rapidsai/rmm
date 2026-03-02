@@ -14,7 +14,7 @@ dependencies:
 - cuda-python>=12.9.2,<13.0
 - cuda-version=12.9
 - cxx-compiler
-- cython>=3.0.0,<3.2.0
+- cython>=3.2.2
 - doxygen=1.9.1
 - gcc_linux-aarch64=14.*
 - gcovr>=5.0
