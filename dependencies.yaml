@@ -344,7 +344,7 @@ dependencies:
       - output_types: [conda, requirements, pyproject]
         packages:
           - packaging
-          - pytest<9.0.0
+          - pytest
           - pytest-cov
     specific:
       - output_types: [conda, requirements, pyproject]
