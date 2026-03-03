@@ -55,7 +55,6 @@ if [ "${CUDA_MAJOR}" -gt 12 ] || { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR
     rapids-pip-retry install \
         -v \
         "${PIP_INSTALL_SHARED_ARGS[@]}" \
-        -r test-pytorch-requirements.txt \
         "${TORCH_WHEEL_DIR}"/torch-*.whl
 
     timeout 15m python -m pytest -k "torch" ./python/rmm/rmm/tests \
