@@ -124,7 +124,8 @@ if(RMM_NVTX)
   target_compile_definitions(rmm PUBLIC RMM_NVTX)
 endif()
 
-set(RMM_CXX_FLAGS -Wall -Werror -Wextra -Wno-unknown-pragmas -Wno-error=deprecated-declarations -Wnull-dereference)
+set(RMM_CXX_FLAGS -Wall -Werror -Wextra -Wno-unknown-pragmas -Wno-error=deprecated-declarations
+                  -Wnull-dereference)
 set(RMM_CUDA_FLAGS -Werror=all-warnings
                    -Xcompiler=-Wall,-Werror,-Wextra,-Wno-error=deprecated-declarations)
 target_compile_options(rmm PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${RMM_CXX_FLAGS}>"
