@@ -44,8 +44,13 @@ CUDA_MINOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f2)
 
 echo "::group::PyTorch Tests"
 
-# update this when 'torch' publishes CUDA wheels supporting newer CTKs
-if [ "${CUDA_MAJOR}" -eq 12 ] || { [ "${CUDA_MAJOR}" -eq 13 ] && [ "${CUDA_MINOR}" -le 0 ]; }; then
+# Update this when 'torch' publishes CUDA wheels supporting newer CTKs.
+#
+# See notes in 'dependencies.yaml' for details on supported versions.
+if \
+    { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR}" -ge 6 ]; } \
+    || { [ "${CUDA_MAJOR}" -eq 13 ] && [ "${CUDA_MINOR}" -le 0 ]; }; \
+then
 
     # ensure a CUDA variant of 'torch' is used
     rapids-logger "Downloading PyTorch CUDA wheels"
