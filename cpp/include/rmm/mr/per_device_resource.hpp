@@ -15,6 +15,7 @@
 
 #include <map>
 #include <mutex>
+#include <utility>
 
 /**
  * @file per_device_resource.hpp
@@ -192,21 +193,19 @@ namespace detail {
 // `set_per_device_resource_ref` and the thread-safe version of `set_per_device_resource`,
 // both of which take the lock, so we need an implementation that doesn't take the lock.
 /// @private
-inline device_async_resource_ref set_per_device_resource_ref_unsafe(
+inline cuda::mr::any_resource<cuda::mr::device_accessible> set_per_device_resource_ref_unsafe(
   cuda_device_id device_id, device_async_resource_ref new_resource_ref)
 {
   using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
   auto& map                 = detail::get_ref_map();
   auto const old_itr        = map.find(device_id.value());
-  // If a resource didn't previously exist for `device_id`, return ref to initial_resource
+  // If a resource didn't previously exist for `device_id`, return owning copy of initial_resource
   if (old_itr == map.end()) {
     map.emplace(device_id.value(), static_cast<any_device_resource>(new_resource_ref));
-    return device_async_resource_ref{*detail::initial_resource()};
+    return static_cast<any_device_resource>(device_async_resource_ref{*detail::initial_resource()});
   }
 
-  device_async_resource_ref old_resource_ref{old_itr->second};
-  old_itr->second = static_cast<any_device_resource>(new_resource_ref);  // reify and store
-  return old_resource_ref;
+  return std::exchange(old_itr->second, static_cast<any_device_resource>(new_resource_ref));
 }
 }  // namespace detail
 
@@ -372,9 +371,9 @@ inline device_async_resource_ref get_per_device_resource_ref(cuda_device_id devi
  *
  * @param device_id The id of the target device
  * @param new_resource_ref new `device_async_resource_ref` to use as new resource for `device_id`
- * @return The previous `device_async_resource_ref` for `device_id`
+ * @return An owning `any_resource` holding the previous resource for `device_id`
  */
-inline device_async_resource_ref set_per_device_resource_ref(
+inline cuda::mr::any_resource<cuda::mr::device_accessible> set_per_device_resource_ref(
   cuda_device_id device_id, device_async_resource_ref new_resource_ref)
 {
   std::lock_guard<std::mutex> lock{detail::ref_map_lock()};
@@ -427,9 +426,9 @@ inline device_async_resource_ref get_current_device_resource_ref()
  * is a different device from the one that was active when the memory resource was created.
  *
  * @param new_resource_ref New `device_async_resource_ref` to use for the current device
- * @return Previous `device_async_resource_ref` for the current device
+ * @return An owning `any_resource` holding the previous resource for the current device
  */
-inline device_async_resource_ref set_current_device_resource_ref(
+inline cuda::mr::any_resource<cuda::mr::device_accessible> set_current_device_resource_ref(
   device_async_resource_ref new_resource_ref)
 {
   return set_per_device_resource_ref(rmm::get_current_cuda_device(), new_resource_ref);
@@ -449,9 +448,10 @@ inline device_async_resource_ref set_current_device_resource_ref(
  * of these functions will result in a valid state, but the order of execution is undefined.
  *
  * @param device_id The id of the target device
- * @return Previous `device_async_resource_ref` for `device_id`
+ * @return An owning `any_resource` holding the previous resource for `device_id`
  */
-inline device_async_resource_ref reset_per_device_resource_ref(cuda_device_id device_id)
+inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_per_device_resource_ref(
+  cuda_device_id device_id)
 {
   return set_per_device_resource_ref(device_id, *detail::initial_resource());
 }
@@ -467,9 +467,9 @@ inline device_async_resource_ref reset_per_device_resource_ref(cuda_device_id de
  * `set_current_device_resource_ref` and `reset_current_device_resource_ref. Concurrent calls to any
  * of these functions will result in a valid state, but the order of execution is undefined.
  *
- * @return Previous `device_async_resource_ref` for `device_id`
+ * @return An owning `any_resource` holding the previous resource for the current device
  */
-inline device_async_resource_ref reset_current_device_resource_ref()
+inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_current_device_resource_ref()
 {
   return reset_per_device_resource_ref(rmm::get_current_cuda_device());
 }
