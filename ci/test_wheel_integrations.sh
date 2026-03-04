@@ -44,7 +44,8 @@ CUDA_MINOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f2)
 
 echo "::group::PyTorch Tests"
 
-if [ "${CUDA_MAJOR}" -gt 12 ] || { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR}" -ge 8 ]; }; then
+# update this when 'torch' publishes CUDA wheels supporting newer CTKs
+if [ "${CUDA_MAJOR}" -eq 12 ] || { [ "${CUDA_MAJOR}" -eq 13 ] && [ "${CUDA_MINOR}" -le 0 ]; }; then
 
     # ensure a CUDA variant of 'torch' is used
     rapids-logger "Downloading PyTorch CUDA wheels"
@@ -64,7 +65,7 @@ if [ "${CUDA_MAJOR}" -gt 12 ] || { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR
         EXITCODE="${EXITCODE_PYTORCH}"
     fi
 else
-    rapids-logger "Skipping PyTorch tests (requires CUDA 12.8+, found ${RAPIDS_CUDA_VERSION})"
+    rapids-logger "Skipping PyTorch tests (requires CUDA <13.1, found ${RAPIDS_CUDA_VERSION})"
 fi
 
 echo "::endgroup::"
