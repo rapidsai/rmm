@@ -284,12 +284,9 @@ dependencies:
               cuda: "12.2"
               use_cuda_wheels: "true"
             packages:
-              # why looser at the low end here?
-              #
-              #   * nvidia-cublas-cu12 didn't get aarch64 wheels until CTK 12.3
-              #   *
-              #
-              - cuda-toolkit>=12.2,<=12.4
+              # nvidia-cublas-cu12 didn't get aarch64 wheels until CTK 12.3, so allow a slightly
+              # looser bound here
+              - cuda-toolkit>=12.2,<=12.3
           - matrix:
               cuda: "12.2"
               use_cuda_wheels: "true"
