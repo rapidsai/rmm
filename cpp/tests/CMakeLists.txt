@@ -159,6 +159,7 @@ ConfigureTest(DEVICE_MEMORY_RESOURCE_VIEW_TEST mr/device_memory_resource_view_te
 # general adaptor tests
 ConfigureTest(ADAPTOR_TEST mr/adaptor_tests.cpp GPUS 1 PERCENT 5)
 ConfigureTest(CCCL_ADAPTOR_TEST mr/cccl_adaptor_tests.cpp GPUS 1 PERCENT 100)
+ConfigureTest(THREAD_SAFE_MR_REF_TEST mr/mr_ref_thread_safe_tests.cpp GPUS 1 PERCENT 5)
 
 # pool mr tests
 ConfigureTest(POOL_MR_TEST mr/pool_mr_tests.cpp GPUS 1 PERCENT 100)
