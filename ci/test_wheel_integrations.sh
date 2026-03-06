@@ -63,7 +63,7 @@ then
         EXITCODE="${EXITCODE_PYTORCH}"
     fi
 else
-    rapids-logger "Skipping PyTorch tests (requires CUDA 12.6-12.9 or 13.0, found ${RAPIDS_CUDA_VERSION})"
+    rapids-logger "Skipping PyTorch tests (requires CUDA 12.9+ or 13.0, found ${RAPIDS_CUDA_VERSION})"
 fi
 
 echo "::endgroup::"
