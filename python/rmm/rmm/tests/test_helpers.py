@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 """Shared test utilities and constants for RMM tests."""
@@ -64,6 +64,8 @@ def assert_prefetched(buffer, device_id):
     assert err == runtime.cudaError_t.cudaSuccess
     assert dev == device_id
 
+
+_TEST_POOL_SIZE = 1 << 20  # 1 MiB; reduces pool memory resource creation time
 
 # Test parameter sets
 _dtypes = [
