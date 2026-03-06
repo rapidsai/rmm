@@ -26,8 +26,10 @@ namespace mr {
  * @brief Resource that uses an upstream resource to allocate memory and limits the total
  * allocations possible.
  *
- * Atomics are used to make the byte counter thread-safe, but note that `get_allocated_bytes`
- * may not include in-flight allocations.
+ * An instance of this resource can be constructed with an existing, upstream
+ * resource in order to satisfy allocation requests, but any existing allocations
+ * will be untracked. Atomics are used to make this thread-safe, but note that
+ * the `get_allocated_bytes` may not include in-flight allocations.
  *
  * This class is copyable and shares ownership of its internal state via
  * `cuda::mr::shared_resource`.
