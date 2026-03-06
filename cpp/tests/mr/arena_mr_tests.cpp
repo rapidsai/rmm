@@ -53,7 +53,7 @@ using rmm::mr::detail::arena::byte_span;
 using rmm::mr::detail::arena::superblock;
 using global_arena = rmm::mr::detail::arena::global_arena;
 using arena        = rmm::mr::detail::arena::arena;
-using arena_mr     = rmm::mr::arena_memory_resource<rmm::mr::device_memory_resource>;
+using arena_mr     = rmm::mr::arena_memory_resource;
 using ::testing::Return;
 
 // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)

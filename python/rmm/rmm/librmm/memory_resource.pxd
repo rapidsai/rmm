@@ -157,9 +157,9 @@ cdef extern from "rmm/mr/pool_memory_resource.hpp" \
 
 cdef extern from "rmm/mr/arena_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass arena_memory_resource[Upstream](device_memory_resource):
+    cdef cppclass arena_memory_resource(device_memory_resource):
         arena_memory_resource(
-            Upstream* upstream_mr,
+            device_memory_resource* upstream_mr,
             optional[size_t] arena_size,
             bool dump_log_on_failure
         ) except +

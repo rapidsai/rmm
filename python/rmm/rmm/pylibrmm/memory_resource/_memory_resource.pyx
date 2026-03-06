@@ -413,7 +413,7 @@ cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
             else optional[size_t](<size_t> parse_bytes(arena_size))
         )
         self.c_obj.reset(
-            new arena_memory_resource[device_memory_resource](
+            new arena_memory_resource(
                 upstream_mr.get_mr(),
                 c_arena_size,
                 dump_log_on_failure,

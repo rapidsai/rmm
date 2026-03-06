@@ -10,6 +10,7 @@
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/owning_wrapper.hpp>
+#include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 
 #include <benchmark/benchmark.h>
@@ -162,7 +163,9 @@ inline auto make_arena()
 {
   auto free = rmm::available_device_memory().first;
   constexpr auto reserve{64UL << 20};  // Leave some space for CUDA overhead.
-  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda(), free - reserve);
+  return std::shared_ptr<rmm::mr::device_memory_resource>{
+    std::make_shared<rmm::mr::arena_memory_resource>(rmm::mr::get_current_device_resource_ref(),
+                                                     free - reserve)};
 }
 
 inline auto make_binning()

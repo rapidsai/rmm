@@ -12,6 +12,7 @@
 #include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/managed_memory_resource.hpp>
 #include <rmm/mr/owning_wrapper.hpp>
+#include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 
 #include <cuda/iterator>
@@ -62,10 +63,12 @@ inline auto make_pool(std::size_t simulated_size)
 inline auto make_arena(std::size_t simulated_size)
 {
   if (simulated_size > 0) {
-    return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(
-      make_simulated(simulated_size), simulated_size, simulated_size);
+    return std::shared_ptr<rmm::mr::device_memory_resource>{
+      std::make_shared<rmm::mr::arena_memory_resource>(rmm::mr::get_current_device_resource_ref(),
+                                                       simulated_size)};
   }
-  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
+  return std::shared_ptr<rmm::mr::device_memory_resource>{
+    std::make_shared<rmm::mr::arena_memory_resource>(rmm::mr::get_current_device_resource_ref())};
 }
 
 inline auto make_binning(std::size_t simulated_size)
