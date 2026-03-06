@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -15,6 +15,7 @@
 #include <rmm/logger.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
@@ -762,7 +763,7 @@ class global_arena final {
   }
 
   /// The upstream resource to allocate memory from.
-  device_async_resource_ref upstream_mr_;
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
   /// Block allocated from upstream so that it can be quickly freed.
   block upstream_block_;
   /// Address-ordered set of superblocks.
