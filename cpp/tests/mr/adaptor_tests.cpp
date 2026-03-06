@@ -28,17 +28,16 @@ using rmm::mr::aligned_resource_adaptor;
 using rmm::mr::failure_callback_resource_adaptor;
 using rmm::mr::limiting_resource_adaptor;
 using rmm::mr::thread_safe_resource_adaptor;
-using owning_wrapper = rmm::mr::owning_wrapper<limiting_resource_adaptor<cuda_mr>, cuda_mr>;
+using owning_wrapper = rmm::mr::owning_wrapper<limiting_resource_adaptor, cuda_mr>;
 
 // explicit instantiations for test coverage purposes
 template class rmm::mr::failure_callback_resource_adaptor<cuda_mr>;
-template class rmm::mr::limiting_resource_adaptor<cuda_mr>;
 template class rmm::mr::thread_safe_resource_adaptor<cuda_mr>;
 
 namespace rmm::test {
 
 using adaptors = ::testing::Types<failure_callback_resource_adaptor<cuda_mr>,
-                                  limiting_resource_adaptor<cuda_mr>,
+                                  limiting_resource_adaptor,
                                   owning_wrapper,
                                   thread_safe_resource_adaptor<cuda_mr>>;
 
@@ -46,7 +45,7 @@ using adaptors = ::testing::Types<failure_callback_resource_adaptor<cuda_mr>,
 static_assert(
   rmm::detail::polyfill::resource_with<rmm::mr::failure_callback_resource_adaptor<cuda_mr>,
                                        cuda::mr::device_accessible>);
-static_assert(rmm::detail::polyfill::resource_with<rmm::mr::limiting_resource_adaptor<cuda_mr>,
+static_assert(rmm::detail::polyfill::resource_with<rmm::mr::limiting_resource_adaptor,
                                                    cuda::mr::device_accessible>);
 static_assert(rmm::detail::polyfill::resource_with<rmm::mr::owning_wrapper<cuda_mr>,
                                                    cuda::mr::device_accessible>);
@@ -68,11 +67,10 @@ struct AdaptorTest : public ::testing::Test {
         upstream,
         []([[maybe_unused]] std::size_t bytes, [[maybe_unused]] void* arg) { return false; },
         nullptr);
-    } else if constexpr (std::is_same_v<adaptor_type, limiting_resource_adaptor<cuda_mr>>) {
+    } else if constexpr (std::is_same_v<adaptor_type, limiting_resource_adaptor>) {
       return std::make_shared<adaptor_type>(upstream, 64_MiB);
     } else if constexpr (std::is_same_v<adaptor_type, owning_wrapper>) {
-      return mr::make_owning_wrapper<limiting_resource_adaptor>(std::make_shared<cuda_mr>(),
-                                                                64_MiB);
+      return std::make_shared<owning_wrapper>(std::make_tuple(std::make_shared<cuda_mr>()), 64_MiB);
     } else {
       return std::make_shared<adaptor_type>(upstream);
     }
@@ -94,7 +92,13 @@ TYPED_TEST(AdaptorTest, Equality)
 
   {
     auto other_mr = this->make_adaptor(&this->cuda);
-    EXPECT_TRUE(this->mr->is_equal(*other_mr));
+    if constexpr (std::is_same_v<TypeParam, limiting_resource_adaptor> or
+                  std::is_same_v<TypeParam, owning_wrapper>) {
+      // shared_resource equality: two distinct constructions are NOT equal
+      EXPECT_FALSE(this->mr->is_equal(*other_mr));
+    } else {
+      EXPECT_TRUE(this->mr->is_equal(*other_mr));
+    }
   }
 
   {
