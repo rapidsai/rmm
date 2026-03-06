@@ -37,6 +37,16 @@ namespace mr {
  * coalesced with neighbouring free blocks if the addresses are contiguous. Free superblocks are
  * returned to the global arena.
  *
+ * In real-world applications, allocation sizes tend to follow a power law distribution in which
+ * large allocations are rare, but small ones quite common. By handling small allocations in the
+ * per-thread arena, adequate performance can be achieved without introducing excessive memory
+ * fragmentation under high concurrency.
+ *
+ * This design is inspired by several existing CPU memory allocators targeting multi-threaded
+ * applications (glibc malloc, Hoard, jemalloc, TCMalloc), albeit in a simpler form. Possible future
+ * improvements include using size classes, allocation caches, and more fine-grained locking or
+ * lock-free approaches.
+ *
  * This class is copyable and shares ownership of its internal state via
  * `cuda::mr::shared_resource`.
  *
