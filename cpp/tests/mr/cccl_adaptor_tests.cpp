@@ -76,6 +76,7 @@ struct CcclAdaptorTest : public ::testing::Test {
     } else if constexpr (std::is_same_v<AdaptorType, pool_memory_resource>) {
       return AdaptorType{cuda, 0};
     } else if constexpr (std::is_same_v<AdaptorType, prefetch_resource_adaptor>) {
+      // TODO: Wrap a managed resource here.
       return AdaptorType{cuda};
     } else if constexpr (std::is_same_v<AdaptorType, statistics_resource_adaptor>) {
       return AdaptorType{cuda};
