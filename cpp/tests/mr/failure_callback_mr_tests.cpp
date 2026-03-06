@@ -9,6 +9,7 @@
 #include <rmm/error.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/failure_callback_resource_adaptor.hpp>
+#include <rmm/mr/per_device_resource.hpp>
 
 #include <gtest/gtest.h>
 
@@ -18,8 +19,7 @@ namespace rmm::test {
 namespace {
 
 template <typename ExceptionType = rmm::bad_alloc>
-using failure_callback_adaptor =
-  rmm::mr::failure_callback_resource_adaptor<rmm::mr::device_memory_resource, ExceptionType>;
+using failure_callback_adaptor = rmm::mr::failure_callback_resource_adaptor<ExceptionType>;
 
 bool failure_handler(std::size_t /*bytes*/, void* arg)
 {
