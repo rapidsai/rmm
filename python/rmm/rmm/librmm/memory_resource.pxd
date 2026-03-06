@@ -260,5 +260,5 @@ cdef extern from "rmm/mr/failure_callback_resource_adaptor.hpp" \
 
 cdef extern from "rmm/mr/prefetch_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass prefetch_resource_adaptor[Upstream](device_memory_resource):
-        prefetch_resource_adaptor(Upstream* upstream_mr) except +
+    cdef cppclass prefetch_resource_adaptor(device_memory_resource):
+        prefetch_resource_adaptor(device_memory_resource* upstream_mr) except +

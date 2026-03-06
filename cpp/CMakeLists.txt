@@ -101,11 +101,13 @@ add_library(
   src/mr/detail/logging_resource_adaptor_impl.cpp
   src/mr/detail/pool_memory_resource_impl.cpp
   src/mr/detail/pool_memory_resource_impl.cpp
+  src/mr/detail/prefetch_resource_adaptor_impl.cpp
   src/mr/detail/statistics_resource_adaptor_impl.cpp
   src/mr/detail/tracking_resource_adaptor_impl.cpp
   src/mr/fixed_size_memory_resource.cpp
   src/mr/logging_resource_adaptor.cpp
   src/mr/pool_memory_resource.cpp
+  src/mr/prefetch_resource_adaptor.cpp
   src/mr/statistics_resource_adaptor.cpp
   src/mr/tracking_resource_adaptor.cpp
   src/prefetch.cpp)
