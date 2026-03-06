@@ -440,11 +440,16 @@ dependencies:
           # pip recognizes the index as a global option for the requirements.txt file
           - --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple
   depends_on_pytorch:
-    common:
-      - output_types: conda
-        packages:
-          - pytorch-gpu>=2.9.0
     specific:
+      - output_types: conda
+        matrices:
+          - matrix:
+              require_gpu_pytorch: "true"
+            packages:
+              - pytorch-gpu>=2.9
+          - matrix:
+            packages:
+              - pytorch>=2.9
       # The 'pytorch.org' indices referenced in --extra-index-url below host CPU-only variants too,
       # so requirements like '>=' are not safe.
       #
@@ -456,35 +461,43 @@ dependencies:
       # This list only contains entries exactly matching CUDA {major}.{minor} that we test in RAPIDS CI,
       # to ensure a loud error alerts us to the need to update this list (or CI scripts) when new
       # CTKs are added to the support matrix.
-      #
-      # 'torch' first supported aarch64 CUDA wheels in v2.6.0 (targeting CUDA 12.6).
-      # See https://github.com/rapidsai/build-planning/issues/255 for more details on
-      # historical support.
-      #
       - output_types: requirements
         matrices:
+          # avoid pulling in 'torch' in places like DLFW builds that prefer to install it other ways
+          - matrix:
+              no_pytorch: "true"
+            packages:
+          # matrices below ensure CUDA 'torch' packages are used
           - matrix:
               cuda: "12.9"
               dependencies: "oldest"
+              require_gpu_pytorch: "true"
             packages:
               - &torch_cu129_index --extra-index-url=https://download.pytorch.org/whl/cu129
               - torch==2.9.0+cu129
           - matrix:
               cuda: "12.9"
+              require_gpu_pytorch: "true"
             packages:
               - *torch_cu129_index
               - torch==2.10.0+cu129
           - matrix:
               cuda: "13.0"
               dependencies: "oldest"
+              require_gpu_pytorch: "true"
             packages:
               - &torch_index_cu13 --extra-index-url=https://download.pytorch.org/whl/cu130
               - torch==2.9.0+cu130
           - matrix:
               cuda: "13.0"
+              require_gpu_pytorch: "true"
             packages:
               - *torch_index_cu13
               - torch==2.10.0+cu130
+          - matrix:
+              require_gpu_pytorch: "false"
+            packages:
+              - torch>=2.9
   depends_on_cupy:
     common:
       - output_types: conda
