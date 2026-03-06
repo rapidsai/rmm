@@ -12,17 +12,17 @@ LIBRMM_WHEELHOUSE=$(RAPIDS_PY_WHEEL_NAME="librmm_${RAPIDS_PY_CUDA_SUFFIX}" rapid
 RMM_WHEELHOUSE=$(rapids-download-from-github "$(rapids-package-name "wheel_python" rmm --stable --cuda "$RAPIDS_CUDA_VERSION")")
 
 # generate constraints (possibly pinning to oldest support versions of dependencies)
-rapids-generate-pip-constraints test_python ./constraints.txt
+rapids-generate-pip-constraints test_python "${PIP_CONSTRAINT}"
 
 # notes:
 #
 #   * echo to expand wildcard before adding `[test]` requires for pip
-#   * need to provide --constraint="${PIP_CONSTRAINT}" because that environment variable is
-#     ignored if any other --constraint are passed via the CLI
+#   * just providing --constraint="${PIP_CONSTRAINT}" to be explicit, and because
+#     that environment variable is ignored if any other --constraint are passed via the CLI
 #
 rapids-pip-retry install \
     -v \
-    --constraint ./constraints.txt \
+    --prefer-binary \
     --constraint "${PIP_CONSTRAINT}" \
     "$(echo "${LIBRMM_WHEELHOUSE}"/librmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)" \
     "$(echo "${RMM_WHEELHOUSE}"/rmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)[test]"
