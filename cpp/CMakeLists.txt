@@ -96,6 +96,8 @@ add_library(
   src/mr/detail/aligned_resource_adaptor_impl.cpp
   src/mr/detail/arena_memory_resource_impl.cpp
   src/mr/detail/binning_memory_resource_impl.cpp
+  src/mr/detail/callback_memory_resource_impl.cpp
+  src/mr/callback_memory_resource.cpp
   src/mr/detail/fixed_size_memory_resource_impl.cpp
   src/mr/detail/logging_resource_adaptor_impl.cpp
   src/mr/detail/logging_resource_adaptor_impl.cpp

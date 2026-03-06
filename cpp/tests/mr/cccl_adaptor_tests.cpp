@@ -8,6 +8,7 @@
 #include <rmm/mr/aligned_resource_adaptor.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/binning_memory_resource.hpp>
+#include <rmm/mr/callback_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/fixed_size_memory_resource.hpp>
 #include <rmm/mr/is_resource_adaptor.hpp>
@@ -25,6 +26,7 @@ using cuda_mr = rmm::mr::cuda_memory_resource;
 using rmm::mr::aligned_resource_adaptor;
 using rmm::mr::arena_memory_resource;
 using rmm::mr::binning_memory_resource;
+using rmm::mr::callback_memory_resource;
 using rmm::mr::fixed_size_memory_resource;
 using rmm::mr::logging_resource_adaptor;
 using rmm::mr::pool_memory_resource;
@@ -35,6 +37,7 @@ using rmm::mr::tracking_resource_adaptor;
 static_assert(cuda::mr::resource_with<aligned_resource_adaptor, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<arena_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<binning_memory_resource, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<callback_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<fixed_size_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<logging_resource_adaptor, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<pool_memory_resource, cuda::mr::device_accessible>);
@@ -140,6 +143,32 @@ TEST(ArenaMRAdaptorTest, EqualityAndSharedOwnership)
   EXPECT_EQ(mr, copy);
 
   arena_memory_resource other{cuda};
+  EXPECT_NE(mr, other);
+
+  void* ptr{nullptr};
+  EXPECT_NO_THROW(ptr = mr.allocate_sync(1024));
+  EXPECT_NE(ptr, nullptr);
+  EXPECT_NO_THROW(copy.deallocate_sync(ptr, 1024));
+}
+
+// callback_memory_resource: no upstream resource; test separately.
+TEST(CallbackMRAdaptorTest, EqualityAndSharedOwnership)
+{
+  cuda_mr cuda{};
+  rmm::device_async_resource_ref upstream{cuda};
+
+  auto alloc_cb = [](std::size_t bytes, rmm::cuda_stream_view stream, void* arg) {
+    return static_cast<rmm::device_async_resource_ref*>(arg)->allocate(stream, bytes);
+  };
+  auto dealloc_cb = [](void* ptr, std::size_t bytes, rmm::cuda_stream_view stream, void* arg) {
+    static_cast<rmm::device_async_resource_ref*>(arg)->deallocate(stream, ptr, bytes);
+  };
+
+  callback_memory_resource mr{alloc_cb, dealloc_cb, &upstream, &upstream};
+  auto copy = mr;
+  EXPECT_EQ(mr, copy);
+
+  callback_memory_resource other{alloc_cb, dealloc_cb, &upstream, &upstream};
   EXPECT_NE(mr, other);
 
   void* ptr{nullptr};
