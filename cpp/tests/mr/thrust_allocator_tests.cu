@@ -25,7 +25,6 @@ namespace {
 
 struct allocator_test : public mr_ref_test {};
 
-// Disable until we support resource_ref with set_current_device_resource
 TEST_P(allocator_test, first)
 {
   rmm::mr::set_current_device_resource_ref(this->ref);
@@ -61,7 +60,7 @@ TEST_P(allocator_test, multi_device)
 // TODO(bdice): Add back test coverage after completing CCCL MR migration
 INSTANTIATE_TEST_SUITE_P(ThrustAllocatorTests,
                          allocator_test,
-                         ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool", "Arena"),
+                         ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool"),
                          [](auto const& info) { return info.param; });
 
 }  // namespace

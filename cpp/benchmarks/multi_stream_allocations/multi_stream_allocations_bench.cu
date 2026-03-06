@@ -96,7 +96,8 @@ inline auto make_pool()
 
 inline auto make_arena()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
+  return std::make_shared<rmm::mr::arena_memory_resource>(
+    rmm::mr::get_current_device_resource_ref());
 }
 
 inline auto make_binning()

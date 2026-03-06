@@ -6,6 +6,7 @@
 #include <rmm/cuda_stream.hpp>
 #include <rmm/error.hpp>
 #include <rmm/mr/aligned_resource_adaptor.hpp>
+#include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/binning_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/fixed_size_memory_resource.hpp>
@@ -22,6 +23,7 @@
 
 using cuda_mr = rmm::mr::cuda_memory_resource;
 using rmm::mr::aligned_resource_adaptor;
+using rmm::mr::arena_memory_resource;
 using rmm::mr::binning_memory_resource;
 using rmm::mr::fixed_size_memory_resource;
 using rmm::mr::logging_resource_adaptor;
@@ -31,6 +33,7 @@ using rmm::mr::tracking_resource_adaptor;
 
 // static property checks
 static_assert(cuda::mr::resource_with<aligned_resource_adaptor, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<arena_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<binning_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<fixed_size_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<logging_resource_adaptor, cuda::mr::device_accessible>);
@@ -126,6 +129,23 @@ TEST(AlignedAdaptorTest, ThrowOnInvalidAllocationAlignment)
   EXPECT_THROW((aligned_resource_adaptor{cuda, 255}), rmm::logic_error);
   EXPECT_NO_THROW((aligned_resource_adaptor{cuda, 256}));
   EXPECT_THROW((aligned_resource_adaptor{cuda, 768}), rmm::logic_error);
+}
+
+// arena_memory_resource: does not expose get_upstream_resource(); test separately.
+TEST(ArenaMRAdaptorTest, EqualityAndSharedOwnership)
+{
+  cuda_mr cuda{};
+  arena_memory_resource mr{cuda};
+  auto copy = mr;
+  EXPECT_EQ(mr, copy);
+
+  arena_memory_resource other{cuda};
+  EXPECT_NE(mr, other);
+
+  void* ptr{nullptr};
+  EXPECT_NO_THROW(ptr = mr.allocate_sync(1024));
+  EXPECT_NE(ptr, nullptr);
+  EXPECT_NO_THROW(copy.deallocate_sync(ptr, 1024));
 }
 
 }  // namespace rmm::test

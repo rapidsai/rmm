@@ -91,8 +91,10 @@ add_library(
   src/exec_policy.cpp
   src/logger.cpp
   src/mr/aligned_resource_adaptor.cpp
+  src/mr/arena_memory_resource.cpp
   src/mr/binning_memory_resource.cpp
   src/mr/detail/aligned_resource_adaptor_impl.cpp
+  src/mr/detail/arena_memory_resource_impl.cpp
   src/mr/detail/binning_memory_resource_impl.cpp
   src/mr/detail/fixed_size_memory_resource_impl.cpp
   src/mr/detail/logging_resource_adaptor_impl.cpp

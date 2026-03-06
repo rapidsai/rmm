@@ -399,7 +399,8 @@ inline auto make_system()
 
 inline auto make_arena()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
+  return std::make_shared<rmm::mr::arena_memory_resource>(
+    rmm::mr::get_current_device_resource_ref());
 }
 
 inline auto make_fixed_size()
@@ -448,7 +449,7 @@ using pinned_mr     = rmm::mr::pinned_host_memory_resource;
 using cuda_async_mr = rmm::mr::cuda_async_memory_resource;
 using managed_mr    = rmm::mr::managed_memory_resource;
 using system_mr     = rmm::mr::system_memory_resource;
-using arena_mr      = rmm::mr::arena_memory_resource<cuda_mr>;
+using arena_mr      = rmm::mr::arena_memory_resource;
 using fixed_mr      = rmm::mr::fixed_size_memory_resource;
 using binning_mr    = rmm::mr::binning_memory_resource;
 
