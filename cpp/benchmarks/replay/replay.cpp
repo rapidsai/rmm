@@ -63,12 +63,11 @@ inline auto make_pool(std::size_t simulated_size)
 inline auto make_arena(std::size_t simulated_size)
 {
   if (simulated_size > 0) {
-    return std::shared_ptr<rmm::mr::device_memory_resource>{
-      std::make_shared<rmm::mr::arena_memory_resource>(rmm::mr::get_current_device_resource_ref(),
-                                                       simulated_size)};
+    return std::make_shared<rmm::mr::arena_memory_resource>(
+      rmm::mr::get_current_device_resource_ref(), simulated_size);
   }
-  return std::shared_ptr<rmm::mr::device_memory_resource>{
-    std::make_shared<rmm::mr::arena_memory_resource>(rmm::mr::get_current_device_resource_ref())};
+  return std::make_shared<rmm::mr::arena_memory_resource>(
+    rmm::mr::get_current_device_resource_ref());
 }
 
 inline auto make_binning(std::size_t simulated_size)

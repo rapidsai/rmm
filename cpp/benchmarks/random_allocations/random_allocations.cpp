@@ -163,9 +163,8 @@ inline auto make_arena()
 {
   auto free = rmm::available_device_memory().first;
   constexpr auto reserve{64UL << 20};  // Leave some space for CUDA overhead.
-  return std::shared_ptr<rmm::mr::device_memory_resource>{
-    std::make_shared<rmm::mr::arena_memory_resource>(rmm::mr::get_current_device_resource_ref(),
-                                                     free - reserve)};
+  return std::make_shared<rmm::mr::arena_memory_resource>(
+    rmm::mr::get_current_device_resource_ref(), free - reserve);
 }
 
 inline auto make_binning()

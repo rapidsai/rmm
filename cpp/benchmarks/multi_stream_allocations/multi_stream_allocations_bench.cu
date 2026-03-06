@@ -96,8 +96,8 @@ inline auto make_pool()
 
 inline auto make_arena()
 {
-  return std::shared_ptr<rmm::mr::device_memory_resource>{
-    std::make_shared<rmm::mr::arena_memory_resource>(rmm::mr::get_current_device_resource_ref())};
+  return std::make_shared<rmm::mr::arena_memory_resource>(
+    rmm::mr::get_current_device_resource_ref());
 }
 
 inline auto make_binning()
