@@ -31,11 +31,10 @@ EXITCODE=0
 rapids-logger "Check GPU usage"
 nvidia-smi
 
-# Check CUDA version for PyTorch compatibility (requires CUDA 12.8+)
+echo "::group::PyTorch Tests"
+
 CUDA_MAJOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f1)
 CUDA_MINOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f2)
-
-echo "::group::PyTorch Tests"
 
 # Update this when 'torch' publishes CUDA wheels supporting newer CTKs.
 #
