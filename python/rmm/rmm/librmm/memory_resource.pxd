@@ -246,14 +246,18 @@ cdef extern from "rmm/mr/tracking_resource_adaptor.hpp" \
         string get_outstanding_allocations_str() except +
         void log_outstanding_allocations() except +
 
+cdef extern from "rmm/error.hpp" namespace "rmm" nogil:
+    cdef cppclass out_of_memory:
+        pass
+
 cdef extern from "rmm/mr/failure_callback_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
     ctypedef bool (*failure_callback_t)(size_t, void*)
-    cdef cppclass failure_callback_resource_adaptor[Upstream](
+    cdef cppclass failure_callback_resource_adaptor[ExceptionType](
         device_memory_resource
     ):
         failure_callback_resource_adaptor(
-            Upstream* upstream_mr,
+            device_memory_resource* upstream_mr,
             failure_callback_t callback,
             void* callback_arg
         ) except +
