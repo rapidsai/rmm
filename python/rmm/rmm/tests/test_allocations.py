@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for basic RMM allocations."""
@@ -8,6 +8,7 @@ from itertools import product
 import pytest
 from test_helpers import (
     _SYSTEM_MEMORY_SUPPORTED,
+    _TEST_POOL_SIZE,
     _allocs,
     _dtypes,
     _nelems,
@@ -24,39 +25,21 @@ def test_rmm_alloc(dtype, nelem, alloc):
     array_tester(dtype, nelem, alloc)
 
 
-# Test all combinations of default/managed and pooled/non-pooled allocation
-@pytest.mark.parametrize("dtype", _dtypes)
-@pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-@pytest.mark.parametrize(
-    "managed, pool", list(product([False, True], [False, True]))
-)
-def test_rmm_modes(dtype, nelem, alloc, managed, pool):
-    assert rmm.is_initialized()
-    array_tester(dtype, nelem, alloc)
-
-    rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
-
-    assert rmm.is_initialized()
-
-    array_tester(dtype, nelem, alloc)
+def _make_mr(managed, pool):
+    """Build a memory resource for the given managed/pool mode."""
+    if managed:
+        base_mr = rmm.mr.ManagedMemoryResource()
+    else:
+        base_mr = rmm.mr.CudaMemoryResource()
+    if pool:
+        return rmm.mr.PoolMemoryResource(
+            base_mr, initial_pool_size=_TEST_POOL_SIZE
+        )
+    return base_mr
 
 
-@pytest.mark.skipif(
-    not _SYSTEM_MEMORY_SUPPORTED,
-    reason="System memory not supported",
-)
-@pytest.mark.parametrize("dtype", _dtypes)
-@pytest.mark.parametrize("nelem", _nelems)
-@pytest.mark.parametrize("alloc", _allocs)
-@pytest.mark.parametrize(
-    "system, pool, headroom",
-    list(product([False, True], [False, True], [False, True])),
-)
-def test_rmm_modes_system_memory(dtype, nelem, alloc, system, pool, headroom):
-    assert rmm.is_initialized()
-    array_tester(dtype, nelem, alloc)
-
+def _make_system_memory_mr(system, pool, headroom):
+    """Build a memory resource for the given system memory test mode."""
     if system:
         if headroom:
             base_mr = rmm.mr.SamHeadroomMemoryResource(headroom=1 << 20)
@@ -65,11 +48,52 @@ def test_rmm_modes_system_memory(dtype, nelem, alloc, system, pool, headroom):
     else:
         base_mr = rmm.mr.CudaMemoryResource()
     if pool:
-        mr = rmm.mr.PoolMemoryResource(base_mr)
-    else:
-        mr = base_mr
-    rmm.mr.set_current_device_resource(mr)
+        return rmm.mr.PoolMemoryResource(
+            base_mr, initial_pool_size=_TEST_POOL_SIZE
+        )
+    return base_mr
 
-    assert rmm.is_initialized()
 
-    array_tester(dtype, nelem, alloc)
+# Test all combinations of default/managed and pooled/non-pooled allocation.
+# The mode fixture is class-scoped so that the (potentially expensive) memory
+# resource is created once per mode combo rather than once per dtype/nelem.
+@pytest.mark.parametrize(
+    "managed, pool",
+    list(product([False, True], [False, True])),
+    scope="class",
+)
+class TestRmmModes:
+    @pytest.fixture(autouse=True)
+    def _apply_mode(self, managed, pool):
+        mr = _make_mr(managed, pool)
+        rmm.mr.set_current_device_resource(mr)
+
+    @pytest.mark.parametrize("dtype", _dtypes)
+    @pytest.mark.parametrize("nelem", _nelems)
+    @pytest.mark.parametrize("alloc", _allocs)
+    def test_rmm_modes(self, dtype, nelem, alloc):
+        assert rmm.is_initialized()
+        array_tester(dtype, nelem, alloc)
+
+
+@pytest.mark.skipif(
+    not _SYSTEM_MEMORY_SUPPORTED,
+    reason="System memory not supported",
+)
+@pytest.mark.parametrize(
+    "system, pool, headroom",
+    list(product([False, True], [False, True], [False, True])),
+    scope="class",
+)
+class TestRmmModesSystemMemory:
+    @pytest.fixture(autouse=True)
+    def _apply_mode(self, system, pool, headroom):
+        mr = _make_system_memory_mr(system, pool, headroom)
+        rmm.mr.set_current_device_resource(mr)
+
+    @pytest.mark.parametrize("dtype", _dtypes)
+    @pytest.mark.parametrize("nelem", _nelems)
+    @pytest.mark.parametrize("alloc", _allocs)
+    def test_rmm_modes_system_memory(self, dtype, nelem, alloc):
+        assert rmm.is_initialized()
+        array_tester(dtype, nelem, alloc)
