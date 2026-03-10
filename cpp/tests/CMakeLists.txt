@@ -196,6 +196,7 @@ ConfigureTest(TRACKING_MR_REF_TEST mr/mr_ref_tracking_tests.cpp GPUS 1 PERCENT 5
 
 # out-of-memory callback adaptor tests
 ConfigureTest(FAILURE_CALLBACK_TEST mr/failure_callback_mr_tests.cpp)
+ConfigureTest(FAILURE_CALLBACK_MR_REF_TEST mr/mr_ref_failure_callback_tests.cpp GPUS 1 PERCENT 5)
 
 # prefetch adaptor tests
 ConfigureTest(PREFETCH_ADAPTOR_TEST mr/prefetch_resource_adaptor_tests.cpp)

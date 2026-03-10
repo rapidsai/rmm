@@ -10,6 +10,7 @@
 #include <rmm/mr/binning_memory_resource.hpp>
 #include <rmm/mr/callback_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/failure_callback_resource_adaptor.hpp>
 #include <rmm/mr/fixed_size_memory_resource.hpp>
 #include <rmm/mr/is_resource_adaptor.hpp>
 #include <rmm/mr/limiting_resource_adaptor.hpp>
@@ -30,6 +31,7 @@ using rmm::mr::aligned_resource_adaptor;
 using rmm::mr::arena_memory_resource;
 using rmm::mr::binning_memory_resource;
 using rmm::mr::callback_memory_resource;
+using rmm::mr::failure_callback_resource_adaptor;
 using rmm::mr::fixed_size_memory_resource;
 using rmm::mr::limiting_resource_adaptor;
 using rmm::mr::logging_resource_adaptor;
@@ -44,6 +46,8 @@ static_assert(cuda::mr::resource_with<aligned_resource_adaptor, cuda::mr::device
 static_assert(cuda::mr::resource_with<arena_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<binning_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<callback_memory_resource, cuda::mr::device_accessible>);
+static_assert(
+  cuda::mr::resource_with<failure_callback_resource_adaptor<>, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<fixed_size_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<limiting_resource_adaptor, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<logging_resource_adaptor, cuda::mr::device_accessible>);
@@ -78,6 +82,8 @@ struct CcclAdaptorTest : public ::testing::Test {
       return AdaptorType{cuda};
     } else if constexpr (std::is_same_v<AdaptorType, binning_memory_resource>) {
       return AdaptorType{cuda, 18, 22};
+    } else if constexpr (std::is_same_v<AdaptorType, failure_callback_resource_adaptor<>>) {
+      return AdaptorType{cuda, [](std::size_t, void*) { return false; }, nullptr};
     } else if constexpr (std::is_same_v<AdaptorType, fixed_size_memory_resource>) {
       return AdaptorType{cuda};
     } else if constexpr (std::is_same_v<AdaptorType, limiting_resource_adaptor>) {
@@ -101,6 +107,7 @@ struct CcclAdaptorTest : public ::testing::Test {
 
 using cccl_adaptors = ::testing::Types<aligned_resource_adaptor,
                                        binning_memory_resource,
+                                       failure_callback_resource_adaptor<>,
                                        fixed_size_memory_resource,
                                        limiting_resource_adaptor,
                                        logging_resource_adaptor,

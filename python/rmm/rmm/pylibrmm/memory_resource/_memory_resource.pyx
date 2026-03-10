@@ -55,6 +55,7 @@ from rmm.librmm.memory_resource cimport (
     limiting_resource_adaptor,
     logging_resource_adaptor,
     managed_memory_resource,
+    out_of_memory,
     percent_of_free_device_memory as c_percent_of_free_device_memory,
     pinned_host_memory_resource,
     pool_memory_resource,
@@ -980,7 +981,7 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
     ):
         self._callback = callback
         self.c_obj.reset(
-            new failure_callback_resource_adaptor[device_memory_resource](
+            new failure_callback_resource_adaptor[out_of_memory](
                 upstream_mr.get_mr(),
                 <failure_callback_t>(_oom_callback_function),
                 <void*>(callback)

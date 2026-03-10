@@ -31,19 +31,18 @@ using rmm::mr::thread_safe_resource_adaptor;
 using owning_wrapper = rmm::mr::owning_wrapper<limiting_resource_adaptor, cuda_mr>;
 
 // explicit instantiations for test coverage purposes
-template class rmm::mr::failure_callback_resource_adaptor<cuda_mr>;
+template class rmm::mr::failure_callback_resource_adaptor<>;
 
 namespace rmm::test {
 
-using adaptors = ::testing::Types<failure_callback_resource_adaptor<cuda_mr>,
+using adaptors = ::testing::Types<failure_callback_resource_adaptor<>,
                                   limiting_resource_adaptor,
                                   owning_wrapper,
                                   thread_safe_resource_adaptor>;
 
 // static property checks
-static_assert(
-  rmm::detail::polyfill::resource_with<rmm::mr::failure_callback_resource_adaptor<cuda_mr>,
-                                       cuda::mr::device_accessible>);
+static_assert(rmm::detail::polyfill::resource_with<rmm::mr::failure_callback_resource_adaptor<>,
+                                                   cuda::mr::device_accessible>);
 static_assert(rmm::detail::polyfill::resource_with<rmm::mr::limiting_resource_adaptor,
                                                    cuda::mr::device_accessible>);
 static_assert(rmm::detail::polyfill::resource_with<rmm::mr::owning_wrapper<cuda_mr>,
@@ -61,9 +60,9 @@ struct AdaptorTest : public ::testing::Test {
 
   auto make_adaptor(cuda_mr* upstream)
   {
-    if constexpr (std::is_same_v<adaptor_type, failure_callback_resource_adaptor<cuda_mr>>) {
+    if constexpr (std::is_same_v<adaptor_type, failure_callback_resource_adaptor<>>) {
       return std::make_shared<adaptor_type>(
-        upstream,
+        *upstream,
         []([[maybe_unused]] std::size_t bytes, [[maybe_unused]] void* arg) { return false; },
         nullptr);
     } else if constexpr (std::is_same_v<adaptor_type, limiting_resource_adaptor>) {
@@ -83,6 +82,7 @@ TYPED_TEST_SUITE(AdaptorTest, adaptors);
 TYPED_TEST(AdaptorTest, NullUpstream)
 {
   if constexpr (not std::is_same_v<TypeParam, owning_wrapper> and
+                not std::is_same_v<TypeParam, failure_callback_resource_adaptor<>> and
                 not std::is_same_v<TypeParam, thread_safe_resource_adaptor>) {
     EXPECT_THROW(this->make_adaptor(nullptr), rmm::logic_error);
   }
@@ -94,7 +94,8 @@ TYPED_TEST(AdaptorTest, Equality)
 
   {
     auto other_mr = this->make_adaptor(&this->cuda);
-    if constexpr (std::is_same_v<TypeParam, limiting_resource_adaptor> or
+    if constexpr (std::is_same_v<TypeParam, failure_callback_resource_adaptor<>> or
+                  std::is_same_v<TypeParam, limiting_resource_adaptor> or
                   std::is_same_v<TypeParam, owning_wrapper> or
                   std::is_same_v<TypeParam, thread_safe_resource_adaptor>) {
       // shared_resource equality: two distinct constructions are NOT equal
