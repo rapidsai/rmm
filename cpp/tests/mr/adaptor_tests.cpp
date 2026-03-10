@@ -32,7 +32,6 @@ using owning_wrapper = rmm::mr::owning_wrapper<limiting_resource_adaptor, cuda_m
 
 // explicit instantiations for test coverage purposes
 template class rmm::mr::failure_callback_resource_adaptor<cuda_mr>;
-template class rmm::mr::thread_safe_resource_adaptor<cuda_mr>;
 
 namespace rmm::test {
 
