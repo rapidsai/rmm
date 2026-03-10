@@ -1,11 +1,17 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for PoolMemoryResource."""
 
 import pytest
 from numba import cuda
-from test_helpers import _allocs, _dtypes, _nelems, array_tester
+from test_helpers import (
+    _TEST_POOL_SIZE,
+    _allocs,
+    _dtypes,
+    _nelems,
+    array_tester,
+)
 
 import rmm
 from rmm.pylibrmm.stream import Stream
@@ -42,7 +48,7 @@ def test_reinitialize_max_pool_size_exceeded():
 
 @pytest.mark.parametrize("stream", [cuda.default_stream(), cuda.stream()])
 def test_rmm_pool_numba_stream(stream):
-    rmm.reinitialize(pool_allocator=True)
+    rmm.reinitialize(pool_allocator=True, initial_pool_size=_TEST_POOL_SIZE)
 
     stream = Stream(stream)
     a = rmm.DeviceBuffer(size=3, stream=stream)
@@ -55,7 +61,9 @@ def test_mr_upstream_lifetime():
     # Simple test to ensure upstream MRs are deallocated before downstream MR
     cuda_mr = rmm.mr.CudaMemoryResource()
 
-    pool_mr = rmm.mr.PoolMemoryResource(cuda_mr)
+    pool_mr = rmm.mr.PoolMemoryResource(
+        cuda_mr, initial_pool_size=_TEST_POOL_SIZE
+    )
 
     # Delete cuda_mr first. Should be kept alive by pool_mr
     del cuda_mr
