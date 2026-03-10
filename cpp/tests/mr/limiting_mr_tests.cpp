@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,13 +7,14 @@
 
 #include <rmm/error.hpp>
 #include <rmm/mr/limiting_resource_adaptor.hpp>
+#include <rmm/mr/per_device_resource.hpp>
 
 #include <gtest/gtest.h>
 
 namespace rmm::test {
 namespace {
 
-using limiting_adaptor = rmm::mr::limiting_resource_adaptor<rmm::mr::device_memory_resource>;
+using limiting_adaptor = rmm::mr::limiting_resource_adaptor;
 
 TEST(LimitingTest, ThrowOnNullUpstream)
 {

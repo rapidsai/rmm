@@ -201,9 +201,9 @@ cdef extern from "rmm/mr/binning_memory_resource.hpp" \
 
 cdef extern from "rmm/mr/limiting_resource_adaptor.hpp" \
         namespace "rmm::mr" nogil:
-    cdef cppclass limiting_resource_adaptor[Upstream](device_memory_resource):
+    cdef cppclass limiting_resource_adaptor(device_memory_resource):
         limiting_resource_adaptor(
-            Upstream* upstream_mr,
+            device_memory_resource* upstream_mr,
             size_t allocation_limit) except +
 
         size_t get_allocated_bytes() except +
