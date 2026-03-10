@@ -207,6 +207,7 @@ ConfigureTest(ALIGNED_MR_REF_TEST mr/mr_ref_aligned_tests.cpp GPUS 1 PERCENT 5)
 
 # limiting adaptor tests
 ConfigureTest(LIMITING_TEST mr/limiting_mr_tests.cpp)
+ConfigureTest(LIMITING_MR_REF_TEST mr/mr_ref_limiting_tests.cpp GPUS 1 PERCENT 5)
 
 # host mr_ref tests
 ConfigureTest(HOST_MR_REF_TEST mr/host_mr_ref_tests.cpp)

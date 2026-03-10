@@ -692,7 +692,7 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
         size_t allocation_limit
     ):
         self.c_obj.reset(
-            new limiting_resource_adaptor[device_memory_resource](
+            new limiting_resource_adaptor(
                 upstream_mr.get_mr(),
                 allocation_limit
             )
@@ -723,7 +723,7 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
         possible fragmentation and also internal page sizes and alignment that
         is not tracked by this allocator.
         """
-        return (<limiting_resource_adaptor[device_memory_resource]*>(
+        return (<limiting_resource_adaptor*>(
             self.c_obj.get())
         )[0].get_allocated_bytes()
 
@@ -734,7 +734,7 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
         of the underlying device. The device may not be able to support this
         limit.
         """
-        return (<limiting_resource_adaptor[device_memory_resource]*>(
+        return (<limiting_resource_adaptor*>(
             self.c_obj.get())
         )[0].get_allocation_limit()
 
