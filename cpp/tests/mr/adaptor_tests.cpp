@@ -95,7 +95,8 @@ TYPED_TEST(AdaptorTest, Equality)
   {
     auto other_mr = this->make_adaptor(&this->cuda);
     if constexpr (std::is_same_v<TypeParam, limiting_resource_adaptor> or
-                  std::is_same_v<TypeParam, owning_wrapper>) {
+                  std::is_same_v<TypeParam, owning_wrapper> or
+                  std::is_same_v<TypeParam, thread_safe_resource_adaptor>) {
       // shared_resource equality: two distinct constructions are NOT equal
       EXPECT_FALSE(this->mr->is_equal(*other_mr));
     } else {
