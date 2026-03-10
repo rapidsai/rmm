@@ -4,13 +4,15 @@
  */
 #pragma once
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/mr/detail/prefetch_resource_adaptor_impl.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
-#include <rmm/prefetch.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
+
 #include <cstddef>
-#include <memory>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -22,101 +24,79 @@ namespace mr {
 /**
  * @brief Resource that prefetches all memory allocations.
  *
- * @tparam Upstream Type of the upstream resource used for
- * allocation/deallocation.
+ * This class is copyable and shares ownership of its internal state via
+ * `cuda::mr::shared_resource`.
  */
-template <typename Upstream>
-class prefetch_resource_adaptor final : public device_memory_resource {
+class RMM_EXPORT prefetch_resource_adaptor
+  : public device_memory_resource,
+    private cuda::mr::shared_resource<detail::prefetch_resource_adaptor_impl> {
+  using shared_base = cuda::mr::shared_resource<detail::prefetch_resource_adaptor_impl>;
+
  public:
+  // Begin legacy device_memory_resource compatibility layer
+  using device_memory_resource::allocate;
+  using device_memory_resource::allocate_sync;
+  using device_memory_resource::deallocate;
+  using device_memory_resource::deallocate_sync;
+
+  /**
+   * @brief Compare two adaptors for equality (shared-impl identity).
+   *
+   * @param other The other prefetch_resource_adaptor to compare against.
+   * @return true if both adaptors share the same underlying state.
+   */
+  [[nodiscard]] bool operator==(prefetch_resource_adaptor const& other) const noexcept
+  {
+    return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(other);
+  }
+
+  /**
+   * @brief Compare two adaptors for inequality.
+   *
+   * @param other The other prefetch_resource_adaptor to compare against.
+   * @return true if the adaptors do not share the same underlying state.
+   */
+  [[nodiscard]] bool operator!=(prefetch_resource_adaptor const& other) const noexcept
+  {
+    return !(*this == other);
+  }
+  // End legacy device_memory_resource compatibility layer
+
+  /**
+   * @brief Enables the `cuda::mr::device_accessible` property
+   */
+  RMM_CONSTEXPR_FRIEND void get_property(prefetch_resource_adaptor const&,
+                                         cuda::mr::device_accessible) noexcept
+  {
+  }
+
   /**
    * @brief Construct a new prefetch resource adaptor using `upstream` to satisfy
    * allocation requests.
    *
    * @param upstream The resource_ref used for allocating/deallocating device memory
    */
-  prefetch_resource_adaptor(device_async_resource_ref upstream) : upstream_{upstream} {}
+  explicit prefetch_resource_adaptor(device_async_resource_ref upstream);
 
-  /**
-   * @brief Construct a new prefetch resource adaptor using `upstream` to satisfy
-   * allocation requests.
-   *
-   * @throws rmm::logic_error if `upstream == nullptr`
-   *
-   * @param upstream The resource used for allocating/deallocating device memory
-   */
-  prefetch_resource_adaptor(Upstream* upstream)
-    : upstream_{to_device_async_resource_ref_checked(upstream)}
-  {
-  }
-
-  prefetch_resource_adaptor()                                            = delete;
-  ~prefetch_resource_adaptor() override                                  = default;
-  prefetch_resource_adaptor(prefetch_resource_adaptor const&)            = delete;
-  prefetch_resource_adaptor& operator=(prefetch_resource_adaptor const&) = delete;
-  prefetch_resource_adaptor(prefetch_resource_adaptor&&) noexcept =
-    default;  ///< @default_move_constructor
-  prefetch_resource_adaptor& operator=(prefetch_resource_adaptor&&) noexcept =
-    default;  ///< @default_move_assignment{prefetch_resource_adaptor}
+  ~prefetch_resource_adaptor() = default;
 
   /**
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_;
-  }
+  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
 
+  // Begin legacy device_memory_resource compatibility layer
  private:
-  /**
-   * @brief Allocates memory of size at least `bytes` using the upstream
-   * resource as long as it fits inside the allocation limit.
-   *
-   * @note The allocation is always prefetched to the current device.
-   *
-   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled
-   * by the upstream resource.
-   *
-   * @param bytes The size, in bytes, of the allocation
-   * @param stream Stream on which to perform the allocation
-   * @return void* Pointer to the newly allocated memory
-   */
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
-  {
-    void* ptr = get_upstream_resource().allocate(stream, bytes);
-    rmm::prefetch(ptr, bytes, rmm::get_current_cuda_device(), stream);
-    return ptr;
-  }
+  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override;
 
-  /**
-   * @brief Free allocation of size `bytes` pointed to by `ptr`
-   *
-   * @param ptr Pointer to be deallocated
-   * @param bytes Size of the allocation
-   * @param stream Stream on which to perform the deallocation
-   */
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
-  {
-    get_upstream_resource().deallocate(stream, ptr, bytes);
-  }
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override;
 
-  /**
-   * @brief Compare the upstream resource to another.
-   *
-   * @param other The other resource to compare to
-   * @return true If the two resources are equivalent
-   * @return false If the two resources are not equal
-   */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
-  {
-    if (this == std::addressof(other)) { return true; }
-    auto cast = dynamic_cast<prefetch_resource_adaptor<Upstream> const*>(&other);
-    if (cast == nullptr) { return false; }
-    return get_upstream_resource() == cast->get_upstream_resource();
-  }
-
-  // the upstream resource used for satisfying allocation requests
-  device_async_resource_ref upstream_;
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override;
+  // End legacy device_memory_resource compatibility layer
 };
+
+static_assert(cuda::mr::resource_with<prefetch_resource_adaptor, cuda::mr::device_accessible>,
+              "prefetch_resource_adaptor does not satisfy the cuda::mr::resource concept");
 
 /** @} */  // end of group
 }  // namespace mr

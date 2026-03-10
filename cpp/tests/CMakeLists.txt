@@ -198,6 +198,7 @@ ConfigureTest(FAILURE_CALLBACK_TEST mr/failure_callback_mr_tests.cpp)
 
 # prefetch adaptor tests
 ConfigureTest(PREFETCH_ADAPTOR_TEST mr/prefetch_resource_adaptor_tests.cpp)
+ConfigureTest(PREFETCH_MR_REF_TEST mr/mr_ref_prefetch_tests.cpp GPUS 1 PERCENT 5)
 
 # aligned adaptor tests
 ConfigureTest(ALIGNED_TEST mr/aligned_mr_tests.cpp)

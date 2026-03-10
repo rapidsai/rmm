@@ -14,6 +14,7 @@
 #include <rmm/mr/is_resource_adaptor.hpp>
 #include <rmm/mr/logging_resource_adaptor.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
+#include <rmm/mr/prefetch_resource_adaptor.hpp>
 #include <rmm/mr/statistics_resource_adaptor.hpp>
 #include <rmm/mr/tracking_resource_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
@@ -30,6 +31,7 @@ using rmm::mr::callback_memory_resource;
 using rmm::mr::fixed_size_memory_resource;
 using rmm::mr::logging_resource_adaptor;
 using rmm::mr::pool_memory_resource;
+using rmm::mr::prefetch_resource_adaptor;
 using rmm::mr::statistics_resource_adaptor;
 using rmm::mr::tracking_resource_adaptor;
 
@@ -41,6 +43,7 @@ static_assert(cuda::mr::resource_with<callback_memory_resource, cuda::mr::device
 static_assert(cuda::mr::resource_with<fixed_size_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<logging_resource_adaptor, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<pool_memory_resource, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<prefetch_resource_adaptor, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<statistics_resource_adaptor, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<tracking_resource_adaptor, cuda::mr::device_accessible>);
 
@@ -75,6 +78,9 @@ struct CcclAdaptorTest : public ::testing::Test {
       return AdaptorType{cuda, "rmm_cccl_adaptor_test.txt"};
     } else if constexpr (std::is_same_v<AdaptorType, pool_memory_resource>) {
       return AdaptorType{cuda, 0};
+    } else if constexpr (std::is_same_v<AdaptorType, prefetch_resource_adaptor>) {
+      // TODO: Wrap a managed resource here.
+      return AdaptorType{cuda};
     } else if constexpr (std::is_same_v<AdaptorType, statistics_resource_adaptor>) {
       return AdaptorType{cuda};
     } else if constexpr (std::is_same_v<AdaptorType, tracking_resource_adaptor>) {
@@ -88,6 +94,7 @@ using cccl_adaptors = ::testing::Types<aligned_resource_adaptor,
                                        fixed_size_memory_resource,
                                        logging_resource_adaptor,
                                        pool_memory_resource,
+                                       prefetch_resource_adaptor,
                                        statistics_resource_adaptor,
                                        tracking_resource_adaptor>;
 
