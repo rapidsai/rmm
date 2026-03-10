@@ -238,6 +238,7 @@ ConfigureTest(BINNING_MR_TEST mr/binning_mr_tests.cpp)
 
 # callback memory resource tests
 ConfigureTest(CALLBACK_MR_TEST mr/callback_mr_tests.cpp)
+ConfigureTest(CALLBACK_MR_REF_TEST mr/mr_ref_callback_tests.cpp GPUS 1 PERCENT 5)
 
 # system memory resource tests
 ConfigureTest(SYSTEM_MR_TEST mr/system_mr_tests.cu GPUS 1 PERCENT 100)
