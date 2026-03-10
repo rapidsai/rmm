@@ -1,9 +1,15 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2024, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #pragma once
+
+#include <cuda/version>
+
+#if CCCL_MAJOR_VERSION < 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION < 2)
+#error "RMM requires CCCL version 3.2 or newer."
+#endif
 
 // Macros used for defining symbol visibility, only GLIBC is supported
 #if (defined(__GNUC__) && !defined(__MINGW32__) && !defined(__MINGW64__))

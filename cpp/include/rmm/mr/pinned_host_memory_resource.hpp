@@ -7,7 +7,6 @@
 #include <rmm/aligned.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/cccl_adaptors.hpp>
-#include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/nvtx/ranges.hpp>
@@ -132,9 +131,9 @@ class pinned_host_memory_resource final : public device_memory_resource {
   }
 };
 
-static_assert(rmm::detail::polyfill::async_resource_with<pinned_host_memory_resource,
-                                                         cuda::mr::device_accessible,
-                                                         cuda::mr::host_accessible>);
+static_assert(cuda::mr::resource_with<pinned_host_memory_resource,
+                                      cuda::mr::device_accessible,
+                                      cuda::mr::host_accessible>);
 
 /** @} */  // end of group
 }  // namespace mr
