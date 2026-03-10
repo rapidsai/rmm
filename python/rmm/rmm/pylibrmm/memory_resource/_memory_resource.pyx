@@ -1011,7 +1011,7 @@ cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
         DeviceMemoryResource upstream_mr
     ):
         self.c_obj.reset(
-            new prefetch_resource_adaptor[device_memory_resource](
+            new prefetch_resource_adaptor(
                 upstream_mr.get_mr()
             )
         )

@@ -39,7 +39,7 @@ namespace rmm::test {
 using adaptors = ::testing::Types<failure_callback_resource_adaptor<cuda_mr>,
                                   limiting_resource_adaptor,
                                   owning_wrapper,
-                                  thread_safe_resource_adaptor<cuda_mr>>;
+                                  thread_safe_resource_adaptor>;
 
 // static property checks
 static_assert(
@@ -49,7 +49,7 @@ static_assert(rmm::detail::polyfill::resource_with<rmm::mr::limiting_resource_ad
                                                    cuda::mr::device_accessible>);
 static_assert(rmm::detail::polyfill::resource_with<rmm::mr::owning_wrapper<cuda_mr>,
                                                    cuda::mr::device_accessible>);
-static_assert(rmm::detail::polyfill::resource_with<rmm::mr::thread_safe_resource_adaptor<cuda_mr>,
+static_assert(rmm::detail::polyfill::resource_with<rmm::mr::thread_safe_resource_adaptor,
                                                    cuda::mr::device_accessible>);
 
 template <typename MemoryResourceType>
@@ -71,6 +71,8 @@ struct AdaptorTest : public ::testing::Test {
       return std::make_shared<adaptor_type>(upstream, 64_MiB);
     } else if constexpr (std::is_same_v<adaptor_type, owning_wrapper>) {
       return std::make_shared<owning_wrapper>(std::make_tuple(std::make_shared<cuda_mr>()), 64_MiB);
+    } else if constexpr (std::is_same_v<adaptor_type, thread_safe_resource_adaptor>) {
+      return std::make_shared<adaptor_type>(*upstream);
     } else {
       return std::make_shared<adaptor_type>(upstream);
     }
@@ -81,7 +83,8 @@ TYPED_TEST_SUITE(AdaptorTest, adaptors);
 
 TYPED_TEST(AdaptorTest, NullUpstream)
 {
-  if constexpr (not std::is_same_v<TypeParam, owning_wrapper>) {
+  if constexpr (not std::is_same_v<TypeParam, owning_wrapper> and
+                not std::is_same_v<TypeParam, thread_safe_resource_adaptor>) {
     EXPECT_THROW(this->make_adaptor(nullptr), rmm::logic_error);
   }
 }

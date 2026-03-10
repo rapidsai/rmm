@@ -1,22 +1,25 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
+#include <rmm/mr/detail/callback_memory_resource_impl.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <cstddef>
 #include <functional>
-#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup memory_resources
  * @{
- * @file
  */
 
 /**
@@ -54,12 +57,58 @@ using allocate_callback_t = std::function<void*(std::size_t, cuda_stream_view, v
  */
 using deallocate_callback_t = std::function<void(void*, std::size_t, cuda_stream_view, void*)>;
 
+namespace detail {
+class callback_memory_resource_impl;
+}
+
 /**
  * @brief A device memory resource that uses the provided callbacks for memory allocation
  * and deallocation.
+ *
+ * This class is copyable and shares ownership of its internal state via
+ * `cuda::mr::shared_resource`.
  */
-class callback_memory_resource final : public device_memory_resource {
+class RMM_EXPORT callback_memory_resource
+  : public device_memory_resource,
+    private cuda::mr::shared_resource<detail::callback_memory_resource_impl> {
+  using shared_base = cuda::mr::shared_resource<detail::callback_memory_resource_impl>;
+
  public:
+  using device_memory_resource::allocate;
+  using device_memory_resource::allocate_sync;
+  using device_memory_resource::deallocate;
+  using device_memory_resource::deallocate_sync;
+
+  /**
+   * @brief Compare two resources for equality (shared-impl identity).
+   *
+   * @param other The other callback_memory_resource to compare against.
+   * @return true if both resources share the same underlying state.
+   */
+  [[nodiscard]] bool operator==(callback_memory_resource const& other) const noexcept
+  {
+    return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(other);
+  }
+
+  /**
+   * @brief Compare two resources for inequality.
+   *
+   * @param other The other callback_memory_resource to compare against.
+   * @return true if the resources do not share the same underlying state.
+   */
+  [[nodiscard]] bool operator!=(callback_memory_resource const& other) const noexcept
+  {
+    return !(*this == other);
+  }
+
+  /**
+   * @brief Enables the `cuda::mr::device_accessible` property
+   */
+  RMM_CONSTEXPR_FRIEND void get_property(callback_memory_resource const&,
+                                         cuda::mr::device_accessible) noexcept
+  {
+  }
+
   /**
    * @brief Construct a new callback memory resource.
    *
@@ -75,66 +124,22 @@ class callback_memory_resource final : public device_memory_resource {
    * It is the caller's responsibility to maintain the lifetime of the pointed-to data
    * for the duration of the lifetime of the `callback_memory_resource`.
    */
-  callback_memory_resource(
-    allocate_callback_t allocate_callback,
-    deallocate_callback_t deallocate_callback,
-    void* allocate_callback_arg   = nullptr,  // NOLINT(bugprone-easily-swappable-parameters)
-    void* deallocate_callback_arg = nullptr) noexcept
-    : allocate_callback_(std::move(allocate_callback)),
-      deallocate_callback_(std::move(deallocate_callback)),
-      allocate_callback_arg_(allocate_callback_arg),
-      deallocate_callback_arg_(deallocate_callback_arg)
-  {
-  }
+  callback_memory_resource(allocate_callback_t allocate_callback,
+                           deallocate_callback_t deallocate_callback,
+                           void* allocate_callback_arg   = nullptr,
+                           void* deallocate_callback_arg = nullptr);
 
-  callback_memory_resource()                                           = delete;
-  ~callback_memory_resource() override                                 = default;
-  callback_memory_resource(callback_memory_resource const&)            = delete;
-  callback_memory_resource& operator=(callback_memory_resource const&) = delete;
-  callback_memory_resource(callback_memory_resource&&) noexcept =
-    default;  ///< @default_move_constructor
-  callback_memory_resource& operator=(callback_memory_resource&&) noexcept =
-    default;  ///< @default_move_assignment{callback_memory_resource}
+  callback_memory_resource()  = delete;
+  ~callback_memory_resource() = default;
 
  private:
-  /**
-   * @brief Allocates memory of size at least \p bytes.
-   *
-   * The returned pointer will have at minimum 256 byte alignment.
-   *
-   * If supported by the callback, this operation may optionally be executed on
-   * a stream.  Otherwise, the stream is ignored and the null stream is used.
-   *
-   * @param bytes The size of the allocation
-   * @param stream Stream on which to perform allocation
-   * @return void* Pointer to the newly allocated memory
-   */
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
-  {
-    return allocate_callback_(bytes, stream, allocate_callback_arg_);
-  }
-
-  /**
-   * @brief Deallocate memory pointed to by \p ptr.
-   *
-   * If supported by the callback, this operation may optionally be executed on
-   * a stream.  Otherwise, the stream is ignored and the null stream is used.
-   *
-   * @param ptr Pointer to be deallocated
-   * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
-   * @param stream Stream on which to perform deallocation
-   */
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
-  {
-    deallocate_callback_(ptr, bytes, stream, deallocate_callback_arg_);
-  }
-
-  allocate_callback_t allocate_callback_;
-  deallocate_callback_t deallocate_callback_;
-  void* allocate_callback_arg_;
-  void* deallocate_callback_arg_;
+  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override;
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override;
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override;
 };
+
+static_assert(cuda::mr::resource_with<callback_memory_resource, cuda::mr::device_accessible>,
+              "callback_memory_resource does not satisfy the cuda::mr::resource concept");
 
 /** @} */  // end of group
 }  // namespace mr
