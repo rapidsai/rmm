@@ -16,6 +16,7 @@
 #include <rmm/mr/pool_memory_resource.hpp>
 #include <rmm/mr/prefetch_resource_adaptor.hpp>
 #include <rmm/mr/statistics_resource_adaptor.hpp>
+#include <rmm/mr/thread_safe_resource_adaptor.hpp>
 #include <rmm/mr/tracking_resource_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -33,6 +34,7 @@ using rmm::mr::logging_resource_adaptor;
 using rmm::mr::pool_memory_resource;
 using rmm::mr::prefetch_resource_adaptor;
 using rmm::mr::statistics_resource_adaptor;
+using rmm::mr::thread_safe_resource_adaptor;
 using rmm::mr::tracking_resource_adaptor;
 
 // static property checks
@@ -45,6 +47,7 @@ static_assert(cuda::mr::resource_with<logging_resource_adaptor, cuda::mr::device
 static_assert(cuda::mr::resource_with<pool_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<prefetch_resource_adaptor, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<statistics_resource_adaptor, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<thread_safe_resource_adaptor, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<tracking_resource_adaptor, cuda::mr::device_accessible>);
 
 namespace rmm::test {
@@ -83,6 +86,8 @@ struct CcclAdaptorTest : public ::testing::Test {
       return AdaptorType{cuda};
     } else if constexpr (std::is_same_v<AdaptorType, statistics_resource_adaptor>) {
       return AdaptorType{cuda};
+    } else if constexpr (std::is_same_v<AdaptorType, thread_safe_resource_adaptor>) {
+      return AdaptorType{cuda};
     } else if constexpr (std::is_same_v<AdaptorType, tracking_resource_adaptor>) {
       return AdaptorType{cuda};
     }
@@ -96,6 +101,7 @@ using cccl_adaptors = ::testing::Types<aligned_resource_adaptor,
                                        pool_memory_resource,
                                        prefetch_resource_adaptor,
                                        statistics_resource_adaptor,
+                                       thread_safe_resource_adaptor,
                                        tracking_resource_adaptor>;
 
 TYPED_TEST_SUITE(CcclAdaptorTest, cccl_adaptors);
