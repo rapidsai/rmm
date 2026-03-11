@@ -30,7 +30,7 @@ def _make_binning_mr(upstream_mr):
     return mr
 
 
-_upstream_mrs = [
+_UPSTREAM_MRS = [
     lambda: rmm.mr.CudaMemoryResource(),
     lambda: rmm.mr.ManagedMemoryResource(),
     lambda: rmm.mr.PoolMemoryResource(rmm.mr.CudaMemoryResource(), 1 << 20),
@@ -47,7 +47,7 @@ _upstream_mrs = [
 # Create the BinningMemoryResource once per upstream_mr (class-scoped),
 # avoiding the expensive ManagedMemoryResource/FixedSizeMemoryResource slab
 # allocation on every test invocation.
-@pytest.fixture(scope="class", params=_upstream_mrs)
+@pytest.fixture(scope="class", params=_UPSTREAM_MRS)
 def binning_mr(request):
     """Create the BinningMemoryResource once per upstream_mr."""
     return _make_binning_mr(request.param)
