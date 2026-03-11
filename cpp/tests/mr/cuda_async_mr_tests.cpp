@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -16,9 +16,8 @@ namespace {
 using cuda_async_mr = rmm::mr::cuda_async_memory_resource;
 
 // static property checks
-static_assert(rmm::detail::polyfill::resource_with<cuda_async_mr, cuda::mr::device_accessible>);
-static_assert(
-  rmm::detail::polyfill::async_resource_with<cuda_async_mr, cuda::mr::device_accessible>);
+static_assert(cuda::mr::synchronous_resource_with<cuda_async_mr, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<cuda_async_mr, cuda::mr::device_accessible>);
 
 class AsyncMRTest : public ::testing::Test {
  protected:

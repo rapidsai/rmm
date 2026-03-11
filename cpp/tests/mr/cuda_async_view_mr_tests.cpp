@@ -1,10 +1,9 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <rmm/cuda_device.hpp>
-#include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/cuda_async_view_memory_resource.hpp>
 
@@ -16,10 +15,8 @@ namespace {
 using cuda_async_view_mr = rmm::mr::cuda_async_view_memory_resource;
 
 // static property checks
-static_assert(
-  rmm::detail::polyfill::resource_with<cuda_async_view_mr, cuda::mr::device_accessible>);
-static_assert(
-  rmm::detail::polyfill::async_resource_with<cuda_async_view_mr, cuda::mr::device_accessible>);
+static_assert(cuda::mr::synchronous_resource_with<cuda_async_view_mr, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<cuda_async_view_mr, cuda::mr::device_accessible>);
 
 TEST(PoolTest, UsePool)
 {

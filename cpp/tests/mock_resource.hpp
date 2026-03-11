@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -21,7 +21,6 @@ class mock_resource : public rmm::mr::device_memory_resource {
 };
 
 // static property checks
-static_assert(
-  rmm::detail::polyfill::async_resource_with<mock_resource, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<mock_resource, cuda::mr::device_accessible>);
 
 }  // namespace rmm::test
