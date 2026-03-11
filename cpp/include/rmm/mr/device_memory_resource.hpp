@@ -6,10 +6,11 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
-#include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/nvtx/ranges.hpp>
+
+#include <cuda/memory_resource>
 
 #include <cstddef>
 #include <memory>
@@ -276,12 +277,11 @@ class device_memory_resource {
 };
 
 // static property checks
-static_assert(rmm::detail::polyfill::resource<device_memory_resource>);
-static_assert(rmm::detail::polyfill::async_resource<device_memory_resource>);
+static_assert(cuda::mr::synchronous_resource<device_memory_resource>);
+static_assert(cuda::mr::resource<device_memory_resource>);
 static_assert(
-  rmm::detail::polyfill::resource_with<device_memory_resource, cuda::mr::device_accessible>);
-static_assert(
-  rmm::detail::polyfill::async_resource_with<device_memory_resource, cuda::mr::device_accessible>);
+  cuda::mr::synchronous_resource_with<device_memory_resource, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<device_memory_resource, cuda::mr::device_accessible>);
 
 /** @} */  // end of group
 }  // namespace mr

@@ -5,6 +5,12 @@
 
 #pragma once
 
+#include <cuda/version>
+
+#if CCCL_MAJOR_VERSION < 3 || (CCCL_MAJOR_VERSION == 3 && CCCL_MINOR_VERSION < 3)
+#error "RMM requires CCCL version 3.3 or newer."
+#endif
+
 // Macros used for defining symbol visibility, only GLIBC is supported
 #if (defined(__GNUC__) && !defined(__MINGW32__) && !defined(__MINGW64__))
 #define RMM_EXPORT    __attribute__((visibility("default")))

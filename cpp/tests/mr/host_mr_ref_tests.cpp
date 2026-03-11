@@ -1,12 +1,11 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "../byte_literals.hpp"
 
 #include <rmm/aligned.hpp>
-#include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -81,8 +80,8 @@ struct MRRefTest : public ::testing::Test {
 using resources = ::testing::Types<rmm::mr::pinned_host_memory_resource>;
 
 // static property checks
-static_assert(rmm::detail::polyfill::resource_with<rmm::mr::pinned_host_memory_resource,
-                                                   cuda::mr::host_accessible>);
+static_assert(cuda::mr::synchronous_resource_with<rmm::mr::pinned_host_memory_resource,
+                                                  cuda::mr::host_accessible>);
 
 TYPED_TEST_SUITE(MRRefTest, resources);
 
