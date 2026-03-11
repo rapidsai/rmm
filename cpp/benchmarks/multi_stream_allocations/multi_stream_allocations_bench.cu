@@ -11,7 +11,6 @@
 #include <rmm/mr/binning_memory_resource.hpp>
 #include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/owning_wrapper.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
