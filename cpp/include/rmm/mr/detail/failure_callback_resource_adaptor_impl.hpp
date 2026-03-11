@@ -5,34 +5,16 @@
 #pragma once
 
 #include <rmm/detail/export.hpp>
+#include <rmm/mr/failure_callback_t.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
 #include <cstddef>
-#include <functional>
 #include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
-
-/**
- * @brief Callback function type used by failure_callback_resource_adaptor
- *
- * The resource adaptor calls this function when a memory allocation throws a specified exception
- * type. The function decides whether the resource adaptor should try to allocate the memory again
- * or re-throw the exception.
- *
- * The callback function signature is:
- *     `bool failure_callback_t(std::size_t bytes, void* callback_arg)`
- *
- * The callback function is passed two parameters: `bytes` is the size of the failed memory
- * allocation and `arg` is the extra argument passed to the constructor of the
- * `failure_callback_resource_adaptor`. The callback function returns a Boolean where true means to
- * retry the memory allocation and false means to re-throw the exception.
- */
-using failure_callback_t = std::function<bool(std::size_t, void*)>;
-
 namespace detail {
 
 /**

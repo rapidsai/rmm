@@ -19,7 +19,6 @@
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/fixed_size_memory_resource.hpp>
 #include <rmm/mr/managed_memory_resource.hpp>
-#include <rmm/mr/owning_wrapper.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
