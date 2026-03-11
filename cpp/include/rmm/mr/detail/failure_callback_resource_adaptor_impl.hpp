@@ -17,6 +17,11 @@ namespace RMM_NAMESPACE {
 namespace mr {
 
 /**
+ * @addtogroup memory_resource_adaptors
+ * @{
+ */
+
+/**
  * @brief Callback function type used by failure_callback_resource_adaptor
  *
  * The resource adaptor calls this function when a memory allocation throws a specified exception
@@ -32,6 +37,8 @@ namespace mr {
  * retry the memory allocation and false means to re-throw the exception.
  */
 using failure_callback_t = std::function<bool(std::size_t, void*)>;
+
+/** @} */  // end of group
 
 namespace detail {
 
