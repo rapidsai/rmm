@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -154,10 +154,8 @@ class system_memory_resource final : public device_memory_resource {
 };
 
 // static property checks
-static_assert(
-  rmm::detail::polyfill::async_resource_with<system_memory_resource, cuda::mr::device_accessible>);
-static_assert(
-  rmm::detail::polyfill::async_resource_with<system_memory_resource, cuda::mr::host_accessible>);
+static_assert(cuda::mr::resource_with<system_memory_resource, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<system_memory_resource, cuda::mr::host_accessible>);
 /** @} */  // end of group
 }  // namespace mr
 }  // namespace RMM_NAMESPACE

@@ -5,7 +5,6 @@
 
 #include "../byte_literals.hpp"
 
-#include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/error.hpp>
 #include <rmm/mr/aligned_resource_adaptor.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
@@ -13,7 +12,10 @@
 #include <rmm/mr/failure_callback_resource_adaptor.hpp>
 #include <rmm/mr/is_resource_adaptor.hpp>
 #include <rmm/mr/limiting_resource_adaptor.hpp>
+#include <rmm/mr/logging_resource_adaptor.hpp>
+#include <rmm/mr/statistics_resource_adaptor.hpp>
 #include <rmm/mr/thread_safe_resource_adaptor.hpp>
+#include <rmm/mr/tracking_resource_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <gtest/gtest.h>
@@ -38,12 +40,20 @@ using adaptors = ::testing::Types<failure_callback_resource_adaptor<>,
                                   thread_safe_resource_adaptor>;
 
 // static property checks
-static_assert(rmm::detail::polyfill::resource_with<rmm::mr::failure_callback_resource_adaptor<>,
-                                                   cuda::mr::device_accessible>);
-static_assert(rmm::detail::polyfill::resource_with<rmm::mr::limiting_resource_adaptor,
-                                                   cuda::mr::device_accessible>);
-static_assert(rmm::detail::polyfill::resource_with<rmm::mr::thread_safe_resource_adaptor,
-                                                   cuda::mr::device_accessible>);
+static_assert(cuda::mr::synchronous_resource_with<rmm::mr::aligned_resource_adaptor,
+                                                  cuda::mr::device_accessible>);
+static_assert(cuda::mr::synchronous_resource_with<rmm::mr::failure_callback_resource_adaptor<>,
+                                                  cuda::mr::device_accessible>);
+static_assert(cuda::mr::synchronous_resource_with<rmm::mr::limiting_resource_adaptor,
+                                                  cuda::mr::device_accessible>);
+static_assert(cuda::mr::synchronous_resource_with<rmm::mr::logging_resource_adaptor,
+                                                  cuda::mr::device_accessible>);
+static_assert(cuda::mr::synchronous_resource_with<rmm::mr::statistics_resource_adaptor,
+                                                  cuda::mr::device_accessible>);
+static_assert(cuda::mr::synchronous_resource_with<rmm::mr::thread_safe_resource_adaptor,
+                                                  cuda::mr::device_accessible>);
+static_assert(cuda::mr::synchronous_resource_with<rmm::mr::tracking_resource_adaptor,
+                                                  cuda::mr::device_accessible>);
 
 template <typename MemoryResourceType>
 struct AdaptorTest : public ::testing::Test {

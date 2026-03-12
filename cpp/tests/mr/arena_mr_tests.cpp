@@ -45,8 +45,7 @@ class mock_memory_resource : public rmm::mr::device_memory_resource {
 };
 
 // static property checks
-static_assert(
-  rmm::detail::polyfill::async_resource_with<mock_memory_resource, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<mock_memory_resource, cuda::mr::device_accessible>);
 
 using rmm::mr::detail::arena::block;
 using rmm::mr::detail::arena::byte_span;

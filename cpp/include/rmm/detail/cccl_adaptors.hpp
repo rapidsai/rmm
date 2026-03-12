@@ -5,7 +5,6 @@
 #pragma once
 
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/cuda_memory_resource.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/device_memory_resource_view.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
