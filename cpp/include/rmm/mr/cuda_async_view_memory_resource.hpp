@@ -84,9 +84,8 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
    */
   void* allocate(cuda::stream_ref stream,
                  std::size_t bytes,
-                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+                 [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    (void)alignment;
     void* ptr{nullptr};
     if (bytes > 0) {
       RMM_CUDA_TRY_ALLOC(cudaMallocFromPoolAsync(&ptr, bytes, pool_handle(), stream.get()), bytes);
@@ -105,11 +104,9 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
    */
   void deallocate(cuda::stream_ref stream,
                   void* ptr,
-                  std::size_t bytes,
-                  std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+                  [[maybe_unused]] std::size_t bytes,
+                  [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    (void)bytes;
-    (void)alignment;
     if (ptr != nullptr) { RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaFreeAsync(ptr, stream.get())); }
   }
 

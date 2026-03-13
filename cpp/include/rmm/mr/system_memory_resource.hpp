@@ -95,12 +95,10 @@ class system_memory_resource final : public device_memory_resource {
    * @param alignment The alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate(cuda::stream_ref stream,
+  void* allocate([[maybe_unused]] cuda::stream_ref stream,
                  std::size_t bytes,
-                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+                 [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    (void)stream;
-    (void)alignment;
     try {
       return rmm::detail::aligned_host_allocate(
         bytes, CUDA_ALLOCATION_ALIGNMENT, [](std::size_t size) { return ::operator new(size); });
@@ -125,9 +123,8 @@ class system_memory_resource final : public device_memory_resource {
   void deallocate(cuda::stream_ref stream,
                   void* ptr,
                   std::size_t bytes,
-                  std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+                  [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    (void)alignment;
     // With `cudaFree`, the CUDA runtime keeps track of dependent operations and does implicit
     // synchronization. However, with SAM, since `free` is immediate, we need to wait for in-flight
     // CUDA operations to finish before freeing the memory, to avoid potential use-after-free errors
@@ -147,7 +144,9 @@ class system_memory_resource final : public device_memory_resource {
    */
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    return allocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, bytes, alignment);
+    auto* ptr = allocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, bytes, alignment);
+    RMM_CUDA_TRY(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(0)));
+    return ptr;
   }
 
   /**

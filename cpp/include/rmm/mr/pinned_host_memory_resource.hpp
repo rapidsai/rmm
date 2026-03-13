@@ -64,12 +64,10 @@ class pinned_host_memory_resource final : public device_memory_resource {
    *
    * @return Pointer to the newly allocated memory.
    */
-  void* allocate(cuda::stream_ref stream,
+  void* allocate([[maybe_unused]] cuda::stream_ref stream,
                  std::size_t bytes,
-                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+                 [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    (void)stream;
-    (void)alignment;
     // don't allocate anything if the user requested zero bytes
     if (0 == bytes) { return nullptr; }
 
@@ -93,13 +91,11 @@ class pinned_host_memory_resource final : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
    * @param alignment The alignment that was passed to the `allocate` call that returned `ptr`
    */
-  void deallocate(cuda::stream_ref stream,
+  void deallocate([[maybe_unused]] cuda::stream_ref stream,
                   void* ptr,
                   std::size_t bytes,
-                  std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+                  [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    (void)stream;
-    (void)alignment;
     // TODO: Use the alignment parameter as an argument to do_deallocate
     std::size_t constexpr alloc_alignment = rmm::CUDA_ALLOCATION_ALIGNMENT;
     rmm::detail::aligned_host_deallocate(ptr, bytes, alloc_alignment, [](void* ptr) {
@@ -116,7 +112,9 @@ class pinned_host_memory_resource final : public device_memory_resource {
    */
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    return allocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, bytes, alignment);
+    auto* ptr = allocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, bytes, alignment);
+    RMM_CUDA_TRY(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(0)));
+    return ptr;
   }
 
   /**

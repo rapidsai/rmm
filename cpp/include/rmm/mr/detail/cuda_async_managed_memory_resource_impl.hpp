@@ -13,6 +13,7 @@
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
+#include <memory>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -42,6 +43,7 @@ class cuda_async_managed_memory_resource_impl {
 
   [[nodiscard]] bool operator==(cuda_async_managed_memory_resource_impl const& other) const noexcept
   {
+    if (this == std::addressof(other)) { return true; }
     return pool_handle() == other.pool_handle();
   }
 

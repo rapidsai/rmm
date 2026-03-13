@@ -74,7 +74,9 @@ void sam_headroom_memory_resource_impl::deallocate(cuda::stream_ref stream,
 
 void* sam_headroom_memory_resource_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  return allocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, bytes, alignment);
+  auto* ptr = allocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, bytes, alignment);
+  RMM_CUDA_TRY(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(0)));
+  return ptr;
 }
 
 void sam_headroom_memory_resource_impl::deallocate_sync(void* ptr,

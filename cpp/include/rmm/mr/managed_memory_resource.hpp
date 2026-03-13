@@ -50,12 +50,10 @@ class managed_memory_resource final : public device_memory_resource {
    * @param alignment The alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate(cuda::stream_ref stream,
+  void* allocate([[maybe_unused]] cuda::stream_ref stream,
                  std::size_t bytes,
-                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+                 [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    (void)stream;
-    (void)alignment;
     // FIXME: Unlike cudaMalloc, cudaMallocManaged will throw an error for 0
     // size allocations.
     if (bytes == 0) { return nullptr; }
@@ -76,14 +74,11 @@ class managed_memory_resource final : public device_memory_resource {
    * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
    * @param alignment The alignment that was passed to the `allocate` call that returned `ptr`
    */
-  void deallocate(cuda::stream_ref stream,
+  void deallocate([[maybe_unused]] cuda::stream_ref stream,
                   void* ptr,
-                  std::size_t bytes,
-                  std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+                  [[maybe_unused]] std::size_t bytes,
+                  [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    (void)stream;
-    (void)bytes;
-    (void)alignment;
     RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaFree(ptr));
   }
 
@@ -96,7 +91,9 @@ class managed_memory_resource final : public device_memory_resource {
    */
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    return allocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, bytes, alignment);
+    auto* ptr = allocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, bytes, alignment);
+    RMM_CUDA_TRY(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(0)));
+    return ptr;
   }
 
   /**
