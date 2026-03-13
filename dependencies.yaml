@@ -46,10 +46,6 @@ files:
       - depends_on_cupy
       - depends_on_librmm
       - depends_on_rmm
-  test_wheels_pytorch:
-    output: none
-    includes:
-      - depends_on_pytorch
   test_wheels_cupy:
     output: none
     includes:
@@ -131,6 +127,10 @@ files:
       key: test
     includes:
       - test_python
+  torch_only:
+    output: none
+    includes:
+      - depends_on_pytorch
 channels:
   - rapidsai-nightly
   - rapidsai
@@ -397,25 +397,64 @@ dependencies:
           # pip recognizes the index as a global option for the requirements.txt file
           - --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple
   depends_on_pytorch:
-    common:
-      - output_types: conda
-        packages:
-          - pytorch-gpu>=2.10.0
     specific:
-      - output_types: [requirements, pyproject]
+      - output_types: conda
         matrices:
           - matrix:
-              cuda: "12.*"
+              require_gpu: "true"
             packages:
-              - --extra-index-url=https://download.pytorch.org/whl/cu128
+              - pytorch-gpu>=2.9
           - matrix:
             packages:
-              - --extra-index-url=https://download.pytorch.org/whl/cu130
-      - output_types: [requirements, pyproject]
+              - pytorch>=2.9
+      # The 'pytorch.org' indices referenced in --extra-index-url below host CPU-only variants too,
+      # so requirements like '>=' are not safe.
+      #
+      # Using '==' and a version with the CUDA specifier like '+cu130' is the most reliable way to ensure
+      # the packages we want are pulled (at the expense of needing to maintain this list).
+      #
+      # 'torch' tightly pins wheels to a single {major}.{minor} CTK version.
+      #
+      # This list only contains entries exactly matching CUDA {major}.{minor} that we test in RAPIDS CI,
+      # to ensure a loud error alerts us to the need to update this list (or CI scripts) when new
+      # CTKs are added to the support matrix.
+      - output_types: requirements
         matrices:
+          # avoid pulling in 'torch' in places like DLFW builds that prefer to install it other ways
           - matrix:
+              no_pytorch: "true"
             packages:
-              - torch>=2.10.0
+          # matrices below ensure CUDA 'torch' packages are used
+          - matrix:
+              cuda: "12.9"
+              dependencies: "oldest"
+              require_gpu: "true"
+            packages:
+              - &torch_cu129_index --extra-index-url=https://download.pytorch.org/whl/cu129
+              - torch==2.9.0+cu129
+          - matrix:
+              cuda: "12.9"
+              require_gpu: "true"
+            packages:
+              - *torch_cu129_index
+              - torch==2.10.0+cu129
+          - matrix:
+              cuda: "13.0"
+              dependencies: "oldest"
+              require_gpu: "true"
+            packages:
+              - &torch_index_cu13 --extra-index-url=https://download.pytorch.org/whl/cu130
+              - torch==2.9.0+cu130
+          - matrix:
+              cuda: "13.0"
+              require_gpu: "true"
+            packages:
+              - *torch_index_cu13
+              - torch==2.10.0+cu130
+          - matrix:
+              require_gpu: "false"
+            packages:
+              - torch>=2.9
   depends_on_cupy:
     common:
       - output_types: conda
