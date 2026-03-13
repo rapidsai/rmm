@@ -52,17 +52,16 @@ class arena_memory_resource_impl {
     return !(*this == other);
   }
 
-  [[nodiscard]] void* allocate(cuda::stream_ref stream,
-                               std::size_t bytes,
-                               std::size_t alignment = alignof(std::max_align_t));
+  void* allocate(cuda::stream_ref stream,
+                 std::size_t bytes,
+                 std::size_t alignment = alignof(std::max_align_t));
 
   void deallocate(cuda::stream_ref stream,
                   void* ptr,
                   std::size_t bytes,
                   std::size_t alignment = alignof(std::max_align_t)) noexcept;
 
-  [[nodiscard]] void* allocate_sync(std::size_t bytes,
-                                    std::size_t alignment = alignof(std::max_align_t));
+  void* allocate_sync(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t));
 
   void deallocate_sync(void* ptr,
                        std::size_t bytes,

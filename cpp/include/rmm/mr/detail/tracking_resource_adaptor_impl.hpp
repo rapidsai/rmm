@@ -75,17 +75,16 @@ class tracking_resource_adaptor_impl {
 
   void log_outstanding_allocations() const;
 
-  [[nodiscard]] void* allocate(cuda::stream_ref stream,
-                               std::size_t bytes,
-                               std::size_t alignment = alignof(std::max_align_t));
+  void* allocate(cuda::stream_ref stream,
+                 std::size_t bytes,
+                 std::size_t alignment = alignof(std::max_align_t));
 
   void deallocate(cuda::stream_ref stream,
                   void* ptr,
                   std::size_t bytes,
                   std::size_t alignment = alignof(std::max_align_t)) noexcept;
 
-  [[nodiscard]] void* allocate_sync(std::size_t bytes,
-                                    std::size_t alignment = alignof(std::max_align_t));
+  void* allocate_sync(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t));
 
   void deallocate_sync(void* ptr,
                        std::size_t bytes,

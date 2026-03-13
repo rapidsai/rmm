@@ -107,8 +107,7 @@ class device_memory_resource {
    * @param alignment The alignment of the allocation (see notes above)
    * @return void* Pointer to the newly allocated memory
    */
-  [[nodiscard]] void* allocate_sync(std::size_t bytes,
-                                    std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
     RMM_EXPECTS(
       alignment <= rmm::CUDA_ALLOCATION_ALIGNMENT && rmm::is_supported_alignment(alignment),
@@ -152,9 +151,9 @@ class device_memory_resource {
    * @param alignment The alignment of the allocation (see notes above)
    * @return void* Pointer to the newly allocated memory
    */
-  [[nodiscard]] void* allocate(cuda_stream_view stream,
-                               std::size_t bytes,
-                               std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+  void* allocate(cuda_stream_view stream,
+                 std::size_t bytes,
+                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
     RMM_EXPECTS(
       alignment <= rmm::CUDA_ALLOCATION_ALIGNMENT && rmm::is_supported_alignment(alignment),
