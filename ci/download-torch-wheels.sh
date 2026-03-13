@@ -27,7 +27,7 @@ TORCH_WHEEL_DIR="${1}"
 rapids-dependency-file-generator \
     --output requirements \
     --file-key "torch_only" \
-    --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION};dependencies=${RAPIDS_DEPENDENCIES};require_gpu_pytorch=true" \
+    --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION};dependencies=${RAPIDS_DEPENDENCIES};require_gpu=true" \
 | tee ./torch-constraints.txt
 
 rapids-pip-retry download \

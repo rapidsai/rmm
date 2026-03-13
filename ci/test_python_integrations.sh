@@ -40,7 +40,7 @@ if [ "${CUDA_MAJOR}" -gt 12 ] || { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR
     rapids-dependency-file-generator \
       --output conda \
       --file-key test_pytorch \
-      --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION};dependencies=${RAPIDS_DEPENDENCIES};require_gpu_pytorch=true" \
+      --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION};dependencies=${RAPIDS_DEPENDENCIES};require_gpu=true" \
       --prepend-channel "${CPP_CHANNEL}" \
       --prepend-channel "${PYTHON_CHANNEL}" \
       | tee env.yaml
