@@ -95,9 +95,10 @@ class system_memory_resource final : public device_memory_resource {
    * @param alignment The alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate([[maybe_unused]] cuda::stream_ref stream,
-                 std::size_t bytes,
-                 [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+  [[nodiscard]] void* allocate(
+    [[maybe_unused]] cuda::stream_ref stream,
+    std::size_t bytes,
+    [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
     try {
       return rmm::detail::aligned_host_allocate(
@@ -142,7 +143,8 @@ class system_memory_resource final : public device_memory_resource {
    * @param alignment The alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+  [[nodiscard]] void* allocate_sync(std::size_t bytes,
+                                    std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
     auto* ptr = allocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, bytes, alignment);
     RMM_CUDA_TRY(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(0)));

@@ -202,9 +202,9 @@ class cccl_resource_ref {
     return *this;
   }
 
-  void* allocate_sync(std::size_t bytes) { return ref_.allocate_sync(bytes); }
+  [[nodiscard]] void* allocate_sync(std::size_t bytes) { return ref_.allocate_sync(bytes); }
 
-  void* allocate_sync(std::size_t bytes, std::size_t alignment)
+  [[nodiscard]] void* allocate_sync(std::size_t bytes, std::size_t alignment)
   {
     return ref_.allocate_sync(bytes, alignment);
   }
@@ -460,9 +460,9 @@ class cccl_async_resource_ref {
   }
 
   // Synchronous allocation methods (delegated to the underlying ref)
-  void* allocate_sync(std::size_t bytes) { return ref_.allocate_sync(bytes); }
+  [[nodiscard]] void* allocate_sync(std::size_t bytes) { return ref_.allocate_sync(bytes); }
 
-  void* allocate_sync(std::size_t bytes, std::size_t alignment)
+  [[nodiscard]] void* allocate_sync(std::size_t bytes, std::size_t alignment)
   {
     return ref_.allocate_sync(bytes, alignment);
   }
@@ -478,12 +478,12 @@ class cccl_async_resource_ref {
   }
 
   // Asynchronous allocation methods
-  void* allocate(cuda_stream_view stream, std::size_t bytes)
+  [[nodiscard]] void* allocate(cuda_stream_view stream, std::size_t bytes)
   {
     return ref_.allocate(stream, bytes);
   }
 
-  void* allocate(cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
+  [[nodiscard]] void* allocate(cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
   {
     return ref_.allocate(stream, bytes, alignment);
   }
