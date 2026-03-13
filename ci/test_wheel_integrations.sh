@@ -40,8 +40,8 @@ CUDA_MINOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f2)
 #
 # See notes in 'dependencies.yaml' for details on supported versions.
 if \
-    { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR}" -ge 9 ]; } \
-    || { [ "${CUDA_MAJOR}" -eq 13 ] && [ "${CUDA_MINOR}" -le 0 ]; }; \
+    { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR}" -eq 9 ]; } \
+    || { [ "${CUDA_MAJOR}" -eq 13 ] && [ "${CUDA_MINOR}" -eq 0 ]; }; \
 then
 
     # ensure a CUDA variant of 'torch' is used
@@ -62,7 +62,7 @@ then
         EXITCODE="${EXITCODE_PYTORCH}"
     fi
 else
-    rapids-logger "Skipping PyTorch tests (requires CUDA 12.9+ or 13.0, found ${RAPIDS_CUDA_VERSION})"
+    rapids-logger "Skipping PyTorch tests (requires CUDA 12.9 or 13.0, found ${RAPIDS_CUDA_VERSION})"
 fi
 
 echo "::endgroup::"
