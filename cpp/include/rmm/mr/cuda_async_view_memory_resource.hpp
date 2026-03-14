@@ -5,13 +5,11 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_device.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/runtime_capabilities.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
@@ -26,10 +24,10 @@ namespace mr {
  */
 
 /**
- * @brief `device_memory_resource` derived class that uses `cudaMallocAsync`/`cudaFreeAsync` for
+ * @brief Memory resource that uses `cudaMallocAsync`/`cudaFreeAsync` for
  * allocation/deallocation.
  */
-class cuda_async_view_memory_resource final : public device_memory_resource {
+class cuda_async_view_memory_resource final {
  public:
   /**
    * @brief Constructs a cuda_async_view_memory_resource which uses an existing CUDA memory pool.
@@ -151,6 +149,14 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
   }
 
   /**
+   * @copydoc operator==
+   */
+  [[nodiscard]] bool operator!=(cuda_async_view_memory_resource const& other) const noexcept
+  {
+    return !operator==(other);
+  }
+
+  /**
    * @brief Enables the `cuda::mr::device_accessible` property
    *
    * This property declares that a `cuda_async_view_memory_resource` provides device accessible
@@ -163,22 +169,6 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
 
  private:
   cudaMemPool_t cuda_pool_handle_{};
-
-  // -- Legacy device_memory_resource overrides (delegates to CCCL interface) --
-  void* do_allocate(std::size_t bytes, rmm::cuda_stream_view stream) override
-  {
-    return allocate(stream, bytes);
-  }
-
-  void do_deallocate(void* ptr, std::size_t bytes, rmm::cuda_stream_view stream) noexcept override
-  {
-    deallocate(stream, ptr, bytes);
-  }
-
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
-  {
-    return dynamic_cast<cuda_async_view_memory_resource const*>(&other) != nullptr;
-  }
 };
 
 // static property checks

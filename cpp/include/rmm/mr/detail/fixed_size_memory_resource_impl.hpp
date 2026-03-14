@@ -40,7 +40,7 @@ class fixed_size_memory_resource_impl final
                                   std::size_t block_size,
                                   std::size_t blocks_to_preallocate);
 
-  ~fixed_size_memory_resource_impl() override;
+  ~fixed_size_memory_resource_impl();
 
   bool operator==(fixed_size_memory_resource_impl const& other) const noexcept
   {

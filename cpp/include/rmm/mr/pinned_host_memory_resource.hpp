@@ -6,12 +6,10 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/detail/aligned.hpp>
-#include <rmm/detail/cccl_adaptors.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/detail/nvtx/ranges.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
@@ -33,10 +31,10 @@ namespace mr {
  * `cuda::mr::memory_resource` and `cuda::mr::device_memory_resource` concepts, and
  * the `cuda::mr::host_accessible` and `cuda::mr::device_accessible` properties.
  */
-class pinned_host_memory_resource final : public device_memory_resource {
+class pinned_host_memory_resource final {
  public:
-  pinned_host_memory_resource()           = default;
-  ~pinned_host_memory_resource() override = default;
+  pinned_host_memory_resource()  = default;
+  ~pinned_host_memory_resource() = default;
   pinned_host_memory_resource(pinned_host_memory_resource const&) =
     default;  ///< @default_copy_constructor
   pinned_host_memory_resource(pinned_host_memory_resource&&) =
@@ -151,22 +149,19 @@ class pinned_host_memory_resource final : public device_memory_resource {
   {
   }
 
- private:
-  // -- Legacy device_memory_resource overrides (delegates to CCCL interface) --
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
-  {
-    return allocate(stream, bytes);
-  }
+  /**
+   * @brief Compare this resource to another.
+   *
+   * All instances of pinned_host_memory_resource are equivalent.
+   *
+   * @return true Always
+   */
+  [[nodiscard]] bool operator==(pinned_host_memory_resource const&) const noexcept { return true; }
 
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
-  {
-    deallocate(stream, ptr, bytes);
-  }
-
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
-  {
-    return dynamic_cast<pinned_host_memory_resource const*>(&other) != nullptr;
-  }
+  /**
+   * @copydoc operator==
+   */
+  [[nodiscard]] bool operator!=(pinned_host_memory_resource const&) const noexcept { return false; }
 };
 
 // static property checks

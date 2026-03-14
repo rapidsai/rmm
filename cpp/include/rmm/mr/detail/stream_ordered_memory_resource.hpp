@@ -10,8 +10,8 @@
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/format.hpp>
 #include <rmm/logger.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 
+#include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
@@ -65,15 +65,45 @@ struct crtp {
  * 4. `block_type free_block(void* ptr, std::size_t size) noexcept`
  */
 template <typename PoolResource, typename FreeListType>
-class stream_ordered_memory_resource : public crtp<PoolResource>, public device_memory_resource {
+class stream_ordered_memory_resource : public crtp<PoolResource> {
  public:
-  ~stream_ordered_memory_resource() override { release(); }
+  ~stream_ordered_memory_resource() { release(); }
 
   stream_ordered_memory_resource()                                                 = default;
   stream_ordered_memory_resource(stream_ordered_memory_resource const&)            = delete;
   stream_ordered_memory_resource(stream_ordered_memory_resource&&)                 = delete;
   stream_ordered_memory_resource& operator=(stream_ordered_memory_resource const&) = delete;
   stream_ordered_memory_resource& operator=(stream_ordered_memory_resource&&)      = delete;
+
+  void* allocate(cuda::stream_ref stream, std::size_t bytes, std::size_t /*alignment*/)
+  {
+    return do_allocate(bytes, cuda_stream_view{stream});
+  }
+
+  void deallocate(cuda::stream_ref stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t /*alignment*/) noexcept
+  {
+    do_deallocate(ptr, bytes, cuda_stream_view{stream});
+  }
+
+  [[nodiscard]] void* allocate_sync(std::size_t bytes,
+                                    std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+  {
+    auto const stream = cuda_stream_view{};
+    void* ptr         = allocate(stream, bytes, alignment);
+    stream.synchronize();
+    return ptr;
+  }
+
+  void deallocate_sync(
+    void* ptr,
+    std::size_t bytes,
+    [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+  {
+    deallocate(cuda_stream_view{}, ptr, bytes, alignment);
+  }
 
  protected:
   using free_list  = FreeListType;
@@ -192,7 +222,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * @param stream The stream in which to order this allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t size, cuda_stream_view stream) override
+  void* do_allocate(std::size_t size, cuda_stream_view stream)
   {
     RMM_LOG_TRACE("[A][stream %s][%zuB]", rmm::detail::format_stream(stream), size);
 
@@ -226,7 +256,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
    * @param size The size in bytes of the allocation to deallocate
    * @param stream The stream in which to order this deallocation
    */
-  void do_deallocate(void* ptr, std::size_t size, cuda_stream_view stream) noexcept override
+  void do_deallocate(void* ptr, std::size_t size, cuda_stream_view stream) noexcept
   {
     RMM_LOG_TRACE("[D][stream %s][%zuB][%p]", rmm::detail::format_stream(stream), size, ptr);
 
