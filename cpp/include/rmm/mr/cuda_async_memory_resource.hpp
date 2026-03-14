@@ -4,15 +4,13 @@
  */
 #pragma once
 
-#include <rmm/cuda_device.hpp>
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/detail/runtime_capabilities.hpp>
-#include <rmm/mr/cuda_async_view_memory_resource.hpp>
+#include <rmm/mr/detail/cuda_async_memory_resource_impl.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 
-#include <cuda/std/type_traits>
+#include <cuda/memory_resource>
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
@@ -31,7 +29,11 @@ namespace mr {
  * @brief `device_memory_resource` derived class that uses `cudaMallocAsync`/`cudaFreeAsync` for
  * allocation/deallocation.
  */
-class cuda_async_memory_resource final : public device_memory_resource {
+class RMM_EXPORT cuda_async_memory_resource final
+  : public device_memory_resource,
+    private cuda::mr::shared_resource<detail::cuda_async_memory_resource_impl> {
+  using shared_base = cuda::mr::shared_resource<detail::cuda_async_memory_resource_impl>;
+
  public:
   /**
    * @brief Flags for specifying memory allocation handle types.
@@ -73,6 +75,43 @@ class cuda_async_memory_resource final : public device_memory_resource {
                           ///< accelerated decompression.
   };
 
+  // Begin legacy device_memory_resource compatibility layer
+  using device_memory_resource::allocate;
+  using device_memory_resource::allocate_sync;
+  using device_memory_resource::deallocate;
+  using device_memory_resource::deallocate_sync;
+
+  /**
+   * @brief Compare two resources for equality (shared-impl identity).
+   *
+   * @param other The other cuda_async_memory_resource to compare against.
+   * @return true if both resources share the same underlying pool.
+   */
+  [[nodiscard]] bool operator==(cuda_async_memory_resource const& other) const noexcept
+  {
+    return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(other);
+  }
+
+  /**
+   * @brief Compare two resources for inequality.
+   *
+   * @param other The other cuda_async_memory_resource to compare against.
+   * @return true if the resources do not share the same underlying pool.
+   */
+  [[nodiscard]] bool operator!=(cuda_async_memory_resource const& other) const noexcept
+  {
+    return !(*this == other);
+  }
+  // End legacy device_memory_resource compatibility layer
+
+  /**
+   * @brief Enables the `cuda::mr::device_accessible` property
+   */
+  RMM_CONSTEXPR_FRIEND void get_property(cuda_async_memory_resource const&,
+                                         cuda::mr::device_accessible) noexcept
+  {
+  }
+
   /**
    * @brief Constructs a cuda_async_memory_resource with the optionally specified initial pool size
    * and release threshold.
@@ -94,110 +133,37 @@ class cuda_async_memory_resource final : public device_memory_resource {
   // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
   cuda_async_memory_resource(std::optional<std::size_t> initial_pool_size             = {},
                              std::optional<std::size_t> release_threshold             = {},
-                             std::optional<allocation_handle_type> export_handle_type = {})
-  {
-    // Check if cudaMallocAsync Memory pool supported
-    RMM_EXPECTS(rmm::detail::runtime_async_alloc::is_supported(),
-                "cudaMallocAsync not supported with this CUDA driver/runtime version");
-
-    // Construct explicit pool
-    cudaMemPoolProps pool_props{};
-    pool_props.allocType   = cudaMemAllocationTypePinned;
-    pool_props.handleTypes = static_cast<cudaMemAllocationHandleType>(
-      export_handle_type.value_or(allocation_handle_type::none));
-
-#if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
-    // Enable hardware decompression if supported (requires CUDA 12.8 driver or higher)
-    if (rmm::detail::hwdecompress::is_supported()) {
-      pool_props.usage = static_cast<unsigned short>(mempool_usage::hw_decompress);
-    }
-#endif
-
-    RMM_EXPECTS(rmm::detail::export_handle_type::is_supported(pool_props.handleTypes),
-                "Requested IPC memory handle type not supported");
-    pool_props.location.type = cudaMemLocationTypeDevice;
-    pool_props.location.id   = rmm::get_current_cuda_device().value();
-    cudaMemPool_t cuda_pool_handle{};
-    RMM_CUDA_TRY(cudaMemPoolCreate(&cuda_pool_handle, &pool_props));
-    pool_ = cuda_async_view_memory_resource{cuda_pool_handle};
-
-    auto const [free, total] = rmm::available_device_memory();
-
-    // Need an l-value to take address to pass to cudaMemPoolSetAttribute
-    uint64_t threshold = release_threshold.value_or(total);
-    RMM_CUDA_TRY(
-      cudaMemPoolSetAttribute(pool_handle(), cudaMemPoolAttrReleaseThreshold, &threshold));
-
-    // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
-    // specified size (only if initial_pool_size is provided)
-    if (initial_pool_size.has_value()) {
-      auto const pool_size = initial_pool_size.value();
-      auto* ptr            = do_allocate(pool_size, cuda_stream_default);
-      do_deallocate(ptr, pool_size, cuda_stream_default);
-    }
-  }
+                             std::optional<allocation_handle_type> export_handle_type = {});
 
   /**
    * @brief Returns the underlying native handle to the CUDA pool
    *
    * @return cudaMemPool_t Handle to the underlying CUDA pool
    */
-  [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return pool_.pool_handle(); }
+  [[nodiscard]] cudaMemPool_t pool_handle() const noexcept;
 
-  ~cuda_async_memory_resource() override
-  {
-    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaMemPoolDestroy(pool_handle()));
-  }
+  ~cuda_async_memory_resource()                                            = default;
   cuda_async_memory_resource(cuda_async_memory_resource const&)            = delete;
   cuda_async_memory_resource(cuda_async_memory_resource&&)                 = delete;
   cuda_async_memory_resource& operator=(cuda_async_memory_resource const&) = delete;
   cuda_async_memory_resource& operator=(cuda_async_memory_resource&&)      = delete;
 
+  // Begin legacy device_memory_resource compatibility layer
  private:
-  cuda_async_view_memory_resource pool_{};
+  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override;
 
-  /**
-   * @brief Allocates memory of size at least \p bytes.
-   *
-   * The returned pointer will have at minimum 256 byte alignment.
-   *
-   * @param bytes The size of the allocation
-   * @param stream Stream on which to perform allocation
-   * @return void* Pointer to the newly allocated memory
-   */
-  void* do_allocate(std::size_t bytes, rmm::cuda_stream_view stream) override
-  {
-    void* ptr{nullptr};
-    ptr = pool_.allocate(stream, bytes);
-    return ptr;
-  }
+  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override;
 
-  /**
-   * @brief Deallocate memory pointed to by \p ptr.
-   *
-   * @param ptr Pointer to be deallocated
-   * @param bytes The size in bytes of the allocation. This must be equal to the
-   * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
-   * @param stream Stream on which to perform deallocation
-   */
-  void do_deallocate(void* ptr, std::size_t bytes, rmm::cuda_stream_view stream) noexcept override
-  {
-    pool_.deallocate(stream, ptr, bytes);
-  }
-
-  /**
-   * @brief Compare this resource to another.
-   *
-   * @param other The other resource to compare to
-   * @return true If the two resources are equivalent
-   * @return false If the two resources are not equal
-   */
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
-  {
-    auto const* async_mr = dynamic_cast<cuda_async_memory_resource const*>(&other);
-    return (async_mr != nullptr) && (this->pool_handle() == async_mr->pool_handle());
-  }
+  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override;
+  // End legacy device_memory_resource compatibility layer
 };
+
+// static property checks
+static_assert(cuda::mr::synchronous_resource<cuda_async_memory_resource>);
+static_assert(cuda::mr::resource<cuda_async_memory_resource>);
+static_assert(
+  cuda::mr::synchronous_resource_with<cuda_async_memory_resource, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<cuda_async_memory_resource, cuda::mr::device_accessible>);
 
 /** @} */  // end of group
 }  // namespace mr
