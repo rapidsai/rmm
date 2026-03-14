@@ -4,12 +4,16 @@
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
-#include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/format.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
+
+#include <cuda/memory_resource>
+#include <cuda/stream_ref>
+#include <cuda_runtime_api.h>
 
 #include <cstddef>
 #include <string>
@@ -40,7 +44,7 @@ static bool is_system_memory_supported(cuda_device_id device_id)
  * @file
  */
 /**
- * @brief `device_memory_resource` derived class that uses malloc/free for allocation/deallocation.
+ * @brief Memory resource that uses malloc/free for allocation/deallocation.
  *
  * There are two flavors of hardware/software environments that support accessing system allocated
  * memory (SAM) from the GPU: HMM and ATS.
@@ -61,14 +65,14 @@ static bool is_system_memory_supported(cuda_device_id device_id)
  *  more information, see
  *  https://developer.nvidia.com/blog/nvidia-grace-hopper-superchip-architecture-in-depth/.
  */
-class system_memory_resource final : public device_memory_resource {
+class system_memory_resource final {
  public:
   system_memory_resource()
   {
     RMM_EXPECTS(rmm::mr::detail::is_system_memory_supported(rmm::get_current_cuda_device()),
                 "System memory allocator is not supported with this hardware/software version.");
   }
-  ~system_memory_resource() override                    = default;
+  ~system_memory_resource()                             = default;
   system_memory_resource(system_memory_resource const&) = default;  ///< @default_copy_constructor
   system_memory_resource(system_memory_resource&&)      = default;  ///< @default_copy_constructor
   system_memory_resource& operator=(system_memory_resource const&) =
@@ -76,7 +80,8 @@ class system_memory_resource final : public device_memory_resource {
   system_memory_resource& operator=(system_memory_resource&&) =
     default;  ///< @default_move_assignment{system_memory_resource}
 
- private:
+  // -- CCCL memory resource interface (hides device_memory_resource versions) --
+
   /**
    * @brief Allocates memory of size at least \p bytes.
    *
@@ -84,11 +89,14 @@ class system_memory_resource final : public device_memory_resource {
    *
    * The stream argument is ignored.
    *
-   * @param bytes The size of the allocation
    * @param stream This argument is ignored
+   * @param bytes The size of the allocation
+   * @param alignment The alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
+  void* allocate([[maybe_unused]] cuda::stream_ref stream,
+                 std::size_t bytes,
+                 [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
     try {
       return rmm::detail::aligned_host_allocate(
@@ -105,55 +113,97 @@ class system_memory_resource final : public device_memory_resource {
    *
    * This function synchronizes the stream before deallocating the memory.
    *
+   * @param stream The stream in which to order this deallocation
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the value of `bytes`
    *              that was passed to the `allocate` call that returned `ptr`.
-   * @param stream The stream in which to order this deallocation
+   * @param alignment The alignment that was passed to the `allocate` call that returned `ptr`
    */
-  void do_deallocate(void* ptr,
-                     [[maybe_unused]] std::size_t bytes,
-                     cuda_stream_view stream) noexcept override
+  void deallocate(cuda::stream_ref stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
     // With `cudaFree`, the CUDA runtime keeps track of dependent operations and does implicit
     // synchronization. However, with SAM, since `free` is immediate, we need to wait for in-flight
     // CUDA operations to finish before freeing the memory, to avoid potential use-after-free errors
     // or race conditions.
-    stream.synchronize();
+    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 
     rmm::detail::aligned_host_deallocate(
       ptr, bytes, CUDA_ALLOCATION_ALIGNMENT, [](void* ptr) { ::operator delete(ptr); });
   }
 
   /**
-   * @brief Compare this resource to another.
+   * @brief Allocates memory of size at least \p bytes synchronously.
    *
-   * Two system_memory_resources always compare equal, because they can each deallocate memory
-   * allocated by the other.
-   *
-   * @param other The other resource to compare to
-   * @return true If the two resources are equivalent
-   * @return false If the two resources are not equal
+   * @param bytes The size of the allocation
+   * @param alignment The alignment of the allocation
+   * @return void* Pointer to the newly allocated memory
    */
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
+  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    return dynamic_cast<system_memory_resource const*>(&other) != nullptr;
+    auto* ptr = allocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, bytes, alignment);
+    RMM_CUDA_TRY(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(0)));
+    return ptr;
   }
+
+  /**
+   * @brief Deallocate memory pointed to by \p ptr synchronously.
+   *
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation
+   * @param alignment The alignment that was passed to the `allocate` call that returned `ptr`
+   */
+  void deallocate_sync(void* ptr,
+                       std::size_t bytes,
+                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+  {
+    deallocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, ptr, bytes, alignment);
+  }
+
   /**
    * @brief Enables the `cuda::mr::device_accessible` property
    *
    * This property declares that a `system_memory_resource` provides device-accessible memory
    */
-  friend void get_property(system_memory_resource const&, cuda::mr::device_accessible) noexcept {}
+  RMM_CONSTEXPR_FRIEND void get_property(system_memory_resource const&,
+                                         cuda::mr::device_accessible) noexcept
+  {
+  }
 
   /**
    * @brief Enables the `cuda::mr::host_accessible` property
    *
    * This property declares that a `system_memory_resource` provides host-accessible memory
    */
-  friend void get_property(system_memory_resource const&, cuda::mr::host_accessible) noexcept {}
+  RMM_CONSTEXPR_FRIEND void get_property(system_memory_resource const&,
+                                         cuda::mr::host_accessible) noexcept
+  {
+  }
+
+  /**
+   * @brief Compare this resource to another.
+   *
+   * All instances of system_memory_resource are equivalent.
+   *
+   * @return true Always
+   */
+  [[nodiscard]] bool operator==(system_memory_resource const&) const noexcept { return true; }
+
+  /**
+   * @copydoc operator==
+   */
+  [[nodiscard]] bool operator!=(system_memory_resource const&) const noexcept { return false; }
 };
 
 // static property checks
+static_assert(cuda::mr::synchronous_resource<system_memory_resource>);
+static_assert(cuda::mr::resource<system_memory_resource>);
+static_assert(
+  cuda::mr::synchronous_resource_with<system_memory_resource, cuda::mr::device_accessible>);
+static_assert(
+  cuda::mr::synchronous_resource_with<system_memory_resource, cuda::mr::host_accessible>);
 static_assert(cuda::mr::resource_with<system_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<system_memory_resource, cuda::mr::host_accessible>);
 /** @} */  // end of group

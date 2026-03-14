@@ -73,7 +73,7 @@ TYPED_TEST_SUITE(PrefetchAdaptorTest, resources);
 TYPED_TEST(PrefetchAdaptorTest, PointerAndSize)
 {
   prefetch_adaptor prefetch_mr{this->mr};
-  rmm::device_buffer buff(this->size, this->stream, &prefetch_mr);
+  rmm::device_buffer buff(this->size, this->stream, prefetch_mr);
   // verify data range has been prefetched
   this->expect_prefetched(buff.data(), buff.size(), rmm::get_current_cuda_device());
   // verify that prefetching does not error
@@ -85,6 +85,6 @@ TYPED_TEST(PrefetchAdaptorTest, PointerAndSize)
 TYPED_TEST(PrefetchAdaptorTest, NotPrefetchedWithoutAdaptor)
 {
   // verify not prefetched without adaptor
-  rmm::device_buffer buff(this->size, this->stream, &this->mr);
+  rmm::device_buffer buff(this->size, this->stream, this->mr);
   this->expect_prefetched(buff.data(), buff.size(), rmm::cuda_device_id(cudaInvalidDeviceId));
 }

@@ -7,7 +7,6 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/limiting_resource_adaptor.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
@@ -65,22 +64,22 @@ TEST(PoolTest, ForceGrowth)
   cuda_mr cuda;
   {
     auto const max_size{6000};
-    limiting_mr limiter{&cuda, max_size};
+    limiting_mr limiter{cuda, max_size};
     pool_mr mr{limiter, 0};
-    EXPECT_NO_THROW(mr.allocate_sync(1000));
-    EXPECT_NO_THROW(mr.allocate_sync(4000));
-    EXPECT_NO_THROW(mr.allocate_sync(500));
-    EXPECT_THROW(mr.allocate_sync(2000), rmm::out_of_memory);  // too much
+    EXPECT_NO_THROW((void)mr.allocate_sync(1000));
+    EXPECT_NO_THROW((void)mr.allocate_sync(4000));
+    EXPECT_NO_THROW((void)mr.allocate_sync(500));
+    EXPECT_THROW((void)mr.allocate_sync(2000), rmm::out_of_memory);  // too much
   }
   {
     // with max pool size
     auto const max_size{6000};
-    limiting_mr limiter{&cuda, max_size};
+    limiting_mr limiter{cuda, max_size};
     pool_mr mr{limiter, 0, 8192};
-    EXPECT_NO_THROW(mr.allocate_sync(1000));
-    EXPECT_THROW(mr.allocate_sync(4000), rmm::out_of_memory);  // too much
-    EXPECT_NO_THROW(mr.allocate_sync(500));
-    EXPECT_NO_THROW(mr.allocate_sync(2000));  // fits
+    EXPECT_NO_THROW((void)mr.allocate_sync(1000));
+    EXPECT_THROW((void)mr.allocate_sync(4000), rmm::out_of_memory);  // too much
+    EXPECT_NO_THROW((void)mr.allocate_sync(500));
+    EXPECT_NO_THROW((void)mr.allocate_sync(2000));  // fits
   }
 }
 
@@ -90,9 +89,9 @@ TEST(PoolTest, DeletedStream)
   cudaStream_t stream{};  // we don't use rmm::cuda_stream here to make destruction more explicit
   const int size = 10000;
   EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream));
-  EXPECT_NO_THROW(rmm::device_buffer buff(size, cuda_stream_view{stream}, &mr));
+  EXPECT_NO_THROW(rmm::device_buffer buff(size, cuda_stream_view{stream}, mr));
   EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream));
-  EXPECT_NO_THROW(mr.allocate_sync(size));
+  EXPECT_NO_THROW((void)mr.allocate_sync(size));
 }
 
 // Issue #527
@@ -100,7 +99,7 @@ TEST(PoolTest, InitialAndMaxPoolSizeEqual)
 {
   EXPECT_NO_THROW([]() {
     pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1000192, 1000192);
-    mr.allocate_sync(1000);
+    (void)mr.allocate_sync(1000);
   }());
 }
 
@@ -109,14 +108,14 @@ TEST(PoolTest, NonAlignedPoolSize)
   EXPECT_THROW(
     []() {
       pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1000031, 1000192);
-      mr.allocate_sync(1000);
+      (void)mr.allocate_sync(1000);
     }(),
     rmm::logic_error);
 
   EXPECT_THROW(
     []() {
       pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1000192, 1000200);
-      mr.allocate_sync(1000);
+      (void)mr.allocate_sync(1000);
     }(),
     rmm::logic_error);
 }

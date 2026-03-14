@@ -38,7 +38,7 @@ TEST(FailureCallbackTest, RetryAllocationOnce)
   failure_callback_adaptor<> mr{
     rmm::mr::get_current_device_resource_ref(), failure_handler, &retried};
   EXPECT_EQ(retried, false);
-  EXPECT_THROW(mr.allocate_sync(512_GiB), std::bad_alloc);
+  EXPECT_THROW((void)mr.allocate_sync(512_GiB), std::bad_alloc);
   EXPECT_EQ(retried, true);
 }
 
@@ -70,7 +70,7 @@ TEST(FailureCallbackTest, DifferentExceptionTypes)
       &bad_alloc_mr, failure_handler, &retried};
 
     EXPECT_EQ(retried, false);
-    EXPECT_THROW(bad_alloc_callback_mr.allocate_sync(1_MiB), rmm::bad_alloc);
+    EXPECT_THROW((void)bad_alloc_callback_mr.allocate_sync(1_MiB), rmm::bad_alloc);
     EXPECT_EQ(retried, true);
   }
 
@@ -82,7 +82,7 @@ TEST(FailureCallbackTest, DifferentExceptionTypes)
     failure_callback_adaptor<rmm::out_of_memory> oom_callback_mr{
       &oom_mr, failure_handler, &retried};
     EXPECT_EQ(retried, false);
-    EXPECT_THROW(oom_callback_mr.allocate_sync(1_MiB), rmm::out_of_memory);
+    EXPECT_THROW((void)oom_callback_mr.allocate_sync(1_MiB), rmm::out_of_memory);
     EXPECT_EQ(retried, true);
   }
 
@@ -94,8 +94,9 @@ TEST(FailureCallbackTest, DifferentExceptionTypes)
     failure_callback_adaptor<rmm::out_of_memory> oom_callback_mr{
       &bad_alloc_mr, failure_handler, &retried};
     EXPECT_EQ(retried, false);
-    EXPECT_THROW(oom_callback_mr.allocate_sync(1_MiB), rmm::bad_alloc);  // bad_alloc passes through
-    EXPECT_EQ(retried, false);  // Does not catch / retry on anything except OOM
+    EXPECT_THROW((void)oom_callback_mr.allocate_sync(1_MiB),
+                 rmm::bad_alloc);  // bad_alloc passes through
+    EXPECT_EQ(retried, false);     // Does not catch / retry on anything except OOM
   }
 }
 

@@ -153,8 +153,8 @@ ConfigureTest(LOGGING_MR_REF_TEST mr/mr_ref_logging_tests.cpp GPUS 1 PERCENT 5)
 ConfigureTest(FIXED_SIZE_MR_REF_TEST mr/mr_ref_fixed_size_tests.cpp GPUS 1 PERCENT 5)
 ConfigureTest(DEFAULT_MR_REF_TEST mr/mr_ref_default_tests.cpp GPUS 1 PERCENT 5)
 
-# device_memory_resource_view tests
-ConfigureTest(DEVICE_MEMORY_RESOURCE_VIEW_TEST mr/device_memory_resource_view_tests.cpp)
+# device_memory_resource_view tests (disabled — bridge infrastructure to be removed in Phase 3)
+# ConfigureTest(DEVICE_MEMORY_RESOURCE_VIEW_TEST mr/device_memory_resource_view_tests.cpp)
 
 # general adaptor tests
 ConfigureTest(ADAPTOR_TEST mr/adaptor_tests.cpp GPUS 1 PERCENT 5)

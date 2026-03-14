@@ -8,7 +8,6 @@
 #include <rmm/aligned.hpp>
 #include <rmm/error.hpp>
 #include <rmm/mr/aligned_resource_adaptor.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 
 #include <gmock/gmock.h>
@@ -62,8 +61,8 @@ TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
 
   {
     auto const size{5};
-    EXPECT_EQ(mr.allocate(stream, size), pointer);
-    mr.deallocate(stream, pointer, size);
+    EXPECT_EQ(mr.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT), pointer);
+    mr.deallocate(stream, pointer, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 }
 
@@ -84,8 +83,8 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
 
   {
     auto const size{3};
-    EXPECT_EQ(mr.allocate(stream, size), pointer);
-    mr.deallocate(stream, pointer, size);
+    EXPECT_EQ(mr.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT), pointer);
+    mr.deallocate(stream, pointer, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   {
@@ -93,8 +92,8 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
     void* const pointer1 = int_to_address(456);
     EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer1));
     EXPECT_CALL(mock, do_deallocate(pointer1, size, stream)).Times(1);
-    EXPECT_EQ(mr.allocate(stream, size), pointer1);
-    mr.deallocate(stream, pointer1, size);
+    EXPECT_EQ(mr.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT), pointer1);
+    mr.deallocate(stream, pointer1, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 }
 
@@ -116,8 +115,8 @@ TEST(AlignedTest, UpstreamAddressAlreadyAligned)
 
   {
     auto const size{65536};
-    EXPECT_EQ(mr.allocate(stream, size), pointer);
-    mr.deallocate(stream, pointer, size);
+    EXPECT_EQ(mr.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT), pointer);
+    mr.deallocate(stream, pointer, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 }
 
@@ -139,8 +138,8 @@ TEST(AlignedTest, AlignUpstreamAddress)
   {
     void* const expected_pointer = int_to_address(4096);
     auto const size{65536};
-    EXPECT_EQ(mr.allocate(stream, size), expected_pointer);
-    mr.deallocate(stream, expected_pointer, size);
+    EXPECT_EQ(mr.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT), expected_pointer);
+    mr.deallocate(stream, expected_pointer, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 }
 
@@ -175,12 +174,12 @@ TEST(AlignedTest, AlignMultiple)
     auto const size1{65536};
     auto const size2{73728};
     auto const size3{77800};
-    EXPECT_EQ(mr.allocate(stream, size1), expected_pointer1);
-    EXPECT_EQ(mr.allocate(stream, size2), expected_pointer2);
-    EXPECT_EQ(mr.allocate(stream, size3), expected_pointer3);
-    mr.deallocate(stream, expected_pointer1, size1);
-    mr.deallocate(stream, expected_pointer2, size2);
-    mr.deallocate(stream, expected_pointer3, size3);
+    EXPECT_EQ(mr.allocate(stream, size1, rmm::CUDA_ALLOCATION_ALIGNMENT), expected_pointer1);
+    EXPECT_EQ(mr.allocate(stream, size2, rmm::CUDA_ALLOCATION_ALIGNMENT), expected_pointer2);
+    EXPECT_EQ(mr.allocate(stream, size3, rmm::CUDA_ALLOCATION_ALIGNMENT), expected_pointer3);
+    mr.deallocate(stream, expected_pointer1, size1, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    mr.deallocate(stream, expected_pointer2, size2, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    mr.deallocate(stream, expected_pointer3, size3, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 }
 

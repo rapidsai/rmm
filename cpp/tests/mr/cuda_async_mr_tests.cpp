@@ -55,7 +55,7 @@ TEST_F(AsyncMRTest, DifferentPoolsUnequal)
   const auto pool_release_threshold{1000};
   cuda_async_mr mr1{pool_init_size, pool_release_threshold};
   cuda_async_mr mr2{pool_init_size, pool_release_threshold};
-  EXPECT_FALSE(mr1.is_equal(mr2));
+  EXPECT_NE(mr1, mr2);
 }
 
 class AsyncMRFabricTest : public AsyncMRTest {
