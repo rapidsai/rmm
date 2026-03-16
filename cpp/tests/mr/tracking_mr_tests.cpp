@@ -4,8 +4,8 @@
  */
 
 #include "../byte_literals.hpp"
+#include "delayed_memory_resource.hpp"
 
-#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
@@ -14,8 +14,6 @@
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/tracking_resource_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
-
-#include <cuda/memory_resource>
 
 #include <gtest/gtest.h>
 
@@ -34,48 +32,6 @@ using tracking_adaptor = rmm::mr::tracking_resource_adaptor<rmm::mr::device_memo
 constexpr auto num_allocations{10};
 constexpr auto num_more_allocations{5};
 constexpr auto ten_MiB{10_MiB};
-
-class delayed_memory_resource {
- public:
-  delayed_memory_resource(rmm::device_async_resource_ref upstream, std::chrono::milliseconds delay)
-    : upstream_{upstream}, delay_{delay}
-  {
-  }
-  void* allocate_sync(std::size_t bytes, std::size_t alignment)
-  {
-    return upstream_.allocate_sync(bytes, alignment);
-  }
-  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment)
-  {
-    upstream_.deallocate_sync(ptr, bytes, alignment);
-    std::this_thread::sleep_for(delay_);
-  }
-  void* allocate(rmm::cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
-  {
-    return upstream_.allocate(stream, bytes, alignment);
-  }
-  void deallocate(rmm::cuda_stream_view stream, void* ptr, std::size_t bytes, std::size_t alignment)
-  {
-    upstream_.deallocate(stream, ptr, bytes, alignment);
-    std::this_thread::sleep_for(delay_);
-  }
-  friend void get_property(delayed_memory_resource const&, cuda::mr::device_accessible) noexcept {}
-  bool operator==(delayed_memory_resource const& other) const noexcept
-  {
-    return this == std::addressof(other);
-  }
-
-  bool operator!=(delayed_memory_resource const& other) const noexcept
-  {
-    return !(this == std::addressof(other));
-  }
-
- private:
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_;
-  std::chrono::milliseconds delay_;
-};
-static_assert(cuda::mr::resource<delayed_memory_resource>);
-static_assert(cuda::mr::resource_with<delayed_memory_resource, cuda::mr::device_accessible>);
 
 TEST(TrackingTest, MultiThreaded)
 {
@@ -106,15 +62,15 @@ TEST(TrackingTest, MultiThreaded)
     threads.emplace_back([&, i = i]() {
       if (i == 0) {
         void* ptr{nullptr};
-        EXPECT_NO_THROW(ptr = mr.allocate(stream, 256, rmm::CUDA_ALLOCATION_ALIGNMENT));
+        EXPECT_NO_THROW(ptr = mr.allocate(stream, 256));
         EXPECT_NE(ptr, nullptr);
-        mr.deallocate(stream, ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        mr.deallocate(stream, ptr, 256);
       } else {
         std::this_thread::sleep_for(std::chrono::milliseconds{100});
         void* ptr{nullptr};
-        EXPECT_NO_THROW(ptr = mr.allocate(stream, 256, rmm::CUDA_ALLOCATION_ALIGNMENT));
+        EXPECT_NO_THROW(ptr = mr.allocate(stream, 256));
         EXPECT_NE(ptr, nullptr);
-        mr.deallocate(stream, ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        mr.deallocate(stream, ptr, 256);
       }
     });
   }
