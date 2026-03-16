@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -20,8 +20,8 @@ inline std::string format_bytes(std::size_t value)
 {
   static std::array units{"B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"};
 
-  int index = 0;
-  auto size = static_cast<double>(value);
+  std::size_t index = 0;
+  auto size         = static_cast<double>(value);
   while (size > 1024) {
     size /= 1024;
     index++;

@@ -9,6 +9,7 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/format.hpp>
+#include <rmm/detail/safe_cast.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/device_memory_resource.hpp>
 
@@ -267,9 +268,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
       // the CUDA runtime and thread_local destructors (can) run below
       // main: it is undefined behaviour to call into the CUDA
       // runtime below main.
-      thread_local std::vector<cudaEvent_t> events_tls(rmm::get_num_cuda_devices());
+      thread_local std::vector<cudaEvent_t> events_tls(
+        rmm::detail::safe_cast<std::size_t>(rmm::get_num_cuda_devices()));
       auto event = [device_id = this->device_id_]() {
-        auto& e = events_tls[device_id.value()];
+        auto& e = events_tls[rmm::detail::safe_cast<std::size_t>(device_id.value())];
         if (!e) {
           // These events are deliberately not destructed and therefore live until
           // program exit.
