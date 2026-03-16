@@ -26,7 +26,6 @@ cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
   std::optional<std::int32_t> export_handle_type,
   bool enable_hw_decompress)
 {
-  // Check if cudaMallocAsync Memory pool supported
   RMM_EXPECTS(rmm::detail::runtime_async_alloc::is_supported(),
               "cudaMallocAsync not supported with this CUDA driver/runtime version");
 
