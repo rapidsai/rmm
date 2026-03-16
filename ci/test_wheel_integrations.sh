@@ -4,8 +4,6 @@
 
 set -eou pipefail
 
-RAPIDS_INIT_PIP_REMOVE_NVIDIA_INDEX="true"
-export RAPIDS_INIT_PIP_REMOVE_NVIDIA_INDEX
 source rapids-init-pip
 
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen "${RAPIDS_CUDA_VERSION}")"
@@ -13,16 +11,16 @@ LIBRMM_WHEELHOUSE=$(RAPIDS_PY_WHEEL_NAME="librmm_${RAPIDS_PY_CUDA_SUFFIX}" rapid
 RMM_WHEELHOUSE=$(rapids-download-from-github "$(rapids-package-name "wheel_python" rmm --stable --cuda "$RAPIDS_CUDA_VERSION")")
 
 # generate constraints (possibly pinning to oldest support versions of dependencies)
-rapids-generate-pip-constraints test_python ./constraints.txt
+rapids-generate-pip-constraints test_python "${PIP_CONSTRAINT}"
 
 # notes:
 #
 #   * echo to expand wildcard before adding `[test]` requires for pip
-#   * need to provide --constraint="${PIP_CONSTRAINT}" because that environment variable is
-#     ignored if any other --constraint are passed via the CLI
+#   * just providing --constraint="${PIP_CONSTRAINT}" to be explicit, and because
+#     that environment variable is ignored if any other --constraint are passed via the CLI
 #
 PIP_INSTALL_SHARED_ARGS=(
-    --constraint=./constraints.txt
+    --prefer-binary
     --constraint="${PIP_CONSTRAINT}"
     "$(echo "${LIBRMM_WHEELHOUSE}"/librmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)"
     "$(echo "${RMM_WHEELHOUSE}"/rmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)[test]"
@@ -33,25 +31,29 @@ EXITCODE=0
 rapids-logger "Check GPU usage"
 nvidia-smi
 
-# Check CUDA version for PyTorch compatibility (requires CUDA 12.8+)
+echo "::group::PyTorch Tests"
+
 CUDA_MAJOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f1)
 CUDA_MINOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f2)
 
-echo "::group::PyTorch Tests"
+# Update this when 'torch' publishes CUDA wheels supporting newer CTKs.
+#
+# See notes in 'dependencies.yaml' for details on supported versions.
+if \
+    { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR}" -eq 9 ]; } \
+    || { [ "${CUDA_MAJOR}" -eq 13 ] && [ "${CUDA_MINOR}" -eq 0 ]; }; \
+then
 
-if [ "${CUDA_MAJOR}" -gt 12 ] || { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR}" -ge 8 ]; }; then
-    rapids-logger "Generating PyTorch test requirements"
-    rapids-dependency-file-generator \
-        --output requirements \
-        --file-key test_wheels_pytorch \
-        --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" \
-        | tee test-pytorch-requirements.txt
+    # ensure a CUDA variant of 'torch' is used
+    rapids-logger "Downloading PyTorch CUDA wheels"
+    TORCH_WHEEL_DIR="$(mktemp -d)"
+    ./ci/download-torch-wheels.sh "${TORCH_WHEEL_DIR}"
 
     rapids-logger "Installing PyTorch test requirements"
     rapids-pip-retry install \
         -v \
         "${PIP_INSTALL_SHARED_ARGS[@]}" \
-        -r test-pytorch-requirements.txt
+        "${TORCH_WHEEL_DIR}"/torch-*.whl
 
     timeout 15m python -m pytest -k "torch" ./python/rmm/rmm/tests \
         && EXITCODE_PYTORCH=$? || EXITCODE_PYTORCH=$?
@@ -60,7 +62,7 @@ if [ "${CUDA_MAJOR}" -gt 12 ] || { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR
         EXITCODE="${EXITCODE_PYTORCH}"
     fi
 else
-    rapids-logger "Skipping PyTorch tests (requires CUDA 12.8+, found ${RAPIDS_CUDA_VERSION})"
+    rapids-logger "Skipping PyTorch tests (requires CUDA 12.9 or 13.0, found ${RAPIDS_CUDA_VERSION})"
 fi
 
 echo "::endgroup::"
