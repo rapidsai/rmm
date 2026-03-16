@@ -226,8 +226,9 @@ ConfigureTest(PREFETCH_TEST prefetch_tests.cpp)
 ConfigureTest(LOGGER_TEST logger_tests.cpp)
 # logger_tests.cpp includes rapidcsv.h (via log_parser.hpp) which is vendored third-party code
 foreach(target LOGGER_TEST LOGGER_PTDS_TEST)
-  target_compile_options(${target} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-Wno-sign-conversion>"
-                                           "$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-sign-conversion>")
+  target_compile_options(
+    ${target} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-Wno-sign-conversion>"
+                      "$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-sign-conversion>")
 endforeach()
 
 # arena MR tests

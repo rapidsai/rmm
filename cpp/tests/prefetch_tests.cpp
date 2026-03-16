@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -89,9 +89,10 @@ TYPED_TEST(PrefetchTest, DeviceUVector)
   // test iterator range of part of the vector (implicitly constructs a span)
   {
     rmm::device_uvector<int> uvec(this->size, this->stream, &this->mr);
-    rmm::prefetch<int>({uvec.begin(), std::next(uvec.begin(), static_cast<std::ptrdiff_t>(this->size / 2))},  // span
-                       rmm::get_current_cuda_device(),
-                       this->stream);
+    rmm::prefetch<int>(
+      {uvec.begin(), std::next(uvec.begin(), static_cast<std::ptrdiff_t>(this->size / 2))},  // span
+      rmm::get_current_cuda_device(),
+      this->stream);
     this->expect_prefetched(
       uvec.data(), this->size / 2 * sizeof(int), rmm::get_current_cuda_device());
   }
