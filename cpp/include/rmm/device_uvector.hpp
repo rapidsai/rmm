@@ -212,20 +212,6 @@ class device_uvector {
   {
     RMM_EXPECTS(
       element_index < size(), "Attempt to access out of bounds element.", rmm::out_of_range);
-
-    if constexpr (std::is_same_v<value_type, bool>) {
-      RMM_CUDA_TRY(
-        cudaMemsetAsync(element_ptr(element_index), value, sizeof(value), stream.value()));
-      return;
-    }
-
-    if constexpr (std::is_fundamental_v<value_type>) {
-      if (value == value_type{0}) {
-        set_element_to_zero_async(element_index, stream);
-        return;
-      }
-    }
-
     RMM_CUDA_TRY(cudaMemcpyAsync(
       element_ptr(element_index), &value, sizeof(value), cudaMemcpyDefault, stream.value()));
   }
