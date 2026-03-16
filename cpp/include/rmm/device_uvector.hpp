@@ -175,9 +175,6 @@ class device_uvector {
   /**
    * @brief Performs an asynchronous copy of `v` to the specified element in device memory.
    *
-   * This specialization for fundamental types is optimized to use `cudaMemsetAsync` when
-   * `host_value` is zero.
-   *
    * This function does not synchronize stream `s` before returning. Therefore, the object
    * referenced by `v` should not be destroyed or modified until `stream` has been synchronized.
    * Otherwise, behavior is undefined.
