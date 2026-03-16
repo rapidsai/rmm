@@ -444,7 +444,7 @@ dependencies:
       - output_types: conda
         matrices:
           - matrix:
-              require_gpu_pytorch: "true"
+              require_gpu: "true"
             packages:
               - pytorch-gpu>=2.9
           - matrix:
@@ -471,31 +471,31 @@ dependencies:
           - matrix:
               cuda: "12.9"
               dependencies: "oldest"
-              require_gpu_pytorch: "true"
+              require_gpu: "true"
             packages:
               - &torch_cu129_index --extra-index-url=https://download.pytorch.org/whl/cu129
               - torch==2.9.0+cu129
           - matrix:
               cuda: "12.9"
-              require_gpu_pytorch: "true"
+              require_gpu: "true"
             packages:
               - *torch_cu129_index
               - torch==2.10.0+cu129
           - matrix:
               cuda: "13.0"
               dependencies: "oldest"
-              require_gpu_pytorch: "true"
+              require_gpu: "true"
             packages:
               - &torch_index_cu13 --extra-index-url=https://download.pytorch.org/whl/cu130
               - torch==2.9.0+cu130
           - matrix:
               cuda: "13.0"
-              require_gpu_pytorch: "true"
+              require_gpu: "true"
             packages:
               - *torch_index_cu13
               - torch==2.10.0+cu130
           - matrix:
-              require_gpu_pytorch: "false"
+              require_gpu: "false"
             packages:
               - torch>=2.9
   depends_on_cupy:

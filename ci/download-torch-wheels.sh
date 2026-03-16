@@ -6,8 +6,11 @@
 #
 #   Downloads a CUDA variant of 'torch' from the correct index, based on CUDA major version.
 #
-#   This exists to avoid using 'pip --extra-index-url', which could allow for CPU-only 'torch'
-#   to be downloaded from pypi.org.
+#   This exists to avoid using 'pip --extra-index-url', which has these undesirable properties:
+#
+#     - allows for CPU-only 'torch' to be downloaded from pypi.org
+#     - allows for other non-torch packages like 'numpy' to be downloaded from the PyTorch indices
+#     - increases solve complexity for 'pip'
 #
 
 set -e -u -o pipefail
@@ -17,15 +20,14 @@ TORCH_WHEEL_DIR="${1}"
 # Ensure CUDA-enabled 'torch' packages are always used.
 #
 # Downloading + passing the downloaded file as a requirement forces the use of this
-# package, so we don't accidentally end up with a CPU-only 'torch' from 'pypi.org'
-# (which can happen because pip doesn't support index priority).
+# package and ensures 'pip' considers all of its requirements.
 #
 # Not appending this to PIP_CONSTRAINT, because we don't want the torch '--extra-index-url'
 # to leak outside of this script into other 'pip {download,install}'' calls.
 rapids-dependency-file-generator \
     --output requirements \
     --file-key "torch_only" \
-    --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION};dependencies=${RAPIDS_DEPENDENCIES};require_gpu_pytorch=true" \
+    --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION};dependencies=${RAPIDS_DEPENDENCIES};require_gpu=true" \
 | tee ./torch-constraints.txt
 
 rapids-pip-retry download \
