@@ -5,17 +5,25 @@
 
 #include "../byte_literals.hpp"
 
+#include <rmm/aligned.hpp>
+#include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/logger.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/tracking_resource_adaptor.hpp>
+#include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cstddef>
 #include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace rmm::test {
@@ -26,6 +34,94 @@ using tracking_adaptor = rmm::mr::tracking_resource_adaptor<rmm::mr::device_memo
 constexpr auto num_allocations{10};
 constexpr auto num_more_allocations{5};
 constexpr auto ten_MiB{10_MiB};
+
+class delayed_memory_resource {
+ public:
+  delayed_memory_resource(rmm::device_async_resource_ref upstream, std::chrono::milliseconds delay)
+    : upstream_{upstream}, delay_{delay}
+  {
+  }
+  void* allocate_sync(std::size_t bytes, std::size_t alignment)
+  {
+    return upstream_.allocate_sync(bytes, alignment);
+  }
+  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment)
+  {
+    upstream_.deallocate_sync(ptr, bytes, alignment);
+    std::this_thread::sleep_for(delay_);
+  }
+  void* allocate(rmm::cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
+  {
+    return upstream_.allocate(stream, bytes, alignment);
+  }
+  void deallocate(rmm::cuda_stream_view stream, void* ptr, std::size_t bytes, std::size_t alignment)
+  {
+    upstream_.deallocate(stream, ptr, bytes, alignment);
+    std::this_thread::sleep_for(delay_);
+  }
+  friend void get_property(delayed_memory_resource const&, cuda::mr::device_accessible) noexcept {}
+  bool operator==(delayed_memory_resource const& other) const noexcept
+  {
+    return this == std::addressof(other);
+  }
+
+  bool operator!=(delayed_memory_resource const& other) const noexcept
+  {
+    return !(this == std::addressof(other));
+  }
+
+ private:
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_;
+  std::chrono::milliseconds delay_;
+};
+static_assert(cuda::mr::resource<delayed_memory_resource>);
+static_assert(cuda::mr::resource_with<delayed_memory_resource, cuda::mr::device_accessible>);
+
+TEST(TrackingTest, MultiThreaded)
+{
+  auto upstream = rmm::mr::cuda_memory_resource{};
+  std::vector<std::thread> threads;
+  auto delayed = delayed_memory_resource(upstream, std::chrono::milliseconds{300});
+  auto mr      = rmm::mr::tracking_resource_adaptor<delayed_memory_resource>(delayed);
+  auto stream  = rmm::cuda_stream{};
+  // Idea, we want to provoke address reuse to test ABA problems in the tracking resource
+  // adaptor. To do so, the delayed memory resource frees (and hence returns to the
+  // upstream) an address immediately and then makes that thread sleep. So thread 0
+  // allocates, deallocates, sleeps. Thread 1 sleeps, allocates, deallocates, sleeps. We
+  // therefore expect an interleaving:
+  //
+  // Thread-0             Thread-1
+  // alloc
+  // dealloc-start
+  //                      alloc
+  //                      dealloc-start
+  //
+  // dealloc-end
+  //                      dealloc-end
+  //
+  // In this scenario, if the tracking adaptor doesn't correctly handle ordering,
+  // allocation tracking should be morally an acquire-release pair bounded by the upstream
+  // allocate/deallocate, then we can get ABA reuse of the upstream's pointer.
+  for (int i = 0; i < 2; i++) {
+    threads.emplace_back([&, i = i]() {
+      if (i == 0) {
+        void* ptr{nullptr};
+        EXPECT_NO_THROW(ptr = mr.allocate(stream, 256, rmm::CUDA_ALLOCATION_ALIGNMENT));
+        EXPECT_NE(ptr, nullptr);
+        mr.deallocate(stream, ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      } else {
+        std::this_thread::sleep_for(std::chrono::milliseconds{100});
+        void* ptr{nullptr};
+        EXPECT_NO_THROW(ptr = mr.allocate(stream, 256, rmm::CUDA_ALLOCATION_ALIGNMENT));
+        EXPECT_NE(ptr, nullptr);
+        mr.deallocate(stream, ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      }
+    });
+  }
+  for (auto& t : threads) {
+    t.join();
+  }
+}
 
 TEST(TrackingTest, ThrowOnNullUpstream)
 {
