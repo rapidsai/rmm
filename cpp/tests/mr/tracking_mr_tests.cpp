@@ -64,7 +64,7 @@ TEST(TrackingTest, AllocationsLeftWithStacks)
     allocations.push_back(mr.allocate_sync(ten_MiB));
   }
   for (int i = 0; i < num_allocations; i += 2) {
-    mr.deallocate_sync(allocations[i], ten_MiB);
+    mr.deallocate_sync(allocations[static_cast<std::size_t>(i)], ten_MiB);
   }
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations / 2);
   EXPECT_EQ(mr.get_allocated_bytes(), ten_MiB * (num_allocations / 2));
@@ -83,7 +83,7 @@ TEST(TrackingTest, AllocationsLeftWithoutStacks)
   }
 
   for (int i = 0; i < num_allocations; i += 2) {
-    mr.deallocate_sync(allocations[i], ten_MiB);
+    mr.deallocate_sync(allocations[static_cast<std::size_t>(i)], ten_MiB);
   }
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations / 2);
   EXPECT_EQ(mr.get_allocated_bytes(), ten_MiB * (num_allocations / 2));

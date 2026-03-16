@@ -89,7 +89,7 @@ TYPED_TEST(PrefetchTest, DeviceUVector)
   // test iterator range of part of the vector (implicitly constructs a span)
   {
     rmm::device_uvector<int> uvec(this->size, this->stream, &this->mr);
-    rmm::prefetch<int>({uvec.begin(), std::next(uvec.begin(), this->size / 2)},  // span
+    rmm::prefetch<int>({uvec.begin(), std::next(uvec.begin(), static_cast<std::ptrdiff_t>(this->size / 2))},  // span
                        rmm::get_current_cuda_device(),
                        this->stream);
     this->expect_prefetched(

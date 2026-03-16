@@ -169,7 +169,7 @@ class fixed_size_memory_resource
 
     auto num_blocks = upstream_chunk_size_ / block_size_;
 
-    auto block_gen = [ptr, this](int index) {
+    auto block_gen = [ptr, this](std::size_t index) {
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
       return block_type{static_cast<char*>(ptr) + index * block_size_};
     };

@@ -9,8 +9,8 @@
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 option(CODE_COVERAGE "Enable generating code coverage with gcov." OFF)
 
-set(RMM_TESTS_CXX_FLAGS -Wall -Werror -Wextra -Wno-unknown-pragmas)
-set(RMM_TESTS_CUDA_FLAGS -Werror=all-warnings -Xcompiler=-Wall,-Werror,-Wextra)
+set(RMM_TESTS_CXX_FLAGS -Wall -Werror -Wextra -Wsign-conversion -Wno-unknown-pragmas)
+set(RMM_TESTS_CUDA_FLAGS -Werror=all-warnings -Xcompiler=-Wall,-Werror,-Wextra,-Wsign-conversion)
 
 include(rapids-test)
 rapids_test_init()
@@ -224,6 +224,11 @@ ConfigureTest(PREFETCH_TEST prefetch_tests.cpp)
 
 # logger tests
 ConfigureTest(LOGGER_TEST logger_tests.cpp)
+# logger_tests.cpp includes rapidcsv.h (via log_parser.hpp) which is vendored third-party code
+foreach(target LOGGER_TEST LOGGER_PTDS_TEST)
+  target_compile_options(${target} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-Wno-sign-conversion>"
+                                           "$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-sign-conversion>")
+endforeach()
 
 # arena MR tests
 ConfigureTest(ARENA_MR_TEST mr/arena_mr_tests.cpp GPUS 1 PERCENT 100)

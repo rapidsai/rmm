@@ -227,7 +227,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
       write_lock_t lock(mtx_);
 
       // Increment the allocation_count_ while we have the lock
-      counter_stack_.top().first += bytes;
+      counter_stack_.top().first += static_cast<int64_t>(bytes);
       counter_stack_.top().second += 1;
     }
 
@@ -249,7 +249,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
       write_lock_t lock(mtx_);
 
       // Decrement the current allocated counts.
-      counter_stack_.top().first -= bytes;
+      counter_stack_.top().first -= static_cast<int64_t>(bytes);
       counter_stack_.top().second -= 1;
     }
   }

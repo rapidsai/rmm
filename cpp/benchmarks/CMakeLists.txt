@@ -9,8 +9,8 @@
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 
-set(RMM_BENCHMARKS_CXX_FLAGS -Wall -Werror -Wextra -Wno-unknown-pragmas)
-set(RMM_BENCHMARKS_CUDA_FLAGS -Werror=all-warnings -Xcompiler=-Wall,-Werror,-Wextra)
+set(RMM_BENCHMARKS_CXX_FLAGS -Wall -Werror -Wextra -Wsign-conversion -Wno-unknown-pragmas)
+set(RMM_BENCHMARKS_CUDA_FLAGS -Werror=all-warnings -Xcompiler=-Wall,-Werror,-Wextra,-Wsign-conversion)
 
 if(PER_THREAD_DEFAULT_STREAM)
   message(STATUS "RMM: Building benchmarks with per-thread default stream")
@@ -65,6 +65,9 @@ ConfigureBench(RANDOM_ALLOCATIONS_BENCH random_allocations/random_allocations.cp
 
 # replay benchmark
 ConfigureBench(REPLAY_BENCH replay/replay.cpp)
+# rapidcsv.h is vendored third-party code that does not build cleanly with -Wsign-conversion
+target_compile_options(REPLAY_BENCH PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:-Wno-sign-conversion>"
+                                            "$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wno-sign-conversion>")
 
 # uvector benchmark
 ConfigureBench(UVECTOR_BENCH device_uvector/device_uvector_bench.cu)
