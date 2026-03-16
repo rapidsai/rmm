@@ -54,10 +54,7 @@ class delayed_memory_resource {
     return this == std::addressof(other);
   }
 
-  bool operator!=(delayed_memory_resource const& other) const noexcept
-  {
-    return !(this == std::addressof(other));
-  }
+  bool operator!=(delayed_memory_resource const& other) const noexcept { return !(*this == other); }
 
  private:
   cuda::mr::any_resource<cuda::mr::device_accessible> upstream_;
