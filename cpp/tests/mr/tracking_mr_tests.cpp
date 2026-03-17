@@ -79,6 +79,23 @@ TEST(TrackingTest, MultiThreaded)
   }
 }
 
+TEST(TrackingTest, ConcurrentZeroByteAllocations)
+{
+  tracking_adaptor mr{rmm::mr::get_current_device_resource_ref()};
+  std::vector<std::thread> threads;
+  constexpr int num_threads{4};
+  for (int i = 0; i < num_threads; ++i) {
+    threads.emplace_back([&mr]() {
+      void* ptr = mr.allocate_sync(0);
+      mr.deallocate_sync(ptr, 0);
+    });
+  }
+  for (auto& t : threads) {
+    t.join();
+  }
+  EXPECT_EQ(mr.get_outstanding_allocations().size(), 0);
+}
+
 TEST(TrackingTest, ThrowOnNullUpstream)
 {
   auto construct_nullptr = []() { tracking_adaptor mr{nullptr}; };
