@@ -63,9 +63,9 @@ void* tracking_resource_adaptor_impl::allocate(cuda::stream_ref stream,
                                                std::size_t alignment)
 {
   void* ptr = upstream_mr_.allocate(stream, bytes, alignment);
-  {
+  if (bytes != 0) {
     write_lock_t lock(mtx_);
-    auto [_, inserted] = allocations_.emplace(ptr, allocation_info{bytes, capture_stacks_});
+    auto [_, inserted] = allocations_.try_emplace(ptr, bytes, capture_stacks_);
     RMM_EXPECTS(inserted, "pointer is already tracked");
   }
   allocated_bytes_ += bytes;
@@ -77,7 +77,7 @@ void tracking_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
                                                 std::size_t bytes,
                                                 std::size_t alignment) noexcept
 {
-  {
+  if (bytes != 0) {
     write_lock_t lock(mtx_);
     auto const found = allocations_.find(ptr);
     if (found == allocations_.end()) {
