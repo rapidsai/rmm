@@ -62,9 +62,9 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
   constexpr int allocation_probability{73};  // percent
   constexpr int max_op_chance{99};
   std::uniform_int_distribution<int> op_distribution(0, max_op_chance);
-  std::uniform_int_distribution<int> index_distribution(0, static_cast<int>(num_allocations) - 1);
+  std::uniform_int_distribution<std::size_t> index_distribution(0, num_allocations - 1);
 
-  int active_allocations{0};
+  std::size_t active_allocations{0};
   std::size_t allocation_count{0};
 
   allocation_vector allocations{};
@@ -185,8 +185,8 @@ static void BM_RandomAllocations(benchmark::State& state, MRFactoryFunc const& f
 {
   auto mr = factory();
 
-  std::size_t num_allocations = state.range(0);
-  std::size_t max_size        = state.range(1);
+  std::size_t num_allocations = static_cast<std::size_t>(state.range(0));
+  std::size_t max_size        = static_cast<std::size_t>(state.range(1));
 
   try {
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
@@ -312,7 +312,9 @@ int main(int argc, char** argv)
       std::cout << "Profiling " << resource << " with " << num_allocations << " allocations of max "
                 << max_size << "B\n";
 
-      profile_random_allocations(funcs.at(resource), num_allocations, max_size);
+      profile_random_allocations(funcs.at(resource),
+                                 static_cast<std::size_t>(num_allocations),
+                                 static_cast<std::size_t>(max_size));
 
       std::cout << "Finished\n";
     } else {

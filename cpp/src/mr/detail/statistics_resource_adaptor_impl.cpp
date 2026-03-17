@@ -66,7 +66,7 @@ void* statistics_resource_adaptor_impl::allocate(cuda::stream_ref stream,
   void* ptr = upstream_mr_.allocate(stream, bytes, alignment);
   {
     write_lock_t lock(mtx_);
-    counter_stack_.top().first += bytes;
+    counter_stack_.top().first += static_cast<int64_t>(bytes);
     counter_stack_.top().second += 1;
   }
   return ptr;
@@ -77,12 +77,12 @@ void statistics_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
                                                   std::size_t bytes,
                                                   std::size_t alignment) noexcept
 {
-  upstream_mr_.deallocate(stream, ptr, bytes, alignment);
   {
     write_lock_t lock(mtx_);
-    counter_stack_.top().first -= bytes;
+    counter_stack_.top().first -= static_cast<int64_t>(bytes);
     counter_stack_.top().second -= 1;
   }
+  upstream_mr_.deallocate(stream, ptr, bytes, alignment);
 }
 
 void* statistics_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)

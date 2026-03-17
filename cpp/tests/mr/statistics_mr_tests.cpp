@@ -4,16 +4,22 @@
  */
 
 #include "../byte_literals.hpp"
+#include "delayed_memory_resource.hpp"
 
+#include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
+#include <rmm/error.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/statistics_resource_adaptor.hpp>
 
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cstddef>
 #include <memory>
 #include <stdexcept>
+#include <thread>
 #include <vector>
 
 namespace rmm::test {
@@ -24,6 +30,55 @@ using statistics_adaptor = rmm::mr::statistics_resource_adaptor;
 constexpr auto num_allocations{10};
 constexpr auto num_more_allocations{5};
 constexpr auto ten_MiB{10_MiB};
+
+TEST(StatisticsTest, MultiThreaded)
+{
+  auto upstream = rmm::mr::cuda_memory_resource{};
+  auto delayed  = delayed_memory_resource(upstream, std::chrono::milliseconds{300});
+  statistics_adaptor mr{rmm::device_async_resource_ref{delayed}};
+  auto stream = rmm::cuda_stream{};
+  // Provoke interleaving to test that statistics counters are updated with correct ordering
+  // relative to upstream deallocate. The delayed memory resource frees the pointer upstream
+  // immediately then sleeps, simulating the window where the address is available for reuse
+  // but the adaptor hasn't updated its counters yet.
+  //
+  // Thread-0             Thread-1
+  // alloc
+  // dealloc-start
+  //                      alloc
+  //                      dealloc-start
+  //
+  // dealloc-end
+  //                      dealloc-end
+  //
+  // After both threads complete, the counters must reflect zero outstanding allocations.
+  std::vector<std::thread> threads;
+  for (int i = 0; i < 2; i++) {
+    threads.emplace_back([&, i = i]() {
+      if (i == 0) {
+        void* ptr = mr.allocate(stream, 256);
+        mr.deallocate(stream, ptr, 256);
+      } else {
+        std::this_thread::sleep_for(std::chrono::milliseconds{100});
+        void* ptr = mr.allocate(stream, 256);
+        mr.deallocate(stream, ptr, 256);
+      }
+    });
+  }
+  for (auto& t : threads) {
+    t.join();
+  }
+  EXPECT_EQ(mr.get_bytes_counter().value, 0);
+  EXPECT_EQ(mr.get_allocations_counter().value, 0);
+  EXPECT_EQ(mr.get_allocations_counter().total, 2);
+  EXPECT_EQ(mr.get_bytes_counter().total, 512);
+}
+
+TEST(StatisticsTest, ThrowOnNullUpstream)
+{
+  auto construct_nullptr = []() { statistics_adaptor mr{nullptr}; };
+  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
+}
 
 TEST(StatisticsTest, Empty)
 {

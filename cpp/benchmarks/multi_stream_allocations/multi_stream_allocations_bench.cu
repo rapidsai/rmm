@@ -69,12 +69,12 @@ static void BM_MultiStreamAllocations(benchmark::State& state, MRFactoryFunc con
   auto num_kernels = state.range(1);
   bool do_prewarm  = state.range(2) != 0;
 
-  auto stream_pool = rmm::cuda_stream_pool(num_streams);
+  auto stream_pool = rmm::cuda_stream_pool(static_cast<std::size_t>(num_streams));
 
   if (do_prewarm) { run_prewarm(stream_pool, mr.get()); }
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
-    run_test(num_kernels, stream_pool, mr.get());
+    run_test(static_cast<std::size_t>(num_kernels), stream_pool, mr.get());
     cudaDeviceSynchronize();
   }
 
@@ -169,11 +169,11 @@ void run_profile(std::string const& resource_name, int kernel_count, int stream_
 {
   auto mr_factory  = get_mr_factory(resource_name);
   auto mr          = mr_factory();
-  auto stream_pool = rmm::cuda_stream_pool(stream_count);
+  auto stream_pool = rmm::cuda_stream_pool(static_cast<std::size_t>(stream_count));
 
   if (prewarm) { run_prewarm(stream_pool, mr.get()); }
 
-  run_test(kernel_count, stream_pool, mr.get());
+  run_test(static_cast<std::size_t>(kernel_count), stream_pool, mr.get());
 }
 
 int main(int argc, char** argv)

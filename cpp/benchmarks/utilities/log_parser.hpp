@@ -146,7 +146,7 @@ inline std::vector<event> parse_csv(std::string const& filename)
 
   auto parse_pointer = [](std::string const& str, uintptr_t& ptr) {
     auto const base{16};
-    ptr = (str == "(nil)") ? 0 : std::stoll(str, nullptr, base);
+    ptr = (str == "(nil)") ? 0 : static_cast<uintptr_t>(std::stoull(str, nullptr, base));
   };
 
   std::vector<uintptr_t> pointers = csv.GetColumn<uintptr_t>("Pointer", parse_pointer);

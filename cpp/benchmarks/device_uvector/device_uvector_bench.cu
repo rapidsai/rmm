@@ -31,7 +31,8 @@ void BM_UvectorSizeConstruction(benchmark::State& state)
   rmm::mr::set_current_device_resource_ref(mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
-    rmm::device_uvector<std::int32_t> vec(state.range(0), rmm::cuda_stream_view{});
+    rmm::device_uvector<std::int32_t> vec(static_cast<std::size_t>(state.range(0)),
+                                          rmm::cuda_stream_view{});
     cudaDeviceSynchronize();
   }
 
@@ -52,7 +53,7 @@ void BM_ThrustVectorSizeConstruction(benchmark::State& state)
   rmm::mr::set_current_device_resource_ref(mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
-    rmm::device_vector<std::int32_t> vec(state.range(0));
+    rmm::device_vector<std::int32_t> vec(static_cast<std::size_t>(state.range(0)));
     cudaDeviceSynchronize();
   }
 
@@ -79,7 +80,7 @@ using rmm_vector    = rmm::device_vector<int32_t>;
 using rmm_uvector   = rmm::device_uvector<int32_t>;
 
 template <typename Vector>
-Vector make_vector(std::int64_t num_elements, rmm::cuda_stream_view stream, bool zero_init = false)
+Vector make_vector(std::size_t num_elements, rmm::cuda_stream_view stream, bool zero_init = false)
 {
   static_assert(std::is_same_v<Vector, thrust_vector> or std::is_same_v<Vector, rmm_vector> or
                   std::is_same_v<Vector, rmm_uvector>,
@@ -132,7 +133,7 @@ void BM_VectorWorkflow(benchmark::State& state)
   rmm::cuda_stream input_stream;
   std::vector<rmm::cuda_stream> streams(4);
 
-  auto const num_elements   = state.range(0);
+  auto const num_elements   = static_cast<std::size_t>(state.range(0));
   auto constexpr block_size = 256;
   auto constexpr num_blocks = 16;
 
@@ -143,7 +144,8 @@ void BM_VectorWorkflow(benchmark::State& state)
 
   auto constexpr num_accesses = 9;
   auto const bytes            = num_elements * sizeof(std::int32_t) * num_accesses;
-  state.SetBytesProcessed(static_cast<std::int64_t>(state.iterations() * bytes));
+  state.SetBytesProcessed(
+    static_cast<std::int64_t>(static_cast<std::size_t>(state.iterations()) * bytes));
 
   rmm::mr::reset_current_device_resource_ref();
 }

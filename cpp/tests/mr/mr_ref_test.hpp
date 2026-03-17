@@ -308,10 +308,11 @@ inline void test_mixed_random_allocation_free(resource_ref ref,
       EXPECT_NE(nullptr, new_allocation.ptr);
       EXPECT_TRUE(is_properly_aligned(new_allocation.ptr));
     } else {
-      auto const index = static_cast<int>(index_distribution(generator) % active_allocations);
+      auto const index =
+        static_cast<std::size_t>(index_distribution(generator)) % active_allocations;
       active_allocations--;
       allocation to_free = allocations[index];
-      allocations.erase(std::next(allocations.begin(), index));
+      allocations.erase(std::next(allocations.begin(), static_cast<std::ptrdiff_t>(index)));
       EXPECT_NO_THROW(ref.deallocate_sync(to_free.ptr, to_free.size));
     }
   }
@@ -355,10 +356,11 @@ inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_r
       EXPECT_NE(nullptr, new_allocation.ptr);
       EXPECT_TRUE(is_properly_aligned(new_allocation.ptr));
     } else {
-      auto const index = static_cast<int>(index_distribution(generator) % active_allocations);
+      auto const index =
+        static_cast<std::size_t>(index_distribution(generator)) % active_allocations;
       active_allocations--;
       allocation to_free = allocations[index];
-      allocations.erase(std::next(allocations.begin(), index));
+      allocations.erase(std::next(allocations.begin(), static_cast<std::ptrdiff_t>(index)));
       EXPECT_NO_THROW(ref.deallocate(stream, to_free.ptr, to_free.size));
     }
   }

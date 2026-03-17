@@ -9,8 +9,8 @@
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 option(CODE_COVERAGE "Enable generating code coverage with gcov." OFF)
 
-set(RMM_TESTS_CXX_FLAGS -Wall -Werror -Wextra -Wno-unknown-pragmas)
-set(RMM_TESTS_CUDA_FLAGS -Werror=all-warnings -Xcompiler=-Wall,-Werror,-Wextra)
+set(RMM_TESTS_CXX_FLAGS -Wall -Werror -Wextra -Wsign-conversion -Wno-unknown-pragmas)
+set(RMM_TESTS_CUDA_FLAGS -Werror=all-warnings -Xcompiler=-Wall,-Werror,-Wextra,-Wsign-conversion)
 
 include(rapids-test)
 rapids_test_init()
