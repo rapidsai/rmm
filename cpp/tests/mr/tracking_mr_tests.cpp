@@ -4,18 +4,24 @@
  */
 
 #include "../byte_literals.hpp"
+#include "delayed_memory_resource.hpp"
 
+#include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/logger.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/tracking_resource_adaptor.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cstddef>
 #include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace rmm::test {
@@ -26,6 +32,52 @@ using tracking_adaptor = rmm::mr::tracking_resource_adaptor<rmm::mr::device_memo
 constexpr auto num_allocations{10};
 constexpr auto num_more_allocations{5};
 constexpr auto ten_MiB{10_MiB};
+
+TEST(TrackingTest, MultiThreaded)
+{
+  auto upstream = rmm::mr::cuda_memory_resource{};
+  std::vector<std::thread> threads;
+  auto delayed = delayed_memory_resource(upstream, std::chrono::milliseconds{300});
+  auto mr      = rmm::mr::tracking_resource_adaptor<delayed_memory_resource>(delayed);
+  auto stream  = rmm::cuda_stream{};
+  // Idea, we want to provoke address reuse to test ABA problems in the tracking resource
+  // adaptor. To do so, the delayed memory resource frees (and hence returns to the
+  // upstream) an address immediately and then makes that thread sleep. So thread 0
+  // allocates, deallocates, sleeps. Thread 1 sleeps, allocates, deallocates, sleeps. We
+  // therefore expect an interleaving:
+  //
+  // Thread-0             Thread-1
+  // alloc
+  // dealloc-start
+  //                      alloc
+  //                      dealloc-start
+  //
+  // dealloc-end
+  //                      dealloc-end
+  //
+  // In this scenario, if the tracking adaptor doesn't correctly handle ordering,
+  // allocation tracking should be morally an acquire-release pair bounded by the upstream
+  // allocate/deallocate, then we can get ABA reuse of the upstream's pointer.
+  for (int i = 0; i < 2; i++) {
+    threads.emplace_back([&, i = i]() {
+      if (i == 0) {
+        void* ptr{nullptr};
+        EXPECT_NO_THROW(ptr = mr.allocate(stream, 256));
+        EXPECT_NE(ptr, nullptr);
+        mr.deallocate(stream, ptr, 256);
+      } else {
+        std::this_thread::sleep_for(std::chrono::milliseconds{100});
+        void* ptr{nullptr};
+        EXPECT_NO_THROW(ptr = mr.allocate(stream, 256));
+        EXPECT_NE(ptr, nullptr);
+        mr.deallocate(stream, ptr, 256);
+      }
+    });
+  }
+  for (auto& t : threads) {
+    t.join();
+  }
+}
 
 TEST(TrackingTest, ThrowOnNullUpstream)
 {

@@ -243,8 +243,6 @@ class statistics_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
-    get_upstream_resource().deallocate(stream, ptr, bytes);
-
     {
       write_lock_t lock(mtx_);
 
@@ -252,6 +250,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
       counter_stack_.top().first -= static_cast<int64_t>(bytes);
       counter_stack_.top().second -= 1;
     }
+    get_upstream_resource().deallocate(stream, ptr, bytes);
   }
 
   /**
