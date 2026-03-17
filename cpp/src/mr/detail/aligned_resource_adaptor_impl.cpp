@@ -60,7 +60,8 @@ void* aligned_resource_adaptor_impl::allocate(cuda::stream_ref stream,
   void* aligned_pointer = reinterpret_cast<void*>(aligned_address);
   if (pointer != aligned_pointer) {
     std::lock_guard<std::mutex> lock(mtx_);
-    pointers_.emplace(aligned_pointer, pointer);
+    auto [_, inserted] = pointers_.try_emplace(aligned_pointer, pointer);
+    RMM_EXPECTS(inserted, "pointer is already tracked");
   }
   return aligned_pointer;
 }

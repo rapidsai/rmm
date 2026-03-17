@@ -44,7 +44,7 @@ TYPED_TEST_P(CcclMrRefTestMT, SetCurrentDeviceResourceRefPerThread_mt)
   RMM_CUDA_TRY(cudaGetDeviceCount(&num_devices));
 
   std::vector<std::thread> threads;
-  threads.reserve(num_devices);
+  threads.reserve(static_cast<std::size_t>(num_devices));
 
   auto mr = this->ref;
 
