@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -32,9 +32,11 @@ cuda_event_timer::cuda_event_timer(benchmark::State& state,
 
     if (l2_cache_bytes > 0) {
       const int memset_value = 0;
-      rmm::device_buffer l2_cache_buffer(l2_cache_bytes, stream);
-      RMM_CUDA_TRY(
-        cudaMemsetAsync(l2_cache_buffer.data(), memset_value, l2_cache_bytes, stream.value()));
+      rmm::device_buffer l2_cache_buffer(static_cast<std::size_t>(l2_cache_bytes), stream);
+      RMM_CUDA_TRY(cudaMemsetAsync(l2_cache_buffer.data(),
+                                   memset_value,
+                                   static_cast<std::size_t>(l2_cache_bytes),
+                                   stream.value()));
     }
   }
 
