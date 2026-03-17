@@ -101,9 +101,9 @@ target_include_directories(
 
 if(CUDA_STATIC_RUNTIME)
   message(STATUS "RMM: Enabling static linking of cudart")
-  target_link_libraries(rmm PUBLIC CUDA::cudart_static)
+  target_link_libraries(rmm PRIVATE CUDA::cudart_static)
 else()
-  target_link_libraries(rmm PUBLIC CUDA::cudart)
+  target_link_libraries(rmm PRIVATE CUDA::cudart)
 endif()
 
 target_link_libraries(rmm PUBLIC CCCL::CCCL ${CMAKE_DL_LIBS} nvtx3::nvtx3-cpp
