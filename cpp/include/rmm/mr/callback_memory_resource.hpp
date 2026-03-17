@@ -4,10 +4,8 @@
  */
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/callback_memory_resource_impl.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
@@ -69,38 +67,10 @@ class callback_memory_resource_impl;
  * `cuda::mr::shared_resource`.
  */
 class RMM_EXPORT callback_memory_resource
-  : public device_memory_resource,
-    private cuda::mr::shared_resource<detail::callback_memory_resource_impl> {
+  : public cuda::mr::shared_resource<detail::callback_memory_resource_impl> {
   using shared_base = cuda::mr::shared_resource<detail::callback_memory_resource_impl>;
 
  public:
-  using device_memory_resource::allocate;
-  using device_memory_resource::allocate_sync;
-  using device_memory_resource::deallocate;
-  using device_memory_resource::deallocate_sync;
-
-  /**
-   * @brief Compare two resources for equality (shared-impl identity).
-   *
-   * @param other The other callback_memory_resource to compare against.
-   * @return true if both resources share the same underlying state.
-   */
-  [[nodiscard]] bool operator==(callback_memory_resource const& other) const noexcept
-  {
-    return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(other);
-  }
-
-  /**
-   * @brief Compare two resources for inequality.
-   *
-   * @param other The other callback_memory_resource to compare against.
-   * @return true if the resources do not share the same underlying state.
-   */
-  [[nodiscard]] bool operator!=(callback_memory_resource const& other) const noexcept
-  {
-    return !(*this == other);
-  }
-
   /**
    * @brief Enables the `cuda::mr::device_accessible` property
    */
@@ -131,11 +101,6 @@ class RMM_EXPORT callback_memory_resource
 
   callback_memory_resource()  = delete;
   ~callback_memory_resource() = default;
-
- private:
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override;
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override;
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override;
 };
 
 static_assert(cuda::mr::resource_with<callback_memory_resource, cuda::mr::device_accessible>,

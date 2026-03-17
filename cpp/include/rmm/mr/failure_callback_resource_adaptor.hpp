@@ -5,11 +5,9 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/failure_callback_resource_adaptor_impl.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
@@ -43,43 +41,13 @@ namespace mr {
  */
 template <typename ExceptionType = rmm::out_of_memory>
 class failure_callback_resource_adaptor
-  : public device_memory_resource,
-    private cuda::mr::shared_resource<
+  : public cuda::mr::shared_resource<
       detail::failure_callback_resource_adaptor_impl<ExceptionType>> {
   using shared_base =
     cuda::mr::shared_resource<detail::failure_callback_resource_adaptor_impl<ExceptionType>>;
 
  public:
   using exception_type = ExceptionType;  ///< The type of exception this object catches/throws
-
-  // Begin legacy device_memory_resource compatibility layer
-  using device_memory_resource::allocate;
-  using device_memory_resource::allocate_sync;
-  using device_memory_resource::deallocate;
-  using device_memory_resource::deallocate_sync;
-
-  /**
-   * @brief Compare two adaptors for equality (shared-impl identity).
-   *
-   * @param other The other failure_callback_resource_adaptor to compare against.
-   * @return true if both adaptors share the same underlying state.
-   */
-  [[nodiscard]] bool operator==(failure_callback_resource_adaptor const& other) const noexcept
-  {
-    return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(other);
-  }
-
-  /**
-   * @brief Compare two adaptors for inequality.
-   *
-   * @param other The other failure_callback_resource_adaptor to compare against.
-   * @return true if the adaptors do not share the same underlying state.
-   */
-  [[nodiscard]] bool operator!=(failure_callback_resource_adaptor const& other) const noexcept
-  {
-    return !(*this == other);
-  }
-  // End legacy device_memory_resource compatibility layer
 
   /**
    * @brief Enables the `cuda::mr::device_accessible` property
@@ -115,27 +83,6 @@ class failure_callback_resource_adaptor
   {
     return this->get().get_upstream_resource();
   }
-
-  // Begin legacy device_memory_resource compatibility layer
- private:
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
-  {
-    return shared_base::allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  }
-
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
-  {
-    shared_base::deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  }
-
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
-  {
-    if (this == std::addressof(other)) { return true; }
-    auto const* cast = dynamic_cast<failure_callback_resource_adaptor const*>(&other);
-    if (cast == nullptr) { return false; }
-    return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(*cast);
-  }
-  // End legacy device_memory_resource compatibility layer
 };
 
 static_assert(

@@ -4,10 +4,8 @@
  */
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/arena_memory_resource_impl.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
@@ -63,40 +61,10 @@ namespace mr {
  * \see https://github.com/google/tcmalloc
  */
 class RMM_EXPORT arena_memory_resource
-  : public device_memory_resource,
-    private cuda::mr::shared_resource<detail::arena_memory_resource_impl> {
+  : public cuda::mr::shared_resource<detail::arena_memory_resource_impl> {
   using shared_base = cuda::mr::shared_resource<detail::arena_memory_resource_impl>;
 
  public:
-  // Begin legacy device_memory_resource compatibility layer
-  using device_memory_resource::allocate;
-  using device_memory_resource::allocate_sync;
-  using device_memory_resource::deallocate;
-  using device_memory_resource::deallocate_sync;
-
-  /**
-   * @brief Compare two resources for equality (shared-impl identity).
-   *
-   * @param other The other arena_memory_resource to compare against.
-   * @return true if both resources share the same underlying state.
-   */
-  [[nodiscard]] bool operator==(arena_memory_resource const& other) const noexcept
-  {
-    return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(other);
-  }
-
-  /**
-   * @brief Compare two resources for inequality.
-   *
-   * @param other The other arena_memory_resource to compare against.
-   * @return true if the resources do not share the same underlying state.
-   */
-  [[nodiscard]] bool operator!=(arena_memory_resource const& other) const noexcept
-  {
-    return !(*this == other);
-  }
-  // End legacy device_memory_resource compatibility layer
-
   /**
    * @brief Enables the `cuda::mr::device_accessible` property
    */
@@ -118,15 +86,6 @@ class RMM_EXPORT arena_memory_resource
                                  bool dump_log_on_failure              = false);
 
   ~arena_memory_resource() = default;
-
-  // Begin legacy device_memory_resource compatibility layer
- private:
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override;
-
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override;
-
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override;
-  // End legacy device_memory_resource compatibility layer
 };
 
 static_assert(cuda::mr::resource_with<arena_memory_resource, cuda::mr::device_accessible>,

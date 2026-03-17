@@ -516,8 +516,8 @@ TEST_F(ArenaTest, Defragment)  // NOLINT
     for (std::size_t i = 0; i < num_threads; ++i) {
       threads.emplace_back(std::thread([&] {
         cuda_stream stream{};
-        void* ptr = mr.allocate(stream, 32_KiB);
-        mr.deallocate(stream, ptr, 32_KiB);
+        void* ptr = mr.allocate(cuda_stream_view{stream}, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        mr.deallocate(cuda_stream_view{stream}, ptr, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
       }));
     }
     for (auto& thread : threads) {
@@ -538,26 +538,28 @@ TEST_F(ArenaTest, PerThreadToStreamDealloc)  // NOLINT
   auto const arena_size = superblock::minimum_size * 2;
   arena_mr mr(rmm::mr::get_current_device_resource_ref(), arena_size);
   // Create an allocation from a per thread arena
-  void* thread_ptr = mr.allocate(rmm::cuda_stream_per_thread, 256);
+  void* thread_ptr = mr.allocate(rmm::cuda_stream_per_thread, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
   // Create an allocation in a stream arena to force global arena
   // to be empty
   cuda_stream stream{};
-  void* ptr = mr.allocate(stream, 32_KiB);
-  mr.deallocate(stream, ptr, 32_KiB);
+  void* ptr = mr.allocate(cuda_stream_view{stream}, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(cuda_stream_view{stream}, ptr, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
   // at this point the global arena doesn't have any superblocks so
   // the next allocation causes defrag. Defrag causes all superblocks
   // from the thread and stream arena allocated above to go back to
   // global arena and it allocates one superblock to the stream arena.
-  auto* ptr1 = mr.allocate(rmm::cuda_stream_view{}, superblock::minimum_size);
+  auto* ptr1 =
+    mr.allocate(rmm::cuda_stream_view{}, superblock::minimum_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   // Allocate again to make sure all superblocks from
   // global arena are owned by a stream arena instead of a thread arena
   // or the global arena.
-  auto* ptr2 = mr.allocate(rmm::cuda_stream_view{}, 32_KiB);
+  auto* ptr2 = mr.allocate(rmm::cuda_stream_view{}, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
   // The original thread ptr is now owned by a stream arena so make
   // sure deallocation works.
-  mr.deallocate(rmm::cuda_stream_per_thread, thread_ptr, 256);
-  mr.deallocate(rmm::cuda_stream_view{}, ptr1, superblock::minimum_size);
-  mr.deallocate(rmm::cuda_stream_view{}, ptr2, 32_KiB);
+  mr.deallocate(rmm::cuda_stream_per_thread, thread_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(
+    rmm::cuda_stream_view{}, ptr1, superblock::minimum_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(rmm::cuda_stream_view{}, ptr2, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
@@ -581,7 +583,7 @@ TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
   }
 
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
-  EXPECT_THROW(mr.allocate_sync(8_MiB), rmm::out_of_memory);
+  EXPECT_THROW((void)mr.allocate_sync(8_MiB), rmm::out_of_memory);
 
   struct stat file_status{};
   EXPECT_EQ(stat("rmm_arena_memory_dump.log", &file_status), 0);
