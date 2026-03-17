@@ -50,7 +50,7 @@ TEST(FailureCallbackTest, RetryAllocationOnce)
   bool retried{false};
   failure_callback_adaptor<> mr{&throwing_mr, failure_handler, &retried};
   EXPECT_EQ(retried, false);
-  EXPECT_THROW(mr.allocate_sync(1_MiB), std::bad_alloc);
+  EXPECT_THROW(mr.allocate_sync(1_MiB), rmm::bad_alloc);
   EXPECT_EQ(retried, true);
 }
 
