@@ -48,7 +48,7 @@ void* aligned_resource_adaptor_impl::allocate(cuda::stream_ref stream,
                                               std::size_t bytes,
                                               std::size_t /*alignment*/)
 {
-  if (alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
+  if (bytes == 0 || alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
     return upstream_mr_.allocate(stream, bytes, 1);
   }
   auto const size = upstream_allocation_size(bytes);
@@ -71,7 +71,7 @@ void aligned_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
                                                std::size_t bytes,
                                                std::size_t /*alignment*/) noexcept
 {
-  if (alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
+  if (bytes == 0 || alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
     upstream_mr_.deallocate(stream, ptr, bytes, 1);
   } else {
     {

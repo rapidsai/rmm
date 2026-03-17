@@ -119,10 +119,10 @@ function(ConfigureTest TEST_NAME)
     target_link_libraries(${PTDS_TEST_NAME} PRIVATE CUDA::cuda_driver)
   endif()
 
-  foreach(name ${TEST_NAME} ${PTDS_TEST_NAME} ${NS_TEST_NAME})
+  foreach(name ${TEST_NAME} ${PTDS_TEST_NAME})
     rapids_test_add(
       NAME ${name}
-      COMMAND ${TEST_NAME}
+      COMMAND ${name}
       GPUS ${_RMM_TEST_GPUS}
       PERCENT ${_RMM_TEST_PERCENT}
       INSTALL_COMPONENT_SET testing)
