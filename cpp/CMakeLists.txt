@@ -106,10 +106,12 @@ else()
   set(cudart_dep CUDA::cudart)
 endif()
 
-target_link_libraries(rmm PUBLIC CCCL::CCCL ${CMAKE_DL_LIBS} nvtx3::nvtx3-cpp
-                                 rapids_logger::rapids_logger
-                          PRIVATE "${cudart_dep}"
-                          INTERFACE "$<IF:$<BOOL:$<TARGET_PROPERTY:NO_CUDART_DEP>>,$<COMPILE_ONLY:${cudart_dep}>,${cudart_dep}>")
+target_link_libraries(
+  rmm
+  PUBLIC CCCL::CCCL ${CMAKE_DL_LIBS} nvtx3::nvtx3-cpp rapids_logger::rapids_logger
+  PRIVATE "${cudart_dep}"
+  INTERFACE
+    "$<IF:$<BOOL:$<TARGET_PROPERTY:NO_CUDART_DEP>>,$<COMPILE_ONLY:${cudart_dep}>,${cudart_dep}>")
 
 set_target_properties(
   rmm
