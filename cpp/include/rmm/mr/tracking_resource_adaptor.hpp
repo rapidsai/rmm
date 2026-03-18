@@ -198,9 +198,10 @@ class tracking_resource_adaptor final : public device_memory_resource {
   {
     void* ptr = get_upstream_resource().allocate(stream, bytes);
     // track it.
-    {
+    if (bytes != 0) {
       write_lock_t lock(mtx_);
-      allocations_.emplace(ptr, allocation_info{bytes, capture_stacks_});
+      auto [_, inserted] = allocations_.try_emplace(ptr, bytes, capture_stacks_);
+      RMM_EXPECTS(inserted, "pointer is already tracked");
     }
     allocated_bytes_ += bytes;
 
@@ -216,8 +217,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
-    get_upstream_resource().deallocate(stream, ptr, bytes);
-    {
+    if (bytes != 0) {
       write_lock_t lock(mtx_);
 
       const auto found = allocations_.find(ptr);
@@ -248,6 +248,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
       }
     }
     allocated_bytes_ -= bytes;
+    get_upstream_resource().deallocate(stream, ptr, bytes);
   }
 
   /**
