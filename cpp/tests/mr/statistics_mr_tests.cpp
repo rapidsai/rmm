@@ -31,12 +31,17 @@ constexpr auto num_allocations{10};
 constexpr auto num_more_allocations{5};
 constexpr auto ten_MiB{10_MiB};
 
-TEST(StatisticsTest, MultiThreaded)
+struct allocation_size : public ::testing::TestWithParam<std::size_t> {};
+
+INSTANTIATE_TEST_SUITE_P(StatisticsTest, allocation_size, ::testing::Values(0, 256));
+
+TEST_P(allocation_size, MultiThreaded)
 {
-  auto upstream = rmm::mr::cuda_memory_resource{};
-  auto delayed  = delayed_memory_resource(upstream, std::chrono::milliseconds{300});
-  auto mr       = rmm::mr::statistics_resource_adaptor<delayed_memory_resource>(delayed);
-  auto stream   = rmm::cuda_stream{};
+  const std::size_t allocation_size = GetParam();
+  auto upstream                     = rmm::mr::cuda_memory_resource{};
+  auto delayed = delayed_memory_resource(upstream, std::chrono::milliseconds{300});
+  auto mr      = rmm::mr::statistics_resource_adaptor<delayed_memory_resource>(delayed);
+  auto stream  = rmm::cuda_stream{};
   // Provoke interleaving to test that statistics counters are updated with correct ordering
   // relative to upstream deallocate. The delayed memory resource frees the pointer upstream
   // immediately then sleeps, simulating the window where the address is available for reuse
@@ -44,25 +49,26 @@ TEST(StatisticsTest, MultiThreaded)
   //
   // Thread-0             Thread-1
   // alloc
-  // dealloc-start
   //                      alloc
   //                      dealloc-start
-  //
-  // dealloc-end
+  // dealloc-start
   //                      dealloc-end
+  // dealloc-end
   //
   // After both threads complete, the counters must reflect zero outstanding allocations.
   std::vector<std::thread> threads;
   for (int i = 0; i < 2; i++) {
     threads.emplace_back([&, i = i]() {
-      if (i == 0) {
-        void* ptr = mr.allocate(stream, 256);
-        mr.deallocate(stream, ptr, 256);
+      void* ptr{nullptr};
+      if (i != 0) { std::this_thread::sleep_for(std::chrono::milliseconds{100}); }
+      EXPECT_NO_THROW(ptr = mr.allocate(stream, allocation_size));
+      if (allocation_size != 0) {
+        EXPECT_NE(ptr, nullptr);
       } else {
-        std::this_thread::sleep_for(std::chrono::milliseconds{100});
-        void* ptr = mr.allocate(stream, 256);
-        mr.deallocate(stream, ptr, 256);
+        EXPECT_EQ(ptr, nullptr);
       }
+      if (i == 0) { std::this_thread::sleep_for(std::chrono::milliseconds{100}); }
+      mr.deallocate(stream, ptr, allocation_size);
     });
   }
   for (auto& t : threads) {
@@ -71,7 +77,7 @@ TEST(StatisticsTest, MultiThreaded)
   EXPECT_EQ(mr.get_bytes_counter().value, 0);
   EXPECT_EQ(mr.get_allocations_counter().value, 0);
   EXPECT_EQ(mr.get_allocations_counter().total, 2);
-  EXPECT_EQ(mr.get_bytes_counter().total, 512);
+  EXPECT_EQ(mr.get_bytes_counter().total, 2 * allocation_size);
 }
 
 TEST(StatisticsTest, ThrowOnNullUpstream)

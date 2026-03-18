@@ -73,7 +73,7 @@ rapids-logger "Generating CuPy test requirements"
 rapids-dependency-file-generator \
     --output requirements \
     --file-key test_wheels_cupy \
-    --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION}" \
+    --matrix "cuda=${RAPIDS_CUDA_VERSION%.*};arch=$(arch);py=${RAPIDS_PY_VERSION};use_cuda_wheels=true" \
     | tee test-cupy-requirements.txt
 
 rapids-logger "Installing CuPy test requirements"
