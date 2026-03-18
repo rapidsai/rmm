@@ -26,11 +26,6 @@ function(ConfigureTestInternal TEST_NAME)
   target_link_libraries(
     ${TEST_NAME} PRIVATE GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main pthread rmm
                          $<TARGET_NAME_IF_EXISTS:conda_env>)
-  if(CUDA_STATIC_RUNTIME)
-    target_link_libraries(${TEST_NAME} PRIVATE CUDA::cudart_static)
-  else()
-    target_link_libraries(${TEST_NAME} PRIVATE CUDA::cudart)
-  endif()
   set_target_properties(
     ${TEST_NAME}
     PROPERTIES POSITION_INDEPENDENT_CODE ON
