@@ -81,12 +81,6 @@ TEST_P(allocation_size, MultiThreaded)
   EXPECT_EQ(mr.get_bytes_counter().total, 2 * allocation_size);
 }
 
-TEST(StatisticsTest, ThrowOnNullUpstream)
-{
-  auto construct_nullptr = []() { statistics_adaptor mr{nullptr}; };
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
-}
-
 TEST(StatisticsTest, Empty)
 {
   statistics_adaptor mr{rmm::mr::get_current_device_resource_ref()};

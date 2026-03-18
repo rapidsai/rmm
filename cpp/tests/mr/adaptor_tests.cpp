@@ -81,9 +81,6 @@ struct AdaptorTest : public ::testing::Test {
 
 TYPED_TEST_SUITE(AdaptorTest, adaptors);
 
-// NullUpstream test removed: adaptors now take references, not pointers, so nullptr is not
-// a valid input. The old test relied on the DMR pointer-based constructor's null check.
-
 TYPED_TEST(AdaptorTest, Equality)
 {
   EXPECT_EQ(*this->mr, *this->mr);

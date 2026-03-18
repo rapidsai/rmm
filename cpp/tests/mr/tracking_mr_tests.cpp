@@ -84,12 +84,6 @@ TEST_P(allocation_size, MultiThreaded)
   EXPECT_EQ(mr.get_allocated_bytes(), 0);
 }
 
-TEST(TrackingTest, ThrowOnNullUpstream)
-{
-  auto construct_nullptr = []() { tracking_adaptor mr{nullptr}; };
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
-}
-
 TEST(TrackingTest, Empty)
 {
   tracking_adaptor mr{rmm::mr::get_current_device_resource_ref()};

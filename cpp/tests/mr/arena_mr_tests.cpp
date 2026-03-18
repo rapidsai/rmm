@@ -469,13 +469,6 @@ TEST_F(ArenaTest, ArenaDefragment)  // NOLINT
  * Test arena_memory_resource.
  */
 
-TEST_F(ArenaTest, ThrowOnNullUpstream)  // NOLINT
-{
-  auto construct_nullptr = []() { arena_mr mr{nullptr}; };
-  // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
-}
-
 TEST_F(ArenaTest, SizeSmallerThanSuperblockSize)  // NOLINT
 {
   auto construct_small = []() { arena_mr mr{rmm::mr::get_current_device_resource_ref(), 256}; };
