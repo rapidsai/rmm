@@ -6,11 +6,8 @@
 
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/mr/detail/device_memory_resource_view.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 
 #include <cuda/memory_resource>
-#include <cuda/std/optional>
 
 #include <cstddef>
 #include <memory>
@@ -83,11 +80,11 @@ inline constexpr bool is_cccl_async_resource_ref_v<cccl_async_resource_ref<R>> =
 
 /**
  * @brief A wrapper around CCCL synchronous_resource_ref that adds compatibility with
- * device_memory_resource pointers.
+ * shared_resource-derived types.
  *
  * This class uses composition to wrap a CCCL resource_ref type and provides the full
  * interface of the underlying type. It enables constructing resource refs from
- * device_memory_resource pointers by wrapping them in a device_memory_resource_view.
+ * shared_resource-derived types by casting to the shared_resource base.
  *
  * @tparam ResourceType The underlying CCCL synchronous_resource_ref type
  */
@@ -101,76 +98,27 @@ class cccl_resource_ref {
   friend class cccl_resource_ref;
 
   /**
-   * @brief Constructs a resource reference from a raw `device_memory_resource` pointer.
-   *
-   * This constructor enables compatibility with CCCL 3.2 by wrapping the pointer in a
-   * `device_memory_resource_view`, which is copyable unlike the virtual base class.
-   *
-   * @param ptr Non-null pointer to a `device_memory_resource`
-   */
-  cccl_resource_ref(rmm::mr::device_memory_resource* ptr) : view_{ptr}, ref_{*view_} {}
-
-  /**
-   * @brief Constructs a resource reference from a `device_memory_resource` reference.
-   *
-   * This constructor enables compatibility with CCCL 3.2 by wrapping the address in a
-   * `device_memory_resource_view`, which is copyable unlike the virtual base class.
-   *
-   * @param res Reference to a `device_memory_resource`
-   */
-  cccl_resource_ref(rmm::mr::device_memory_resource& res) : view_{&res}, ref_{*view_} {}
-
-  /**
    * @brief Constructs a resource reference from a CCCL resource_ref directly.
-   *
-   * This constructor enables interoperability with CCCL 3.2 resource_ref types,
-   * allowing RMM resource_ref types to be constructed from CCCL resource_ref types.
    *
    * @param ref A CCCL resource_ref of the appropriate type
    */
   template <typename... Properties>
-  cccl_resource_ref(cuda::mr::synchronous_resource_ref<Properties...> const& ref)
-    : view_{cuda::std::nullopt}, ref_{ref}
+  cccl_resource_ref(cuda::mr::synchronous_resource_ref<Properties...> const& ref) : ref_{ref}
   {
   }
 
   /**
    * @brief Constructs a resource reference from a CCCL resource_ref directly (move).
    *
-   * This constructor enables interoperability with CCCL 3.2 resource_ref types,
-   * allowing RMM resource_ref types to be constructed from CCCL resource_ref types
-   * using move semantics.
-   *
    * @param ref A CCCL resource_ref of the appropriate type
    */
   template <typename... Properties>
-  cccl_resource_ref(cuda::mr::synchronous_resource_ref<Properties...>&& ref)
-    : view_{cuda::std::nullopt}, ref_{std::move(ref)}
+  cccl_resource_ref(cuda::mr::synchronous_resource_ref<Properties...>&& ref) : ref_{std::move(ref)}
   {
   }
 
-  /**
-   * @brief Copy constructor that properly reconstructs the ref to point to the new view.
-   *
-   * If the view is present (e.g., when constructed from device_memory_resource*), we reconstruct
-   * the ref from our local view. Otherwise, we copy the ref directly.
-   */
-  cccl_resource_ref(cccl_resource_ref const& other)
-    : view_{other.view_}, ref_{view_.has_value() ? ResourceType{*view_} : other.ref_}
-  {
-  }
-
-  /**
-   * @brief Move constructor that properly reconstructs the ref to point to the new view.
-   *
-   * If the view is present (e.g., when constructed from device_memory_resource*), we reconstruct
-   * the ref from our local view. Otherwise, we move the ref directly.
-   */
-  cccl_resource_ref(cccl_resource_ref&& other) noexcept
-    : view_{std::move(other.view_)},
-      ref_{view_.has_value() ? ResourceType{*view_} : std::move(other.ref_)}
-  {
-  }
+  cccl_resource_ref(cccl_resource_ref const&)     = default;
+  cccl_resource_ref(cccl_resource_ref&&) noexcept = default;
 
   /**
    * @brief Conversion constructor from a cccl_resource_ref with a convertible ResourceType.
@@ -183,8 +131,7 @@ class cccl_resource_ref {
    * @param other The source resource_ref to convert from
    */
   template <typename OtherResourceType>
-  cccl_resource_ref(cccl_resource_ref<OtherResourceType> const& other)
-    : view_{other.view_}, ref_{view_.has_value() ? ResourceType{*view_} : ResourceType{other.ref_}}
+  cccl_resource_ref(cccl_resource_ref<OtherResourceType> const& other) : ref_{other.ref_}
   {
   }
 
@@ -200,7 +147,7 @@ class cccl_resource_ref {
   template <typename OtherResourceType,
             std::enable_if_t<shared_resource_cast<OtherResourceType>::value>* = nullptr>
   cccl_resource_ref(OtherResourceType& other)
-    : view_{}, ref_{ResourceType{shared_resource_cast<OtherResourceType>::cast(other)}}
+    : ref_{ResourceType{shared_resource_cast<OtherResourceType>::cast(other)}}
   {
   }
 
@@ -208,11 +155,11 @@ class cccl_resource_ref {
    * @brief Construct a ref from a resource.
    *
    * This constructor accepts CCCL resource types but NOT CCCL resource_ref types,
-   * our own wrapper types, device_memory_resource derived types, or
-   * shared_resource-derived types (handled by dedicated constructor above).
+   * our own wrapper types, or shared_resource-derived types (handled by dedicated
+   * constructor above).
    * The exclusions are checked FIRST to prevent recursive constraint satisfaction.
    *
-   * @tparam OtherResourceType A CCCL resource type (not a resource_ref, wrapper, DMR,
+   * @tparam OtherResourceType A CCCL resource type (not a resource_ref, wrapper,
    * or shared_resource)
    * @param other The resource to construct a ref from
    */
@@ -225,42 +172,13 @@ class cccl_resource_ref {
       not is_cccl_resource_ref_v<std::remove_cv_t<OtherResourceType>> and
       not is_cccl_async_resource_ref_v<std::remove_cv_t<OtherResourceType>> and
       not shared_resource_cast<OtherResourceType>::value and
-      not std::is_base_of_v<rmm::mr::device_memory_resource,
-                            std::remove_cv_t<OtherResourceType>> and
       cuda::mr::synchronous_resource<OtherResourceType>>* = nullptr>
-  cccl_resource_ref(OtherResourceType& other) : view_{}, ref_{ResourceType{other}}
+  cccl_resource_ref(OtherResourceType& other) : ref_{ResourceType{other}}
   {
   }
 
-  /**
-   * @brief Copy assignment operator.
-   *
-   * If the view is present, we reconstruct the ref from our local view.
-   * Otherwise, we copy the ref directly.
-   */
-  cccl_resource_ref& operator=(cccl_resource_ref const& other)
-  {
-    if (this != std::addressof(other)) {
-      view_ = other.view_;
-      ref_  = view_.has_value() ? ResourceType{*view_} : other.ref_;
-    }
-    return *this;
-  }
-
-  /**
-   * @brief Move assignment operator.
-   *
-   * If the view is present, we reconstruct the ref from our local view.
-   * Otherwise, we move the ref directly.
-   */
-  cccl_resource_ref& operator=(cccl_resource_ref&& other) noexcept
-  {
-    if (this != std::addressof(other)) {
-      view_ = std::move(other.view_);
-      ref_  = view_.has_value() ? ResourceType{*view_} : std::move(other.ref_);
-    }
-    return *this;
-  }
+  cccl_resource_ref& operator=(cccl_resource_ref const&)     = default;
+  cccl_resource_ref& operator=(cccl_resource_ref&&) noexcept = default;
 
   void* allocate_sync(std::size_t bytes) { return ref_.allocate_sync(bytes); }
 
@@ -324,13 +242,12 @@ class cccl_resource_ref {
   }
 
  protected:
-  cuda::std::optional<rmm::mr::detail::device_memory_resource_view> view_;
   ResourceType ref_;
 };
 
 /**
  * @brief A wrapper around CCCL resource_ref (async) that adds compatibility with
- * device_memory_resource pointers.
+ * shared_resource-derived types.
  *
  * This class is a standalone implementation (not inheriting from cccl_resource_ref)
  * to avoid recursive constraint satisfaction issues with CCCL 3.2's basic_any-based
@@ -355,51 +272,22 @@ class cccl_async_resource_ref {
   friend class cccl_async_resource_ref;
 
   /**
-   * @brief Constructs a resource reference from a raw `device_memory_resource` pointer.
-   *
-   * This constructor enables compatibility with CCCL 3.2 by wrapping the pointer in a
-   * `device_memory_resource_view`, which is copyable unlike the virtual base class.
-   *
-   * @param ptr Non-null pointer to a `device_memory_resource`
-   */
-  cccl_async_resource_ref(rmm::mr::device_memory_resource* ptr) : view_{ptr}, ref_{*view_} {}
-
-  /**
-   * @brief Constructs a resource reference from a `device_memory_resource` reference.
-   *
-   * This constructor enables compatibility with CCCL 3.2 by wrapping the address in a
-   * `device_memory_resource_view`, which is copyable unlike the virtual base class.
-   *
-   * @param res Reference to a `device_memory_resource`
-   */
-  cccl_async_resource_ref(rmm::mr::device_memory_resource& res) : view_{&res}, ref_{*view_} {}
-
-  /**
    * @brief Constructs a resource reference from a CCCL resource_ref directly.
-   *
-   * This constructor enables interoperability with CCCL 3.2 resource_ref types,
-   * allowing RMM resource_ref types to be constructed from CCCL resource_ref types.
    *
    * @param ref A CCCL resource_ref of the appropriate type
    */
   template <typename... Properties>
-  cccl_async_resource_ref(cuda::mr::resource_ref<Properties...> const& ref)
-    : view_{cuda::std::nullopt}, ref_{ref}
+  cccl_async_resource_ref(cuda::mr::resource_ref<Properties...> const& ref) : ref_{ref}
   {
   }
 
   /**
    * @brief Constructs a resource reference from a CCCL resource_ref directly (move).
    *
-   * This constructor enables interoperability with CCCL 3.2 resource_ref types,
-   * allowing RMM resource_ref types to be constructed from CCCL resource_ref types
-   * using move semantics.
-   *
    * @param ref A CCCL resource_ref of the appropriate type
    */
   template <typename... Properties>
-  cccl_async_resource_ref(cuda::mr::resource_ref<Properties...>&& ref)
-    : view_{cuda::std::nullopt}, ref_{std::move(ref)}
+  cccl_async_resource_ref(cuda::mr::resource_ref<Properties...>&& ref) : ref_{std::move(ref)}
   {
   }
 
@@ -412,33 +300,12 @@ class cccl_async_resource_ref {
    * @param res A CCCL any_resource to reference
    */
   template <typename... Properties>
-  cccl_async_resource_ref(cuda::mr::any_resource<Properties...>& res)
-    : view_{cuda::std::nullopt}, ref_{res}
+  cccl_async_resource_ref(cuda::mr::any_resource<Properties...>& res) : ref_{res}
   {
   }
 
-  /**
-   * @brief Copy constructor that properly reconstructs the ref to point to the new view.
-   *
-   * If the view is present (e.g., when constructed from device_memory_resource*), we reconstruct
-   * the ref from our local view. Otherwise, we copy the ref directly.
-   */
-  cccl_async_resource_ref(cccl_async_resource_ref const& other)
-    : view_{other.view_}, ref_{view_.has_value() ? ResourceType{*view_} : other.ref_}
-  {
-  }
-
-  /**
-   * @brief Move constructor that properly reconstructs the ref to point to the new view.
-   *
-   * If the view is present (e.g., when constructed from device_memory_resource*), we reconstruct
-   * the ref from our local view. Otherwise, we move the ref directly.
-   */
-  cccl_async_resource_ref(cccl_async_resource_ref&& other) noexcept
-    : view_{std::move(other.view_)},
-      ref_{view_.has_value() ? ResourceType{*view_} : std::move(other.ref_)}
-  {
-  }
+  cccl_async_resource_ref(cccl_async_resource_ref const&)     = default;
+  cccl_async_resource_ref(cccl_async_resource_ref&&) noexcept = default;
 
   /**
    * @brief Conversion constructor from a cccl_async_resource_ref with a convertible ResourceType.
@@ -447,16 +314,12 @@ class cccl_async_resource_ref {
    * where the source type has a superset of properties compared to the target type.
    * The underlying CCCL resource_ref types handle the actual property compatibility check.
    *
-   * IMPORTANT: This constructor must copy the view_ from the source to preserve the
-   * device_memory_resource pointer. Without this, the converted resource_ref will have
-   * an empty view_, causing corrupt pointer dereferences during deallocation.
-   *
    * @tparam OtherResourceType A CCCL async resource_ref type that is convertible to ResourceType
    * @param other The source async resource_ref to convert from
    */
   template <typename OtherResourceType>
   cccl_async_resource_ref(cccl_async_resource_ref<OtherResourceType> const& other)
-    : view_{other.view_}, ref_{view_.has_value() ? ResourceType{*view_} : ResourceType{other.ref_}}
+    : ref_{other.ref_}
   {
   }
 
@@ -472,7 +335,7 @@ class cccl_async_resource_ref {
   template <typename OtherResourceType,
             std::enable_if_t<shared_resource_cast<OtherResourceType>::value>* = nullptr>
   cccl_async_resource_ref(OtherResourceType& other)
-    : view_{}, ref_{ResourceType{shared_resource_cast<OtherResourceType>::cast(other)}}
+    : ref_{ResourceType{shared_resource_cast<OtherResourceType>::cast(other)}}
   {
   }
 
@@ -480,12 +343,12 @@ class cccl_async_resource_ref {
    * @brief Construct a ref from a resource.
    *
    * This constructor accepts CCCL resource types but NOT CCCL resource_ref types,
-   * our own wrapper types, any_resource types, device_memory_resource derived types,
-   * or shared_resource-derived types (handled by dedicated constructor above).
+   * our own wrapper types, any_resource types, or shared_resource-derived types
+   * (handled by dedicated constructor above).
    * The exclusions are checked FIRST to prevent recursive constraint satisfaction.
    *
    * @tparam OtherResourceType A CCCL resource type (not a resource_ref, wrapper, any_resource,
-   * DMR, or shared_resource)
+   * or shared_resource)
    * @param other The resource to construct a ref from
    */
   template <
@@ -498,42 +361,13 @@ class cccl_async_resource_ref {
       not is_cccl_resource_ref_v<std::remove_cv_t<OtherResourceType>> and
       not is_cccl_async_resource_ref_v<std::remove_cv_t<OtherResourceType>> and
       not shared_resource_cast<OtherResourceType>::value and
-      not std::is_base_of_v<rmm::mr::device_memory_resource,
-                            std::remove_cv_t<OtherResourceType>> and
       cuda::mr::resource<OtherResourceType>>* = nullptr>
-  cccl_async_resource_ref(OtherResourceType& other) : view_{}, ref_{ResourceType{other}}
+  cccl_async_resource_ref(OtherResourceType& other) : ref_{ResourceType{other}}
   {
   }
 
-  /**
-   * @brief Copy assignment operator.
-   *
-   * If the view is present, we reconstruct the ref from our local view.
-   * Otherwise, we copy the ref directly.
-   */
-  cccl_async_resource_ref& operator=(cccl_async_resource_ref const& other)
-  {
-    if (this != std::addressof(other)) {
-      view_ = other.view_;
-      ref_  = view_.has_value() ? ResourceType{*view_} : other.ref_;
-    }
-    return *this;
-  }
-
-  /**
-   * @brief Move assignment operator.
-   *
-   * If the view is present, we reconstruct the ref from our local view.
-   * Otherwise, we move the ref directly.
-   */
-  cccl_async_resource_ref& operator=(cccl_async_resource_ref&& other) noexcept
-  {
-    if (this != std::addressof(other)) {
-      view_ = std::move(other.view_);
-      ref_  = view_.has_value() ? ResourceType{*view_} : std::move(other.ref_);
-    }
-    return *this;
-  }
+  cccl_async_resource_ref& operator=(cccl_async_resource_ref const&)     = default;
+  cccl_async_resource_ref& operator=(cccl_async_resource_ref&&) noexcept = default;
 
   // Synchronous allocation methods (delegated to the underlying ref)
   void* allocate_sync(std::size_t bytes) { return ref_.allocate_sync(bytes); }
@@ -632,12 +466,10 @@ class cccl_async_resource_ref {
   template <typename... Properties>
   operator cuda::mr::any_resource<Properties...>() const
   {
-    if (view_.has_value()) { return cuda::mr::any_resource<Properties...>{*view_}; }
     return cuda::mr::any_resource<Properties...>{ref_};
   }
 
  protected:
-  cuda::std::optional<rmm::mr::detail::device_memory_resource_view> view_;
   ResourceType ref_;
 };
 #ifdef __CUDACC__

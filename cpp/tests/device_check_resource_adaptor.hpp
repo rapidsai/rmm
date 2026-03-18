@@ -2,19 +2,24 @@
  * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
+#pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
+#include <rmm/detail/error.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
+#include <cuda/stream_ref>
+#include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
 
 #include <cstddef>
-#include <memory>
 
-class device_check_resource_adaptor final : public rmm::mr::device_memory_resource {
+class device_check_resource_adaptor final {
  public:
   device_check_resource_adaptor(rmm::device_async_resource_ref upstream)
     : device_id{rmm::get_current_cuda_device()}, upstream_(upstream)
@@ -29,33 +34,61 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
     return upstream_;
   }
 
- private:
-  [[nodiscard]] bool check_device_id() const { return device_id == rmm::get_current_cuda_device(); }
-
-  void* do_allocate(std::size_t bytes, rmm::cuda_stream_view stream) override
+  void* allocate(cuda::stream_ref stream,
+                 std::size_t bytes,
+                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
     bool const is_correct_device = check_device_id();
     EXPECT_TRUE(is_correct_device);
-    if (is_correct_device) { return get_upstream_resource().allocate(stream, bytes); }
+    if (is_correct_device) { return get_upstream_resource().allocate(stream, bytes, alignment); }
     return nullptr;
   }
 
-  void do_deallocate(void* ptr, std::size_t bytes, rmm::cuda_stream_view stream) noexcept override
+  void deallocate(cuda::stream_ref stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
     bool const is_correct_device = check_device_id();
     EXPECT_TRUE(is_correct_device);
-    if (is_correct_device) { get_upstream_resource().deallocate(stream, ptr, bytes); }
+    if (is_correct_device) { get_upstream_resource().deallocate(stream, ptr, bytes, alignment); }
   }
 
-  [[nodiscard]] bool do_is_equal(
-    rmm::mr::device_memory_resource const& other) const noexcept override
+  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    if (this == std::addressof(other)) { return true; }
-    auto const* cast = dynamic_cast<device_check_resource_adaptor const*>(&other);
-    if (cast == nullptr) { return false; }
-    return get_upstream_resource() == cast->get_upstream_resource();
+    rmm::cuda_stream_view stream{};
+    auto* ptr = allocate(stream, bytes, alignment);
+    stream.synchronize();
+    return ptr;
   }
+
+  void deallocate_sync(void* ptr,
+                       std::size_t bytes,
+                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+  {
+    deallocate(rmm::cuda_stream_view{}, ptr, bytes, alignment);
+  }
+
+  bool operator==(device_check_resource_adaptor const& other) const noexcept
+  {
+    return get_upstream_resource() == other.get_upstream_resource();
+  }
+
+  bool operator!=(device_check_resource_adaptor const& other) const noexcept
+  {
+    return !(*this == other);
+  }
+
+  friend void get_property(device_check_resource_adaptor const&,
+                           cuda::mr::device_accessible) noexcept
+  {
+  }
+
+ private:
+  [[nodiscard]] bool check_device_id() const { return device_id == rmm::get_current_cuda_device(); }
 
   rmm::cuda_device_id device_id;
   rmm::device_async_resource_ref upstream_;
 };
+
+static_assert(cuda::mr::resource_with<device_check_resource_adaptor, cuda::mr::device_accessible>);

@@ -20,6 +20,7 @@
 namespace rmm::test {
 namespace {
 
+using ::testing::_;
 using ::testing::Return;
 
 using aligned_adaptor = rmm::mr::aligned_resource_adaptor;
@@ -78,32 +79,35 @@ TEST_P(allocation_size, MultiThreaded)
 TEST(AlignedTest, ThrowOnInvalidAllocationAlignment)
 {
   mock_resource mock;
-  auto construct_alignment = [](mock_resource& memres, std::size_t align) {
-    aligned_adaptor mr{memres, align};
+  mock_resource_wrapper wrapper{&mock};
+  auto construct_alignment = [](mock_resource_wrapper& w, std::size_t align) {
+    aligned_adaptor mr{device_async_resource_ref{w}, align};
   };
-  EXPECT_THROW(construct_alignment(mock, 255), rmm::logic_error);
-  EXPECT_NO_THROW(construct_alignment(mock, 256));
-  EXPECT_THROW(construct_alignment(mock, 768), rmm::logic_error);
+  EXPECT_THROW(construct_alignment(wrapper, 255), rmm::logic_error);
+  EXPECT_NO_THROW(construct_alignment(wrapper, 256));
+  EXPECT_THROW(construct_alignment(wrapper, 768), rmm::logic_error);
 }
 
 TEST(AlignedTest, SupportsGetMemInfo)
 {
   mock_resource mock;
-  aligned_adaptor mr{mock};
+  mock_resource_wrapper wrapper{&mock};
+  aligned_adaptor mr{device_async_resource_ref{wrapper}};
 }
 
 TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
 {
   mock_resource mock;
-  aligned_adaptor mr{mock};
+  mock_resource_wrapper wrapper{&mock};
+  aligned_adaptor mr{device_async_resource_ref{wrapper}};
 
   cuda_stream_view stream;
   void* const pointer = int_to_address(123);
 
   {
     auto const size{5};
-    EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer));
-    EXPECT_CALL(mock, do_deallocate(pointer, size, stream)).Times(1);
+    EXPECT_CALL(mock, allocate(_, size, _)).WillOnce(Return(pointer));
+    EXPECT_CALL(mock, deallocate(_, pointer, size, _)).Times(1);
   }
 
   {
@@ -116,16 +120,17 @@ TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
 TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
 {
   mock_resource mock;
+  mock_resource_wrapper wrapper{&mock};
   auto const alignment{4096};
   auto const threshold{65536};
-  aligned_adaptor mr{mock, alignment, threshold};
+  aligned_adaptor mr{device_async_resource_ref{wrapper}, alignment, threshold};
 
   cuda_stream_view stream;
   void* const pointer = int_to_address(123);
   {
     auto const size{3};
-    EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer));
-    EXPECT_CALL(mock, do_deallocate(pointer, size, stream)).Times(1);
+    EXPECT_CALL(mock, allocate(_, size, _)).WillOnce(Return(pointer));
+    EXPECT_CALL(mock, deallocate(_, pointer, size, _)).Times(1);
   }
 
   {
@@ -137,8 +142,8 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
   {
     auto const size{65528};
     void* const pointer1 = int_to_address(456);
-    EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer1));
-    EXPECT_CALL(mock, do_deallocate(pointer1, size, stream)).Times(1);
+    EXPECT_CALL(mock, allocate(_, size, _)).WillOnce(Return(pointer1));
+    EXPECT_CALL(mock, deallocate(_, pointer1, size, _)).Times(1);
     EXPECT_EQ(mr.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT), pointer1);
     mr.deallocate(stream, pointer1, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
@@ -147,17 +152,18 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
 TEST(AlignedTest, UpstreamAddressAlreadyAligned)
 {
   mock_resource mock;
+  mock_resource_wrapper wrapper{&mock};
   auto const alignment{4096};
   auto const threshold{65536};
-  aligned_adaptor mr{mock, alignment, threshold};
+  aligned_adaptor mr{device_async_resource_ref{wrapper}, alignment, threshold};
 
   cuda_stream_view stream;
   void* const pointer = int_to_address(4096);
 
   {
     auto const size{69376};
-    EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer));
-    EXPECT_CALL(mock, do_deallocate(pointer, size, stream)).Times(1);
+    EXPECT_CALL(mock, allocate(_, size, _)).WillOnce(Return(pointer));
+    EXPECT_CALL(mock, deallocate(_, pointer, size, _)).Times(1);
   }
 
   {
@@ -170,16 +176,17 @@ TEST(AlignedTest, UpstreamAddressAlreadyAligned)
 TEST(AlignedTest, AlignUpstreamAddress)
 {
   mock_resource mock;
+  mock_resource_wrapper wrapper{&mock};
   auto const alignment{4096};
   auto const threshold{65536};
-  aligned_adaptor mr{mock, alignment, threshold};
+  aligned_adaptor mr{device_async_resource_ref{wrapper}, alignment, threshold};
 
   cuda_stream_view stream;
   {
     void* const pointer = int_to_address(256);
     auto const size{69376};
-    EXPECT_CALL(mock, do_allocate(size, stream)).WillOnce(Return(pointer));
-    EXPECT_CALL(mock, do_deallocate(pointer, size, stream)).Times(1);
+    EXPECT_CALL(mock, allocate(_, size, _)).WillOnce(Return(pointer));
+    EXPECT_CALL(mock, deallocate(_, pointer, size, _)).Times(1);
   }
 
   {
@@ -193,9 +200,10 @@ TEST(AlignedTest, AlignUpstreamAddress)
 TEST(AlignedTest, AlignMultiple)
 {
   mock_resource mock;
+  mock_resource_wrapper wrapper{&mock};
   auto const alignment{4096};
   auto const threshold{65536};
-  aligned_adaptor mr{mock, alignment, threshold};
+  aligned_adaptor mr{device_async_resource_ref{wrapper}, alignment, threshold};
 
   cuda_stream_view stream;
 
@@ -206,12 +214,12 @@ TEST(AlignedTest, AlignMultiple)
     auto const size1{69376};
     auto const size2{77568};
     auto const size3{81664};
-    EXPECT_CALL(mock, do_allocate(size1, stream)).WillOnce(Return(pointer1));
-    EXPECT_CALL(mock, do_allocate(size2, stream)).WillOnce(Return(pointer2));
-    EXPECT_CALL(mock, do_allocate(size3, stream)).WillOnce(Return(pointer3));
-    EXPECT_CALL(mock, do_deallocate(pointer1, size1, stream)).Times(1);
-    EXPECT_CALL(mock, do_deallocate(pointer2, size2, stream)).Times(1);
-    EXPECT_CALL(mock, do_deallocate(pointer3, size3, stream)).Times(1);
+    EXPECT_CALL(mock, allocate(_, size1, _)).WillOnce(Return(pointer1));
+    EXPECT_CALL(mock, allocate(_, size2, _)).WillOnce(Return(pointer2));
+    EXPECT_CALL(mock, allocate(_, size3, _)).WillOnce(Return(pointer3));
+    EXPECT_CALL(mock, deallocate(_, pointer1, size1, _)).Times(1);
+    EXPECT_CALL(mock, deallocate(_, pointer2, size2, _)).Times(1);
+    EXPECT_CALL(mock, deallocate(_, pointer3, size3, _)).Times(1);
   }
 
   {

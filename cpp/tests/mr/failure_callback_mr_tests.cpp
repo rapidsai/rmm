@@ -5,11 +5,14 @@
 
 #include "../byte_literals.hpp"
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/error.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/failure_callback_resource_adaptor.hpp>
 #include <rmm/mr/per_device_resource.hpp>
+
+#include <cuda/memory_resource>
+#include <cuda/stream_ref>
 
 #include <gtest/gtest.h>
 
@@ -33,22 +36,43 @@ bool failure_handler(std::size_t /*bytes*/, void* arg)
 }
 
 template <typename ExceptionType>
-class always_throw_memory_resource final : public mr::device_memory_resource {
- private:
-  void* do_allocate(std::size_t /*bytes*/, cuda_stream_view /*stream*/) override
+class always_throw_memory_resource final {
+ public:
+  void* allocate(cuda::stream_ref /*stream*/,
+                 std::size_t /*bytes*/,
+                 std::size_t /*alignment*/ = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
     throw ExceptionType{"foo"};
   }
-  void do_deallocate(void* /*ptr*/,
-                     std::size_t /*bytes*/,
-                     cuda_stream_view /*stream*/) noexcept override {};
+  void deallocate(cuda::stream_ref /*stream*/,
+                  void* /*ptr*/,
+                  std::size_t /*bytes*/,
+                  std::size_t /*alignment*/ = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {};
+
+  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+  {
+    return allocate(rmm::cuda_stream_view{}, bytes, alignment);
+  }
+  void deallocate_sync(void* ptr,
+                       std::size_t bytes,
+                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+  {
+    deallocate(rmm::cuda_stream_view{}, ptr, bytes, alignment);
+  }
+
+  bool operator==(always_throw_memory_resource const&) const noexcept { return true; }
+  bool operator!=(always_throw_memory_resource const&) const noexcept { return false; }
+  friend void get_property(always_throw_memory_resource const&,
+                           cuda::mr::device_accessible) noexcept
+  {
+  }
 };
 
 TEST(FailureCallbackTest, RetryAllocationOnce)
 {
   always_throw_memory_resource<rmm::bad_alloc> throwing_mr;
   bool retried{false};
-  failure_callback_adaptor<> mr{&throwing_mr, failure_handler, &retried};
+  failure_callback_adaptor<> mr{throwing_mr, failure_handler, &retried};
   EXPECT_EQ(retried, false);
   EXPECT_THROW((void)mr.allocate_sync(1_MiB), rmm::bad_alloc);
   EXPECT_EQ(retried, true);
@@ -67,7 +91,7 @@ TEST(FailureCallbackTest, DifferentExceptionTypes)
   {
     bool retried{false};
     failure_callback_adaptor<rmm::bad_alloc> bad_alloc_callback_mr{
-      &bad_alloc_mr, failure_handler, &retried};
+      bad_alloc_mr, failure_handler, &retried};
 
     EXPECT_EQ(retried, false);
     EXPECT_THROW((void)bad_alloc_callback_mr.allocate_sync(1_MiB), rmm::bad_alloc);
@@ -79,8 +103,7 @@ TEST(FailureCallbackTest, DifferentExceptionTypes)
   {
     bool retried{false};
 
-    failure_callback_adaptor<rmm::out_of_memory> oom_callback_mr{
-      &oom_mr, failure_handler, &retried};
+    failure_callback_adaptor<rmm::out_of_memory> oom_callback_mr{oom_mr, failure_handler, &retried};
     EXPECT_EQ(retried, false);
     EXPECT_THROW((void)oom_callback_mr.allocate_sync(1_MiB), rmm::out_of_memory);
     EXPECT_EQ(retried, true);
@@ -92,7 +115,7 @@ TEST(FailureCallbackTest, DifferentExceptionTypes)
     bool retried{false};
 
     failure_callback_adaptor<rmm::out_of_memory> oom_callback_mr{
-      &bad_alloc_mr, failure_handler, &retried};
+      bad_alloc_mr, failure_handler, &retried};
     EXPECT_EQ(retried, false);
     EXPECT_THROW((void)oom_callback_mr.allocate_sync(1_MiB),
                  rmm::bad_alloc);  // bad_alloc passes through

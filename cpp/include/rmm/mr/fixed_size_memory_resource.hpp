@@ -21,7 +21,7 @@ namespace mr {
  */
 
 /**
- * @brief A `device_memory_resource` which allocates memory blocks of a single fixed size.
+ * @brief A memory resource which allocates memory blocks of a single fixed size.
  *
  * Supports only allocations of size smaller than the configured block_size.
  *

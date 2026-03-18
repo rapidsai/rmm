@@ -27,8 +27,8 @@ namespace mr {
 /**
  * @brief Memory resource class for allocating pinned host memory.
  *
- * This class uses CUDA's `cudaHostAlloc` to allocate pinned host memory. It implements the
- * `cuda::mr::memory_resource` and `cuda::mr::device_memory_resource` concepts, and
+ * This class uses CUDA's `cudaHostAlloc` to allocate pinned host memory. It satisfies the
+ * `cuda::mr::resource` and `cuda::mr::synchronous_resource` concepts, and
  * the `cuda::mr::host_accessible` and `cuda::mr::device_accessible` properties.
  */
 class pinned_host_memory_resource final {
@@ -43,8 +43,6 @@ class pinned_host_memory_resource final {
     default;  ///< @default_copy_assignment{pinned_host_memory_resource}
   pinned_host_memory_resource& operator=(pinned_host_memory_resource&&) =
     default;  ///< @default_move_assignment{pinned_host_memory_resource}
-
-  // -- CCCL memory resource interface (hides device_memory_resource versions) --
 
   /**
    * @brief Allocates pinned host memory of size at least \p bytes bytes.
@@ -69,7 +67,6 @@ class pinned_host_memory_resource final {
     // don't allocate anything if the user requested zero bytes
     if (0 == bytes) { return nullptr; }
 
-    // TODO: Use the alignment parameter as an argument to do_allocate
     std::size_t constexpr alloc_alignment = rmm::CUDA_ALLOCATION_ALIGNMENT;
     return rmm::detail::aligned_host_allocate(bytes, alloc_alignment, [](std::size_t size) {
       void* ptr{nullptr};
@@ -94,7 +91,6 @@ class pinned_host_memory_resource final {
                   std::size_t bytes,
                   [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    // TODO: Use the alignment parameter as an argument to do_deallocate
     std::size_t constexpr alloc_alignment = rmm::CUDA_ALLOCATION_ALIGNMENT;
     rmm::detail::aligned_host_deallocate(ptr, bytes, alloc_alignment, [](void* ptr) {
       RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaFreeHost(ptr));

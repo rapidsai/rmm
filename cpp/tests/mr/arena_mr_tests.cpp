@@ -10,9 +10,9 @@
 #include <rmm/cuda_stream.hpp>
 #include <rmm/error.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/stream_ref>
 
 #include <gmock/gmock.h>
@@ -30,14 +30,12 @@
 namespace rmm::test {
 namespace {
 
-class mock_memory_resource : public rmm::mr::device_memory_resource {
+class mock_memory_resource {
  public:
-  MOCK_METHOD(void*, do_allocate, (std::size_t, cuda_stream_view));
-  MOCK_METHOD(void, do_deallocate, (void*, std::size_t, cuda_stream_view), (noexcept));
   MOCK_METHOD(void*, allocate_sync, (std::size_t, std::size_t));
   MOCK_METHOD(void, deallocate_sync, (void*, std::size_t, std::size_t), (noexcept));
-  MOCK_METHOD(void*, allocate, (cuda_stream_view, std::size_t, std::size_t));
-  MOCK_METHOD(void, deallocate, (cuda_stream_view, void*, std::size_t, std::size_t), (noexcept));
+  MOCK_METHOD(void*, allocate, (cuda::stream_ref, std::size_t, std::size_t));
+  MOCK_METHOD(void, deallocate, (cuda::stream_ref, void*, std::size_t, std::size_t), (noexcept));
 
   bool operator==(mock_memory_resource const&) const noexcept { return true; }
   bool operator!=(mock_memory_resource const&) const { return false; }
@@ -46,6 +44,56 @@ class mock_memory_resource : public rmm::mr::device_memory_resource {
 
 // static property checks
 static_assert(cuda::mr::resource_with<mock_memory_resource, cuda::mr::device_accessible>);
+
+// Copyable wrapper so the mock can be type-erased by CCCL basic_any.
+class mock_memory_resource_wrapper {
+ public:
+  explicit mock_memory_resource_wrapper(mock_memory_resource* mock) noexcept : mock_{mock} {}
+
+  void* allocate(cuda::stream_ref stream, std::size_t bytes, std::size_t alignment)
+  {
+    return mock_->allocate(stream, bytes, alignment);
+  }
+
+  void deallocate(cuda::stream_ref stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment) noexcept
+  {
+    mock_->deallocate(stream, ptr, bytes, alignment);
+  }
+
+  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+  {
+    return mock_->allocate_sync(bytes, alignment);
+  }
+
+  void deallocate_sync(void* ptr,
+                       std::size_t bytes,
+                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+  {
+    mock_->deallocate_sync(ptr, bytes, alignment);
+  }
+
+  bool operator==(mock_memory_resource_wrapper const& other) const noexcept
+  {
+    return mock_ == other.mock_;
+  }
+  bool operator!=(mock_memory_resource_wrapper const& other) const noexcept
+  {
+    return !(*this == other);
+  }
+
+  friend void get_property(mock_memory_resource_wrapper const&,
+                           cuda::mr::device_accessible) noexcept
+  {
+  }
+
+ private:
+  mock_memory_resource* mock_;
+};
+
+static_assert(cuda::mr::resource_with<mock_memory_resource_wrapper, cuda::mr::device_accessible>);
 
 using rmm::mr::detail::arena::block;
 using rmm::mr::detail::arena::byte_span;
@@ -65,14 +113,17 @@ auto const fake_address4 = reinterpret_cast<void*>(superblock::minimum_size * 2)
 struct ArenaTest : public ::testing::Test {
   void SetUp() override
   {
-    EXPECT_CALL(mock_mr, do_allocate(arena_size, ::testing::_)).WillOnce(Return(fake_address3));
-    EXPECT_CALL(mock_mr, do_deallocate(fake_address3, arena_size, ::testing::_));
-    global     = std::make_unique<global_arena>(mock_mr, arena_size);
+    EXPECT_CALL(mock_mr, allocate_sync(arena_size, ::testing::_)).WillOnce(Return(fake_address3));
+    EXPECT_CALL(mock_mr, deallocate_sync(fake_address3, arena_size, ::testing::_));
+    mock_wrapper = std::make_unique<mock_memory_resource_wrapper>(&mock_mr);
+    global =
+      std::make_unique<global_arena>(rmm::device_async_resource_ref{*mock_wrapper}, arena_size);
     per_thread = std::make_unique<arena>(*global);
   }
 
   std::size_t arena_size{superblock::minimum_size * 4};
   mock_memory_resource mock_mr{};
+  std::unique_ptr<mock_memory_resource_wrapper> mock_wrapper{};
   std::unique_ptr<global_arena> global{};
   std::unique_ptr<arena> per_thread{};
 };

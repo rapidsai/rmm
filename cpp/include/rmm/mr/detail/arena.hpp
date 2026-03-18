@@ -480,8 +480,6 @@ inline auto max_free_size(std::set<superblock> const& superblocks)
  *
  * The global arena is a shared memory pool from which other arenas allocate superblocks.
  *
- * @tparam Upstream Memory resource to use for allocating the arena. Implements
- * rmm::mr::device_memory_resource interface.
  */
 class global_arena final {
  public:
@@ -778,8 +776,6 @@ class global_arena final {
  * An arena is a per-thread or per-non-default-stream memory pool. It allocates
  * superblocks from the global arena, and returns them when the superblocks become empty.
  *
- * @tparam Upstream Memory resource to use for allocating the global arena. Implements
- * rmm::mr::device_memory_resource interface.
  */
 class arena {
  public:
@@ -957,8 +953,6 @@ class arena {
  *
  * This is useful when a thread is about to terminate, and it contains a per-thread arena.
  *
- * @tparam Upstream Memory resource to use for allocating the global arena. Implements
- * rmm::mr::device_memory_resource interface.
  */
 class arena_cleaner {
  public:

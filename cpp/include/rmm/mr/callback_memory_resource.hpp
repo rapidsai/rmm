@@ -28,12 +28,10 @@ namespace mr {
  *
  * * Returns a pointer to an allocation of at least `bytes` usable immediately on
  *   `stream`. The stream-ordered behavior requirements are identical to
- *   `device_memory_resource::allocate`.
+ *   `allocate`.
  *
- * * This signature is compatible with `do_allocate` but adds the extra function
- *   parameter `arg`. The `arg` is provided to the constructor of the
- *   `callback_memory_resource` and will be forwarded along to every invocation
- *   of the callback function.
+ * * The `arg` is provided to the constructor of the `callback_memory_resource`
+ *   and will be forwarded along to every invocation of the callback function.
  */
 using allocate_callback_t = std::function<void*(std::size_t, cuda_stream_view, void*)>;
 
@@ -46,12 +44,10 @@ using allocate_callback_t = std::function<void*(std::size_t, cuda_stream_view, v
  * * Deallocates memory pointed to by `ptr`. `bytes` specifies the size of the allocation
  *   in bytes, and must equal the value of `bytes` that was passed to the allocate callback
  *   function. The stream-ordered behavior requirements are identical to
- *   `device_memory_resource::deallocate`.
+ *   `deallocate`.
  *
- * * This signature is compatible with `do_deallocate` but adds the extra function
- *   parameter `arg`. The `arg` is provided to the constructor of the
- *   `callback_memory_resource` and will be forwarded along to every invocation
- *   of the callback function.
+ * * The `arg` is provided to the constructor of the `callback_memory_resource`
+ *   and will be forwarded along to every invocation of the callback function.
  */
 using deallocate_callback_t = std::function<void(void*, std::size_t, cuda_stream_view, void*)>;
 

@@ -5,7 +5,6 @@
 
 #include <rmm/cuda_stream.hpp>
 #include <rmm/device_scalar.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
