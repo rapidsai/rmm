@@ -18,11 +18,12 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <utility>
 
 class device_check_resource_adaptor final {
  public:
-  device_check_resource_adaptor(rmm::device_async_resource_ref upstream)
-    : device_id{rmm::get_current_cuda_device()}, upstream_(upstream)
+  device_check_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream)
+    : device_id{rmm::get_current_cuda_device()}, upstream_(std::move(upstream))
   {
   }
 
@@ -31,7 +32,7 @@ class device_check_resource_adaptor final {
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return upstream_;
+    return rmm::device_async_resource_ref{upstream_};
   }
 
   void* allocate(cuda::stream_ref stream,
@@ -88,7 +89,7 @@ class device_check_resource_adaptor final {
   [[nodiscard]] bool check_device_id() const { return device_id == rmm::get_current_cuda_device(); }
 
   rmm::cuda_device_id device_id;
-  rmm::device_async_resource_ref upstream_;
+  mutable cuda::mr::any_resource<cuda::mr::device_accessible> upstream_;
 };
 
 static_assert(cuda::mr::resource_with<device_check_resource_adaptor, cuda::mr::device_accessible>);

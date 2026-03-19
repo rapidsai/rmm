@@ -10,8 +10,12 @@
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
+
 #include <cstddef>
 #include <memory>
+#include <type_traits>
+#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -35,6 +39,18 @@ namespace mr {
  * @tparam T The allocators value type.
  */
 template <typename T>
+class polymorphic_allocator;
+
+namespace detail {
+/// @cond
+template <typename>
+inline constexpr bool is_polymorphic_allocator_v = false;
+template <typename T>
+inline constexpr bool is_polymorphic_allocator_v<polymorphic_allocator<T>> = true;
+/// @endcond
+}  // namespace detail
+
+template <typename T>
 class polymorphic_allocator {
  public:
   using value_type = T;  ///< T, the value type of objects allocated by this allocator
@@ -48,11 +64,14 @@ class polymorphic_allocator {
   /**
    * @brief Construct a `polymorphic_allocator` using the provided memory resource.
    *
-   * This constructor provides an implicit conversion from `device_async_resource_ref`.
-   *
-   * @param mr The upstream memory resource to use for allocation.
+   * @param upstream The upstream memory resource to use for allocation.
    */
-  polymorphic_allocator(device_async_resource_ref mr) : mr_{mr} {}
+  template <typename Upstream,
+            std::enable_if_t<!detail::is_polymorphic_allocator_v<std::decay_t<Upstream>>, int> = 0>
+  polymorphic_allocator(Upstream&& upstream)
+    : mr_(cuda::mr::any_resource<cuda::mr::device_accessible>(std::forward<Upstream>(upstream)))
+  {
+  }
 
   /**
    * @brief Construct a `polymorphic_allocator` using the underlying memory resource of `other`.
@@ -61,8 +80,7 @@ class polymorphic_allocator {
    * resource of the new `polymorphic_allocator`.
    */
   template <typename U>
-  polymorphic_allocator(polymorphic_allocator<U> const& other) noexcept
-    : mr_{other.get_upstream_resource()}
+  polymorphic_allocator(polymorphic_allocator<U> const& other) noexcept : mr_(other.resource())
   {
   }
 
@@ -75,7 +93,7 @@ class polymorphic_allocator {
    */
   value_type* allocate(std::size_t num, cuda_stream_view stream)
   {
-    return static_cast<value_type*>(get_upstream_resource().allocate(stream, num * sizeof(T)));
+    return static_cast<value_type*>(mr_.allocate(stream, num * sizeof(T)));
   }
 
   /**
@@ -90,7 +108,7 @@ class polymorphic_allocator {
    */
   void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream) noexcept
   {
-    get_upstream_resource().deallocate(stream, ptr, num * sizeof(T));
+    mr_.deallocate(stream, ptr, num * sizeof(T));
   }
 
   /**
@@ -98,11 +116,19 @@ class polymorphic_allocator {
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
   {
+    return rmm::device_async_resource_ref{mr_};
+  }
+
+  /**
+   * @briefreturn{Reference to the underlying any_resource}
+   */
+  [[nodiscard]] cuda::mr::any_resource<cuda::mr::device_accessible> const& resource() const noexcept
+  {
     return mr_;
   }
 
  private:
-  rmm::device_async_resource_ref mr_{
+  mutable cuda::mr::any_resource<cuda::mr::device_accessible> mr_{
     get_current_device_resource_ref()};  ///< Underlying resource used for (de)allocation
 };
 
@@ -120,7 +146,7 @@ class polymorphic_allocator {
 template <typename T, typename U>
 bool operator==(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> const& rhs)
 {
-  return lhs.get_upstream_resource() == rhs.get_upstream_resource();
+  return lhs.resource() == rhs.resource();
 }
 
 /**
