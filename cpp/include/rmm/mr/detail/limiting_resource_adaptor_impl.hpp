@@ -26,7 +26,7 @@ namespace detail {
  */
 class limiting_resource_adaptor_impl {
  public:
-  limiting_resource_adaptor_impl(device_async_resource_ref upstream,
+  limiting_resource_adaptor_impl(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
                                  std::size_t allocation_limit,
                                  std::size_t alignment);
 

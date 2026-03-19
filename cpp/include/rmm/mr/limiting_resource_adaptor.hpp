@@ -12,6 +12,8 @@
 #include <cuda/memory_resource>
 
 #include <cstddef>
+#include <type_traits>
+#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -53,7 +55,7 @@ class RMM_EXPORT limiting_resource_adaptor
    * @param allocation_limit Maximum memory allowed for this allocator
    * @param alignment Alignment in bytes for the start of each allocated buffer
    */
-  limiting_resource_adaptor(device_async_resource_ref upstream,
+  limiting_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
                             std::size_t allocation_limit,
                             std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT);
 

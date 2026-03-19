@@ -4,6 +4,7 @@
  */
 #pragma once
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/failure_callback_t.hpp>
 #include <rmm/resource_ref.hpp>
@@ -25,10 +26,11 @@ namespace detail {
 template <typename ExceptionType>
 class failure_callback_resource_adaptor_impl {
  public:
-  failure_callback_resource_adaptor_impl(device_async_resource_ref upstream,
-                                         failure_callback_t callback,
-                                         void* callback_arg)
-    : upstream_mr_{upstream}, callback_{std::move(callback)}, callback_arg_{callback_arg}
+  failure_callback_resource_adaptor_impl(
+    cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+    failure_callback_t callback,
+    void* callback_arg)
+    : upstream_mr_{std::move(upstream)}, callback_{std::move(callback)}, callback_arg_{callback_arg}
   {
   }
 

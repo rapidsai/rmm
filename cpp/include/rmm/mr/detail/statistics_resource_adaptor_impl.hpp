@@ -58,7 +58,8 @@ class statistics_resource_adaptor_impl {
     }
   };
 
-  explicit statistics_resource_adaptor_impl(device_async_resource_ref upstream);
+  explicit statistics_resource_adaptor_impl(
+    cuda::mr::any_resource<cuda::mr::device_accessible> upstream);
 
   ~statistics_resource_adaptor_impl() = default;
 

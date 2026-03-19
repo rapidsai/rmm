@@ -34,7 +34,7 @@ class pool_memory_resource_impl final
  public:
   friend class stream_ordered_memory_resource<pool_memory_resource_impl, coalescing_free_list>;
 
-  pool_memory_resource_impl(device_async_resource_ref upstream,
+  pool_memory_resource_impl(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
                             std::size_t initial_pool_size,
                             std::optional<std::size_t> maximum_pool_size);
 

@@ -36,7 +36,7 @@ class fixed_size_memory_resource_impl final
   static constexpr std::size_t default_block_size            = 1 << 20;
   static constexpr std::size_t default_blocks_to_preallocate = 128;
 
-  fixed_size_memory_resource_impl(device_async_resource_ref upstream,
+  fixed_size_memory_resource_impl(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
                                   std::size_t block_size,
                                   std::size_t blocks_to_preallocate);
 

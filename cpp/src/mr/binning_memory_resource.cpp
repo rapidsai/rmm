@@ -5,22 +5,21 @@
 
 #include <rmm/mr/binning_memory_resource.hpp>
 
+#include <cuda/memory_resource>
+
 #include <cstddef>
 #include <optional>
+#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
 
-binning_memory_resource::binning_memory_resource(device_async_resource_ref upstream)
-  : shared_base(cuda::mr::make_shared_resource<detail::binning_memory_resource_impl>(upstream))
-{
-}
-
-binning_memory_resource::binning_memory_resource(device_async_resource_ref upstream,
-                                                 int8_t min_size_exponent,
-                                                 int8_t max_size_exponent)
+binning_memory_resource::binning_memory_resource(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_resource,
+  int8_t min_size_exponent,
+  int8_t max_size_exponent)
   : shared_base(cuda::mr::make_shared_resource<detail::binning_memory_resource_impl>(
-      upstream, min_size_exponent, max_size_exponent))
+      std::move(upstream_resource), min_size_exponent, max_size_exponent))
 {
 }
 

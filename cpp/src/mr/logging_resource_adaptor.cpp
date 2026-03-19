@@ -5,56 +5,36 @@
 
 #include <rmm/mr/logging_resource_adaptor.hpp>
 
-#include <cstddef>
+#include <cuda/memory_resource>
+
 #include <cstdlib>
 #include <initializer_list>
 #include <memory>
+#include <ostream>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace RMM_NAMESPACE {
 namespace mr {
 
-namespace {
-
-auto make_logger(std::ostream& stream)
-{
-  return std::make_shared<rapids_logger::logger>("RMM", stream);
-}
-
-auto make_logger(std::string const& filename)
-{
-  return std::make_shared<rapids_logger::logger>("RMM", filename);
-}
-
-auto make_logger(std::initializer_list<rapids_logger::sink_ptr> sinks)
-{
-  return std::make_shared<rapids_logger::logger>("RMM", sinks);
-}
-
-}  // namespace
-
-logging_resource_adaptor::logging_resource_adaptor(device_async_resource_ref upstream,
-                                                   std::string const& filename,
-                                                   bool auto_flush)
+logging_resource_adaptor::logging_resource_adaptor(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  std::ostream& stream,
+  bool auto_flush)
   : shared_base(cuda::mr::make_shared_resource<detail::logging_resource_adaptor_impl>(
-      make_logger(filename), upstream, auto_flush))
-{
-}
-
-logging_resource_adaptor::logging_resource_adaptor(device_async_resource_ref upstream,
-                                                   std::ostream& stream,
-                                                   bool auto_flush)
-  : shared_base(cuda::mr::make_shared_resource<detail::logging_resource_adaptor_impl>(
-      make_logger(stream), upstream, auto_flush))
+      std::make_shared<rapids_logger::logger>("RMM", stream), std::move(upstream), auto_flush))
 {
 }
 
 logging_resource_adaptor::logging_resource_adaptor(
-  device_async_resource_ref upstream,
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
   std::initializer_list<rapids_logger::sink_ptr> sinks,
   bool auto_flush)
   : shared_base(cuda::mr::make_shared_resource<detail::logging_resource_adaptor_impl>(
-      make_logger(sinks), upstream, auto_flush))
+      std::make_shared<rapids_logger::logger>("RMM", std::vector<rapids_logger::sink_ptr>(sinks)),
+      std::move(upstream),
+      auto_flush))
 {
 }
 

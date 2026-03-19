@@ -12,6 +12,8 @@
 
 #include <cstddef>
 #include <optional>
+#include <type_traits>
+#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -76,14 +78,25 @@ class RMM_EXPORT arena_memory_resource
   /**
    * @brief Construct an `arena_memory_resource`.
    *
+   * @tparam Upstream Type of the upstream resource (must be convertible to
+   * `cuda::mr::any_resource<cuda::mr::device_accessible>`).
    * @param upstream_mr The memory resource from which to allocate blocks for the global arena.
    * @param arena_size Size in bytes of the global arena. Defaults to half of the available
    * memory on the current device.
    * @param dump_log_on_failure If true, dump memory log when running out of memory.
    */
-  explicit arena_memory_resource(device_async_resource_ref upstream_mr,
+  template <
+    class Upstream,
+    std::enable_if_t<!std::is_same_v<std::decay_t<Upstream>, arena_memory_resource>, int> = 0>
+  explicit arena_memory_resource(Upstream&& upstream_mr,
                                  std::optional<std::size_t> arena_size = std::nullopt,
-                                 bool dump_log_on_failure              = false);
+                                 bool dump_log_on_failure              = false)
+    : shared_base(cuda::mr::make_shared_resource<detail::arena_memory_resource_impl>(
+        cuda::mr::any_resource<cuda::mr::device_accessible>{std::forward<Upstream>(upstream_mr)},
+        arena_size,
+        dump_log_on_failure))
+  {
+  }
 
   ~arena_memory_resource() = default;
 };

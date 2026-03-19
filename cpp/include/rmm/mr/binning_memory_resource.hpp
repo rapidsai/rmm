@@ -12,6 +12,8 @@
 
 #include <cstddef>
 #include <optional>
+#include <type_traits>
+#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -48,9 +50,19 @@ class RMM_EXPORT binning_memory_resource
    * Initially has no bins, so simply uses the upstream_resource until bin resources are added
    * with `add_bin`.
    *
+   * @tparam Upstream Type of the upstream resource (must be convertible to
+   * `cuda::mr::any_resource<cuda::mr::device_accessible>`).
    * @param upstream_resource The upstream memory resource used to allocate bin pools.
    */
-  explicit binning_memory_resource(device_async_resource_ref upstream_resource);
+  template <
+    class Upstream,
+    std::enable_if_t<!std::is_same_v<std::decay_t<Upstream>, binning_memory_resource>, int> = 0>
+  explicit binning_memory_resource(Upstream&& upstream_resource)
+    : shared_base(cuda::mr::make_shared_resource<detail::binning_memory_resource_impl>(
+        cuda::mr::any_resource<cuda::mr::device_accessible>{
+          std::forward<Upstream>(upstream_resource)}))
+  {
+  }
 
   /**
    * @brief Construct a new binning memory resource object with a range of initial bins.
@@ -64,7 +76,7 @@ class RMM_EXPORT binning_memory_resource
    * @param min_size_exponent The minimum base-2 exponent bin size.
    * @param max_size_exponent The maximum base-2 exponent bin size.
    */
-  binning_memory_resource(device_async_resource_ref upstream_resource,
+  binning_memory_resource(cuda::mr::any_resource<cuda::mr::device_accessible> upstream_resource,
                           int8_t min_size_exponent,  // NOLINT(bugprone-easily-swappable-parameters)
                           int8_t max_size_exponent);
 

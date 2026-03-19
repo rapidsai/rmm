@@ -8,11 +8,6 @@
 namespace RMM_NAMESPACE {
 namespace mr {
 
-thread_safe_resource_adaptor::thread_safe_resource_adaptor(device_async_resource_ref upstream)
-  : shared_base(cuda::mr::make_shared_resource<detail::thread_safe_resource_adaptor_impl>(upstream))
-{
-}
-
 device_async_resource_ref thread_safe_resource_adaptor::get_upstream_resource() const noexcept
 {
   return get().get_upstream_resource();

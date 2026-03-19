@@ -490,8 +490,9 @@ class global_arena final {
    * @param arena_size Size in bytes of the global arena. Defaults to half of the available memory
    * on the current device.
    */
-  global_arena(device_async_resource_ref upstream_mr, std::optional<std::size_t> arena_size)
-    : upstream_mr_{upstream_mr}
+  global_arena(cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr,
+               std::optional<std::size_t> arena_size)
+    : upstream_mr_{std::move(upstream_mr)}
   {
     auto const size =
       rmm::align_down(arena_size.value_or(default_size()), rmm::CUDA_ALLOCATION_ALIGNMENT);
