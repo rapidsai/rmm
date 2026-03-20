@@ -111,9 +111,8 @@ inline device_async_resource_ref get_per_device_resource_ref(cuda_device_id devi
   // If a resource was never set for `id`, set to the initial resource
   auto const found = map.find(device_id.value());
   if (found == map.end()) {
-    // Create a resource_ref from the initial resource, then reify it to any_resource
     device_async_resource_ref initial_ref{detail::initial_resource()};
-    auto item = map.emplace(device_id.value(), static_cast<any_device_resource>(initial_ref));
+    auto item = map.emplace(device_id.value(), any_device_resource{initial_ref});
     return device_async_resource_ref{item.first->second};
   }
   return device_async_resource_ref{found->second};
@@ -151,10 +150,10 @@ inline cuda::mr::any_resource<cuda::mr::device_accessible> set_per_device_resour
   auto& map          = detail::get_ref_map();
   auto const old_itr = map.find(device_id.value());
   if (old_itr == map.end()) {
-    map.emplace(device_id.value(), static_cast<any_device_resource>(new_resource_ref));
-    return static_cast<any_device_resource>(device_async_resource_ref{detail::initial_resource()});
+    map.emplace(device_id.value(), any_device_resource{new_resource_ref});
+    return any_device_resource{device_async_resource_ref{detail::initial_resource()}};
   }
-  return std::exchange(old_itr->second, static_cast<any_device_resource>(new_resource_ref));
+  return std::exchange(old_itr->second, any_device_resource{new_resource_ref});
 }
 
 /**

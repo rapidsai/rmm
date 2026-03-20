@@ -18,12 +18,18 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <type_traits>
 #include <utility>
 
 class device_check_resource_adaptor final {
  public:
-  device_check_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream)
-    : device_id{rmm::get_current_cuda_device()}, upstream_(std::move(upstream))
+  template <typename Upstream,
+            std::enable_if_t<!std::is_same_v<std::decay_t<Upstream>, device_check_resource_adaptor>,
+                             int> = 0>
+  device_check_resource_adaptor(Upstream&& upstream)
+    : device_id{rmm::get_current_cuda_device()},
+      upstream_(
+        cuda::mr::any_resource<cuda::mr::device_accessible>{std::forward<Upstream>(upstream)})
   {
   }
 
