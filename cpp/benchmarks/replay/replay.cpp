@@ -39,34 +39,27 @@
 using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
 
 /// MR factory functions
-any_device_resource make_cuda(std::size_t = 0)
-{
-  return any_device_resource{rmm::mr::cuda_memory_resource{}};
-}
+any_device_resource make_cuda(std::size_t = 0) { return rmm::mr::cuda_memory_resource{}; }
 
-any_device_resource make_managed(std::size_t = 0)
-{
-  return any_device_resource{rmm::mr::managed_memory_resource{}};
-}
+any_device_resource make_managed(std::size_t = 0) { return rmm::mr::managed_memory_resource{}; }
 
 inline any_device_resource make_pool(std::size_t simulated_size)
 {
   if (simulated_size > 0) {
     rmm::mr::simulated_memory_resource sim{simulated_size};
-    return any_device_resource{rmm::mr::pool_memory_resource{sim, simulated_size, simulated_size}};
+    return rmm::mr::pool_memory_resource{sim, simulated_size, simulated_size};
   }
   rmm::mr::cuda_memory_resource cuda{};
-  return any_device_resource{rmm::mr::pool_memory_resource{cuda, 0}};
+  return rmm::mr::pool_memory_resource{cuda, 0};
 }
 
 inline any_device_resource make_arena(std::size_t simulated_size)
 {
   if (simulated_size > 0) {
-    return any_device_resource{
-      rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref(), simulated_size}};
+    return rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref(),
+                                          simulated_size};
   }
-  return any_device_resource{
-    rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref()}};
+  return rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref()};
 }
 
 inline any_device_resource make_binning(std::size_t simulated_size)
@@ -78,7 +71,7 @@ inline any_device_resource make_binning(std::size_t simulated_size)
   for (std::size_t i = min_size_exp; i <= max_size_exp; i++) {
     mr.add_bin(1 << i);
   }
-  return any_device_resource{std::move(mr)};
+  return mr;
 }
 
 using MRFactoryFunc = std::function<any_device_resource(std::size_t)>;
