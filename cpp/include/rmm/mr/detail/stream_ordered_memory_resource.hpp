@@ -226,7 +226,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
   {
     RMM_LOG_TRACE("[A][stream %s][%zuB]", rmm::detail::format_stream(stream), size);
 
-    if (size <= 0) { return nullptr; }
+    if (size == 0) { return nullptr; }
 
     lock_guard lock(mtx_);
 
@@ -260,7 +260,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
   {
     RMM_LOG_TRACE("[D][stream %s][%zuB][%p]", rmm::detail::format_stream(stream), size, ptr);
 
-    if (size <= 0 || ptr == nullptr) { return; }
+    if (size == 0 || ptr == nullptr) { return; }
 
     lock_guard lock(mtx_);
     auto stream_event = get_event(stream);
