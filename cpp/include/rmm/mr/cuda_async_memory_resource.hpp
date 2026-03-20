@@ -110,11 +110,15 @@ class RMM_EXPORT cuda_async_memory_resource final
    */
   [[nodiscard]] cudaMemPool_t pool_handle() const noexcept;
 
-  ~cuda_async_memory_resource()                                            = default;
-  cuda_async_memory_resource(cuda_async_memory_resource const&)            = delete;
-  cuda_async_memory_resource(cuda_async_memory_resource&&)                 = delete;
-  cuda_async_memory_resource& operator=(cuda_async_memory_resource const&) = delete;
-  cuda_async_memory_resource& operator=(cuda_async_memory_resource&&)      = delete;
+  ~cuda_async_memory_resource() = default;
+  cuda_async_memory_resource(cuda_async_memory_resource const&) =
+    default;  ///< @default_copy_constructor
+  cuda_async_memory_resource(cuda_async_memory_resource&&) =
+    default;  ///< @default_move_constructor
+  cuda_async_memory_resource& operator=(cuda_async_memory_resource const&) =
+    default;  ///< @default_copy_assignment{cuda_async_memory_resource}
+  cuda_async_memory_resource& operator=(cuda_async_memory_resource&&) =
+    default;  ///< @default_move_assignment{cuda_async_memory_resource}
 };
 
 // static property checks

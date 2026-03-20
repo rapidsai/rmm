@@ -8,7 +8,6 @@
 #include "rapidcsv.h"
 
 #include <rmm/detail/error.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 
 #include <chrono>
 #include <cstdint>

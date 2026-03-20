@@ -3,16 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/binning_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/managed_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <cuda/iterator>
 #include <thrust/execution_policy.h>
@@ -31,56 +32,56 @@
 #include <iterator>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <string>
 #include <thread>
 
+using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
+
 /// MR factory functions
-std::shared_ptr<rmm::mr::device_memory_resource> make_cuda(std::size_t = 0)
+any_device_resource make_cuda(std::size_t = 0)
 {
-  return std::make_shared<rmm::mr::cuda_memory_resource>();
+  return any_device_resource{rmm::mr::cuda_memory_resource{}};
 }
 
-std::shared_ptr<rmm::mr::device_memory_resource> make_managed(std::size_t = 0)
+any_device_resource make_managed(std::size_t = 0)
 {
-  return std::make_shared<rmm::mr::managed_memory_resource>();
+  return any_device_resource{rmm::mr::managed_memory_resource{}};
 }
 
-std::shared_ptr<rmm::mr::device_memory_resource> make_simulated(std::size_t simulated_size)
-{
-  return std::make_shared<rmm::mr::simulated_memory_resource>(simulated_size);
-}
-
-inline auto make_pool(std::size_t simulated_size)
+inline any_device_resource make_pool(std::size_t simulated_size)
 {
   if (simulated_size > 0) {
-    return std::make_shared<rmm::mr::pool_memory_resource>(
-      *make_simulated(simulated_size), simulated_size, simulated_size);
+    rmm::mr::simulated_memory_resource sim{simulated_size};
+    return any_device_resource{rmm::mr::pool_memory_resource{sim, simulated_size, simulated_size}};
   }
-  return std::make_shared<rmm::mr::pool_memory_resource>(*make_cuda(), 0);
+  rmm::mr::cuda_memory_resource cuda{};
+  return any_device_resource{rmm::mr::pool_memory_resource{cuda, 0}};
 }
 
-inline auto make_arena(std::size_t simulated_size)
+inline any_device_resource make_arena(std::size_t simulated_size)
 {
   if (simulated_size > 0) {
-    return std::make_shared<rmm::mr::arena_memory_resource>(
-      rmm::mr::get_current_device_resource_ref(), simulated_size);
+    return any_device_resource{
+      rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref(), simulated_size}};
   }
-  return std::make_shared<rmm::mr::arena_memory_resource>(
-    rmm::mr::get_current_device_resource_ref());
+  return any_device_resource{
+    rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref()}};
 }
 
-inline auto make_binning(std::size_t simulated_size)
+inline any_device_resource make_binning(std::size_t simulated_size)
 {
-  auto mr = std::make_shared<rmm::mr::binning_memory_resource>(*make_pool(simulated_size));
+  auto pool = make_pool(simulated_size);
+  auto mr   = rmm::mr::binning_memory_resource{pool};
   const auto min_size_exp{18};
   const auto max_size_exp{22};
   for (std::size_t i = min_size_exp; i <= max_size_exp; i++) {
-    mr->add_bin(1 << i);
+    mr.add_bin(1 << i);
   }
-  return mr;
+  return any_device_resource{std::move(mr)};
 }
 
-using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>(std::size_t)>;
+using MRFactoryFunc = std::function<any_device_resource(std::size_t)>;
 
 /**
  * @brief Represents an allocation made during the replay
@@ -95,15 +96,15 @@ struct allocation {
 
 /**
  * @brief Function object for running a replay benchmark with the specified
- * `device_memory_resource`.
+ * memory resource.
  *
- * @tparam MR The type of the `device_memory_resource` to use for allocation
+ * @tparam MR The type of the memory resource to use for allocation
  * replay
  */
 struct replay_benchmark {
   MRFactoryFunc factory_;
   std::size_t simulated_size_;
-  std::shared_ptr<rmm::mr::device_memory_resource> mr_{};
+  std::optional<any_device_resource> mr_{};
   std::vector<std::vector<rmm::detail::event>> const& events_{};
 
   // Maps a pointer from the event log to an active allocation
@@ -173,7 +174,7 @@ struct replay_benchmark {
   {
     if (state.thread_index() == 0) {
       RMM_LOG_INFO("------ Start of Benchmark -----");
-      mr_ = factory_(simulated_size_);
+      mr_.emplace(factory_(simulated_size_));
     }
     // Can't release threads until MR is set up.
     barrier_.arrive_and_wait();
@@ -193,7 +194,7 @@ struct replay_benchmark {
         auto alloc = ptr_alloc.second;
         num_leaked++;
         total_leaked += alloc.size;
-        mr_->deallocate_sync(alloc.ptr, alloc.size);
+        mr_->deallocate_sync(alloc.ptr, alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT);
       }
       if (num_leaked > 0) {
         std::cout << "LOG shows leak of " << num_leaked << " allocations of " << total_leaked
@@ -225,11 +226,11 @@ struct replay_benchmark {
 
         // rmm::detail::action::ALLOCATE_FAILURE is ignored.
         if (rmm::detail::action::ALLOCATE == event.act) {
-          auto ptr = mr_->allocate_sync(event.size);
+          auto ptr = mr_->allocate_sync(event.size, rmm::CUDA_ALLOCATION_ALIGNMENT);
           set_allocation(event.pointer, allocation{ptr, event.size});
         } else if (rmm::detail::action::FREE == event.act) {
           auto alloc = remove_allocation(event.pointer);
-          mr_->deallocate_sync(alloc.ptr, event.size);
+          mr_->deallocate_sync(alloc.ptr, event.size, rmm::CUDA_ALLOCATION_ALIGNMENT);
         }
 
         event_index++;
@@ -355,7 +356,7 @@ int main(int argc, char** argv)
 
       options.add_options()("f,file", "Name of RMM log file.", cxxopts::value<std::string>());
       options.add_options()("r,resource",
-                            "Type of device_memory_resource",
+                            "Type of memory resource",
                             cxxopts::value<std::string>()->default_value("pool"));
       options.add_options()(
         "s,size",

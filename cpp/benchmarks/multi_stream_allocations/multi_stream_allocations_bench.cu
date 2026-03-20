@@ -37,7 +37,8 @@ __global__ void compute_bound_kernel(int64_t* out)
   *out = static_cast<int64_t>(clock_current);
 }
 
-using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
+using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
+using MRFactoryFunc       = std::function<any_device_resource()>;
 
 static void run_prewarm(rmm::cuda_stream_pool& stream_pool, rmm::device_async_resource_ref mr)
 {
@@ -63,7 +64,7 @@ static void BM_MultiStreamAllocations(benchmark::State& state, MRFactoryFunc con
 {
   auto mr = factory();
 
-  rmm::mr::set_current_device_resource_ref(mr.get());
+  rmm::mr::set_current_device_resource_ref(mr);
 
   auto num_streams = state.range(0);
   auto num_kernels = state.range(1);
@@ -71,10 +72,10 @@ static void BM_MultiStreamAllocations(benchmark::State& state, MRFactoryFunc con
 
   auto stream_pool = rmm::cuda_stream_pool(static_cast<std::size_t>(num_streams));
 
-  if (do_prewarm) { run_prewarm(stream_pool, mr.get()); }
+  if (do_prewarm) { run_prewarm(stream_pool, mr); }
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
-    run_test(static_cast<std::size_t>(num_kernels), stream_pool, mr.get());
+    run_test(static_cast<std::size_t>(num_kernels), stream_pool, mr);
     cudaDeviceSynchronize();
   }
 
@@ -83,31 +84,37 @@ static void BM_MultiStreamAllocations(benchmark::State& state, MRFactoryFunc con
   rmm::mr::reset_current_device_resource_ref();
 }
 
-inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
-
-inline auto make_cuda_async() { return std::make_shared<rmm::mr::cuda_async_memory_resource>(); }
-
-inline auto make_pool()
+inline any_device_resource make_cuda()
 {
-  return std::make_shared<rmm::mr::pool_memory_resource>(*make_cuda(),
-                                                         rmm::percent_of_free_device_memory(50));
+  return any_device_resource{rmm::mr::cuda_memory_resource{}};
 }
 
-inline auto make_arena()
+inline any_device_resource make_cuda_async()
 {
-  return std::make_shared<rmm::mr::arena_memory_resource>(
-    rmm::mr::get_current_device_resource_ref());
+  return any_device_resource{rmm::mr::cuda_async_memory_resource{}};
 }
 
-inline auto make_binning()
+inline any_device_resource make_pool()
+{
+  rmm::mr::cuda_memory_resource cuda{};
+  return any_device_resource{
+    rmm::mr::pool_memory_resource{cuda, rmm::percent_of_free_device_memory(50)}};
+}
+
+inline any_device_resource make_arena()
+{
+  return any_device_resource{
+    rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref()}};
+}
+
+inline any_device_resource make_binning()
 {
   // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
   // Larger allocations will use the pool resource
   constexpr auto min_bin_pow2{18};
   constexpr auto max_bin_pow2{22};
-  auto mr =
-    std::make_shared<rmm::mr::binning_memory_resource>(*make_pool(), min_bin_pow2, max_bin_pow2);
-  return mr;
+  auto pool = make_pool();
+  return any_device_resource{rmm::mr::binning_memory_resource{pool, min_bin_pow2, max_bin_pow2}};
 }
 
 static void benchmark_range(benchmark::internal::Benchmark* bench)
@@ -171,9 +178,9 @@ void run_profile(std::string const& resource_name, int kernel_count, int stream_
   auto mr          = mr_factory();
   auto stream_pool = rmm::cuda_stream_pool(static_cast<std::size_t>(stream_count));
 
-  if (prewarm) { run_prewarm(stream_pool, mr.get()); }
+  if (prewarm) { run_prewarm(stream_pool, mr); }
 
-  run_test(static_cast<std::size_t>(kernel_count), stream_pool, mr.get());
+  run_test(static_cast<std::size_t>(kernel_count), stream_pool, mr);
 }
 
 int main(int argc, char** argv)
@@ -193,7 +200,7 @@ int main(int argc, char** argv)
 
     options.add_options()(  //
       "r,resource",
-      "Type of device_memory_resource",
+      "Type of memory resource",
       cxxopts::value<std::string>()->default_value("pool"));
 
     options.add_options()(  //

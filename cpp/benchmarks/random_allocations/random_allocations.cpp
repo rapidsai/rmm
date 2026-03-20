@@ -8,9 +8,9 @@
 #include <rmm/mr/binning_memory_resource.hpp>
 #include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
 
 #include <benchmark/benchmark.h>
 #include <benchmarks/utilities/cxxopts.hpp>
@@ -49,7 +49,7 @@ allocation remove_at(allocation_vector& allocs, std::size_t index)
 }
 
 template <typename SizeDistribution>
-void random_allocation_free(rmm::mr::device_memory_resource& mr,
+void random_allocation_free(rmm::device_async_resource_ref mr,
                             SizeDistribution size_distribution,
                             std::size_t num_allocations,
                             std::size_t max_usage,  // in MiB
@@ -127,7 +127,7 @@ void random_allocation_free(rmm::mr::device_memory_resource& mr,
 }  // namespace
 
 void uniform_random_allocations(
-  rmm::mr::device_memory_resource& mr,
+  rmm::device_async_resource_ref mr,
   std::size_t num_allocations,      // NOLINT(bugprone-easily-swappable-parameters)
   std::size_t max_allocation_size,  // size in MiB
   std::size_t max_usage,
@@ -138,7 +138,7 @@ void uniform_random_allocations(
 }
 
 // TODO figure out how to map a normal distribution to integers between 1 and max_allocation_size
-/*void normal_random_allocations(rmm::mr::device_memory_resource& mr,
+/*void normal_random_allocations(rmm::device_async_resource_ref mr,
                                 std::size_t num_allocations = 1000,
                                 std::size_t mean_allocation_size = 500, // in MiB
                                 std::size_t stddev_allocation_size = 500, // in MiB
@@ -148,36 +148,44 @@ void uniform_random_allocations(
 }*/
 
 /// MR factory functions
-inline auto make_cuda() { return std::make_shared<rmm::mr::cuda_memory_resource>(); }
+using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
 
-inline auto make_cuda_async() { return std::make_shared<rmm::mr::cuda_async_memory_resource>(); }
-
-inline auto make_pool()
+inline any_device_resource make_cuda()
 {
-  return std::make_shared<rmm::mr::pool_memory_resource>(*make_cuda(),
-                                                         rmm::percent_of_free_device_memory(50));
+  return any_device_resource{rmm::mr::cuda_memory_resource{}};
 }
 
-inline auto make_arena()
+inline any_device_resource make_cuda_async()
+{
+  return any_device_resource{rmm::mr::cuda_async_memory_resource{}};
+}
+
+inline any_device_resource make_pool()
+{
+  rmm::mr::cuda_memory_resource cuda{};
+  return any_device_resource{
+    rmm::mr::pool_memory_resource{cuda, rmm::percent_of_free_device_memory(50)}};
+}
+
+inline any_device_resource make_arena()
 {
   auto free = rmm::available_device_memory().first;
   constexpr auto reserve{64UL << 20};  // Leave some space for CUDA overhead.
-  return std::make_shared<rmm::mr::arena_memory_resource>(
-    rmm::mr::get_current_device_resource_ref(), free - reserve);
+  return any_device_resource{
+    rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref(), free - reserve}};
 }
 
-inline auto make_binning()
+inline any_device_resource make_binning()
 {
   // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
   // Larger allocations will use the pool resource
   constexpr auto min_bin_pow2{18};
   constexpr auto max_bin_pow2{22};
-  auto mr =
-    std::make_shared<rmm::mr::binning_memory_resource>(*make_pool(), min_bin_pow2, max_bin_pow2);
-  return mr;
+  auto pool = make_pool();
+  return any_device_resource{rmm::mr::binning_memory_resource{pool, min_bin_pow2, max_bin_pow2}};
 }
 
-using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resource>()>;
+using MRFactoryFunc = std::function<any_device_resource()>;
 
 constexpr std::size_t max_usage = 16000;
 
@@ -190,7 +198,7 @@ static void BM_RandomAllocations(benchmark::State& state, MRFactoryFunc const& f
 
   try {
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
-      uniform_random_allocations(*mr, num_allocations, max_size, max_usage);
+      uniform_random_allocations(mr, num_allocations, max_size, max_usage);
     }
   } catch (std::exception const& e) {
     std::cout << "Error: " << e.what() << "\n";
@@ -268,7 +276,7 @@ static void profile_random_allocations(MRFactoryFunc const& factory,
   auto mr = factory();
 
   try {
-    uniform_random_allocations(*mr, num_allocations, max_size, max_usage);
+    uniform_random_allocations(mr, num_allocations, max_size, max_usage);
   } catch (std::exception const& e) {
     std::cout << "Error: " << e.what() << "\n";
   }
@@ -288,7 +296,7 @@ int main(int argc, char** argv)
     options.add_options()(
       "p,profile", "Profiling mode: run once", cxxopts::value<bool>()->default_value("false"));
     options.add_options()("r,resource",
-                          "Type of device_memory_resource",
+                          "Type of memory resource",
                           cxxopts::value<std::string>()->default_value("pool"));
     options.add_options()("n,numallocs",
                           "Number of allocations (default of 0 tests a range)",

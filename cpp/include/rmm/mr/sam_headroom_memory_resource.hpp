@@ -60,12 +60,16 @@ class RMM_EXPORT sam_headroom_memory_resource final
    */
   explicit sam_headroom_memory_resource(std::size_t headroom);
 
-  sam_headroom_memory_resource()                                               = delete;
-  ~sam_headroom_memory_resource()                                              = default;
-  sam_headroom_memory_resource(sam_headroom_memory_resource const&)            = delete;
-  sam_headroom_memory_resource(sam_headroom_memory_resource&&)                 = delete;
-  sam_headroom_memory_resource& operator=(sam_headroom_memory_resource const&) = delete;
-  sam_headroom_memory_resource& operator=(sam_headroom_memory_resource&&)      = delete;
+  sam_headroom_memory_resource()  = delete;
+  ~sam_headroom_memory_resource() = default;
+  sam_headroom_memory_resource(sam_headroom_memory_resource const&) =
+    default;  ///< @default_copy_constructor
+  sam_headroom_memory_resource(sam_headroom_memory_resource&&) =
+    default;  ///< @default_move_constructor
+  sam_headroom_memory_resource& operator=(sam_headroom_memory_resource const&) =
+    default;  ///< @default_copy_assignment{sam_headroom_memory_resource}
+  sam_headroom_memory_resource& operator=(sam_headroom_memory_resource&&) =
+    default;  ///< @default_move_assignment{sam_headroom_memory_resource}
 };
 
 // static property checks
