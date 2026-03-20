@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,6 +7,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
 
+#include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
 #include <gtest/gtest-death-test.h>
@@ -35,6 +36,21 @@ TEST_F(CudaStreamTest, Equality)
   EXPECT_EQ(buff.stream(), view_default);
 
   EXPECT_NE(static_cast<cudaStream_t>(stream_a), rmm::cuda_stream_default.value());
+}
+
+TEST_F(CudaStreamTest, ImplicitConversionToStreamRef)
+{
+  rmm::cuda_stream stream;
+  cuda::stream_ref ref = stream;
+  EXPECT_EQ(ref.get(), stream.value());
+}
+
+TEST_F(CudaStreamTest, StreamRefConsistentWithView)
+{
+  rmm::cuda_stream stream;
+  cuda::stream_ref ref_from_stream = stream;
+  cuda::stream_ref ref_from_view   = stream.view();
+  EXPECT_EQ(ref_from_stream, ref_from_view);
 }
 
 TEST_F(CudaStreamTest, MoveConstructor)
