@@ -67,6 +67,20 @@ class cccl_resource_ref;
 template <typename ResourceType>
 class cccl_async_resource_ref;
 
+// Traits to detect cccl_resource_ref and cccl_async_resource_ref specializations.
+// Defined here (outside the class bodies) to avoid the injected-class-name issue
+// where GCC resolves `cccl_async_resource_ref` to the fully-specialized type
+// inside the class template body, breaking is_specialization_of_v.
+template <typename T>
+inline constexpr bool is_cccl_resource_ref_v = false;
+template <typename R>
+inline constexpr bool is_cccl_resource_ref_v<cccl_resource_ref<R>> = true;
+
+template <typename T>
+inline constexpr bool is_cccl_async_resource_ref_v = false;
+template <typename R>
+inline constexpr bool is_cccl_async_resource_ref_v<cccl_async_resource_ref<R>> = true;
+
 /**
  * @brief A wrapper around CCCL synchronous_resource_ref that adds compatibility with
  * device_memory_resource pointers.
@@ -202,19 +216,18 @@ class cccl_resource_ref {
    * or shared_resource)
    * @param other The resource to construct a ref from
    */
-  template <typename OtherResourceType,
-            std::enable_if_t<not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                                        cuda::mr::synchronous_resource_ref> and
-                             not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                                        cuda::mr::resource_ref> and
-                             not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                                        ::rmm::detail::cccl_resource_ref> and
-                             not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                                        ::rmm::detail::cccl_async_resource_ref> and
-                             not shared_resource_cast<OtherResourceType>::value and
-                             not std::is_base_of_v<rmm::mr::device_memory_resource,
-                                                   std::remove_cv_t<OtherResourceType>> and
-                             cuda::mr::synchronous_resource<OtherResourceType>>* = nullptr>
+  template <
+    typename OtherResourceType,
+    std::enable_if_t<
+      not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
+                                 cuda::mr::synchronous_resource_ref> and
+      not is_specialization_of_v<std::remove_cv_t<OtherResourceType>, cuda::mr::resource_ref> and
+      not is_cccl_resource_ref_v<std::remove_cv_t<OtherResourceType>> and
+      not is_cccl_async_resource_ref_v<std::remove_cv_t<OtherResourceType>> and
+      not shared_resource_cast<OtherResourceType>::value and
+      not std::is_base_of_v<rmm::mr::device_memory_resource,
+                            std::remove_cv_t<OtherResourceType>> and
+      cuda::mr::synchronous_resource<OtherResourceType>>* = nullptr>
   cccl_resource_ref(OtherResourceType& other) : view_{}, ref_{ResourceType{other}}
   {
   }
@@ -482,10 +495,8 @@ class cccl_async_resource_ref {
                                  cuda::mr::synchronous_resource_ref> and
       not is_specialization_of_v<std::remove_cv_t<OtherResourceType>, cuda::mr::resource_ref> and
       not is_specialization_of_v<std::remove_cv_t<OtherResourceType>, cuda::mr::any_resource> and
-      not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                 ::rmm::detail::cccl_resource_ref> and
-      not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                 ::rmm::detail::cccl_async_resource_ref> and
+      not is_cccl_resource_ref_v<std::remove_cv_t<OtherResourceType>> and
+      not is_cccl_async_resource_ref_v<std::remove_cv_t<OtherResourceType>> and
       not shared_resource_cast<OtherResourceType>::value and
       not std::is_base_of_v<rmm::mr::device_memory_resource,
                             std::remove_cv_t<OtherResourceType>> and
