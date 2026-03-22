@@ -119,8 +119,8 @@ struct replay_benchmark {
    * set of arguments forwarded to the MR constructor.
    *
    * @param factory A factory function to create the memory resource
+   * @param simulated_size The simulated total memory size
    * @param events The set of allocation events to replay
-   * @param args Variable number of arguments forward to the constructor of MR
    */
   replay_benchmark(MRFactoryFunc factory,
                    std::size_t simulated_size,

@@ -59,7 +59,7 @@ class cuda_stream {
   /**
    * @brief Construct a new CUDA stream object
    *
-   * @param flags Stream creation flags.
+   * @param stream_flags Stream creation flags.
    *
    * @throw rmm::cuda_error if stream creation fails
    */

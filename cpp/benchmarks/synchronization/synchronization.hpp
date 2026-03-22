@@ -64,7 +64,7 @@ class cuda_event_timer {
    * to update.
    * @param[in] flush_l2_cache whether or not to flush the L2 cache before
    *                            every iteration.
-   * @param[in] stream The CUDA stream we are measuring time on.
+   * @param[in] strm The CUDA stream we are measuring time on.
    */
   cuda_event_timer(benchmark::State& state,
                    bool flush_l2_cache,
