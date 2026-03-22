@@ -18,7 +18,7 @@ namespace {
 
 class HWDecompressTest : public ::testing::Test {
  protected:
-  static void check_decompress_capable(void* ptr)
+  static void check_decompress_capable([[maybe_unused]] void* ptr)
   {
 #if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
     if (rmm::detail::hwdecompress::is_supported()) {

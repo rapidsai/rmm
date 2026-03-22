@@ -13,17 +13,17 @@ namespace {
 INSTANTIATE_TEST_SUITE_P(CudaAsyncResourceTests,
                          mr_ref_test,
                          ::testing::Values("CUDA_Async"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 INSTANTIATE_TEST_SUITE_P(CudaAsyncResourceAllocationTests,
                          mr_ref_allocation_test,
                          ::testing::Values("CUDA_Async"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 INSTANTIATE_TEST_SUITE_P(CudaAsyncMultiThreadResourceTests,
                          mr_ref_test_mt,
                          ::testing::Values("CUDA_Async"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 }  // namespace
 }  // namespace rmm::test

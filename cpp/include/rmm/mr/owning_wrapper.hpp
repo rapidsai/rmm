@@ -136,6 +136,8 @@ class owning_wrapper : public device_memory_resource {
   {
   }
 
+  ~owning_wrapper() override = default;
+
   /**
    * @briefreturn{A constant reference to the wrapped resource}
    */

@@ -13,8 +13,8 @@ namespace rmm::test {
 
 TEST_P(mr_ref_test, SetCurrentDeviceResourceRef)
 {
-  rmm::mr::cuda_memory_resource cuda_mr{};
-  auto cuda_ref = rmm::device_async_resource_ref{cuda_mr};
+  rmm::mr::cuda_memory_resource local_cuda_mr{};
+  auto cuda_ref = rmm::device_async_resource_ref{local_cuda_mr};
 
   rmm::mr::set_current_device_resource_ref(cuda_ref);
   auto old = rmm::mr::set_current_device_resource_ref(this->ref);

@@ -19,8 +19,8 @@
 
 cuda_event_timer::cuda_event_timer(benchmark::State& state,
                                    bool flush_l2_cache,
-                                   rmm::cuda_stream_view stream)
-  : stream(stream), p_state(&state)
+                                   rmm::cuda_stream_view strm)
+  : stream(strm), p_state(&state)
 {
   // flush all of L2$
   if (flush_l2_cache) {

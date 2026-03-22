@@ -48,9 +48,8 @@ TEST(PoolTest, ThrowMaxLessThanInitial)
 TEST(PoolTest, AllocateNinetyPercent)
 {
   auto allocate_ninety = []() {
-    auto const [free, total] = rmm::available_device_memory();
-    (void)total;
-    auto const ninety_percent_pool = rmm::percent_of_free_device_memory(90);
+    [[maybe_unused]] auto const [free, total] = rmm::available_device_memory();
+    auto const ninety_percent_pool            = rmm::percent_of_free_device_memory(90);
     pool_mr mr{rmm::mr::get_current_device_resource_ref(), ninety_percent_pool};
   };
   EXPECT_NO_THROW(allocate_ninety());

@@ -13,12 +13,12 @@
 
 namespace rmm {
 
-cuda_stream::cuda_stream(cuda_stream::flags flags)
-  : stream_{[flags]() {
+cuda_stream::cuda_stream(cuda_stream::flags stream_flags)
+  : stream_{[stream_flags]() {
               auto* stream = new cudaStream_t;  // NOLINT(cppcoreguidelines-owning-memory)
               // TODO: use std::to_underlying once C++23 is allowed.
               RMM_CUDA_TRY(cudaStreamCreateWithFlags(
-                stream, static_cast<std::underlying_type_t<cuda_stream::flags>>(flags)));
+                stream, static_cast<std::underlying_type_t<cuda_stream::flags>>(stream_flags)));
               return stream;
             }(),
             [](cudaStream_t* stream) {

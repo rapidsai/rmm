@@ -27,10 +27,7 @@ namespace mr::detail {
  */
 struct block : public block_base {
   block() = default;
-  block(char* ptr, std::size_t size, bool is_head)
-    : block_base{ptr}, size_bytes{size}, head{is_head}
-  {
-  }
+  block(char* p, std::size_t size, bool is_head) : block_base{p}, size_bytes{size}, head{is_head} {}
 
   /**
    * @brief Returns the pointer to the memory represented by this block.

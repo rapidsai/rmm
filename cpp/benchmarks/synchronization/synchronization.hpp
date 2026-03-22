@@ -68,7 +68,7 @@ class cuda_event_timer {
    */
   cuda_event_timer(benchmark::State& state,
                    bool flush_l2_cache,
-                   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+                   rmm::cuda_stream_view strm = rmm::cuda_stream_default);
 
   // The user will HAVE to provide a benchmark::State object to set
   // the timer so we disable the default c'tor.
