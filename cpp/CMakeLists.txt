@@ -101,13 +101,17 @@ target_include_directories(
 
 if(CUDA_STATIC_RUNTIME)
   message(STATUS "RMM: Enabling static linking of cudart")
-  target_link_libraries(rmm PUBLIC CUDA::cudart_static)
+  set(cudart_dep CUDA::cudart_static)
 else()
-  target_link_libraries(rmm PUBLIC CUDA::cudart)
+  set(cudart_dep CUDA::cudart)
 endif()
 
-target_link_libraries(rmm PUBLIC CCCL::CCCL ${CMAKE_DL_LIBS} nvtx3::nvtx3-cpp
-                                 rapids_logger::rapids_logger)
+target_link_libraries(
+  rmm
+  PUBLIC CCCL::CCCL ${CMAKE_DL_LIBS} nvtx3::nvtx3-cpp rapids_logger::rapids_logger
+  PRIVATE "${cudart_dep}"
+  INTERFACE
+    "$<IF:$<BOOL:$<TARGET_PROPERTY:NO_CUDART_DEP>>,$<COMPILE_ONLY:${cudart_dep}>,${cudart_dep}>")
 
 set_target_properties(
   rmm
@@ -124,9 +128,11 @@ if(RMM_NVTX)
   target_compile_definitions(rmm PUBLIC RMM_NVTX)
 endif()
 
-set(RMM_CXX_FLAGS -Wall -Werror -Wextra -Wno-unknown-pragmas -Wno-error=deprecated-declarations)
-set(RMM_CUDA_FLAGS -Werror=all-warnings
-                   -Xcompiler=-Wall,-Werror,-Wextra,-Wno-error=deprecated-declarations)
+set(RMM_CXX_FLAGS -Wall -Werror -Wextra -Wsign-conversion -Wno-unknown-pragmas
+                  -Wno-error=deprecated-declarations)
+set(RMM_CUDA_FLAGS
+    -Werror=all-warnings
+    -Xcompiler=-Wall,-Werror,-Wextra,-Wsign-conversion,-Wno-error=deprecated-declarations)
 target_compile_options(rmm PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${RMM_CXX_FLAGS}>"
                                    "$<$<COMPILE_LANGUAGE:CUDA>:${RMM_CUDA_FLAGS}>")
 

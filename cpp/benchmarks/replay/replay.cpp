@@ -209,7 +209,7 @@ struct replay_benchmark {
   {
     SetUp(state);
 
-    auto const& my_events = events_.at(state.thread_index());
+    auto const& my_events = events_.at(static_cast<std::size_t>(state.thread_index()));
     for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
       // At start of each iteration event_index must be reset.
       // Any thread could do this, but this is easy
@@ -288,9 +288,9 @@ std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string
   std::transform(events_per_thread.begin(),
                  events_per_thread.end(),
                  per_thread_events.begin(),
-                 [&all_events, offset = 0](auto num_events) mutable {
+                 [&all_events, offset = std::ptrdiff_t{0}](auto num_events) mutable {
                    auto begin = offset;
-                   offset += num_events;
+                   offset += static_cast<std::ptrdiff_t>(num_events);
                    auto end = offset;
                    std::vector<event> thread_events(all_events.cbegin() + begin,
                                                     all_events.cbegin() + end);

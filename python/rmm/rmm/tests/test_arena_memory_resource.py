@@ -1,10 +1,16 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for ArenaMemoryResource."""
 
 import pytest
-from test_helpers import _allocs, _dtypes, _nelems, array_tester
+from test_helpers import (
+    _TEST_POOL_SIZE,
+    _allocs,
+    _dtypes,
+    _nelems,
+    array_tester,
+)
 
 import rmm
 
@@ -24,7 +30,7 @@ import rmm
 )
 def test_arena_memory_resource(dtype, nelem, alloc, upstream_mr):
     upstream = upstream_mr()
-    mr = rmm.mr.ArenaMemoryResource(upstream)
+    mr = rmm.mr.ArenaMemoryResource(upstream, arena_size=_TEST_POOL_SIZE)
 
     rmm.mr.set_current_device_resource(mr)
     assert rmm.mr.get_current_device_resource_type() is type(mr)

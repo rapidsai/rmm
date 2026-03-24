@@ -200,8 +200,8 @@ class fake_async_resource {
 };
 
 // static property checks
-static_assert(rmm::detail::polyfill::resource<fake_async_resource>);
-static_assert(rmm::detail::polyfill::resource<rmm::mr::pool_memory_resource<fake_async_resource>>);
+static_assert(cuda::mr::synchronous_resource<fake_async_resource>);
+static_assert(cuda::mr::synchronous_resource<rmm::mr::pool_memory_resource<fake_async_resource>>);
 
 // Ensure that we forward the property if it is there
 class fake_async_resource_device_accessible : public fake_async_resource {

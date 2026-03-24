@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 ########################
 # RMM Version Updater #
@@ -91,10 +91,6 @@ function sed_runner() {
 # Centralized version file update
 echo "${NEXT_FULL_TAG}" > VERSION
 echo "${RAPIDS_BRANCH_NAME}" > RAPIDS_BRANCH
-
-# Examples update
-sed_runner "s|RMM_TAG release/[0-9][0-9]*\.[0-9][0-9]*|RMM_TAG ${RAPIDS_BRANCH_NAME}|g" cpp/examples/versions.cmake
-sed_runner "s|RMM_TAG main|RMM_TAG ${RAPIDS_BRANCH_NAME}|g" cpp/examples/versions.cmake
 
 # CI files
 for FILE in .github/workflows/*.yaml; do

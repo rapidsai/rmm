@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -156,9 +156,6 @@ class device_scalar {
   /**
    * @brief Sets the value of the `device_scalar` to the value of `v`.
    *
-   * This specialization for fundamental types is optimized to use `cudaMemsetAsync` when
-   * `v` is zero.
-   *
    * @note If the stream specified to this function is different from the stream specified
    * to the constructor, then appropriate dependencies must be inserted between the streams
    * (e.g. using `cudaStreamWaitEvent()` or `cudaStreamSynchronize()`) before and after calling
@@ -168,8 +165,7 @@ class device_scalar {
    * referenced by `v` should not be destroyed or modified until `stream` has been
    * synchronized. Otherwise, behavior is undefined.
    *
-   * @note This function incurs a host to device memcpy or device memset and should be used
-   * carefully.
+   * @note This function incurs a host to device memcpy and should be used carefully.
    *
    * Example:
    * \code{cpp}

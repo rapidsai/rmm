@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for DeviceBuffer class."""
@@ -13,6 +13,7 @@ from cuda.bindings import runtime
 from numba import cuda
 from test_helpers import (
     _CONCURRENT_MANAGED_ACCESS_SUPPORTED,
+    _TEST_POOL_SIZE,
     assert_prefetched,
 )
 
@@ -196,7 +197,11 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
     "managed, pool", list(product([False, True], [False, True]))
 )
 def test_rmm_device_buffer_prefetch(pool, managed):
-    rmm.reinitialize(pool_allocator=pool, managed_memory=managed)
+    rmm.reinitialize(
+        pool_allocator=pool,
+        managed_memory=managed,
+        initial_pool_size=_TEST_POOL_SIZE if pool else None,
+    )
     db = rmm.DeviceBuffer.to_device(np.zeros(256, dtype="u1"))
     if managed and _CONCURRENT_MANAGED_ACCESS_SUPPORTED:
         assert_prefetched(db, runtime.cudaInvalidDeviceId)
