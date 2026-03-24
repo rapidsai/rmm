@@ -117,6 +117,9 @@ class device_uvector {
    * Elements are uninitialized. Reading an element before it is initialized results in undefined
    * behavior.
    *
+   * @throws rmm::bad_alloc If the provided memory resource cannot allocate with alignment to
+   * satisfy the alignment requirements of the value type.
+   *
    * @param size The number of elements to allocate storage for
    * @param stream The stream on which to perform the allocation
    * @param mr The resource used to allocate the device storage
@@ -124,7 +127,7 @@ class device_uvector {
   explicit device_uvector(size_type size,
                           cuda_stream_view stream,
                           device_async_resource_ref mr = mr::get_current_device_resource_ref())
-    : _storage{elements_to_bytes(size), stream, mr}
+    : _storage{elements_to_bytes(size), std::alignment_of_v<T>, stream, mr}
   {
   }
 
