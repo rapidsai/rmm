@@ -50,7 +50,7 @@ TEST(FailureCallbackTest, RetryAllocationOnce)
   bool retried{false};
   failure_callback_adaptor<> mr{&throwing_mr, failure_handler, &retried};
   EXPECT_EQ(retried, false);
-  EXPECT_THROW(mr.allocate_sync(1_MiB), rmm::bad_alloc);
+  EXPECT_THROW((void)mr.allocate_sync(1_MiB), rmm::bad_alloc);
   EXPECT_EQ(retried, true);
 }
 
@@ -59,8 +59,8 @@ TEST(FailureCallbackTest, DifferentExceptionTypes)
   always_throw_memory_resource<rmm::bad_alloc> bad_alloc_mr;
   always_throw_memory_resource<rmm::out_of_memory> oom_mr;
 
-  EXPECT_THROW(bad_alloc_mr.allocate_sync(1_MiB), rmm::bad_alloc);
-  EXPECT_THROW(oom_mr.allocate_sync(1_MiB), rmm::out_of_memory);
+  EXPECT_THROW((void)bad_alloc_mr.allocate_sync(1_MiB), rmm::bad_alloc);
+  EXPECT_THROW((void)oom_mr.allocate_sync(1_MiB), rmm::out_of_memory);
 
   // Wrap a bad_alloc-catching callback adaptor around an MR that always throws bad_alloc:
   // Should retry once and then re-throw bad_alloc
@@ -70,7 +70,7 @@ TEST(FailureCallbackTest, DifferentExceptionTypes)
       &bad_alloc_mr, failure_handler, &retried};
 
     EXPECT_EQ(retried, false);
-    EXPECT_THROW(bad_alloc_callback_mr.allocate_sync(1_MiB), rmm::bad_alloc);
+    EXPECT_THROW((void)bad_alloc_callback_mr.allocate_sync(1_MiB), rmm::bad_alloc);
     EXPECT_EQ(retried, true);
   }
 
@@ -82,7 +82,7 @@ TEST(FailureCallbackTest, DifferentExceptionTypes)
     failure_callback_adaptor<rmm::out_of_memory> oom_callback_mr{
       &oom_mr, failure_handler, &retried};
     EXPECT_EQ(retried, false);
-    EXPECT_THROW(oom_callback_mr.allocate_sync(1_MiB), rmm::out_of_memory);
+    EXPECT_THROW((void)oom_callback_mr.allocate_sync(1_MiB), rmm::out_of_memory);
     EXPECT_EQ(retried, true);
   }
 
@@ -94,8 +94,9 @@ TEST(FailureCallbackTest, DifferentExceptionTypes)
     failure_callback_adaptor<rmm::out_of_memory> oom_callback_mr{
       &bad_alloc_mr, failure_handler, &retried};
     EXPECT_EQ(retried, false);
-    EXPECT_THROW(oom_callback_mr.allocate_sync(1_MiB), rmm::bad_alloc);  // bad_alloc passes through
-    EXPECT_EQ(retried, false);  // Does not catch / retry on anything except OOM
+    EXPECT_THROW((void)oom_callback_mr.allocate_sync(1_MiB),
+                 rmm::bad_alloc);  // bad_alloc passes through
+    EXPECT_EQ(retried, false);     // Does not catch / retry on anything except OOM
   }
 }
 

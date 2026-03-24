@@ -64,11 +64,9 @@ struct MRRefTest : public ::testing::Test {
 
   MRRefTest() : mr{}, ref{mr} {}
 
-  // Helper to get max alignment for the resource type
   static constexpr std::size_t get_max_alignment()
   {
-    // pinned_host_memory_resource inherits from device_memory_resource which limits alignment to
-    // 256
+    // pinned_host_memory_resource uses cudaHostAlloc which only guarantees 256-byte alignment
     if constexpr (std::is_same_v<MemoryResourceType, rmm::mr::pinned_host_memory_resource>) {
       return 256;
     } else {
@@ -224,27 +222,6 @@ TYPED_TEST(MRRefTest, AlignmentTest)
       EXPECT_NO_THROW(ptr = this->ref.allocate_sync(allocation_size, alignment));
       EXPECT_TRUE(is_aligned(ptr, alignment));
       EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, allocation_size, alignment));
-    }
-  }
-}
-
-TYPED_TEST(MRRefTest, UnsupportedAlignmentTest)
-{
-  std::default_random_engine generator(0);
-  constexpr std::size_t MAX_ALLOCATION_SIZE{10 * size_mb};
-  std::uniform_int_distribution<std::size_t> size_distribution(1, MAX_ALLOCATION_SIZE);
-
-  const std::size_t max_alignment = TestFixture::get_max_alignment();
-
-  for (std::size_t num_trials = 0; num_trials < NUM_TRIALS; ++num_trials) {
-    for (std::size_t alignment = MinTestedAlignment; alignment <= max_alignment;
-         alignment *= TestedAlignmentMultiplier) {
-      auto allocation_size = size_distribution(generator);
-      // An unsupported alignment (like an odd number) should result in an
-      // alignment of `alignof(std::max_align_t)`
-      auto const bad_alignment = alignment + 1;
-
-      EXPECT_THROW(this->ref.allocate_sync(allocation_size, bad_alignment), std::bad_alloc);
     }
   }
 }

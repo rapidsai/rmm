@@ -5,10 +5,8 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/cuda_async_managed_memory_resource_impl.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda_runtime_api.h>
@@ -24,45 +22,14 @@ namespace mr {
  */
 
 /**
- * @brief `device_memory_resource` derived class that uses
- * `cudaMallocFromPoolAsync`/`cudaFreeFromPoolAsync` with a managed memory pool
- * for allocation/deallocation.
+ * @brief Memory resource that uses `cudaMallocFromPoolAsync`/`cudaFreeFromPoolAsync`
+ * with a managed memory pool for allocation/deallocation.
  */
 class RMM_EXPORT cuda_async_managed_memory_resource final
-  : public device_memory_resource,
-    private cuda::mr::shared_resource<detail::cuda_async_managed_memory_resource_impl> {
+  : public cuda::mr::shared_resource<detail::cuda_async_managed_memory_resource_impl> {
   using shared_base = cuda::mr::shared_resource<detail::cuda_async_managed_memory_resource_impl>;
 
  public:
-  // Begin legacy device_memory_resource compatibility layer
-  using device_memory_resource::allocate;
-  using device_memory_resource::allocate_sync;
-  using device_memory_resource::deallocate;
-  using device_memory_resource::deallocate_sync;
-
-  /**
-   * @brief Compare two resources for equality (shared-impl identity).
-   *
-   * @param other The other cuda_async_managed_memory_resource to compare against.
-   * @return true if both resources share the same underlying pool.
-   */
-  [[nodiscard]] bool operator==(cuda_async_managed_memory_resource const& other) const noexcept
-  {
-    return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(other);
-  }
-
-  /**
-   * @brief Compare two resources for inequality.
-   *
-   * @param other The other cuda_async_managed_memory_resource to compare against.
-   * @return true if the resources do not share the same underlying pool.
-   */
-  [[nodiscard]] bool operator!=(cuda_async_managed_memory_resource const& other) const noexcept
-  {
-    return !(*this == other);
-  }
-  // End legacy device_memory_resource compatibility layer
-
   /**
    * @brief Enables the `cuda::mr::device_accessible` property
    */
@@ -98,20 +65,15 @@ class RMM_EXPORT cuda_async_managed_memory_resource final
    */
   [[nodiscard]] cudaMemPool_t pool_handle() const noexcept;
 
-  ~cuda_async_managed_memory_resource()                                         = default;
-  cuda_async_managed_memory_resource(cuda_async_managed_memory_resource const&) = delete;
-  cuda_async_managed_memory_resource(cuda_async_managed_memory_resource&&)      = delete;
-  cuda_async_managed_memory_resource& operator=(cuda_async_managed_memory_resource const&) = delete;
-  cuda_async_managed_memory_resource& operator=(cuda_async_managed_memory_resource&&)      = delete;
-
-  // Begin legacy device_memory_resource compatibility layer
- private:
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override;
-
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override;
-
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override;
-  // End legacy device_memory_resource compatibility layer
+  ~cuda_async_managed_memory_resource() = default;
+  cuda_async_managed_memory_resource(cuda_async_managed_memory_resource const&) =
+    default;  ///< @default_copy_constructor
+  cuda_async_managed_memory_resource(cuda_async_managed_memory_resource&&) =
+    default;  ///< @default_move_constructor
+  cuda_async_managed_memory_resource& operator=(cuda_async_managed_memory_resource const&) =
+    default;  ///< @default_copy_assignment{cuda_async_managed_memory_resource}
+  cuda_async_managed_memory_resource& operator=(cuda_async_managed_memory_resource&&) =
+    default;  ///< @default_move_assignment{cuda_async_managed_memory_resource}
 };
 
 // static property checks

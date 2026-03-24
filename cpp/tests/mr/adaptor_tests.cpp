@@ -8,7 +8,6 @@
 #include <rmm/error.hpp>
 #include <rmm/mr/aligned_resource_adaptor.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/failure_callback_resource_adaptor.hpp>
 #include <rmm/mr/is_resource_adaptor.hpp>
 #include <rmm/mr/limiting_resource_adaptor.hpp>
@@ -71,28 +70,20 @@ struct AdaptorTest : public ::testing::Test {
         []([[maybe_unused]] std::size_t bytes, [[maybe_unused]] void* arg) { return false; },
         nullptr);
     } else if constexpr (std::is_same_v<adaptor_type, limiting_resource_adaptor>) {
-      return std::make_shared<adaptor_type>(upstream, 64_MiB);
+      return std::make_shared<adaptor_type>(*upstream, 64_MiB);
     } else if constexpr (std::is_same_v<adaptor_type, thread_safe_resource_adaptor>) {
       return std::make_shared<adaptor_type>(*upstream);
     } else {
-      return std::make_shared<adaptor_type>(upstream);
+      return std::make_shared<adaptor_type>(*upstream);
     }
   }
 };
 
 TYPED_TEST_SUITE(AdaptorTest, adaptors);
 
-TYPED_TEST(AdaptorTest, NullUpstream)
-{
-  if constexpr (not std::is_same_v<TypeParam, failure_callback_resource_adaptor<>> and
-                not std::is_same_v<TypeParam, thread_safe_resource_adaptor>) {
-    EXPECT_THROW(this->make_adaptor(nullptr), rmm::logic_error);
-  }
-}
-
 TYPED_TEST(AdaptorTest, Equality)
 {
-  EXPECT_TRUE(this->mr->is_equal(*this->mr));
+  EXPECT_EQ(*this->mr, *this->mr);
 
   {
     auto other_mr = this->make_adaptor(&this->cuda);
@@ -100,15 +91,10 @@ TYPED_TEST(AdaptorTest, Equality)
                   std::is_same_v<TypeParam, limiting_resource_adaptor> or
                   std::is_same_v<TypeParam, thread_safe_resource_adaptor>) {
       // shared_resource equality: two distinct constructions are NOT equal
-      EXPECT_FALSE(this->mr->is_equal(*other_mr));
+      EXPECT_NE(*this->mr, *other_mr);
     } else {
-      EXPECT_TRUE(this->mr->is_equal(*other_mr));
+      EXPECT_EQ(*this->mr, *other_mr);
     }
-  }
-
-  {
-    auto other_mr = aligned_resource_adaptor{this->cuda};
-    EXPECT_FALSE(this->mr->is_equal(other_mr));
   }
 }
 

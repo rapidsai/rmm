@@ -59,8 +59,8 @@ cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
   // specified size (only if initial_pool_size is provided)
   if (initial_pool_size.has_value()) {
     auto const pool_size = initial_pool_size.value();
-    auto* ptr            = allocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, pool_size);
-    deallocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, ptr, pool_size);
+    auto* ptr            = allocate(cuda::stream_ref{cudaStream_t{nullptr}}, pool_size);
+    deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, pool_size);
   }
 }
 
@@ -91,8 +91,8 @@ void cuda_async_memory_resource_impl::deallocate(cuda::stream_ref stream,
 
 void* cuda_async_memory_resource_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  auto* ptr = allocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, bytes, alignment);
-  RMM_CUDA_TRY(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(0)));
+  auto* ptr = allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
+  RMM_CUDA_TRY(cudaStreamSynchronize(cudaStream_t{nullptr}));
   return ptr;
 }
 
@@ -100,7 +100,7 @@ void cuda_async_memory_resource_impl::deallocate_sync(void* ptr,
                                                       std::size_t bytes,
                                                       std::size_t alignment) noexcept
 {
-  deallocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, ptr, bytes, alignment);
+  deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
 }
 
 }  // namespace detail

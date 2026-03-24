@@ -16,18 +16,11 @@ namespace {
 
 using limiting_adaptor = rmm::mr::limiting_resource_adaptor;
 
-TEST(LimitingTest, ThrowOnNullUpstream)
-{
-  auto const max_size{5_MiB};
-  auto construct_nullptr = []() { limiting_adaptor mr{nullptr, max_size}; };
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
-}
-
 TEST(LimitingTest, TooBig)
 {
   auto const max_size{5_MiB};
   limiting_adaptor mr{rmm::mr::get_current_device_resource_ref(), max_size};
-  EXPECT_THROW(mr.allocate_sync(max_size + 1), rmm::out_of_memory);
+  EXPECT_THROW((void)mr.allocate_sync(max_size + 1), rmm::out_of_memory);
 }
 
 TEST(LimitingTest, UpstreamFailure)
@@ -35,8 +28,8 @@ TEST(LimitingTest, UpstreamFailure)
   auto const max_size_1{2_MiB};
   auto const max_size_2{5_MiB};
   limiting_adaptor mr1{rmm::mr::get_current_device_resource_ref(), max_size_1};
-  limiting_adaptor mr2{&mr1, max_size_2};
-  EXPECT_THROW(mr2.allocate_sync(4_MiB), rmm::out_of_memory);
+  limiting_adaptor mr2{mr1, max_size_2};
+  EXPECT_THROW((void)mr2.allocate_sync(4_MiB), rmm::out_of_memory);
 }
 
 TEST(LimitingTest, UnderLimitDueToFrees)
@@ -81,7 +74,7 @@ TEST(LimitingTest, OverLimit)
   EXPECT_EQ(mr.get_allocated_bytes(), allocated_bytes);
   EXPECT_EQ(mr.get_allocation_limit() - mr.get_allocated_bytes(), max_size - allocated_bytes);
   auto const size2{3_MiB};
-  EXPECT_THROW(mr.allocate_sync(size2), rmm::out_of_memory);
+  EXPECT_THROW((void)mr.allocate_sync(size2), rmm::out_of_memory);
   EXPECT_EQ(mr.get_allocated_bytes(), allocated_bytes);
   EXPECT_EQ(mr.get_allocation_limit() - mr.get_allocated_bytes(), max_size - allocated_bytes);
   mr.deallocate_sync(ptr1, 4_MiB);

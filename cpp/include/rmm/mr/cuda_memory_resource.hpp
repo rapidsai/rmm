@@ -5,11 +5,10 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/stream_ref>
 
 #include <cstddef>
@@ -22,13 +21,12 @@ namespace mr {
  * @file
  */
 /**
- * @brief `device_memory_resource` derived class that uses cudaMalloc/Free for
- * allocation/deallocation.
+ * @brief Memory resource that uses cudaMalloc/Free for allocation/deallocation.
  */
-class cuda_memory_resource final : public device_memory_resource {
+class cuda_memory_resource final {
  public:
   cuda_memory_resource()                            = default;
-  ~cuda_memory_resource() override                  = default;
+  ~cuda_memory_resource()                           = default;
   cuda_memory_resource(cuda_memory_resource const&) = default;  ///< @default_copy_constructor
   cuda_memory_resource(cuda_memory_resource&&)      = default;  ///< @default_move_constructor
   cuda_memory_resource& operator=(cuda_memory_resource const&) =
@@ -87,8 +85,8 @@ class cuda_memory_resource final : public device_memory_resource {
    */
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    auto* ptr = allocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, bytes, alignment);
-    RMM_CUDA_TRY(cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(0)));
+    auto* ptr = allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
+    RMM_CUDA_TRY(cudaStreamSynchronize(cudaStream_t{nullptr}));
     return ptr;
   }
 
@@ -103,7 +101,7 @@ class cuda_memory_resource final : public device_memory_resource {
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    deallocate(cuda::stream_ref{reinterpret_cast<cudaStream_t>(0)}, ptr, bytes, alignment);
+    deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
   }
 
   /**
@@ -116,22 +114,19 @@ class cuda_memory_resource final : public device_memory_resource {
   {
   }
 
- private:
-  // -- Legacy device_memory_resource overrides (delegates to CCCL interface) --
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
-  {
-    return allocate(stream, bytes);
-  }
+  /**
+   * @brief Compare this resource to another.
+   *
+   * All instances of cuda_memory_resource are equivalent.
+   *
+   * @return true Always
+   */
+  [[nodiscard]] bool operator==(cuda_memory_resource const&) const noexcept { return true; }
 
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
-  {
-    deallocate(stream, ptr, bytes);
-  }
-
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
-  {
-    return dynamic_cast<cuda_memory_resource const*>(&other) != nullptr;
-  }
+  /**
+   * @copydoc operator==
+   */
+  [[nodiscard]] bool operator!=(cuda_memory_resource const&) const noexcept { return false; }
 };
 
 // static property checks

@@ -32,12 +32,54 @@ inline constexpr bool is_specialization_of_v = false;
 template <template <class...> class Template, class... Args>
 inline constexpr bool is_specialization_of_v<Template<Args...>, Template> = true;
 
+/**
+ * @brief For a type that publicly derives from shared_resource<Impl>, extracts the
+ * shared_resource<Impl> base type and provides a reference cast.
+ *
+ * CCCL's basic_any-based resource_ref can type-erase shared_resource<Impl> directly but not
+ * classes that inherit from it. This helper extracts the base and casts to it.
+ */
+template <typename T, typename = void>
+struct shared_resource_cast {
+  static constexpr bool value = false;
+};
+
+template <typename T>
+struct shared_resource_cast<
+  T,
+  std::void_t<
+    decltype(std::declval<std::remove_cv_t<T>&>().get()),
+    std::enable_if_t<std::is_base_of_v<cuda::mr::shared_resource<std::remove_reference_t<
+                                         decltype(std::declval<T&>().get())>>,
+                                       std::remove_cv_t<T>> and
+                     not is_specialization_of_v<std::remove_cv_t<T>, cuda::mr::shared_resource>>>> {
+  static constexpr bool value = true;
+  using impl_type             = std::remove_reference_t<decltype(std::declval<T&>().get())>;
+  using base_type             = cuda::mr::shared_resource<impl_type>;
+
+  static base_type& cast(T& ref) noexcept { return static_cast<base_type&>(ref); }
+};
+
 // Forward declarations for use in enable_if constraints
 template <typename ResourceType>
 class cccl_resource_ref;
 
 template <typename ResourceType>
 class cccl_async_resource_ref;
+
+// Traits to detect cccl_resource_ref and cccl_async_resource_ref specializations.
+// Defined here (outside the class bodies) to avoid the injected-class-name issue
+// where GCC resolves `cccl_async_resource_ref` to the fully-specialized type
+// inside the class template body, breaking is_specialization_of_v.
+template <typename T>
+inline constexpr bool is_cccl_resource_ref_v = false;
+template <typename R>
+inline constexpr bool is_cccl_resource_ref_v<cccl_resource_ref<R>> = true;
+
+template <typename T>
+inline constexpr bool is_cccl_async_resource_ref_v = false;
+template <typename R>
+inline constexpr bool is_cccl_async_resource_ref_v<cccl_async_resource_ref<R>> = true;
 
 /**
  * @brief A wrapper around CCCL synchronous_resource_ref that adds compatibility with
@@ -147,27 +189,45 @@ class cccl_resource_ref {
   }
 
   /**
+   * @brief Construct a ref from a shared_resource-derived type.
+   *
+   * CCCL's basic_any-based resource_ref can type-erase shared_resource<T> directly but not
+   * types that publicly inherit from it. This constructor casts to the shared_resource base.
+   *
+   * @tparam OtherResourceType A type that publicly derives from shared_resource<Impl>
+   * @param other The shared_resource-derived resource to construct a ref from
+   */
+  template <typename OtherResourceType,
+            std::enable_if_t<shared_resource_cast<OtherResourceType>::value>* = nullptr>
+  cccl_resource_ref(OtherResourceType& other)
+    : view_{}, ref_{ResourceType{shared_resource_cast<OtherResourceType>::cast(other)}}
+  {
+  }
+
+  /**
    * @brief Construct a ref from a resource.
    *
    * This constructor accepts CCCL resource types but NOT CCCL resource_ref types,
-   * our own wrapper types, or device_memory_resource derived types. The exclusions
-   * are checked FIRST to prevent recursive constraint satisfaction.
+   * our own wrapper types, device_memory_resource derived types, or
+   * shared_resource-derived types (handled by dedicated constructor above).
+   * The exclusions are checked FIRST to prevent recursive constraint satisfaction.
    *
-   * @tparam OtherResourceType A CCCL resource type (not a resource_ref, wrapper, or DMR)
+   * @tparam OtherResourceType A CCCL resource type (not a resource_ref, wrapper, DMR,
+   * or shared_resource)
    * @param other The resource to construct a ref from
    */
-  template <typename OtherResourceType,
-            std::enable_if_t<not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                                        cuda::mr::synchronous_resource_ref> and
-                             not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                                        cuda::mr::resource_ref> and
-                             not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                                        ::rmm::detail::cccl_resource_ref> and
-                             not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                                        ::rmm::detail::cccl_async_resource_ref> and
-                             not std::is_base_of_v<rmm::mr::device_memory_resource,
-                                                   std::remove_cv_t<OtherResourceType>> and
-                             cuda::mr::synchronous_resource<OtherResourceType>>* = nullptr>
+  template <
+    typename OtherResourceType,
+    std::enable_if_t<
+      not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
+                                 cuda::mr::synchronous_resource_ref> and
+      not is_specialization_of_v<std::remove_cv_t<OtherResourceType>, cuda::mr::resource_ref> and
+      not is_cccl_resource_ref_v<std::remove_cv_t<OtherResourceType>> and
+      not is_cccl_async_resource_ref_v<std::remove_cv_t<OtherResourceType>> and
+      not shared_resource_cast<OtherResourceType>::value and
+      not std::is_base_of_v<rmm::mr::device_memory_resource,
+                            std::remove_cv_t<OtherResourceType>> and
+      cuda::mr::synchronous_resource<OtherResourceType>>* = nullptr>
   cccl_resource_ref(OtherResourceType& other) : view_{}, ref_{ResourceType{other}}
   {
   }
@@ -401,14 +461,31 @@ class cccl_async_resource_ref {
   }
 
   /**
+   * @brief Construct a ref from a shared_resource-derived type.
+   *
+   * CCCL's basic_any-based resource_ref can type-erase shared_resource<T> directly but not
+   * types that publicly inherit from it. This constructor casts to the shared_resource base.
+   *
+   * @tparam OtherResourceType A type that publicly derives from shared_resource<Impl>
+   * @param other The shared_resource-derived resource to construct a ref from
+   */
+  template <typename OtherResourceType,
+            std::enable_if_t<shared_resource_cast<OtherResourceType>::value>* = nullptr>
+  cccl_async_resource_ref(OtherResourceType& other)
+    : view_{}, ref_{ResourceType{shared_resource_cast<OtherResourceType>::cast(other)}}
+  {
+  }
+
+  /**
    * @brief Construct a ref from a resource.
    *
    * This constructor accepts CCCL resource types but NOT CCCL resource_ref types,
-   * our own wrapper types, any_resource types, or device_memory_resource derived types.
+   * our own wrapper types, any_resource types, device_memory_resource derived types,
+   * or shared_resource-derived types (handled by dedicated constructor above).
    * The exclusions are checked FIRST to prevent recursive constraint satisfaction.
    *
-   * @tparam OtherResourceType A CCCL resource type (not a resource_ref, wrapper, any_resource, or
-   * DMR)
+   * @tparam OtherResourceType A CCCL resource type (not a resource_ref, wrapper, any_resource,
+   * DMR, or shared_resource)
    * @param other The resource to construct a ref from
    */
   template <
@@ -418,10 +495,9 @@ class cccl_async_resource_ref {
                                  cuda::mr::synchronous_resource_ref> and
       not is_specialization_of_v<std::remove_cv_t<OtherResourceType>, cuda::mr::resource_ref> and
       not is_specialization_of_v<std::remove_cv_t<OtherResourceType>, cuda::mr::any_resource> and
-      not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                 ::rmm::detail::cccl_resource_ref> and
-      not is_specialization_of_v<std::remove_cv_t<OtherResourceType>,
-                                 ::rmm::detail::cccl_async_resource_ref> and
+      not is_cccl_resource_ref_v<std::remove_cv_t<OtherResourceType>> and
+      not is_cccl_async_resource_ref_v<std::remove_cv_t<OtherResourceType>> and
+      not shared_resource_cast<OtherResourceType>::value and
       not std::is_base_of_v<rmm::mr::device_memory_resource,
                             std::remove_cv_t<OtherResourceType>> and
       cuda::mr::resource<OtherResourceType>>* = nullptr>

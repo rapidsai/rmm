@@ -31,7 +31,7 @@ void* arena_memory_resource_impl::allocate(cuda::stream_ref stream,
                                            std::size_t bytes,
                                            std::size_t /*alignment*/)
 {
-  if (bytes <= 0) { return nullptr; }
+  if (bytes == 0) { return nullptr; }
   cuda_stream_view sv{stream.get()};
 #ifdef RMM_ARENA_USE_SIZE_CLASSES
   bytes = rmm::mr::detail::arena::align_to_size_class(bytes);
@@ -65,7 +65,7 @@ void arena_memory_resource_impl::deallocate(cuda::stream_ref stream,
                                             std::size_t bytes,
                                             std::size_t /*alignment*/) noexcept
 {
-  if (ptr == nullptr || bytes <= 0) { return; }
+  if (ptr == nullptr || bytes == 0) { return; }
   cuda_stream_view sv{stream.get()};
 #ifdef RMM_ARENA_USE_SIZE_CLASSES
   bytes = rmm::mr::detail::arena::align_to_size_class(bytes);

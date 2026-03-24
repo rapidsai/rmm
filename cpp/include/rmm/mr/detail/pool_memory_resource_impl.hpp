@@ -38,7 +38,7 @@ class pool_memory_resource_impl final
                             std::size_t initial_pool_size,
                             std::optional<std::size_t> maximum_pool_size);
 
-  ~pool_memory_resource_impl() override;
+  ~pool_memory_resource_impl();
 
   bool operator==(pool_memory_resource_impl const& other) const noexcept
   {
