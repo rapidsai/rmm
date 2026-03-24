@@ -106,6 +106,10 @@ class simulated_memory_resource final {
   char* end_{};
 };
 
+static_assert(cuda::mr::synchronous_resource<simulated_memory_resource>);
+static_assert(cuda::mr::resource<simulated_memory_resource>);
+static_assert(
+  cuda::mr::synchronous_resource_with<simulated_memory_resource, cuda::mr::device_accessible>);
 static_assert(cuda::mr::resource_with<simulated_memory_resource, cuda::mr::device_accessible>);
 
 }  // namespace rmm::mr
