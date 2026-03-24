@@ -81,11 +81,27 @@ class simulated_memory_resource final {
   {
   }
 
+  /**
+   * @brief Allocates memory of size at least `bytes` synchronously.
+   *
+   * @param bytes The size, in bytes, of the allocation
+   * @param alignment The alignment of the allocation
+   * @return void* Pointer to the newly allocated memory
+   */
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
     return allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
   }
 
+  /**
+   * @brief Deallocate memory pointed to by `ptr` synchronously.
+   *
+   * @note This call is ignored.
+   *
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size, in bytes, of the allocation
+   * @param alignment The alignment of the allocation
+   */
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept

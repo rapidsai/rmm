@@ -151,6 +151,15 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
     log_summary_trace();
   }
 
+  /**
+   * @brief Allocates memory of size at least `bytes` synchronously.
+   *
+   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled
+   *
+   * @param bytes The size in bytes of the allocation
+   * @param alignment Alignment of the allocation
+   * @return void* Pointer to the newly allocated memory
+   */
   [[nodiscard]] void* allocate_sync(std::size_t bytes,
                                     std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
@@ -160,6 +169,13 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
     return ptr;
   }
 
+  /**
+   * @brief Deallocate memory pointed to by `ptr` synchronously.
+   *
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation to deallocate
+   * @param alignment Alignment of the allocation
+   */
   void deallocate_sync(
     void* ptr,
     std::size_t bytes,
