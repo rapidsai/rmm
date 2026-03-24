@@ -4,6 +4,7 @@
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
@@ -86,6 +87,10 @@ class device_buffer {
   /**
    * @brief Constructs a new device buffer of `size` uninitialized bytes
    *
+   * @note The buffer is guaranteed to have an alignment of at least
+   * `rmm::CUDA_ALLOCATION_ALIGNMENT`. Use the constructor with explicit alignment
+   * specification if you need something different.
+   *
    * @throws rmm::bad_alloc If allocation fails.
    *
    * @param size Size in bytes to allocate in device memory.
@@ -98,6 +103,21 @@ class device_buffer {
                          device_async_resource_ref mr = mr::get_current_device_resource_ref());
 
   /**
+   * @copydoc device_buffer(std::size_t, cuda_stream_view, device_async_resource_ref)
+   *
+   * @throws rmm::bad_alloc If the requested alignment cannot be satisfied by the provided
+   * memory resource.
+   * @throws rmm::invalid_argument If the requested alignment is not a power of two
+   *
+   * @param alignment Required alignment of the allocation. The actual alignment will be
+   * at least the requested alignment.
+   */
+  explicit device_buffer(std::size_t size,
+                         std::size_t alignment,
+                         cuda_stream_view stream,
+                         device_async_resource_ref mr = mr::get_current_device_resource_ref());
+
+  /**
    * @brief Construct a new device buffer by copying from a raw pointer to an existing host or
    * device memory allocation.
    *
@@ -105,6 +125,10 @@ class device_buffer {
    * caller is responsible for correct synchronization to ensure that `source_data` is valid when
    * the copy occurs. This includes destroying `source_data` in stream order after this function is
    * called, or synchronizing or waiting on `stream` after this function returns as necessary.
+   *
+   * @note The buffer is guaranteed to have an alignment of at least
+   * `rmm::CUDA_ALLOCATION_ALIGNMENT`. Use the constructor with explicit alignment
+   * specification if you need something different.
    *
    * @throws rmm::bad_alloc If creating the new allocation fails.
    * @throws rmm::logic_error If `source_data` is null, and `size != 0`.
@@ -122,6 +146,21 @@ class device_buffer {
                 device_async_resource_ref mr = mr::get_current_device_resource_ref());
 
   /**
+   * @copydoc device_buffer(void const *, std::size_t, cuda_stream_view, device_async_resource_ref)
+   *
+   * @throws rmm::bad_alloc If the requested alignment cannot be satisfied by the provided
+   * memory resource.
+   * @throws rmm::invalid_argument If the requested alignment is not a power of two
+   *
+   * @param alignment Required alignment of the allocation. The actual alignment will be
+   * at least the requested alignment.
+   */
+  explicit device_buffer(void const* source_data,
+                         std::size_t size,
+                         std::size_t alignment,
+                         cuda_stream_view stream,
+                         device_async_resource_ref mr = mr::get_current_device_resource_ref());
+  /**
    * @brief Construct a new `device_buffer` by deep copying the contents of
    * another `device_buffer`, optionally using the specified stream and memory
    * resource.
@@ -129,6 +168,10 @@ class device_buffer {
    * @note Only copies `other.size()` bytes from `other`, i.e., if
    *`other.size() != other.capacity()`, then the size and capacity of the newly
    * constructed `device_buffer` will be equal to `other.size()`.
+   *
+   * @note The new buffer has the same alignment guarantees as the copied-from buffer. If you need
+   *to control the alignment of the new buffer explicitly, use `device_buffer(void const*,
+   * std::size_t, std::size_t, cuda_stream_view, device_async_resource_ref)`.
    *
    * @note This function does not synchronize `stream`. `other` is copied on `stream`, so the
    * caller is responsible for correct synchronization to ensure that `other` is valid when
@@ -300,6 +343,9 @@ class device_buffer {
    */
   [[nodiscard]] std::size_t capacity() const noexcept { return _capacity; }
 
+  /// @brief @return The alignment of the buffer in bytes.
+  [[nodiscard]] std::size_t alignment() const noexcept { return _alignment; }
+
   /**
    * @briefreturn{The stream most recently specified for allocation/deallocation}
    */
@@ -326,6 +372,7 @@ class device_buffer {
  private:
   void* _data{nullptr};        ///< Pointer to device memory allocation
   std::size_t _size{};         ///< Requested size of the device memory allocation
+  std::size_t _alignment{};    ///< The alignment of the allocation
   std::size_t _capacity{};     ///< The actual size of the device memory allocation
   cuda_stream_view _stream{};  ///< Stream to use for device memory deallocation
 
