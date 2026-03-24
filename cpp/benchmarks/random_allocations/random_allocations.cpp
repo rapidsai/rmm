@@ -243,8 +243,7 @@ void declare_benchmark(std::string const& name)
   if (name == "cuda") {
     BENCHMARK_CAPTURE(BM_RandomAllocations, cuda_mr, &make_cuda)  // NOLINT
       ->Apply(benchmark_range);
-  }
-  if (name == "cuda_async") {
+  } else if (name == "cuda_async") {
     BENCHMARK_CAPTURE(BM_RandomAllocations, cuda_async_mr, &make_cuda_async)  // NOLINT
       ->Apply(benchmark_range);
   } else if (name == "binning") {
