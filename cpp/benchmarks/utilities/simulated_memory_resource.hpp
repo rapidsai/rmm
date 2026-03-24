@@ -6,6 +6,7 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
 #include <rmm/detail/format.hpp>
 
 #include <cuda/memory_resource>
@@ -95,7 +96,8 @@ class simulated_memory_resource final {
   bool operator==(simulated_memory_resource const&) const noexcept { return true; }
   bool operator!=(simulated_memory_resource const&) const noexcept { return false; }
 
-  friend void get_property(simulated_memory_resource const&, cuda::mr::device_accessible) noexcept
+  RMM_CONSTEXPR_FRIEND void get_property(simulated_memory_resource const&,
+                                         cuda::mr::device_accessible) noexcept
   {
   }
 
