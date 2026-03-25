@@ -87,7 +87,7 @@ function(ConfigureTest TEST_NAME)
   cmake_parse_arguments(_RMM_TEST "${options}" "${one_value}" "${multi_value}" ${ARGN})
   if(NOT DEFINED _RMM_TEST_GPUS AND NOT DEFINED _RMM_TEST_PERCENT)
     set(_RMM_TEST_GPUS 1)
-    set(_RMM_TEST_PERCENT 5)
+    set(_RMM_TEST_PERCENT 10)
   endif()
   if(NOT DEFINED _RMM_TEST_GPUS)
     set(_RMM_TEST_GPUS 1)
@@ -132,50 +132,42 @@ endfunction()
 
 # test sources
 
-# device mr_ref tests - split by memory resource type for parallel execution PERCENT values based on
-# maximum memory allocation per test (assuming 16GB GPU)
+# Default PERCENT is 10 (set above). Tests that exceed 1.5GB peak GPU memory use PERCENT 100 (run
+# exclusively), targeting a 16GB GPU.
 
-# Full test suites with multi-threading (~2GB max allocation = 15%)
-ConfigureTest(CUDA_MR_REF_TEST mr/mr_ref_cuda_tests.cpp GPUS 1 PERCENT 15)
-ConfigureTest(CUDA_ASYNC_MR_REF_TEST mr/mr_ref_cuda_async_tests.cpp GPUS 1 PERCENT 15)
-ConfigureTest(MANAGED_MR_REF_TEST mr/mr_ref_managed_tests.cpp GPUS 1 PERCENT 15)
-
-# Pre-allocating resources (50% of free device memory, so we use 100% as a safety margin)
+# device mr_ref tests
+ConfigureTest(CUDA_MR_REF_TEST mr/mr_ref_cuda_tests.cpp GPUS 1 PERCENT 100)
+ConfigureTest(CUDA_ASYNC_MR_REF_TEST mr/mr_ref_cuda_async_tests.cpp GPUS 1 PERCENT 100)
+ConfigureTest(MANAGED_MR_REF_TEST mr/mr_ref_managed_tests.cpp)
 ConfigureTest(ARENA_MR_REF_TEST mr/mr_ref_arena_tests.cpp GPUS 1 PERCENT 100)
 ConfigureTest(BINNING_MR_REF_TEST mr/mr_ref_binning_tests.cpp GPUS 1 PERCENT 100)
-
-# Partial test suites without multi-threading (~500MB max = 5%)
-ConfigureTest(SYSTEM_MR_REF_TEST mr/mr_ref_system_tests.cpp GPUS 1 PERCENT 5)
-ConfigureTest(PINNED_MR_REF_TEST mr/mr_ref_pinned_tests.cpp GPUS 1 PERCENT 5)
-ConfigureTest(LOGGING_MR_REF_TEST mr/mr_ref_logging_tests.cpp GPUS 1 PERCENT 5)
-
-# Small test suites (minimal allocations = 5%)
-ConfigureTest(FIXED_SIZE_MR_REF_TEST mr/mr_ref_fixed_size_tests.cpp GPUS 1 PERCENT 5)
-ConfigureTest(DEFAULT_MR_REF_TEST mr/mr_ref_default_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(SYSTEM_MR_REF_TEST mr/mr_ref_system_tests.cpp)
+ConfigureTest(PINNED_MR_REF_TEST mr/mr_ref_pinned_tests.cpp)
+ConfigureTest(LOGGING_MR_REF_TEST mr/mr_ref_logging_tests.cpp)
+ConfigureTest(FIXED_SIZE_MR_REF_TEST mr/mr_ref_fixed_size_tests.cpp)
+ConfigureTest(DEFAULT_MR_REF_TEST mr/mr_ref_default_tests.cpp)
 
 # general adaptor tests
-ConfigureTest(ADAPTOR_TEST mr/adaptor_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(ADAPTOR_TEST mr/adaptor_tests.cpp)
 ConfigureTest(CCCL_ADAPTOR_TEST mr/cccl_adaptor_tests.cpp GPUS 1 PERCENT 100)
-ConfigureTest(THREAD_SAFE_MR_REF_TEST mr/mr_ref_thread_safe_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(THREAD_SAFE_MR_REF_TEST mr/mr_ref_thread_safe_tests.cpp GPUS 1 PERCENT 100)
 
 # pool mr tests
 ConfigureTest(POOL_MR_TEST mr/pool_mr_tests.cpp GPUS 1 PERCENT 100)
 ConfigureTest(POOL_MR_REF_TEST mr/mr_ref_pool_tests.cpp GPUS 1 PERCENT 100)
-ConfigureTest(PINNED_POOL_MR_REF_TEST mr/mr_ref_pinned_pool_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(PINNED_POOL_MR_REF_TEST mr/mr_ref_pinned_pool_tests.cpp)
 
 ConfigureTest(HWDECOMPRESS_TEST mr/hwdecompress_tests.cpp LINK_DRIVER)
 
 # cuda_async mr tests
-ConfigureTest(CUDA_ASYNC_MR_STATIC_CUDART_TEST mr/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60 CUDART
-              STATIC)
-ConfigureTest(CUDA_ASYNC_MR_SHARED_CUDART_TEST mr/cuda_async_mr_tests.cpp GPUS 1 PERCENT 60 CUDART
-              SHARED)
+ConfigureTest(CUDA_ASYNC_MR_STATIC_CUDART_TEST mr/cuda_async_mr_tests.cpp CUDART STATIC)
+ConfigureTest(CUDA_ASYNC_MR_SHARED_CUDART_TEST mr/cuda_async_mr_tests.cpp CUDART SHARED)
 
 # cuda_async managed mr tests (available with CUDA 13+ runtime/driver)
 ConfigureTest(CUDA_ASYNC_MANAGED_MR_TEST mr/cuda_async_managed_mr_tests.cpp)
 
 # thrust allocator tests
-ConfigureTest(THRUST_ALLOCATOR_TEST mr/thrust_allocator_tests.cu GPUS 1 PERCENT 60)
+ConfigureTest(THRUST_ALLOCATOR_TEST mr/thrust_allocator_tests.cu)
 
 # polymorphic allocator tests
 ConfigureTest(POLYMORPHIC_ALLOCATOR_TEST mr/polymorphic_allocator_tests.cpp)
@@ -185,27 +177,27 @@ ConfigureTest(STREAM_ADAPTOR_TEST mr/stream_allocator_adaptor_tests.cpp)
 
 # statistics adaptor tests
 ConfigureTest(STATISTICS_TEST mr/statistics_mr_tests.cpp)
-ConfigureTest(STATISTICS_MR_REF_TEST mr/mr_ref_statistics_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(STATISTICS_MR_REF_TEST mr/mr_ref_statistics_tests.cpp GPUS 1 PERCENT 100)
 
 # tracking adaptor tests
 ConfigureTest(TRACKING_TEST mr/tracking_mr_tests.cpp)
-ConfigureTest(TRACKING_MR_REF_TEST mr/mr_ref_tracking_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(TRACKING_MR_REF_TEST mr/mr_ref_tracking_tests.cpp GPUS 1 PERCENT 100)
 
 # out-of-memory callback adaptor tests
 ConfigureTest(FAILURE_CALLBACK_TEST mr/failure_callback_mr_tests.cpp)
-ConfigureTest(FAILURE_CALLBACK_MR_REF_TEST mr/mr_ref_failure_callback_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(FAILURE_CALLBACK_MR_REF_TEST mr/mr_ref_failure_callback_tests.cpp GPUS 1 PERCENT 100)
 
 # prefetch adaptor tests
 ConfigureTest(PREFETCH_ADAPTOR_TEST mr/prefetch_resource_adaptor_tests.cpp)
-ConfigureTest(PREFETCH_MR_REF_TEST mr/mr_ref_prefetch_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(PREFETCH_MR_REF_TEST mr/mr_ref_prefetch_tests.cpp GPUS 1 PERCENT 100)
 
 # aligned adaptor tests
 ConfigureTest(ALIGNED_TEST mr/aligned_mr_tests.cpp)
-ConfigureTest(ALIGNED_MR_REF_TEST mr/mr_ref_aligned_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(ALIGNED_MR_REF_TEST mr/mr_ref_aligned_tests.cpp)
 
 # limiting adaptor tests
 ConfigureTest(LIMITING_TEST mr/limiting_mr_tests.cpp)
-ConfigureTest(LIMITING_MR_REF_TEST mr/mr_ref_limiting_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(LIMITING_MR_REF_TEST mr/mr_ref_limiting_tests.cpp)
 
 # host mr_ref tests
 ConfigureTest(HOST_MR_REF_TEST mr/host_mr_ref_tests.cpp)
@@ -223,7 +215,7 @@ ConfigureTest(DEVICE_BUFFER_TEST device_buffer_tests.cu)
 ConfigureTest(DEVICE_SCALAR_TEST device_scalar_tests.cpp)
 
 # uvector tests
-ConfigureTest(DEVICE_UVECTOR_TEST device_uvector_tests.cpp GPUS 1 PERCENT 60)
+ConfigureTest(DEVICE_UVECTOR_TEST device_uvector_tests.cpp)
 
 # prefetch tests
 ConfigureTest(PREFETCH_TEST prefetch_tests.cpp)
@@ -239,10 +231,10 @@ ConfigureTest(BINNING_MR_TEST mr/binning_mr_tests.cpp)
 
 # callback memory resource tests
 ConfigureTest(CALLBACK_MR_TEST mr/callback_mr_tests.cpp)
-ConfigureTest(CALLBACK_MR_REF_TEST mr/mr_ref_callback_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(CALLBACK_MR_REF_TEST mr/mr_ref_callback_tests.cpp GPUS 1 PERCENT 100)
 
 # system memory resource tests
-ConfigureTest(SYSTEM_MR_TEST mr/system_mr_tests.cu GPUS 1 PERCENT 100)
+ConfigureTest(SYSTEM_MR_TEST mr/system_mr_tests.cu)
 
 # container multidevice tests
 ConfigureTest(CONTAINER_MULTIDEVICE_TEST container_multidevice_tests.cu)
