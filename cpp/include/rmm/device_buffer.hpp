@@ -370,9 +370,9 @@ class device_buffer {
   [[nodiscard]] rmm::device_async_resource_ref memory_resource() noexcept { return _mr; }
 
  private:
-  void* _data{nullptr};        ///< Pointer to device memory allocation
-  std::size_t _size{};         ///< Requested size of the device memory allocation
-  std::size_t _alignment{};    ///< The alignment of the allocation
+  void* _data{nullptr};  ///< Pointer to device memory allocation
+  std::size_t _size{};   ///< Requested size of the device memory allocation
+  std::size_t _alignment{rmm::CUDA_ALLOCATION_ALIGNMENT};  ///< The alignment of the allocation
   std::size_t _capacity{};     ///< The actual size of the device memory allocation
   cuda_stream_view _stream{};  ///< Stream to use for device memory deallocation
 
