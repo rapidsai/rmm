@@ -79,8 +79,8 @@ class device_check_resource_adaptor final {
     return !(*this == other);
   }
 
-  friend void get_property(device_check_resource_adaptor const&,
-                           cuda::mr::device_accessible) noexcept
+  constexpr friend void get_property(device_check_resource_adaptor const&,
+                                     cuda::mr::device_accessible) noexcept
   {
   }
 

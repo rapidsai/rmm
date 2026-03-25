@@ -62,8 +62,8 @@ class always_throw_memory_resource final {
 
   bool operator==(always_throw_memory_resource const&) const noexcept { return true; }
   bool operator!=(always_throw_memory_resource const&) const noexcept { return false; }
-  friend void get_property(always_throw_memory_resource const&,
-                           cuda::mr::device_accessible) noexcept
+  constexpr friend void get_property(always_throw_memory_resource const&,
+                                     cuda::mr::device_accessible) noexcept
   {
   }
 };

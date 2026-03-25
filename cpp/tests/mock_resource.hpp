@@ -35,7 +35,7 @@ class mock_resource {
 
   bool operator==(mock_resource const&) const noexcept { return true; }
   bool operator!=(mock_resource const&) const { return false; }
-  friend void get_property(mock_resource const&, cuda::mr::device_accessible) noexcept {}
+  constexpr friend void get_property(mock_resource const&, cuda::mr::device_accessible) noexcept {}
   using size_pair = std::pair<std::size_t, std::size_t>;
 };
 
@@ -80,7 +80,10 @@ class mock_resource_wrapper {
   }
   bool operator!=(mock_resource_wrapper const& other) const noexcept { return !(*this == other); }
 
-  friend void get_property(mock_resource_wrapper const&, cuda::mr::device_accessible) noexcept {}
+  constexpr friend void get_property(mock_resource_wrapper const&,
+                                     cuda::mr::device_accessible) noexcept
+  {
+  }
 
  private:
   mock_resource* mock_;

@@ -39,7 +39,10 @@ class mock_memory_resource {
 
   bool operator==(mock_memory_resource const&) const noexcept { return true; }
   bool operator!=(mock_memory_resource const&) const { return false; }
-  friend void get_property(mock_memory_resource const&, cuda::mr::device_accessible) noexcept {}
+  constexpr friend void get_property(mock_memory_resource const&,
+                                     cuda::mr::device_accessible) noexcept
+  {
+  }
 };
 
 // static property checks
@@ -84,8 +87,8 @@ class mock_memory_resource_wrapper {
     return !(*this == other);
   }
 
-  friend void get_property(mock_memory_resource_wrapper const&,
-                           cuda::mr::device_accessible) noexcept
+  constexpr friend void get_property(mock_memory_resource_wrapper const&,
+                                     cuda::mr::device_accessible) noexcept
   {
   }
 

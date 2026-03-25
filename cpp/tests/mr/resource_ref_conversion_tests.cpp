@@ -54,7 +54,10 @@ class new_delete_memory_resource {
   bool operator!=(new_delete_memory_resource const& other) const { return !operator==(other); }
 
   // NOLINTBEGIN
-  friend void get_property(new_delete_memory_resource const&, cuda::mr::host_accessible) noexcept {}
+  constexpr friend void get_property(new_delete_memory_resource const&,
+                                     cuda::mr::host_accessible) noexcept
+  {
+  }
   // NOLINTEND
 };
 
