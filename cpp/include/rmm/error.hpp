@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -98,6 +98,15 @@ class out_of_memory : public bad_alloc {
  */
 class out_of_range : public std::out_of_range {
   using std::out_of_range::out_of_range;
+};
+
+/**
+ * @brief Exception thrown when an argument to a function is invalid
+ *
+ * @ingroup errors
+ */
+class invalid_argument : public std::invalid_argument {
+  using std::invalid_argument::invalid_argument;
 };
 
 }  // namespace RMM_NAMESPACE
