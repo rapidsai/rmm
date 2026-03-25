@@ -24,7 +24,7 @@ namespace mr {
 /**
  * @brief A suballocator that emphasizes fragmentation avoidance and scalable concurrency support.
  *
- * Allocation (do_allocate()) and deallocation (do_deallocate()) are thread-safe. Also,
+ * Allocation and deallocation are thread-safe. Also,
  * this class is compatible with CUDA per-thread default stream.
  *
  * GPU memory is divided into a global arena, per-thread arenas for default streams, and per-stream

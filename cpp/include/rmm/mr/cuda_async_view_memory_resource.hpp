@@ -68,8 +68,6 @@ class cuda_async_view_memory_resource final {
   cuda_async_view_memory_resource& operator=(cuda_async_view_memory_resource&&) =
     default;  ///< @default_move_assignment{cuda_async_view_memory_resource}
 
-  // -- CCCL memory resource interface (hides device_memory_resource versions) --
-
   /**
    * @brief Allocates memory of size at least \p bytes.
    *

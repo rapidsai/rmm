@@ -80,8 +80,6 @@ class system_memory_resource final {
   system_memory_resource& operator=(system_memory_resource&&) =
     default;  ///< @default_move_assignment{system_memory_resource}
 
-  // -- CCCL memory resource interface (hides device_memory_resource versions) --
-
   /**
    * @brief Allocates memory of size at least \p bytes.
    *

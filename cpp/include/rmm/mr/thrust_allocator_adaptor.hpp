@@ -133,7 +133,10 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    *
    * This property declares that a `thrust_allocator` provides device accessible memory
    */
-  friend void get_property(thrust_allocator const&, cuda::mr::device_accessible) noexcept {}
+  RMM_CONSTEXPR_FRIEND void get_property(thrust_allocator const&,
+                                         cuda::mr::device_accessible) noexcept
+  {
+  }
 
  private:
   cuda_stream_view _stream{};

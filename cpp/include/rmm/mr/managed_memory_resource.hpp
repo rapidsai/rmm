@@ -34,8 +34,6 @@ class managed_memory_resource final {
   managed_memory_resource& operator=(managed_memory_resource&&) =
     default;  ///< @default_move_assignment{managed_memory_resource}
 
-  // -- CCCL memory resource interface (hides device_memory_resource versions) --
-
   /**
    * @brief Allocates memory of size at least \p bytes.
    *

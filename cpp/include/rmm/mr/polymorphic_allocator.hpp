@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -21,11 +21,11 @@ namespace mr {
  * @file
  */
 /**
- * @brief A stream ordered Allocator using a `rmm::mr::device_memory_resource` to satisfy
+ * @brief A stream ordered Allocator using a `device_async_resource_ref` to satisfy
  * (de)allocations.
  *
  * Similar to `std::pmr::polymorphic_allocator`, uses the runtime polymorphism of
- * `device_memory_resource` to allow containers with `polymorphic_allocator` as their static
+ * type-erased resource refs to allow containers with `polymorphic_allocator` as their static
  * allocator type to be interoperable, but exhibit different behavior depending on resource used.
  *
  * Unlike STL allocators, `polymorphic_allocator`'s `allocate` and `deallocate` functions are stream
