@@ -12,7 +12,7 @@ namespace {
 INSTANTIATE_TEST_SUITE_P(FixedSizeResourceTests,
                          mr_ref_test,
                          ::testing::Values("Fixed_Size"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 }  // namespace
 }  // namespace rmm::test

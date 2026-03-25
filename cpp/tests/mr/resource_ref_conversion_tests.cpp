@@ -40,7 +40,7 @@ class new_delete_memory_resource {
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
     rmm::detail::aligned_host_deallocate(
-      ptr, bytes, alignment, [](void* ptr) { ::operator delete(ptr); });
+      ptr, bytes, alignment, [](void* p) { ::operator delete(p); });
   }
 
   void deallocate([[maybe_unused]] cuda::stream_ref stream,

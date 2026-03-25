@@ -300,20 +300,20 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr)
 TYPED_TEST(DeviceBufferTest, MoveConstructor)
 {
   rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
-  auto* ptr     = buff.data();
-  auto size     = buff.size();
-  auto capacity = buff.capacity();
-  auto mr       = buff.memory_resource();
-  auto stream   = buff.stream();
+  auto* ptr        = buff.data();
+  auto buff_size   = buff.size();
+  auto capacity    = buff.capacity();
+  auto buff_mr     = buff.memory_resource();
+  auto buff_stream = buff.stream();
 
   // New buffer should have the same contents as the original
   rmm::device_buffer buff_new(std::move(buff));
   EXPECT_NE(nullptr, buff_new.data());
   EXPECT_EQ(ptr, buff_new.data());
-  EXPECT_EQ(size, buff_new.size());
+  EXPECT_EQ(buff_size, buff_new.size());
   EXPECT_EQ(capacity, buff_new.capacity());
-  EXPECT_EQ(stream, buff_new.stream());
-  EXPECT_EQ(mr, buff_new.memory_resource());
+  EXPECT_EQ(buff_stream, buff_new.stream());
+  EXPECT_EQ(buff_mr, buff_new.memory_resource());
 
   // Original buffer should be empty
   EXPECT_EQ(nullptr,
@@ -327,21 +327,21 @@ TYPED_TEST(DeviceBufferTest, MoveConstructorStream)
 {
   rmm::device_buffer buff(this->size, this->stream, &this->mr);
   this->stream.synchronize();
-  auto* ptr     = buff.data();
-  auto size     = buff.size();
-  auto capacity = buff.capacity();
-  auto mr       = buff.memory_resource();
-  auto stream   = buff.stream();
+  auto* ptr        = buff.data();
+  auto buff_size   = buff.size();
+  auto capacity    = buff.capacity();
+  auto buff_mr     = buff.memory_resource();
+  auto buff_stream = buff.stream();
 
   // New buffer should have the same contents as the original
   rmm::device_buffer buff_new(std::move(buff));
   this->stream.synchronize();
   EXPECT_NE(nullptr, buff_new.data());
   EXPECT_EQ(ptr, buff_new.data());
-  EXPECT_EQ(size, buff_new.size());
+  EXPECT_EQ(buff_size, buff_new.size());
   EXPECT_EQ(capacity, buff_new.capacity());
-  EXPECT_EQ(stream, buff_new.stream());
-  EXPECT_EQ(mr, buff_new.memory_resource());
+  EXPECT_EQ(buff_stream, buff_new.stream());
+  EXPECT_EQ(buff_mr, buff_new.memory_resource());
 
   // Original buffer should be empty
   EXPECT_EQ(nullptr,
@@ -354,11 +354,11 @@ TYPED_TEST(DeviceBufferTest, MoveConstructorStream)
 TYPED_TEST(DeviceBufferTest, MoveAssignmentToDefault)
 {
   rmm::device_buffer src(this->size, rmm::cuda_stream_default, &this->mr);
-  auto* ptr     = src.data();
-  auto size     = src.size();
-  auto capacity = src.capacity();
-  auto mr       = src.memory_resource();
-  auto stream   = src.stream();
+  auto* ptr        = src.data();
+  auto buff_size   = src.size();
+  auto capacity    = src.capacity();
+  auto buff_mr     = src.memory_resource();
+  auto buff_stream = src.stream();
 
   rmm::device_buffer dest;
   dest = std::move(src);
@@ -366,10 +366,10 @@ TYPED_TEST(DeviceBufferTest, MoveAssignmentToDefault)
   // contents of `from` should be in `to`
   EXPECT_NE(nullptr, dest.data());
   EXPECT_EQ(ptr, dest.data());
-  EXPECT_EQ(size, dest.size());
+  EXPECT_EQ(buff_size, dest.size());
   EXPECT_EQ(capacity, dest.capacity());
-  EXPECT_EQ(stream, dest.stream());
-  EXPECT_EQ(mr, dest.memory_resource());
+  EXPECT_EQ(buff_stream, dest.stream());
+  EXPECT_EQ(buff_mr, dest.memory_resource());
 
   // `from` should be empty
   EXPECT_EQ(nullptr, src.data());  // NOLINT(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
@@ -381,11 +381,11 @@ TYPED_TEST(DeviceBufferTest, MoveAssignmentToDefault)
 TYPED_TEST(DeviceBufferTest, MoveAssignment)
 {
   rmm::device_buffer src(this->size, rmm::cuda_stream_default, &this->mr);
-  auto* ptr     = src.data();
-  auto size     = src.size();
-  auto capacity = src.capacity();
-  auto mr       = src.memory_resource();
-  auto stream   = src.stream();
+  auto* ptr        = src.data();
+  auto buff_size   = src.size();
+  auto capacity    = src.capacity();
+  auto buff_mr     = src.memory_resource();
+  auto buff_stream = src.stream();
 
   rmm::device_buffer dest(this->size - 1, rmm::cuda_stream_default, &this->mr);
   dest = std::move(src);
@@ -393,10 +393,10 @@ TYPED_TEST(DeviceBufferTest, MoveAssignment)
   // contents of `from` should be in `to`
   EXPECT_NE(nullptr, dest.data());
   EXPECT_EQ(ptr, dest.data());
-  EXPECT_EQ(size, dest.size());
+  EXPECT_EQ(buff_size, dest.size());
   EXPECT_EQ(capacity, dest.capacity());
-  EXPECT_EQ(stream, dest.stream());
-  EXPECT_EQ(mr, dest.memory_resource());
+  EXPECT_EQ(buff_stream, dest.stream());
+  EXPECT_EQ(buff_mr, dest.memory_resource());
 
   // `from` should be empty
   EXPECT_EQ(nullptr, src.data());  // NOLINT(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
@@ -408,11 +408,11 @@ TYPED_TEST(DeviceBufferTest, MoveAssignment)
 TYPED_TEST(DeviceBufferTest, SelfMoveAssignment)
 {
   rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
-  auto* ptr     = buff.data();
-  auto size     = buff.size();
-  auto capacity = buff.capacity();
-  auto mr       = buff.memory_resource();
-  auto stream   = buff.stream();
+  auto* ptr        = buff.data();
+  auto buff_size   = buff.size();
+  auto capacity    = buff.capacity();
+  auto buff_mr     = buff.memory_resource();
+  auto buff_stream = buff.stream();
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wself-move"
@@ -420,10 +420,10 @@ TYPED_TEST(DeviceBufferTest, SelfMoveAssignment)
 #pragma GCC diagnostic pop
   EXPECT_NE(nullptr, buff.data());  // NOLINT(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
   EXPECT_EQ(ptr, buff.data());
-  EXPECT_EQ(size, buff.size());
+  EXPECT_EQ(buff_size, buff.size());
   EXPECT_EQ(capacity, buff.capacity());
-  EXPECT_EQ(stream, buff.stream());
-  EXPECT_EQ(mr, buff.memory_resource());
+  EXPECT_EQ(buff_stream, buff.stream());
+  EXPECT_EQ(buff_mr, buff.memory_resource());
 }
 
 TYPED_TEST(DeviceBufferTest, ResizeSmaller)

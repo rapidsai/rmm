@@ -47,9 +47,9 @@ TEST_P(allocator_test, multi_device)
 {
   if (rmm::get_num_cuda_devices() < 2) { GTEST_SKIP() << "Needs at least two devices"; }
   cuda_set_device_raii with_device{rmm::get_current_cuda_device()};
-  rmm::cuda_stream stream{};
+  rmm::cuda_stream local_stream{};
   // make allocator on device-0
-  rmm::mr::thrust_allocator<int> allocator(stream.view(), this->ref);
+  rmm::mr::thrust_allocator<int> allocator(local_stream.view(), this->ref);
   auto const size{100};
   EXPECT_NO_THROW([&]() {
     auto vec = rmm::device_vector<int>(size, allocator);
@@ -62,7 +62,7 @@ INSTANTIATE_TEST_SUITE_P(
   ThrustAllocatorTests,
   allocator_test,
   ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool", "Arena", "Binning"),
-  [](auto const& info) { return info.param; });
+  [](auto const& test_info) { return test_info.param; });
 
 }  // namespace
 }  // namespace rmm::test

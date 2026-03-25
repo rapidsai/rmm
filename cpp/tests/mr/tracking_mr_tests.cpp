@@ -39,8 +39,8 @@ INSTANTIATE_TEST_SUITE_P(TrackingTest, allocation_size, ::testing::Values(0, 256
 
 TEST_P(allocation_size, MultiThreaded)
 {
-  const std::size_t allocation_size = GetParam();
-  auto upstream                     = rmm::mr::cuda_memory_resource{};
+  const std::size_t alloc_size = GetParam();
+  auto upstream                = rmm::mr::cuda_memory_resource{};
   std::vector<std::thread> threads;
   auto delayed = delayed_memory_resource(upstream, std::chrono::milliseconds{300});
   auto mr      = rmm::mr::tracking_resource_adaptor<delayed_memory_resource>(delayed);
@@ -66,14 +66,14 @@ TEST_P(allocation_size, MultiThreaded)
     threads.emplace_back([&, i = i]() {
       void* ptr{nullptr};
       if (i != 0) { std::this_thread::sleep_for(std::chrono::milliseconds{100}); }
-      EXPECT_NO_THROW(ptr = mr.allocate(stream, allocation_size));
-      if (allocation_size != 0) {
+      EXPECT_NO_THROW(ptr = mr.allocate(stream, alloc_size));
+      if (alloc_size != 0) {
         EXPECT_NE(ptr, nullptr);
       } else {
         EXPECT_EQ(ptr, nullptr);
       }
       if (i == 0) { std::this_thread::sleep_for(std::chrono::milliseconds{100}); }
-      mr.deallocate(stream, ptr, allocation_size);
+      mr.deallocate(stream, ptr, alloc_size);
     });
   }
   for (auto& t : threads) {

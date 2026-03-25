@@ -31,12 +31,12 @@ TEST(CallbackTest, TestCallbacksAreInvoked)
   EXPECT_CALL(base_mr, do_deallocate(_, 10_MiB, cuda_stream_view{})).Times(1);
 
   auto allocate_callback = [](std::size_t size, cuda_stream_view stream, void* arg) {
-    auto base_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
-    return base_mr.allocate(stream, size);
+    auto local_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
+    return local_mr.allocate(stream, size);
   };
   auto deallocate_callback = [](void* ptr, std::size_t size, cuda_stream_view stream, void* arg) {
-    auto base_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
-    base_mr.deallocate(stream, ptr, size);
+    auto local_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
+    local_mr.deallocate(stream, ptr, size);
   };
   auto mr =
     rmm::mr::callback_memory_resource(allocate_callback, deallocate_callback, &base_ref, &base_ref);
@@ -52,14 +52,14 @@ TEST(CallbackTest, LoggingTest)
   auto base_mr           = rmm::mr::get_current_device_resource_ref();
   auto allocate_callback = [](std::size_t size, cuda_stream_view stream, void* arg) {
     std::cout << "Allocating " << size << " bytes" << std::endl;
-    auto base_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
-    return base_mr.allocate(stream, size);
+    auto local_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
+    return local_mr.allocate(stream, size);
   };
 
   auto deallocate_callback = [](void* ptr, std::size_t size, cuda_stream_view stream, void* arg) {
     std::cout << "Deallocating " << size << " bytes" << std::endl;
-    auto base_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
-    base_mr.deallocate(stream, ptr, size);
+    auto local_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
+    local_mr.deallocate(stream, ptr, size);
   };
   auto mr =
     rmm::mr::callback_memory_resource(allocate_callback, deallocate_callback, &base_mr, &base_mr);

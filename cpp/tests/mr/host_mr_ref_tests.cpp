@@ -52,7 +52,7 @@ constexpr std::size_t size_pb{1_PiB};
 struct allocation {
   void* ptr{nullptr};
   std::size_t size{0};
-  allocation(void* ptr, std::size_t size) : ptr{ptr}, size{size} {}
+  allocation(void* p, std::size_t sz) : ptr{p}, size{sz} {}
   allocation() = default;
 };
 }  // namespace

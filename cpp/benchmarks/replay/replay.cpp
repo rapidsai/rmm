@@ -89,7 +89,7 @@ using MRFactoryFunc = std::function<std::shared_ptr<rmm::mr::device_memory_resou
 struct allocation {
   allocation() = default;
   void* ptr{};
-  allocation(void* ptr, std::size_t size) : ptr{ptr}, size{size} {}
+  allocation(void* p, std::size_t sz) : ptr{p}, size{sz} {}
   std::size_t size{};
 };
 
@@ -119,8 +119,8 @@ struct replay_benchmark {
    * set of arguments forwarded to the MR constructor.
    *
    * @param factory A factory function to create the memory resource
+   * @param simulated_size The simulated total memory size
    * @param events The set of allocation events to replay
-   * @param args Variable number of arguments forward to the constructor of MR
    */
   replay_benchmark(MRFactoryFunc factory,
                    std::size_t simulated_size,
@@ -366,14 +366,14 @@ int main(int argc, char** argv)
                             "Enable verbose printing of log events",
                             cxxopts::value<bool>()->default_value("false"));
 
-      auto args = options.parse(argc, argv);
+      auto parsed = options.parse(argc, argv);
 
-      if (args.count("file") == 0) {
+      if (parsed.count("file") == 0) {
         std::cout << options.help() << std::endl;
         exit(0);
       }
 
-      return args;
+      return parsed;
     }();
 
     auto filename = args["file"].as<std::string>();

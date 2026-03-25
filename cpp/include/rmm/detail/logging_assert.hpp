@@ -19,7 +19,7 @@
  * @brief Assertion that logs a CRITICAL log message on failure.
  */
 #ifdef NDEBUG
-#define RMM_LOGGING_ASSERT(_expr) (void)0
+#define RMM_LOGGING_ASSERT(_expr) static_cast<void>(0)
 #elif RMM_LOG_ACTIVE_LEVEL < RMM_LOG_LEVEL_OFF
 #define RMM_LOGGING_ASSERT(_expr)                                                                 \
   do {                                                                                            \

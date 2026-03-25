@@ -12,12 +12,12 @@ namespace {
 INSTANTIATE_TEST_SUITE_P(PinnedResourceTests,
                          mr_ref_test,
                          ::testing::Values("Pinned"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 INSTANTIATE_TEST_SUITE_P(PinnedResourceAllocationTests,
                          mr_ref_allocation_test,
                          ::testing::Values("Pinned"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 }  // namespace
 }  // namespace rmm::test
