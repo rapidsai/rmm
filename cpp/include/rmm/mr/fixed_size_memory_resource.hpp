@@ -11,6 +11,8 @@
 #include <cuda/memory_resource>
 
 #include <cstddef>
+#include <type_traits>
+#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -56,15 +58,26 @@ class RMM_EXPORT fixed_size_memory_resource
    * When the pool of blocks is all allocated, grows the pool by allocating
    * `blocks_to_preallocate` more blocks from `upstream_mr`.
    *
+   * @tparam Upstream Type of the upstream resource (must be convertible to
+   * `cuda::mr::any_resource<cuda::mr::device_accessible>`).
    * @param upstream_mr The device_async_resource_ref from which to allocate blocks for the pool.
    * @param block_size The size of blocks to allocate.
    * @param blocks_to_preallocate The number of blocks to allocate to initialize the pool.
    */
+  template <
+    class Upstream,
+    std::enable_if_t<!std::is_same_v<std::decay_t<Upstream>, fixed_size_memory_resource>, int> = 0>
   explicit fixed_size_memory_resource(
-    device_async_resource_ref upstream_mr,
+    Upstream&& upstream_mr,
     // NOLINTNEXTLINE bugprone-easily-swappable-parameters
     std::size_t block_size            = default_block_size,
-    std::size_t blocks_to_preallocate = default_blocks_to_preallocate);
+    std::size_t blocks_to_preallocate = default_blocks_to_preallocate)
+    : shared_base(cuda::mr::make_shared_resource<detail::fixed_size_memory_resource_impl>(
+        cuda::mr::any_resource<cuda::mr::device_accessible>{std::forward<Upstream>(upstream_mr)},
+        block_size,
+        blocks_to_preallocate))
+  {
+  }
 
   ~fixed_size_memory_resource() = default;
 

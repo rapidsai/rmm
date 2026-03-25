@@ -31,7 +31,7 @@ namespace detail {
  */
 class arena_memory_resource_impl {
  public:
-  arena_memory_resource_impl(device_async_resource_ref upstream_mr,
+  arena_memory_resource_impl(cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr,
                              std::optional<std::size_t> arena_size,
                              bool dump_log_on_failure);
 

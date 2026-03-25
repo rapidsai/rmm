@@ -11,6 +11,8 @@
 #include <cuda/memory_resource>
 
 #include <cstddef>
+#include <type_traits>
+#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -42,9 +44,18 @@ class RMM_EXPORT prefetch_resource_adaptor
    * @brief Construct a new prefetch resource adaptor using `upstream` to satisfy
    * allocation requests.
    *
+   * @tparam Upstream Type of the upstream resource (must be convertible to
+   * `cuda::mr::any_resource<cuda::mr::device_accessible>`).
    * @param upstream The resource_ref used for allocating/deallocating device memory
    */
-  explicit prefetch_resource_adaptor(device_async_resource_ref upstream);
+  template <
+    class Upstream,
+    std::enable_if_t<!std::is_same_v<std::decay_t<Upstream>, prefetch_resource_adaptor>, int> = 0>
+  explicit prefetch_resource_adaptor(Upstream&& upstream)
+    : shared_base(cuda::mr::make_shared_resource<detail::prefetch_resource_adaptor_impl>(
+        cuda::mr::any_resource<cuda::mr::device_accessible>{std::forward<Upstream>(upstream)}))
+  {
+  }
 
   ~prefetch_resource_adaptor() = default;
 

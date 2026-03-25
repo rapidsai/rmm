@@ -10,14 +10,6 @@
 namespace RMM_NAMESPACE {
 namespace mr {
 
-fixed_size_memory_resource::fixed_size_memory_resource(device_async_resource_ref upstream,
-                                                       std::size_t block_size,
-                                                       std::size_t blocks_to_preallocate)
-  : shared_base(cuda::mr::make_shared_resource<detail::fixed_size_memory_resource_impl>(
-      upstream, block_size, blocks_to_preallocate))
-{
-}
-
 device_async_resource_ref fixed_size_memory_resource::get_upstream_resource() const noexcept
 {
   return get().get_upstream_resource();

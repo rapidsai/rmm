@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// Suppress nvcc warning about __host__ shared_resource copy/move constructors called from
+// __host__ __device__ any_resource internals. These functions are only called from host code.
+#pragma nv_diag_suppress 20011
+
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_pool.hpp>

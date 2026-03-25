@@ -11,6 +11,7 @@
 #include <cuda/memory_resource>
 
 #include <cstddef>
+#include <type_traits>
 #include <utility>
 
 namespace RMM_NAMESPACE {
@@ -52,9 +53,18 @@ class RMM_EXPORT statistics_resource_adaptor
   /**
    * @brief Construct a statistics resource adaptor using `upstream` to satisfy allocation requests.
    *
+   * @tparam Upstream Type of the upstream resource (must be convertible to
+   * `cuda::mr::any_resource<cuda::mr::device_accessible>`).
    * @param upstream The resource used for allocating/deallocating device memory.
    */
-  explicit statistics_resource_adaptor(device_async_resource_ref upstream);
+  template <
+    class Upstream,
+    std::enable_if_t<!std::is_same_v<std::decay_t<Upstream>, statistics_resource_adaptor>, int> = 0>
+  explicit statistics_resource_adaptor(Upstream&& upstream)
+    : shared_base(cuda::mr::make_shared_resource<detail::statistics_resource_adaptor_impl>(
+        cuda::mr::any_resource<cuda::mr::device_accessible>{std::forward<Upstream>(upstream)}))
+  {
+  }
 
   ~statistics_resource_adaptor() = default;
 

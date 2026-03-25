@@ -12,6 +12,8 @@
 
 #include <cstddef>
 #include <optional>
+#include <type_traits>
+#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -59,7 +61,7 @@ class RMM_EXPORT pool_memory_resource
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
    * of the available memory from the upstream resource.
    */
-  explicit pool_memory_resource(device_async_resource_ref upstream_mr,
+  explicit pool_memory_resource(cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr,
                                 std::size_t initial_pool_size,
                                 std::optional<std::size_t> maximum_pool_size = std::nullopt);
 

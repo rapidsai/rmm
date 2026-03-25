@@ -12,6 +12,8 @@
 #include <cuda/memory_resource>
 
 #include <cstddef>
+#include <type_traits>
+#include <utility>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -54,15 +56,26 @@ class RMM_EXPORT aligned_resource_adaptor
    *
    * @throws rmm::logic_error if `alignment` is not a power of 2
    *
+   * @tparam Upstream Type of the upstream resource (must be convertible to
+   * `cuda::mr::any_resource<cuda::mr::device_accessible>`).
    * @param upstream The resource used for allocating/deallocating device memory.
    * @param alignment The size used for allocation alignment (raised to CUDA_ALLOCATION_ALIGNMENT
    * if smaller).
    * @param alignment_threshold Only allocations >= this size are aligned to `alignment`.
    */
-  explicit aligned_resource_adaptor(device_async_resource_ref upstream,
+  template <
+    class Upstream,
+    std::enable_if_t<!std::is_same_v<std::decay_t<Upstream>, aligned_resource_adaptor>, int> = 0>
+  explicit aligned_resource_adaptor(Upstream&& upstream,
                                     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
                                     std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT,
-                                    std::size_t alignment_threshold = default_alignment_threshold);
+                                    std::size_t alignment_threshold = default_alignment_threshold)
+    : shared_base(cuda::mr::make_shared_resource<detail::aligned_resource_adaptor_impl>(
+        cuda::mr::any_resource<cuda::mr::device_accessible>{std::forward<Upstream>(upstream)},
+        alignment,
+        alignment_threshold))
+  {
+  }
 
   ~aligned_resource_adaptor() = default;
 

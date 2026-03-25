@@ -12,13 +12,6 @@
 namespace RMM_NAMESPACE {
 namespace mr {
 
-tracking_resource_adaptor::tracking_resource_adaptor(device_async_resource_ref upstream,
-                                                     bool capture_stacks)
-  : shared_base(cuda::mr::make_shared_resource<detail::tracking_resource_adaptor_impl>(
-      upstream, capture_stacks))
-{
-}
-
 device_async_resource_ref tracking_resource_adaptor::get_upstream_resource() const noexcept
 {
   return get().get_upstream_resource();

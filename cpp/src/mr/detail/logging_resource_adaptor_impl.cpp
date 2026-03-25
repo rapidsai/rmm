@@ -14,9 +14,9 @@ namespace detail {
 
 logging_resource_adaptor_impl::logging_resource_adaptor_impl(
   std::shared_ptr<rapids_logger::logger> logger,
-  device_async_resource_ref upstream,
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
   bool auto_flush)
-  : logger_{std::move(logger)}, upstream_{upstream}
+  : logger_{std::move(logger)}, upstream_{std::move(upstream)}
 {
   if (auto_flush) { logger_->flush_on(rapids_logger::level_enum::info); }
   logger_->set_pattern("%v");

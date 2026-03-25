@@ -11,8 +11,9 @@ namespace RMM_NAMESPACE {
 namespace mr {
 namespace detail {
 
-prefetch_resource_adaptor_impl::prefetch_resource_adaptor_impl(device_async_resource_ref upstream)
-  : upstream_mr_{upstream}
+prefetch_resource_adaptor_impl::prefetch_resource_adaptor_impl(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream)
+  : upstream_mr_{std::move(upstream)}
 {
 }
 

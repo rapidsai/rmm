@@ -5,14 +5,20 @@
 
 #include <rmm/mr/limiting_resource_adaptor.hpp>
 
+#include <cuda/memory_resource>
+
+#include <cstddef>
+#include <utility>
+
 namespace RMM_NAMESPACE {
 namespace mr {
 
-limiting_resource_adaptor::limiting_resource_adaptor(device_async_resource_ref upstream,
-                                                     std::size_t allocation_limit,
-                                                     std::size_t alignment)
+limiting_resource_adaptor::limiting_resource_adaptor(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  std::size_t allocation_limit,
+  std::size_t alignment)
   : shared_base(cuda::mr::make_shared_resource<detail::limiting_resource_adaptor_impl>(
-      upstream, allocation_limit, alignment))
+      std::move(upstream), allocation_limit, alignment))
 {
 }
 

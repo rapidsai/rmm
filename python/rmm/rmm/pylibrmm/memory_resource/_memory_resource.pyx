@@ -38,6 +38,7 @@ from rmm.statistics import Statistics
 
 from rmm.librmm.memory_resource cimport (
     CppExcept,
+    _to_any_resource,
     allocate_callback_t,
     allocation_handle_type,
     arena_memory_resource,
@@ -356,7 +357,7 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
             else optional[size_t](<size_t> parse_bytes(maximum_pool_size))
         )
         self.c_obj.reset(new pool_memory_resource(
-            upstream_mr.c_ref.value(),
+            _to_any_resource(upstream_mr.c_ref.value()),
             c_initial_pool_size,
             c_maximum_pool_size
         ))
@@ -400,7 +401,7 @@ cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
             else optional[size_t](<size_t> parse_bytes(arena_size))
         )
         self.c_obj.reset(new arena_memory_resource(
-            upstream_mr.c_ref.value(),
+            _to_any_resource(upstream_mr.c_ref.value()),
             c_arena_size,
             dump_log_on_failure,
         ))
@@ -437,7 +438,7 @@ cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
             size_t blocks_to_preallocate=128
     ):
         self.c_obj.reset(new fixed_size_memory_resource(
-            upstream_mr.c_ref.value(),
+            _to_any_resource(upstream_mr.c_ref.value()),
             block_size,
             blocks_to_preallocate
         ))
@@ -482,11 +483,11 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
         if (min_size_exponent == -1 or max_size_exponent == -1):
             self.c_obj.reset(new binning_memory_resource(
-                upstream_mr.c_ref.value()
+                _to_any_resource(upstream_mr.c_ref.value())
             ))
         else:
             self.c_obj.reset(new binning_memory_resource(
-                upstream_mr.c_ref.value(),
+                _to_any_resource(upstream_mr.c_ref.value()),
                 min_size_exponent,
                 max_size_exponent
             ))
@@ -676,7 +677,7 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
         size_t allocation_limit
     ):
         self.c_obj.reset(new limiting_resource_adaptor(
-            upstream_mr.c_ref.value(),
+            _to_any_resource(upstream_mr.c_ref.value()),
             allocation_limit
         ))
         self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
@@ -741,7 +742,7 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
         self._log_file_name = log_file_name
 
         self.c_obj.reset(new logging_resource_adaptor(
-            upstream_mr.c_ref.value(),
+            _to_any_resource(upstream_mr.c_ref.value()),
             log_file_name.encode()
         ))
         self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
@@ -777,7 +778,7 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         DeviceMemoryResource upstream_mr
     ):
         self.c_obj.reset(new statistics_resource_adaptor(
-            upstream_mr.c_ref.value()
+            _to_any_resource(upstream_mr.c_ref.value())
         ))
         self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
@@ -868,7 +869,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         bool capture_stacks=False
     ):
         self.c_obj.reset(new tracking_resource_adaptor(
-            upstream_mr.c_ref.value(),
+            _to_any_resource(upstream_mr.c_ref.value()),
             capture_stacks
         ))
         self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
@@ -941,7 +942,7 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
     ):
         self._callback = callback
         self.c_obj.reset(new failure_callback_resource_adaptor_oom(
-            upstream_mr.c_ref.value(),
+            _to_any_resource(upstream_mr.c_ref.value()),
             <failure_callback_t>(_oom_callback_function),
             <void*>(callback)
         ))
@@ -971,7 +972,7 @@ cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
         DeviceMemoryResource upstream_mr
     ):
         self.c_obj.reset(new prefetch_resource_adaptor(
-            upstream_mr.c_ref.value()
+            _to_any_resource(upstream_mr.c_ref.value())
         ))
         self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 

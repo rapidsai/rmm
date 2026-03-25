@@ -25,10 +25,11 @@ namespace RMM_NAMESPACE {
 namespace mr {
 namespace detail {
 
-fixed_size_memory_resource_impl::fixed_size_memory_resource_impl(device_async_resource_ref upstream,
-                                                                 std::size_t block_size,
-                                                                 std::size_t blocks_to_preallocate)
-  : upstream_mr_{upstream},
+fixed_size_memory_resource_impl::fixed_size_memory_resource_impl(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  std::size_t block_size,
+  std::size_t blocks_to_preallocate)
+  : upstream_mr_{std::move(upstream)},
     block_size_{align_up(block_size, CUDA_ALLOCATION_ALIGNMENT)},
     upstream_chunk_size_{block_size_ * blocks_to_preallocate}
 {

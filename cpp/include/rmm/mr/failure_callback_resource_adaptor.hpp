@@ -13,6 +13,7 @@
 #include <cuda/memory_resource>
 
 #include <cstddef>
+#include <type_traits>
 #include <utility>
 
 namespace RMM_NAMESPACE {
@@ -65,12 +66,12 @@ class failure_callback_resource_adaptor
    * @param callback Callback function @see failure_callback_t
    * @param callback_arg Extra argument passed to `callback`
    */
-  failure_callback_resource_adaptor(device_async_resource_ref upstream,
+  failure_callback_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
                                     failure_callback_t callback,
                                     void* callback_arg)
     : shared_base(cuda::mr::make_shared_resource<
                   detail::failure_callback_resource_adaptor_impl<ExceptionType>>(
-        upstream, std::move(callback), callback_arg))
+        std::move(upstream), std::move(callback), callback_arg))
   {
   }
 
