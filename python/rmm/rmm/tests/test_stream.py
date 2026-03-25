@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from typing import Any
+
 import pytest
 
 import rmm.pylibrmm.cuda_stream_pool
@@ -97,7 +99,9 @@ def test_cuda_core_buffer(current_device):
         rmm.pylibrmm.stream.CudaStreamFlags.NON_BLOCKING,
     ],
 )
-def test_cuda_stream_pool(current_device, flags):
+def test_cuda_stream_pool(
+    current_device: Any, flags: rmm.pylibrmm.stream.CudaStreamFlags
+) -> None:
     default_rmm_stream = rmm.pylibrmm.stream.Stream(
         current_device.default_stream
     )
