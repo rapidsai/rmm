@@ -233,8 +233,9 @@ ConfigureTest(BINNING_MR_TEST mr/binning_mr_tests.cpp)
 ConfigureTest(CALLBACK_MR_TEST mr/callback_mr_tests.cpp)
 ConfigureTest(CALLBACK_MR_REF_TEST mr/mr_ref_callback_tests.cpp GPUS 1 PERCENT 100)
 
-# system memory resource tests
-ConfigureTest(SYSTEM_MR_TEST mr/system_mr_tests.cu)
+# system memory resource tests — PERCENT 100 required: tests assert exact cudaMemGetInfo equality,
+# so no other test may allocate GPU memory concurrently.
+ConfigureTest(SYSTEM_MR_TEST mr/system_mr_tests.cu GPUS 1 PERCENT 100)
 
 # container multidevice tests
 ConfigureTest(CONTAINER_MULTIDEVICE_TEST container_multidevice_tests.cu)
