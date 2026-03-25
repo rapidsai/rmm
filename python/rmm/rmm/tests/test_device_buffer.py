@@ -5,7 +5,9 @@
 
 import copy
 import pickle
+from collections.abc import Callable
 from itertools import product
+from typing import Any, NotRequired, Protocol, TypedDict
 
 import numpy as np
 import pytest
@@ -20,8 +22,40 @@ from test_helpers import (
 import rmm
 
 
+class _CUDAArrayInterface(TypedDict):
+    data: tuple[int, bool]
+    shape: tuple[int, ...]
+    typestr: str
+    version: int
+    strides: NotRequired[tuple[int, ...] | None]
+    descr: NotRequired[list[tuple]]
+
+
+class CudaArrayInterface(Protocol):
+    """Protocol for objects that support CUDA array interface."""
+
+    @property
+    def __cuda_array_interface__(self) -> _CUDAArrayInterface: ...
+
+
+# Type aliases for host buffer types
+HOST_BUFFER_T = bytes | bytearray | memoryview | np.ndarray
+HOST_BUFFER_OR_INVALID_T = (
+    HOST_BUFFER_T | str | int | None
+)  # For testing invalid types
+CUDA_DEVICE_ARRAY_T = (
+    rmm.DeviceBuffer | CudaArrayInterface
+)  # CUDA device arrays
+CUDA_ARRAY_FACTORY_T = Callable[
+    [], CUDA_DEVICE_ARRAY_T
+]  # Factory for CUDA device arrays
+DEVICE_BUFFER_COPY_FACTORY_T = Callable[
+    [rmm.DeviceBuffer], rmm.DeviceBuffer
+]  # Copy functions like copy.copy
+
+
 @pytest.mark.parametrize("size", [0, 5])
-def test_rmm_device_buffer(size):
+def test_rmm_device_buffer(size: int) -> None:
     b = rmm.DeviceBuffer(size=size)
 
     # Test some properties
@@ -72,7 +106,7 @@ def test_rmm_device_buffer(size):
         np.arange(3, dtype="u1"),
     ],
 )
-def test_rmm_device_buffer_memoryview_roundtrip(hb):
+def test_rmm_device_buffer_memoryview_roundtrip(hb: HOST_BUFFER_T) -> None:
     mv = memoryview(hb)
     db = rmm.DeviceBuffer.to_device(hb)
     hb2 = db.copy_to_host()
@@ -108,7 +142,9 @@ def test_rmm_device_buffer_memoryview_roundtrip(hb):
         np.arange(3, dtype="u1"),
     ],
 )
-def test_rmm_device_buffer_bytes_roundtrip(hb):
+def test_rmm_device_buffer_bytes_roundtrip(
+    hb: Any,  # Intentionally tests invalid types
+) -> None:
     try:
         mv = memoryview(hb)
     except TypeError:
@@ -118,7 +154,7 @@ def test_rmm_device_buffer_bytes_roundtrip(hb):
         if mv.format != "B":
             with pytest.raises(ValueError):
                 rmm.DeviceBuffer.to_device(hb)
-        elif len(mv.strides) != 1:
+        elif mv.strides is None or len(mv.strides) != 1:
             with pytest.raises(ValueError):
                 rmm.DeviceBuffer.to_device(hb)
         elif mv.strides[0] != 1:
@@ -144,7 +180,7 @@ def test_rmm_device_buffer_bytes_roundtrip(hb):
         np.array([97, 98, 99], dtype="u1"),
     ],
 )
-def test_rmm_device_buffer_copy_from_host(hb):
+def test_rmm_device_buffer_copy_from_host(hb: HOST_BUFFER_T) -> None:
     db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
     db.copy_from_host(hb)
 
@@ -161,10 +197,12 @@ def test_rmm_device_buffer_copy_from_host(hb):
         lambda: cuda.to_device(np.array([97, 98, 99], dtype="u1")),
     ],
 )
-def test_rmm_device_buffer_copy_from_device(cuda_ary):
-    cuda_ary = cuda_ary()
+def test_rmm_device_buffer_copy_from_device(
+    cuda_ary: CUDA_ARRAY_FACTORY_T,
+) -> None:
+    cuda_ary_instance = cuda_ary()
     db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
-    db.copy_from_device(cuda_ary)
+    db.copy_from_device(cuda_ary_instance)
 
     expected = np.array([97, 98, 99, 0, 0, 0, 0, 0, 0, 0], dtype="u1")
     result = db.copy_to_host()
@@ -173,7 +211,7 @@ def test_rmm_device_buffer_copy_from_device(cuda_ary):
 
 
 @pytest.mark.parametrize("hb", [b"", b"123", b"abc"])
-def test_rmm_device_buffer_pickle_roundtrip(hb):
+def test_rmm_device_buffer_pickle_roundtrip(hb: bytes) -> None:
     db = rmm.DeviceBuffer.to_device(hb)
     pb = pickle.dumps(db)
     del db
@@ -182,7 +220,7 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
     assert hb == hb2
     # out-of-band
     db = rmm.DeviceBuffer.to_device(hb)
-    buffers = []
+    buffers: list[pickle.PickleBuffer] = []
     pb2 = pickle.dumps(db, protocol=5, buffer_callback=buffers.append)
     del db
     assert len(buffers) == 1
@@ -196,7 +234,7 @@ def test_rmm_device_buffer_pickle_roundtrip(hb):
 @pytest.mark.parametrize(
     "managed, pool", list(product([False, True], [False, True]))
 )
-def test_rmm_device_buffer_prefetch(pool, managed):
+def test_rmm_device_buffer_prefetch(pool: bool, managed: bool) -> None:
     rmm.reinitialize(
         pool_allocator=pool,
         managed_memory=managed,
@@ -222,10 +260,12 @@ def test_rmm_device_buffer_prefetch(pool, managed):
 @pytest.mark.parametrize(
     "make_copy", [lambda db: db.copy(), lambda db: copy.copy(db)]
 )
-def test_rmm_device_buffer_copy(cuda_ary, make_copy):
-    cuda_ary = cuda_ary()
+def test_rmm_device_buffer_copy(
+    cuda_ary: CUDA_ARRAY_FACTORY_T, make_copy: DEVICE_BUFFER_COPY_FACTORY_T
+) -> None:
+    cuda_ary_instance = cuda_ary()
     db = rmm.DeviceBuffer.to_device(np.zeros(5, dtype="u1"))
-    db.copy_from_device(cuda_ary)
+    db.copy_from_device(cuda_ary_instance)
     db_copy = make_copy(db)
 
     assert db is not db_copy
@@ -239,110 +279,110 @@ def test_rmm_device_buffer_copy(cuda_ary, make_copy):
 
 
 # Tests for stream=None validation (PR #2120)
-def test_device_buffer_init_stream_none():
+def test_device_buffer_init_stream_none() -> None:
     """Test that DeviceBuffer.__init__ raises TypeError for stream=None"""
     with pytest.raises(TypeError, match="stream argument cannot be None"):
-        rmm.DeviceBuffer(size=10, stream=None)
+        rmm.DeviceBuffer(size=10, stream=None)  # type: ignore[arg-type]
 
 
-def test_device_buffer_to_device_stream_none():
+def test_device_buffer_to_device_stream_none() -> None:
     """Test that DeviceBuffer.to_device raises TypeError for stream=None"""
     with pytest.raises(TypeError, match="stream argument cannot be None"):
-        rmm.DeviceBuffer.to_device(b"abc", stream=None)
+        rmm.DeviceBuffer.to_device(b"abc", stream=None)  # type: ignore[arg-type]
 
 
-def test_device_buffer_copy_to_host_stream_none():
+def test_device_buffer_copy_to_host_stream_none() -> None:
     """Test that DeviceBuffer.copy_to_host raises TypeError for stream=None"""
     db = rmm.DeviceBuffer.to_device(b"abc")
     with pytest.raises(TypeError, match="stream argument cannot be None"):
-        db.copy_to_host(stream=None)
+        db.copy_to_host(stream=None)  # type: ignore[call-overload]
 
 
-def test_device_buffer_copy_from_host_stream_none():
+def test_device_buffer_copy_from_host_stream_none() -> None:
     """Test that DeviceBuffer.copy_from_host raises TypeError for stream=None"""
     db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
     with pytest.raises(TypeError, match="stream argument cannot be None"):
-        db.copy_from_host(b"abc", stream=None)
+        db.copy_from_host(b"abc", stream=None)  # type: ignore[arg-type]
 
 
-def test_device_buffer_copy_from_device_stream_none():
+def test_device_buffer_copy_from_device_stream_none() -> None:
     """Test that DeviceBuffer.copy_from_device raises TypeError for stream=None"""
     db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
     cuda_ary = rmm.DeviceBuffer.to_device(b"abc")
     with pytest.raises(TypeError, match="stream argument cannot be None"):
-        db.copy_from_device(cuda_ary, stream=None)
+        db.copy_from_device(cuda_ary, stream=None)  # type: ignore[arg-type]
 
 
-def test_device_buffer_tobytes_stream_none():
+def test_device_buffer_tobytes_stream_none() -> None:
     """Test that DeviceBuffer.tobytes raises TypeError for stream=None"""
     db = rmm.DeviceBuffer.to_device(b"abc")
     with pytest.raises(TypeError, match="stream argument cannot be None"):
-        db.tobytes(stream=None)
+        db.tobytes(stream=None)  # type: ignore[arg-type]
 
 
-def test_device_buffer_reserve_stream_none():
+def test_device_buffer_reserve_stream_none() -> None:
     """Test that DeviceBuffer.reserve raises TypeError for stream=None"""
     db = rmm.DeviceBuffer.to_device(b"abc")
     with pytest.raises(TypeError, match="stream argument cannot be None"):
-        db.reserve(100, stream=None)
+        db.reserve(100, stream=None)  # type: ignore[arg-type]
 
 
-def test_device_buffer_resize_stream_none():
+def test_device_buffer_resize_stream_none() -> None:
     """Test that DeviceBuffer.resize raises TypeError for stream=None"""
     db = rmm.DeviceBuffer.to_device(b"abc")
     with pytest.raises(TypeError, match="stream argument cannot be None"):
-        db.resize(10, stream=None)
+        db.resize(10, stream=None)  # type: ignore[arg-type]
 
 
-def test_to_device_stream_none():
+def test_to_device_stream_none() -> None:
     """Test that to_device function raises TypeError for stream=None"""
     # Import the module-level function
     from rmm import DeviceBuffer
 
     with pytest.raises(TypeError, match="stream argument cannot be None"):
-        DeviceBuffer.to_device(b"abc", stream=None)
+        DeviceBuffer.to_device(b"abc", stream=None)  # type: ignore[arg-type]
 
 
-def test_copy_ptr_to_host_stream_none():
+def test_copy_ptr_to_host_stream_none() -> None:
     """Test that copy_ptr_to_host raises TypeError for stream=None"""
     from rmm.pylibrmm.device_buffer import copy_ptr_to_host
 
     db = rmm.DeviceBuffer.to_device(b"abc")
     hb = bytearray(3)
     with pytest.raises(TypeError, match="stream argument cannot be None"):
-        copy_ptr_to_host(db.ptr, hb, stream=None)
+        copy_ptr_to_host(db.ptr, hb, stream=None)  # type: ignore[arg-type]
 
 
-def test_copy_host_to_ptr_stream_none():
+def test_copy_host_to_ptr_stream_none() -> None:
     """Test that copy_host_to_ptr raises TypeError for stream=None"""
     from rmm.pylibrmm.device_buffer import copy_host_to_ptr
 
     db = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
     hb = np.array([97, 98, 99], dtype="u1")
     with pytest.raises(TypeError, match="stream argument cannot be None"):
-        copy_host_to_ptr(hb, db.ptr, stream=None)
+        copy_host_to_ptr(hb, db.ptr, stream=None)  # type: ignore[arg-type]
 
 
-def test_copy_device_to_ptr_stream_none():
+def test_copy_device_to_ptr_stream_none() -> None:
     """Test that copy_device_to_ptr raises TypeError for stream=None"""
     from rmm.pylibrmm.device_buffer import copy_device_to_ptr
 
     db_src = rmm.DeviceBuffer.to_device(b"abc")
     db_dst = rmm.DeviceBuffer.to_device(np.zeros(10, dtype="u1"))
     with pytest.raises(TypeError, match="stream argument cannot be None"):
-        copy_device_to_ptr(db_src.ptr, db_dst.ptr, 3, stream=None)
+        copy_device_to_ptr(db_src.ptr, db_dst.ptr, 3, stream=None)  # type: ignore[arg-type]
 
 
-def test_memory_resource_allocate_stream_none():
+def test_memory_resource_allocate_stream_none() -> None:
     """Test that DeviceMemoryResource.allocate raises TypeError for stream=None"""
     mr = rmm.mr.get_current_device_resource()
     with pytest.raises(TypeError, match="stream argument cannot be None"):
-        mr.allocate(1024, stream=None)
+        mr.allocate(1024, stream=None)  # type: ignore[arg-type]
 
 
-def test_memory_resource_deallocate_stream_none():
+def test_memory_resource_deallocate_stream_none() -> None:
     """Test that DeviceMemoryResource.deallocate raises TypeError for stream=None"""
     mr = rmm.mr.get_current_device_resource()
     ptr = mr.allocate(1024)
     with pytest.raises(TypeError, match="stream argument cannot be None"):
-        mr.deallocate(ptr, 1024, stream=None)
+        mr.deallocate(ptr, 1024, stream=None)  # type: ignore[arg-type]
