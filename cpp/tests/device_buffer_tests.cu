@@ -624,3 +624,36 @@ TEST(DeviceBufferAlignmentTest, EmptyBufferAlignmentTooLarge)
   EXPECT_TRUE(buff.is_empty());
   EXPECT_TRUE(rmm::is_pointer_aligned(buff.data(), alignment));
 }
+
+TEST(DeviceBufferAlignmentTest, DefaultConstructedHasValidAlignment)
+{
+  rmm::device_buffer buff;
+  EXPECT_TRUE(rmm::is_supported_alignment(buff.alignment()));
+}
+
+TEST(DeviceBufferAlignmentTest, DefaultConstructedResizeLarger)
+{
+  rmm::device_buffer buff;
+  EXPECT_NO_THROW(buff.resize(100, rmm::cuda_stream_default));
+  EXPECT_EQ(buff.size(), 100);
+}
+
+TEST(DeviceBufferAlignmentTest, DefaultConstructedReserveLarger)
+{
+  rmm::device_buffer buff;
+  EXPECT_NO_THROW(buff.reserve(100, rmm::cuda_stream_default));
+  EXPECT_GE(buff.capacity(), 100);
+}
+
+TEST(DeviceBufferAlignmentTest, DefaultConstructedShrinkToFit)
+{
+  rmm::device_buffer buff;
+  EXPECT_NO_THROW(buff.shrink_to_fit(rmm::cuda_stream_default));
+}
+
+TEST(DeviceBufferAlignmentTest, EmptyBufferResizeLarger)
+{
+  rmm::device_buffer buff(0, rmm::cuda_stream_default);
+  EXPECT_NO_THROW(buff.resize(100, rmm::cuda_stream_default));
+  EXPECT_EQ(buff.size(), 100);
+}
