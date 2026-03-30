@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 set -euo pipefail
@@ -33,7 +33,8 @@ set -u
 
 rapids-print-env
 
-rapids-logger "Check GPU usage"
+rapids-logger "Check system info"
+uname -a
 nvidia-smi
 
 # Run librmm gtests from librmm-tests package

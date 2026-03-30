@@ -28,7 +28,8 @@ PIP_INSTALL_SHARED_ARGS=(
 
 EXITCODE=0
 
-rapids-logger "Check GPU usage"
+rapids-logger "Check system info"
+uname -a
 nvidia-smi
 
 echo "::group::PyTorch Tests"
