@@ -133,20 +133,6 @@ def test_hashable():
     assert hash(a2) == hash(a)
 
 
-def test_cuda_stream_module_deprecation():
-    import importlib
-    import sys
-    import warnings
-
-    sys.modules.pop("rmm.pylibrmm.cuda_stream", None)
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        importlib.import_module("rmm.pylibrmm.cuda_stream")
-    assert any(
-        issubclass(warning.category, DeprecationWarning) for warning in w
-    )
-
-
 def test_flags_with_obj_raises():
     existing = rmm.pylibrmm.stream.Stream()
     with pytest.raises(

@@ -1,12 +1,12 @@
 # =============================================================================
 # cmake-format: off
-# SPDX-FileCopyrightText: Copyright (c) 2022-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 # cmake-format: on
 # =============================================================================
 
-set(cython_sources cuda_stream.pyx cuda_stream_pool.pyx device_buffer.pyx logger.pyx helper.pyx
-                   stream.pyx utils.pyx)
+set(cython_sources cuda_stream_pool.pyx device_buffer.pyx logger.pyx helper.pyx stream.pyx
+                   utils.pyx)
 set(linked_libraries rmm::rmm)
 
 # Build all of the Cython targets

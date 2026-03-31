@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
+#include <rmm/error.hpp>
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/managed_memory_resource.hpp>
@@ -507,4 +509,150 @@ TYPED_TEST(DeviceBufferTest, SetGetStream)
   buff.set_stream(otherstream);
 
   EXPECT_EQ(buff.stream(), otherstream);
+}
+
+TEST(DeviceBufferAlignmentTest, DefaultAlignment)
+{
+  rmm::device_buffer buff(100, rmm::cuda_stream_default);
+  EXPECT_EQ(buff.alignment(), rmm::CUDA_ALLOCATION_ALIGNMENT);
+  EXPECT_TRUE(rmm::is_pointer_aligned(buff.data(), rmm::CUDA_ALLOCATION_ALIGNMENT));
+}
+
+TEST(DeviceBufferAlignmentTest, ExplicitAlignmentDefault)
+{
+  rmm::device_buffer buff(100, rmm::CUDA_ALLOCATION_ALIGNMENT, rmm::cuda_stream_default);
+  EXPECT_EQ(buff.alignment(), rmm::CUDA_ALLOCATION_ALIGNMENT);
+  EXPECT_TRUE(rmm::is_pointer_aligned(buff.data(), rmm::CUDA_ALLOCATION_ALIGNMENT));
+  EXPECT_EQ(buff.size(), 100);
+}
+
+TEST(DeviceBufferAlignmentTest, ExplicitAlignmentSmall)
+{
+  constexpr std::size_t alignment{64};
+  rmm::device_buffer buff(100, alignment, rmm::cuda_stream_default);
+  EXPECT_EQ(buff.alignment(), alignment);
+  EXPECT_TRUE(rmm::is_pointer_aligned(buff.data(), alignment));
+  EXPECT_EQ(buff.size(), 100);
+}
+
+TEST(DeviceBufferAlignmentTest, ExplicitAlignmentTooLarge)
+{
+  auto constexpr alignment = rmm::CUDA_ALLOCATION_ALIGNMENT * 2;
+  EXPECT_THROW(rmm::device_buffer(100, alignment, rmm::cuda_stream_default), rmm::bad_alloc);
+}
+
+TEST(DeviceBufferAlignmentTest, InvalidAlignment)
+{
+  EXPECT_THROW(rmm::device_buffer(100, 0, rmm::cuda_stream_default), rmm::invalid_argument);
+  EXPECT_THROW(std::ignore = rmm::device_buffer(100, 3, rmm::cuda_stream_default),
+               rmm::invalid_argument);
+}
+
+TEST(DeviceBufferAlignmentTest, CopyFromSourceExplicitAlignment)
+{
+  std::vector<uint8_t> host_data(100, 42);
+  std::size_t constexpr alignment{128};
+  rmm::device_buffer buff(host_data.data(), host_data.size(), alignment, rmm::cuda_stream_default);
+  EXPECT_EQ(buff.alignment(), alignment);
+  EXPECT_TRUE(rmm::is_pointer_aligned(buff.data(), alignment));
+  EXPECT_EQ(buff.size(), host_data.size());
+}
+
+TEST(DeviceBufferAlignmentTest, CopyFromSourceAlignmentTooLarge)
+{
+  std::vector<uint8_t> host_data(100, 42);
+  auto constexpr alignment = rmm::CUDA_ALLOCATION_ALIGNMENT * 2;
+  EXPECT_THROW(std::ignore = rmm::device_buffer(
+                 host_data.data(), host_data.size(), alignment, rmm::cuda_stream_default),
+               rmm::bad_alloc);
+}
+
+TEST(DeviceBufferAlignmentTest, CopyFromSourceInvalidAlignment)
+{
+  std::vector<uint8_t> host_data(100, 42);
+  EXPECT_THROW(std::ignore = rmm::device_buffer(
+                 host_data.data(), host_data.size(), 3, rmm::cuda_stream_default),
+               rmm::invalid_argument);
+}
+
+TEST(DeviceBufferAlignmentTest, CopyConstructorPreservesAlignment)
+{
+  std::size_t constexpr alignment{128};
+  rmm::device_buffer buff(100, alignment, rmm::cuda_stream_default);
+  rmm::device_buffer copy(buff, rmm::cuda_stream_default);
+  EXPECT_EQ(copy.alignment(), buff.alignment());
+  EXPECT_EQ(copy.alignment(), alignment);
+}
+
+TEST(DeviceBufferAlignmentTest, MoveConstructorPreservesAlignment)
+{
+  std::size_t constexpr alignment{128};
+  rmm::device_buffer buff(100, alignment, rmm::cuda_stream_default);
+  rmm::device_buffer moved(std::move(buff));
+  EXPECT_EQ(moved.alignment(), alignment);
+  // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
+  EXPECT_EQ(buff.alignment(), 1);
+}
+
+TEST(DeviceBufferAlignmentTest, MoveAssignmentPreservesAlignment)
+{
+  std::size_t constexpr alignment{128};
+  rmm::device_buffer src(100, alignment, rmm::cuda_stream_default);
+  rmm::device_buffer dest;
+  dest = std::move(src);
+  EXPECT_EQ(dest.alignment(), alignment);
+  // NOLINTNEXTLINE(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
+  EXPECT_EQ(src.alignment(), 1);
+}
+
+TEST(DeviceBufferAlignmentTest, EmptyBufferAlignment)
+{
+  std::size_t constexpr alignment{128};
+  rmm::device_buffer buff(std::size_t{0}, alignment, rmm::cuda_stream_default);
+  EXPECT_EQ(buff.alignment(), alignment);
+  EXPECT_EQ(buff.size(), 0);
+  EXPECT_TRUE(buff.is_empty());
+  EXPECT_TRUE(rmm::is_pointer_aligned(buff.data(), alignment));
+}
+
+TEST(DeviceBufferAlignmentTest, EmptyBufferAlignmentTooLarge)
+{
+  auto constexpr alignment = rmm::CUDA_ALLOCATION_ALIGNMENT * 2;
+  rmm::device_buffer buff(std::size_t{0}, alignment, rmm::cuda_stream_default);
+  EXPECT_EQ(buff.alignment(), alignment);
+  EXPECT_TRUE(buff.is_empty());
+  EXPECT_TRUE(rmm::is_pointer_aligned(buff.data(), alignment));
+}
+
+TEST(DeviceBufferAlignmentTest, DefaultConstructedHasValidAlignment)
+{
+  rmm::device_buffer buff;
+  EXPECT_TRUE(rmm::is_supported_alignment(buff.alignment()));
+}
+
+TEST(DeviceBufferAlignmentTest, DefaultConstructedResizeLarger)
+{
+  rmm::device_buffer buff;
+  EXPECT_NO_THROW(buff.resize(100, rmm::cuda_stream_default));
+  EXPECT_EQ(buff.size(), 100);
+}
+
+TEST(DeviceBufferAlignmentTest, DefaultConstructedReserveLarger)
+{
+  rmm::device_buffer buff;
+  EXPECT_NO_THROW(buff.reserve(100, rmm::cuda_stream_default));
+  EXPECT_GE(buff.capacity(), 100);
+}
+
+TEST(DeviceBufferAlignmentTest, DefaultConstructedShrinkToFit)
+{
+  rmm::device_buffer buff;
+  EXPECT_NO_THROW(buff.shrink_to_fit(rmm::cuda_stream_default));
+}
+
+TEST(DeviceBufferAlignmentTest, EmptyBufferResizeLarger)
+{
+  rmm::device_buffer buff(0, rmm::cuda_stream_default);
+  EXPECT_NO_THROW(buff.resize(100, rmm::cuda_stream_default));
+  EXPECT_EQ(buff.size(), 100);
 }
