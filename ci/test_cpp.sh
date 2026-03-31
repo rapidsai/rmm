@@ -41,7 +41,11 @@ nvidia-smi
 rapids-logger "Run gtests"
 
 export GTEST_OUTPUT=xml:${RAPIDS_TESTS_DIR}/
-timeout 15m ./ci/run_ctests.sh -j20 && EXITCODE=$? || EXITCODE=$?;
+CTEST_TIMEOUT=15m
+if grep -qi microsoft /proc/version 2>/dev/null; then
+    CTEST_TIMEOUT=30m  # WSL is slow for large device memory allocations
+fi
+timeout "${CTEST_TIMEOUT}" ./ci/run_ctests.sh -j20 && EXITCODE=$? || EXITCODE=$?;
 
 # Run all examples from librmm-example package
 for example in "${CONDA_PREFIX}"/bin/examples/librmm/*; do
