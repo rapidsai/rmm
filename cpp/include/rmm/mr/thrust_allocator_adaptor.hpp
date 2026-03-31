@@ -11,6 +11,7 @@
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/device_ptr.h>
 #include <thrust/memory.h>
@@ -120,7 +121,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return _mr;
+    return rmm::device_async_resource_ref{_mr};
   }
 
   /**
@@ -140,7 +141,8 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
 
  private:
   cuda_stream_view _stream{};
-  rmm::device_async_resource_ref _mr{rmm::mr::get_current_device_resource_ref()};
+  mutable cuda::mr::any_resource<cuda::mr::device_accessible> _mr{
+    rmm::mr::get_current_device_resource_ref()};
   cuda_device_id _device{get_current_cuda_device()};
 };
 /** @} */  // end of group
