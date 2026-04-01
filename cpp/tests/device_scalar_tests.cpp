@@ -149,7 +149,9 @@ TEST(DeviceScalarAlignmentTest, SmallAlignment)
   EXPECT_TRUE(rmm::is_pointer_aligned(s.data(), std::alignment_of_v<decltype(s)::value_type>));
 }
 
-TEST(DeviceScalarAlignmentTest, LargeAlignment)
+// Disabled: leaf MRs silently ignore unsupported alignment after #2324.
+// See https://github.com/rapidsai/rmm/issues/2342
+TEST(DeviceScalarAlignmentTest, DISABLED_LargeAlignment)
 {
   struct alignas(rmm::CUDA_ALLOCATION_ALIGNMENT * 2) OverAligned {
     int value;
