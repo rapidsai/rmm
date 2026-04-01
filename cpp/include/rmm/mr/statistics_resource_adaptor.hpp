@@ -227,7 +227,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
       write_lock_t lock(mtx_);
 
       // Increment the allocation_count_ while we have the lock
-      counter_stack_.top().first += bytes;
+      counter_stack_.top().first += static_cast<int64_t>(bytes);
       counter_stack_.top().second += 1;
     }
 
@@ -243,15 +243,14 @@ class statistics_resource_adaptor final : public device_memory_resource {
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
   {
-    get_upstream_resource().deallocate(stream, ptr, bytes);
-
     {
       write_lock_t lock(mtx_);
 
       // Decrement the current allocated counts.
-      counter_stack_.top().first -= bytes;
+      counter_stack_.top().first -= static_cast<int64_t>(bytes);
       counter_stack_.top().second -= 1;
     }
+    get_upstream_resource().deallocate(stream, ptr, bytes);
   }
 
   /**

@@ -58,7 +58,6 @@ For general development guidance including build commands, test commands, code s
 - Missing edge case coverage (zero-size, alignment)
 - **Using external datasets** (tests must not depend on external resources)
 - Missing tests for different array types (CuPy, Numba)
-- **Using test classes instead of standalone functions** (RMM prefers `test_foo_bar()` functions over `class TestFoo`)
 
 ### Documentation
 - Missing or incorrect docstrings for public methods
@@ -189,7 +188,7 @@ def __exit__(self, exc_type, exc_val, exc_tb):
 - Test allocation/deallocation pairs
 - Test edge cases: zero-size, large allocations
 - Test different array types
-- Use standalone `test_foo_bar()` functions, not test classes
+- Prefer standalone `test_foo_bar()` functions; test classes are acceptable when needed for class-scoped fixture sharing
 - Use synthetic data, never external resources
 
 ---
@@ -253,7 +252,6 @@ def __exit__(self, exc_type, exc_val, exc_tb):
 - [ ] Are allocation/deallocation pairs tested?
 - [ ] Are edge cases tested (zero-size, large allocations)?
 - [ ] Are different array types tested?
-- [ ] Are tests written as standalone functions?
 
 ---
 

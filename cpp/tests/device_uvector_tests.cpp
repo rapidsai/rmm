@@ -1,6 +1,6 @@
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -14,6 +14,7 @@
 #include <gtest/gtest.h>
 #include <gtest/internal/gtest-type-util.h>
 
+#include <cmath>
 #include <cstdint>
 #include <iterator>
 #include <utility>
@@ -209,7 +210,7 @@ TYPED_TEST(TypedUVectorTest, OOBGetElement)
 
 TYPED_TEST(TypedUVectorTest, GetSetElement)
 {
-  auto const size{12345};
+  auto const size{100};
   rmm::device_uvector<TypeParam> vec(size, this->stream());
   for (std::size_t i = 0; i < vec.size(); ++i) {
     vec.set_element(i, i, this->stream());
@@ -219,7 +220,7 @@ TYPED_TEST(TypedUVectorTest, GetSetElement)
 
 TYPED_TEST(TypedUVectorTest, GetSetElementAsync)
 {
-  auto const size{12345};
+  auto const size{100};
   rmm::device_uvector<TypeParam> vec(size, this->stream());
   for (std::size_t i = 0; i < vec.size(); ++i) {
     auto init = static_cast<TypeParam>(i);
@@ -230,12 +231,32 @@ TYPED_TEST(TypedUVectorTest, GetSetElementAsync)
 
 TYPED_TEST(TypedUVectorTest, SetElementZeroAsync)
 {
-  auto const size{12345};
+  auto const size{100};
   rmm::device_uvector<TypeParam> vec(size, this->stream());
   for (std::size_t i = 0; i < vec.size(); ++i) {
     vec.set_element_to_zero_async(i, this->stream());
     EXPECT_EQ(TypeParam{0}, vec.element(i, this->stream()));
   }
+}
+
+TEST(NegativeZeroTest, PreservesFloatNegativeZero)
+{
+  rmm::device_uvector<float> vec(1, rmm::cuda_stream_view{});
+  float const neg_zero = -0.0f;
+  vec.set_element_async(0, neg_zero, rmm::cuda_stream_view{});
+  float const result = vec.element(0, rmm::cuda_stream_view{});
+  EXPECT_TRUE(std::signbit(result)) << "sign bit of -0.0f was lost";
+  EXPECT_EQ(result, 0.0f);
+}
+
+TEST(NegativeZeroTest, PreservesDoubleNegativeZero)
+{
+  rmm::device_uvector<double> vec(1, rmm::cuda_stream_view{});
+  double const neg_zero = -0.0;
+  vec.set_element_async(0, neg_zero, rmm::cuda_stream_view{});
+  double const result = vec.element(0, rmm::cuda_stream_view{});
+  EXPECT_TRUE(std::signbit(result)) << "sign bit of -0.0 was lost";
+  EXPECT_EQ(result, 0.0);
 }
 
 TYPED_TEST(TypedUVectorTest, FrontBackElement)

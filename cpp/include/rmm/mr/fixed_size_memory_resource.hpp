@@ -164,6 +164,9 @@ class fixed_size_memory_resource
    * @param stream CUDA stream on which the allocation is ordered.
    * @return Unique handle to the allocation; destroys to deallocate. Empty (zero-size)
    *         allocation returns a valid handle with size 0 and no blocks.
+   * @throw Any exception from allocating blocks. Blocks successfully taken from the pool
+   *        before the failure are returned to the pool on `stream` (same ordering as normal
+   *        deallocation).
    */
   std::unique_ptr<multiple_blocks_allocation> allocate_blocks_async(std::size_t size,
                                                                     cuda_stream_view stream)
@@ -175,10 +178,16 @@ class fixed_size_memory_resource
     auto stream_event            = this->get_event(stream);
     std::size_t const num_blocks = cuda::ceil_div(size, get_block_size());
     std::vector<std::byte*> blocks;
-    blocks.resize(num_blocks);
-    cuda::std::generate_n(blocks.begin(), num_blocks, [this, &stream_event]() {
-      return static_cast<std::byte*>(this->get_block(get_block_size(), stream_event).pointer());
-    });
+    blocks.reserve(num_blocks);
+    try {
+      for (std::size_t i = 0; i < num_blocks; ++i) {
+        blocks.push_back(
+          static_cast<std::byte*>(this->get_block(get_block_size(), stream_event).pointer()));
+      }
+    } catch (...) {
+      deallocate_blocks_async_locked(std::move(blocks), stream);
+      throw;
+    }
 
     return std::make_unique<multiple_blocks_allocation>(size, std::move(blocks), stream, this);
   }
@@ -304,7 +313,7 @@ class fixed_size_memory_resource
 
     auto num_blocks = upstream_chunk_size_ / block_size_;
 
-    auto block_gen = [ptr, this](int index) {
+    auto block_gen = [ptr, this](std::size_t index) {
       // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
       return block_type{static_cast<char*>(ptr) + index * block_size_};
     };
@@ -394,11 +403,12 @@ class fixed_size_memory_resource
   }
 
  private:
-  void deallocate_blocks_async(std::vector<std::byte*>&& blocks, cuda_stream_view stream)
+  /**
+   * @brief Return blocks to the pool, stream-ordered; caller must hold `get_mutex()`.
+   */
+  void deallocate_blocks_async_locked(std::vector<std::byte*>&& blocks, cuda_stream_view stream)
   {
     if (blocks.empty()) { return; }
-
-    lock_guard lock(this->get_mutex());
 
     free_list blocks_free_list;
     cuda::std::ranges::for_each(blocks, [this, &blocks_free_list](std::byte* ptr) {
@@ -408,6 +418,14 @@ class fixed_size_memory_resource
     auto stream_event = this->get_event(stream);
     RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream.value()));
     this->insert_blocks(std::move(blocks_free_list), stream);
+  }
+
+  void deallocate_blocks_async(std::vector<std::byte*>&& blocks, cuda_stream_view stream)
+  {
+    if (blocks.empty()) { return; }
+
+    lock_guard lock(this->get_mutex());
+    deallocate_blocks_async_locked(std::move(blocks), stream);
   }
 
   device_async_resource_ref upstream_mr_;  // The resource from which to allocate new blocks

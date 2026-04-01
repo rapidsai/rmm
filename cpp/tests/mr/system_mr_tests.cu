@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -48,14 +48,14 @@ void touch_on_gpu(void* ptr, std::size_t size)
 using system_mr = rmm::mr::system_memory_resource;
 
 // static property checks
-static_assert(rmm::detail::polyfill::resource_with<system_mr, cuda::mr::device_accessible>);
-static_assert(rmm::detail::polyfill::async_resource_with<system_mr, cuda::mr::device_accessible>);
+static_assert(cuda::mr::synchronous_resource_with<system_mr, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<system_mr, cuda::mr::device_accessible>);
 
 using headroom_mr = rmm::mr::sam_headroom_memory_resource;
 
 // static property checks
-static_assert(rmm::detail::polyfill::resource_with<headroom_mr, cuda::mr::device_accessible>);
-static_assert(rmm::detail::polyfill::async_resource_with<headroom_mr, cuda::mr::device_accessible>);
+static_assert(cuda::mr::synchronous_resource_with<headroom_mr, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<headroom_mr, cuda::mr::device_accessible>);
 
 class SystemMRTest : public ::testing::Test {
  protected:

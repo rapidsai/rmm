@@ -32,16 +32,6 @@ bool failure_handler(std::size_t /*bytes*/, void* arg)
   return false;  // Second time we let the adaptor throw std::bad_alloc
 }
 
-TEST(FailureCallbackTest, RetryAllocationOnce)
-{
-  bool retried{false};
-  failure_callback_adaptor<> mr{
-    rmm::mr::get_current_device_resource_ref(), failure_handler, &retried};
-  EXPECT_EQ(retried, false);
-  EXPECT_THROW(mr.allocate_sync(512_GiB), std::bad_alloc);
-  EXPECT_EQ(retried, true);
-}
-
 template <typename ExceptionType>
 class always_throw_memory_resource final : public mr::device_memory_resource {
  private:
@@ -53,6 +43,16 @@ class always_throw_memory_resource final : public mr::device_memory_resource {
                      std::size_t /*bytes*/,
                      cuda_stream_view /*stream*/) noexcept override {};
 };
+
+TEST(FailureCallbackTest, RetryAllocationOnce)
+{
+  always_throw_memory_resource<rmm::bad_alloc> throwing_mr;
+  bool retried{false};
+  failure_callback_adaptor<> mr{&throwing_mr, failure_handler, &retried};
+  EXPECT_EQ(retried, false);
+  EXPECT_THROW(mr.allocate_sync(1_MiB), rmm::bad_alloc);
+  EXPECT_EQ(retried, true);
+}
 
 TEST(FailureCallbackTest, DifferentExceptionTypes)
 {
