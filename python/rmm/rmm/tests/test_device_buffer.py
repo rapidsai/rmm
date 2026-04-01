@@ -40,18 +40,12 @@ class CudaArrayInterface(Protocol):
 
 # Type aliases for host buffer types
 HOST_BUFFER_T = bytes | bytearray | memoryview | np.ndarray
-HOST_BUFFER_OR_INVALID_T = (
-    HOST_BUFFER_T | str | int | None
-)  # For testing invalid types
-CUDA_DEVICE_ARRAY_T = (
-    rmm.DeviceBuffer | CudaArrayInterface
-)  # CUDA device arrays
-CUDA_ARRAY_FACTORY_T = Callable[
-    [], CUDA_DEVICE_ARRAY_T
-]  # Factory for CUDA device arrays
-DEVICE_BUFFER_COPY_FACTORY_T = Callable[
-    [rmm.DeviceBuffer], rmm.DeviceBuffer
-]  # Copy functions like copy.copy
+# For testing invalid types
+HOST_BUFFER_OR_INVALID_T = HOST_BUFFER_T | str | int | None
+CUDA_DEVICE_ARRAY_T = rmm.DeviceBuffer | CudaArrayInterface
+# Factory for CUDA device arrays
+CUDA_ARRAY_FACTORY_T = Callable[[], CUDA_DEVICE_ARRAY_T]
+DEVICE_BUFFER_COPY_FACTORY_T = Callable[[rmm.DeviceBuffer], rmm.DeviceBuffer]
 
 
 @pytest.mark.parametrize("size", [0, 5])
