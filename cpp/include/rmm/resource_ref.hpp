@@ -4,9 +4,10 @@
  */
 #pragma once
 
-#include <rmm/detail/cccl_adaptors.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
+
+#include <cuda/memory_resource>
 
 namespace RMM_NAMESPACE {
 
@@ -17,46 +18,42 @@ namespace RMM_NAMESPACE {
  */
 
 /**
+ * @brief Alias for a `cuda::mr::synchronous_resource_ref` with the property
+ * `cuda::mr::device_accessible`.
+ */
+using device_resource_ref = cuda::mr::synchronous_resource_ref<cuda::mr::device_accessible>;
+
+/**
  * @brief Alias for a `cuda::mr::resource_ref` with the property
  * `cuda::mr::device_accessible`.
  */
-using device_resource_ref =
-  detail::cccl_resource_ref<cuda::mr::synchronous_resource_ref<cuda::mr::device_accessible>>;
+using device_async_resource_ref = cuda::mr::resource_ref<cuda::mr::device_accessible>;
 
 /**
- * @brief Alias for a `cuda::mr::async_resource_ref` with the property
- * `cuda::mr::device_accessible`.
+ * @brief Alias for a `cuda::mr::synchronous_resource_ref` with the property
+ * `cuda::mr::host_accessible`.
  */
-using device_async_resource_ref =
-  detail::cccl_async_resource_ref<cuda::mr::resource_ref<cuda::mr::device_accessible>>;
+using host_resource_ref = cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible>;
 
 /**
  * @brief Alias for a `cuda::mr::resource_ref` with the property
  * `cuda::mr::host_accessible`.
  */
-using host_resource_ref =
-  detail::cccl_resource_ref<cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible>>;
+using host_async_resource_ref = cuda::mr::resource_ref<cuda::mr::host_accessible>;
 
 /**
- * @brief Alias for a `cuda::mr::async_resource_ref` with the property
- * `cuda::mr::host_accessible`.
+ * @brief Alias for a `cuda::mr::synchronous_resource_ref` with the properties
+ * `cuda::mr::host_accessible` and `cuda::mr::device_accessible`.
  */
-using host_async_resource_ref =
-  detail::cccl_async_resource_ref<cuda::mr::resource_ref<cuda::mr::host_accessible>>;
+using host_device_resource_ref =
+  cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>;
 
 /**
  * @brief Alias for a `cuda::mr::resource_ref` with the properties
  * `cuda::mr::host_accessible` and `cuda::mr::device_accessible`.
  */
-using host_device_resource_ref = detail::cccl_resource_ref<
-  cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>>;
-
-/**
- * @brief Alias for a `cuda::mr::async_resource_ref` with the properties
- * `cuda::mr::host_accessible` and `cuda::mr::device_accessible`.
- */
-using host_device_async_resource_ref = detail::cccl_async_resource_ref<
-  cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+using host_device_async_resource_ref =
+  cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>;
 
 /**
  * @brief Convert pointer to memory resource into `device_async_resource_ref`, checking for
@@ -73,37 +70,6 @@ device_async_resource_ref to_device_async_resource_ref_checked(Resource* res)
   RMM_EXPECTS(res, "Unexpected null resource pointer.");
   return device_async_resource_ref{*res};
 }
-
-// Verify that RMM resource_ref types can be constructed from corresponding CCCL resource_ref types.
-static_assert(
-  std::is_constructible_v<device_resource_ref,
-                          cuda::mr::synchronous_resource_ref<cuda::mr::device_accessible>>,
-  "device_resource_ref must be constructible from CCCL "
-  "synchronous_resource_ref<device_accessible>");
-static_assert(
-  std::is_constructible_v<device_async_resource_ref,
-                          cuda::mr::resource_ref<cuda::mr::device_accessible>>,
-  "device_async_resource_ref must be constructible from CCCL resource_ref<device_accessible>");
-static_assert(
-  std::is_constructible_v<host_resource_ref,
-                          cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible>>,
-  "host_resource_ref must be constructible from CCCL synchronous_resource_ref<host_accessible>");
-static_assert(
-  std::is_constructible_v<host_async_resource_ref,
-                          cuda::mr::resource_ref<cuda::mr::host_accessible>>,
-  "host_async_resource_ref must be constructible from CCCL resource_ref<host_accessible>");
-static_assert(
-  std::is_constructible_v<
-    host_device_resource_ref,
-    cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>>,
-  "host_device_resource_ref must be constructible from CCCL "
-  "synchronous_resource_ref<host_accessible, device_accessible>");
-static_assert(
-  std::is_constructible_v<
-    host_device_async_resource_ref,
-    cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>>,
-  "host_device_async_resource_ref must be constructible from CCCL resource_ref<host_accessible, "
-  "device_accessible>");
 
 // Verify that host_device resource refs can be converted to device-only and host-only resource
 // refs. This is needed because a resource that is both host and device accessible can be used in

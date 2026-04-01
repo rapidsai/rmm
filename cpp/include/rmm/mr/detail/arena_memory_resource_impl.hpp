@@ -4,6 +4,7 @@
  */
 #pragma once
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/arena.hpp>
 #include <rmm/resource_ref.hpp>
