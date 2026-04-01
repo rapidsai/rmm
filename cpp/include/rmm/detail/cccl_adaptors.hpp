@@ -4,6 +4,7 @@
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/device_memory_resource_view.hpp>
@@ -207,7 +208,10 @@ class cccl_resource_ref
     return *this;
   }
 
-  void* allocate_sync(std::size_t bytes) { return ref_.allocate_sync(bytes); }
+  void* allocate_sync(std::size_t bytes)
+  {
+    return ref_.allocate_sync(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  }
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment)
   {
@@ -216,7 +220,7 @@ class cccl_resource_ref
 
   void deallocate_sync(void* ptr, std::size_t bytes) noexcept
   {
-    return ref_.deallocate_sync(ptr, bytes);
+    return ref_.deallocate_sync(ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
@@ -467,7 +471,10 @@ class cccl_async_resource_ref
   }
 
   // Synchronous allocation methods (delegated to the underlying ref)
-  void* allocate_sync(std::size_t bytes) { return ref_.allocate_sync(bytes); }
+  void* allocate_sync(std::size_t bytes)
+  {
+    return ref_.allocate_sync(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  }
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment)
   {
@@ -476,7 +483,7 @@ class cccl_async_resource_ref
 
   void deallocate_sync(void* ptr, std::size_t bytes) noexcept
   {
-    return ref_.deallocate_sync(ptr, bytes);
+    return ref_.deallocate_sync(ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
@@ -487,7 +494,7 @@ class cccl_async_resource_ref
   // Asynchronous allocation methods
   void* allocate(cuda_stream_view stream, std::size_t bytes)
   {
-    return ref_.allocate(stream, bytes);
+    return ref_.allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   void* allocate(cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
@@ -497,7 +504,7 @@ class cccl_async_resource_ref
 
   void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes) noexcept
   {
-    return ref_.deallocate(stream, ptr, bytes);
+    return ref_.deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   void deallocate(cuda_stream_view stream,

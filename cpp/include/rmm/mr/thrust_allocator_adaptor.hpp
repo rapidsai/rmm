@@ -6,6 +6,7 @@
 #pragma once
 
 #include <rmm/cuda_device.hpp>
+#include <rmm/detail/exec_check_disable.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/per_device_resource.hpp>
@@ -57,7 +58,8 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @brief Default constructor creates an allocator using the default memory
    * resource and default stream.
    */
-  thrust_allocator() = default;
+  RMM_EXEC_CHECK_DISABLE
+  thrust_allocator() {}
 
   /**
    * @brief Constructs a `thrust_allocator` using the default device memory
@@ -65,6 +67,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    *
    * @param stream The stream to be used for device memory (de)allocation
    */
+  RMM_EXEC_CHECK_DISABLE
   explicit thrust_allocator(cuda_stream_view stream) : _stream{stream} {}
 
   /**
@@ -74,6 +77,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @param mr The resource to be used for device memory allocation
    * @param stream The stream to be used for device memory (de)allocation
    */
+  RMM_EXEC_CHECK_DISABLE
   thrust_allocator(cuda_stream_view stream, rmm::device_async_resource_ref mr)
     : _stream{stream}, _mr(mr)
   {
@@ -84,6 +88,38 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    *
    * @param other The `thrust_allocator` to copy
    */
+  RMM_EXEC_CHECK_DISABLE
+  thrust_allocator(thrust_allocator const& other)
+    : Base(other), _stream{other._stream}, _mr(other._mr), _device{other._device}
+  {
+  }
+
+  /**
+   * @brief Move constructor. Moves the resource pointer and stream.
+   *
+   * @param other The `thrust_allocator` to move from
+   */
+  RMM_EXEC_CHECK_DISABLE
+  thrust_allocator(thrust_allocator&& other) noexcept
+    : Base(std::move(other)),
+      _stream{other._stream},
+      _mr(std::move(other._mr)),
+      _device{other._device}
+  {
+  }
+
+  /// @default_copy_assignment{thrust_allocator}
+  thrust_allocator& operator=(thrust_allocator const&) = default;
+  /// @default_move_assignment{thrust_allocator}
+  thrust_allocator& operator=(thrust_allocator&&) noexcept = default;
+
+  /**
+   * @brief Copy constructor from a `thrust_allocator` of a different type.
+   * Copies the resource pointer and stream.
+   *
+   * @param other The `thrust_allocator` to copy
+   */
+  RMM_EXEC_CHECK_DISABLE
   template <typename U>
   thrust_allocator(thrust_allocator<U> const& other)
     : _mr(other.resource()), _stream{other.stream()}, _device{other._device}
