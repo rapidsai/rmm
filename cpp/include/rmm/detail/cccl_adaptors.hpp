@@ -86,10 +86,15 @@ inline constexpr bool is_cccl_async_resource_ref_v<cccl_async_resource_ref<R>> =
  * interface of the underlying type. It enables constructing resource refs from
  * shared_resource-derived types by casting to the shared_resource base.
  *
+ * Inherits from cuda::forward_property to delegate property queries to the wrapped
+ * resource_ref, avoiding ambiguity with CCCL's default get_property overloads
+ * (e.g. for dynamic_accessibility_property, NVIDIA/cccl#7727).
+ *
  * @tparam ResourceType The underlying CCCL synchronous_resource_ref type
  */
 template <typename ResourceType>
-class cccl_resource_ref {
+class cccl_resource_ref
+  : public cuda::forward_property<cccl_resource_ref<ResourceType>, ResourceType> {
  public:
   using wrapped_type = ResourceType;
 
@@ -222,14 +227,11 @@ class cccl_resource_ref {
   }
 
   /**
-   * @brief Forwards a property query to the wrapped resource_ref.
+   * @brief Returns a const reference to the wrapped resource_ref.
+   *
+   * Required by cuda::forward_property to forward stateful property queries.
    */
-  template <typename Property>
-  friend auto constexpr get_property(cccl_resource_ref const& ref, Property prop) noexcept
-    -> decltype(get_property(std::declval<ResourceType const&>(), prop))
-  {
-    return get_property(ref.ref_, prop);
-  }
+  [[nodiscard]] ResourceType const& upstream_resource() const noexcept { return ref_; }
 
   /**
    * @brief Attempts to get a property from the wrapped resource_ref.
@@ -253,6 +255,10 @@ class cccl_resource_ref {
  * to avoid recursive constraint satisfaction issues with CCCL 3.2's basic_any-based
  * resource_ref types. It provides both synchronous and asynchronous allocation methods.
  *
+ * Inherits from cuda::forward_property to delegate property queries to the wrapped
+ * resource_ref, avoiding ambiguity with CCCL's default get_property overloads
+ * (e.g. for dynamic_accessibility_property, NVIDIA/cccl#7727).
+ *
  * @tparam ResourceType The underlying CCCL resource_ref type (async)
  */
 // Suppress spurious warning about calling a __host__ function from __host__ __device__ context
@@ -263,7 +269,8 @@ class cccl_resource_ref {
 #pragma nv_diag_suppress 20011
 #endif
 template <typename ResourceType>
-class cccl_async_resource_ref {
+class cccl_async_resource_ref
+  : public cuda::forward_property<cccl_async_resource_ref<ResourceType>, ResourceType> {
  public:
   using wrapped_type = ResourceType;
 
@@ -438,14 +445,11 @@ class cccl_async_resource_ref {
   }
 
   /**
-   * @brief Forwards a property query to the wrapped resource_ref.
+   * @brief Returns a const reference to the wrapped resource_ref.
+   *
+   * Required by cuda::forward_property to forward stateful property queries.
    */
-  template <typename Property>
-  friend auto constexpr get_property(cccl_async_resource_ref const& ref, Property prop) noexcept
-    -> decltype(get_property(std::declval<ResourceType const&>(), prop))
-  {
-    return get_property(ref.ref_, prop);
-  }
+  [[nodiscard]] ResourceType const& upstream_resource() const noexcept { return ref_; }
 
   /**
    * @brief Attempts to get a property from the wrapped resource_ref.

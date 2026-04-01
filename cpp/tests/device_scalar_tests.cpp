@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
+#include <rmm/detail/error.hpp>
 #include <rmm/device_scalar.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -139,4 +141,22 @@ TYPED_TEST(DeviceScalarTest, SetGetStream)
   scalar.set_stream(otherstream);
 
   EXPECT_EQ(scalar.stream(), otherstream);
+}
+
+TEST(DeviceScalarAlignmentTest, SmallAlignment)
+{
+  auto s = rmm::device_scalar<int>(rmm::cuda_stream_view{});
+  EXPECT_TRUE(rmm::is_pointer_aligned(s.data(), std::alignment_of_v<decltype(s)::value_type>));
+}
+
+// Disabled: leaf MRs silently ignore unsupported alignment after #2324.
+// See https://github.com/rapidsai/rmm/issues/2342
+TEST(DeviceScalarAlignmentTest, DISABLED_LargeAlignment)
+{
+  struct alignas(rmm::CUDA_ALLOCATION_ALIGNMENT * 2) OverAligned {
+    int value;
+  };
+
+  EXPECT_THROW(std::ignore = rmm::device_scalar<OverAligned>(rmm::cuda_stream_view{}),
+               rmm::bad_alloc);
 }

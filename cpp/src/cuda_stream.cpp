@@ -42,7 +42,7 @@ cuda_stream_view cuda_stream::view() const { return cuda_stream_view{value()}; }
 
 cuda_stream::operator cuda_stream_view() const { return view(); }
 
-cuda_stream::operator cuda::stream_ref() const { return cuda::stream_ref{value()}; }
+cuda_stream::operator cuda::stream_ref() const noexcept { return cuda::stream_ref{value()}; }
 
 void cuda_stream::synchronize() const { RMM_CUDA_TRY(cudaStreamSynchronize(value())); }
 

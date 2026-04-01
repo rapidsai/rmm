@@ -8,6 +8,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 
+#include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
 #include <functional>
@@ -101,9 +102,9 @@ class cuda_stream {
   /**
    * @brief Implicit conversion to cuda::stream_ref
    *
-   * @return A stream_ref of the owned stream
+   * @return A stream_ref for the owned stream
    */
-  operator cuda::stream_ref() const;
+  operator cuda::stream_ref() const noexcept;
 
   /**
    * @brief Synchronize the owned CUDA stream.

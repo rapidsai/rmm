@@ -4,7 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/error.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -17,6 +19,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iterator>
+#include <type_traits>
 #include <utility>
 
 // explicit instantiation for test coverage purposes.
@@ -376,4 +379,22 @@ TYPED_TEST(TypedUVectorTest, SpanConversionImplicit)
   EXPECT_EQ(check_mutable_span(vec), size);
   EXPECT_EQ(check_const_span(vec), size);
   EXPECT_EQ(check_const_span(std::as_const(vec)), size);
+}
+
+TEST(DeviceUVectorAlignmentTest, SmallAlignment)
+{
+  auto v = rmm::device_uvector<int>(10, rmm::cuda_stream_view{});
+  EXPECT_TRUE(rmm::is_pointer_aligned(v.data(), std::alignment_of_v<decltype(v)::value_type>));
+}
+
+// Disabled: leaf MRs silently ignore unsupported alignment after #2324.
+// See https://github.com/rapidsai/rmm/issues/2342
+TEST(DeviceUVectorAlignmentTest, DISABLED_LargeAlignment)
+{
+  struct alignas(rmm::CUDA_ALLOCATION_ALIGNMENT * 2) OverAligned {
+    int value;
+  };
+
+  EXPECT_THROW(std::ignore = rmm::device_uvector<OverAligned>(10, rmm::cuda_stream_view{}),
+               rmm::bad_alloc);
 }

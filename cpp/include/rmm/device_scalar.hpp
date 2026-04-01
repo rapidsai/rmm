@@ -99,6 +99,8 @@ class device_scalar {
    * `cudaStreamWaitEvent()`).
    *
    * @throws rmm::bad_alloc if allocating the device memory for `initial_value` fails.
+   * @throws rmm::bad_alloc If the provided memory resource cannot allocate with alignment to
+   * satisfy the alignment requirements of the value type.
    * @throws rmm::cuda_error if copying `initial_value` to device memory fails.
    *
    * @param initial_value The initial value of the object in device memory.
