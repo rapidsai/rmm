@@ -23,12 +23,3 @@ The stream classes are available only through `rmm.pylibrmm` and provide low-lev
    :undoc-members:
    :show-inheritance:
 ```
-
-### rmm.pylibrmm.cuda_stream
-
-```{eval-rst}
-.. automodule:: rmm.pylibrmm.cuda_stream
-   :members:
-   :undoc-members:
-   :show-inheritance:
-```
