@@ -3,6 +3,9 @@
 
 """Tests for PoolMemoryResource."""
 
+from typing import Any
+
+import numpy as np
 import pytest
 from numba import cuda
 from test_helpers import (
@@ -20,7 +23,9 @@ from rmm.pylibrmm.stream import Stream
 @pytest.mark.parametrize("dtype", _dtypes)
 @pytest.mark.parametrize("nelem", _nelems)
 @pytest.mark.parametrize("alloc", _allocs)
-def test_pool_memory_resource(dtype, nelem, alloc):
+def test_pool_memory_resource(
+    dtype: type[np.generic], nelem: int, alloc: Any
+) -> None:
     mr = rmm.mr.PoolMemoryResource(
         rmm.mr.CudaMemoryResource(),
         initial_pool_size="4MiB",
@@ -31,14 +36,14 @@ def test_pool_memory_resource(dtype, nelem, alloc):
     array_tester(dtype, nelem, alloc)
 
 
-def test_reinitialize_max_pool_size():
+def test_reinitialize_max_pool_size() -> None:
     rmm.reinitialize(
         pool_allocator=True, initial_pool_size=0, maximum_pool_size="8MiB"
     )
     rmm.DeviceBuffer().resize((1 << 23) - 1)
 
 
-def test_reinitialize_max_pool_size_exceeded():
+def test_reinitialize_max_pool_size_exceeded() -> None:
     rmm.reinitialize(
         pool_allocator=True, initial_pool_size=0, maximum_pool_size=1 << 23
     )
@@ -47,7 +52,7 @@ def test_reinitialize_max_pool_size_exceeded():
 
 
 @pytest.mark.parametrize("stream", [cuda.default_stream(), cuda.stream()])
-def test_rmm_pool_numba_stream(stream):
+def test_rmm_pool_numba_stream(stream: Any) -> None:
     rmm.reinitialize(pool_allocator=True, initial_pool_size=_TEST_POOL_SIZE)
 
     stream = Stream(stream)
@@ -57,7 +62,7 @@ def test_rmm_pool_numba_stream(stream):
     assert a.ptr != 0
 
 
-def test_mr_upstream_lifetime():
+def test_mr_upstream_lifetime() -> None:
     # Simple test to ensure upstream MRs are deallocated before downstream MR
     cuda_mr = rmm.mr.CudaMemoryResource()
 
