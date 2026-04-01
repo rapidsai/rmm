@@ -19,10 +19,7 @@ from test_helpers import (
 
 import rmm
 
-# Type aliases
-NUMPY_DTYPE_T = type[
-    np.generic
-]  # NumPy dtype classes like np.int8, np.float32, etc.
+NUMPY_DTYPE_T = type[np.generic]
 
 
 @pytest.mark.parametrize("dtype", _dtypes)
