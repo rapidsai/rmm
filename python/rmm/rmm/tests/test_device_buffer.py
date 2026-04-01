@@ -40,8 +40,6 @@ class CudaArrayInterface(Protocol):
 
 # Type aliases for host buffer types
 HOST_BUFFER_T = bytes | bytearray | memoryview | np.ndarray
-# For testing invalid types
-HOST_BUFFER_OR_INVALID_T = HOST_BUFFER_T | str | int | None
 CUDA_DEVICE_ARRAY_T = rmm.DeviceBuffer | CudaArrayInterface
 # Factory for CUDA device arrays
 CUDA_ARRAY_FACTORY_T = Callable[[], CUDA_DEVICE_ARRAY_T]
