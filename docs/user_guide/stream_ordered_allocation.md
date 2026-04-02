@@ -297,7 +297,7 @@ In C++, stream-ordered allocation is the default for most RMM containers:
 
 // Set async MR as default
 auto async_mr = rmm::mr::cuda_async_memory_resource{};
-rmm::mr::set_current_device_resource(&async_mr);
+rmm::mr::set_current_device_resource_ref(async_mr);
 
 // Create a stream
 rmm::cuda_stream stream;

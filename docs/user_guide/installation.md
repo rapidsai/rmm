@@ -149,11 +149,12 @@ Create a test file `test_rmm.cpp`:
 ```cpp
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/per_device_resource.hpp>
 #include <iostream>
 
 int main() {
     auto mr = rmm::mr::cuda_memory_resource{};
-    rmm::mr::set_current_device_resource(&mr);
+    rmm::mr::set_current_device_resource_ref(mr);
 
     rmm::device_buffer buf(100);
     std::cout << "Allocated " << buf.size() << " bytes\n";

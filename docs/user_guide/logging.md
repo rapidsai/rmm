@@ -49,10 +49,10 @@ int main() {
     auto cuda_mr = rmm::mr::cuda_async_memory_resource{};
 
     // Wrap with logging adaptor
-    auto log_mr = rmm::mr::logging_resource_adaptor{&cuda_mr, "memory_log.csv"};
+    auto log_mr = rmm::mr::logging_resource_adaptor{cuda_mr, "memory_log.csv"};
 
     // Set as current resource
-    rmm::mr::set_current_device_resource(&log_mr);
+    rmm::mr::set_current_device_resource_ref(log_mr);
 
     // All allocations logged to CSV
     rmm::cuda_stream stream;
@@ -177,8 +177,8 @@ class Statistics:
 
 int main() {
     auto cuda_mr = rmm::mr::cuda_async_memory_resource{};
-    auto stats_mr = rmm::mr::statistics_resource_adaptor{&cuda_mr};
-    rmm::mr::set_current_device_resource(&stats_mr);
+    auto stats_mr = rmm::mr::statistics_resource_adaptor{cuda_mr};
+    rmm::mr::set_current_device_resource_ref(stats_mr);
 
     // Allocate
     rmm::cuda_stream stream;
@@ -186,9 +186,11 @@ int main() {
     rmm::device_buffer buffer2(2048, stream.view());
 
     // Get statistics
-    auto stats = stats_mr.get_statistics();
-    std::cout << "Allocated bytes: " << stats.allocated_bytes << "\n";
-    std::cout << "Allocation count: " << stats.num_allocations << "\n";
+    auto bytes = stats_mr.get_bytes_counter();
+    auto allocs = stats_mr.get_allocations_counter();
+    std::cout << "Current bytes: " << bytes.value << "\n";
+    std::cout << "Peak bytes: " << bytes.peak << "\n";
+    std::cout << "Allocation count: " << allocs.value << "\n";
 
     return 0;
 }
@@ -469,18 +471,18 @@ int main() {
 
     // Build resource stack
     auto cuda_mr = rmm::mr::cuda_async_memory_resource{};
-    auto stats_mr = rmm::mr::statistics_resource_adaptor{&cuda_mr};
-    auto log_mr = rmm::mr::logging_resource_adaptor{&stats_mr, "events.csv"};
+    auto stats_mr = rmm::mr::statistics_resource_adaptor{cuda_mr};
+    auto log_mr = rmm::mr::logging_resource_adaptor{stats_mr, "events.csv"};
 
-    rmm::mr::set_current_device_resource(&log_mr);
+    rmm::mr::set_current_device_resource_ref(log_mr);
 
     // Now all logging is active
     rmm::cuda_stream stream;
     rmm::device_buffer buffer(1024, stream.view());
 
     // Get statistics
-    auto stats = stats_mr.get_statistics();
-    std::cout << "Peak bytes: " << stats.peak_bytes << "\n";
+    auto bytes = stats_mr.get_bytes_counter();
+    std::cout << "Peak bytes: " << bytes.peak << "\n";
 
     return 0;
 }

@@ -51,7 +51,7 @@ The `PoolMemoryResource` wraps an upstream memory resource and maintains a pool 
 import rmm
 
 pool = rmm.mr.PoolMemoryResource(
-    upstream=rmm.mr.CudaMemoryResource(),  # or CudaAsyncMemoryResource
+    rmm.mr.CudaMemoryResource(),  # or CudaAsyncMemoryResource
     initial_pool_size=2**30,  # 1 GiB - initial allocation
     maximum_pool_size=2**32   # 4 GiB - max the pool can grow to
 )
@@ -191,7 +191,7 @@ The `ArenaMemoryResource` divides memory into size-binned arenas to reduce fragm
 import rmm
 
 arena = rmm.mr.ArenaMemoryResource(
-    upstream=rmm.mr.CudaMemoryResource(),
+    rmm.mr.CudaMemoryResource(),
     arena_size=2**28,  # 256 MiB per arena
     dump_log_on_failure=False
 )
@@ -250,7 +250,7 @@ large_mr = rmm.mr.PoolMemoryResource(
 
 # Bin allocations by size
 binning_mr = rmm.mr.BinningMemoryResource(
-    upstream=large_mr,  # Default for allocations not in bins
+    large_mr,  # Default for allocations not in bins
 )
 
 # Add bins: allocations of size <= threshold go to this resource
@@ -324,7 +324,7 @@ large_mr = rmm.mr.PoolMemoryResource(
 )
 
 # Configure binning
-binning_mr = rmm.mr.BinningMemoryResource(upstream=large_mr)
+binning_mr = rmm.mr.BinningMemoryResource(large_mr)
 binning_mr.add_bin(1024, small_mr)      # <= 1 KiB
 binning_mr.add_bin(1024**2, medium_mr)  # <= 1 MiB
 # > 1 MiB goes to large_mr
@@ -368,7 +368,7 @@ pool = rmm.mr.PoolMemoryResource(
 fixed_mr = rmm.mr.FixedSizeMemoryResource(pool, block_size=1024)  # 1 KiB blocks
 
 # Binning resource
-binning_mr = rmm.mr.BinningMemoryResource(upstream=pool)
+binning_mr = rmm.mr.BinningMemoryResource(pool)
 
 # Add bins for common PyTorch tensor sizes
 binning_mr.add_bin(256 * 1024, fixed_mr)      # <= 256 KiB

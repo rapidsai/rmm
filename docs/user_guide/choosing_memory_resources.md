@@ -163,12 +163,16 @@ The `ManagedMemoryResource` uses CUDA unified memory (via `cudaMallocManaged`), 
 ```python
 import rmm
 
-rmm.mr.set_current_device_resource(rmm.mr.ManagedMemoryResource())
+# Always combine managed memory with prefetching for acceptable performance.
+# Without prefetching, page faults cause significant overhead, especially
+# in multi-stream workloads.
+base = rmm.mr.ManagedMemoryResource()
+prefetch_mr = rmm.mr.PrefetchResourceAdaptor(base)
+rmm.mr.set_current_device_resource(prefetch_mr)
 ```
 
 **When to use:**
 - Datasets larger than available GPU memory
-- Prototyping or applications where performance is not critical
 - Always combine with prefetching strategies (see [Managed Memory guide](managed_memory.md))
 
 ### ArenaMemoryResource

@@ -40,7 +40,7 @@ buffer = rmm.DeviceBuffer(size=1000000)
 #include <rmm/mr/managed_memory_resource.hpp>
 
 auto managed_mr = rmm::mr::managed_memory_resource{};
-rmm::mr::set_current_device_resource(&managed_mr);
+rmm::mr::set_current_device_resource_ref(managed_mr);
 
 // Allocations use managed memory
 rmm::device_buffer buffer(1000000);
@@ -134,7 +134,7 @@ buffer.prefetch(device=0, stream=stream)  # Prefetch to device 0
 #include <rmm/prefetch.hpp>
 
 auto managed_mr = rmm::mr::managed_memory_resource{};
-rmm::mr::set_current_device_resource(&managed_mr);
+rmm::mr::set_current_device_resource_ref(managed_mr);
 
 rmm::cuda_stream stream;
 rmm::device_buffer buffer(1000000, stream.view());
@@ -257,6 +257,15 @@ Use [NVIDIA Nsight™ Systems](https://developer.nvidia.com/nsight-systems) to v
 nsys profile -o output python your_script.py
 ```
 
+When using `compute-sanitizer` with managed memory, you may need to enable page fault tracking:
+
+```bash
+compute-sanitizer --tool memcheck \
+    --cuda-um-cpu-page-faults=true \
+    --cuda-um-gpu-page-faults=true \
+    python your_script.py
+```
+
 ## Managed Memory Limitations
 
 ### 1. Not Stream-Ordered
@@ -300,13 +309,14 @@ When using managed memory with multiple GPUs:
 
 ```python
 import rmm
+from cuda.bindings import runtime as cudart
 
 # Set up managed memory on each device
 for device_id in [0, 1]:
-    with cuda.Device(device_id):
-        base = rmm.mr.ManagedMemoryResource()
-        prefetch_mr = rmm.mr.PrefetchResourceAdaptor(base)
-        rmm.mr.set_per_device_resource(device_id, prefetch_mr)
+    cudart.cudaSetDevice(device_id)
+    base = rmm.mr.ManagedMemoryResource()
+    prefetch_mr = rmm.mr.PrefetchResourceAdaptor(base)
+    rmm.mr.set_per_device_resource(device_id, prefetch_mr)
 
 # Prefetch to specific devices
 buffer = rmm.DeviceBuffer(size=1000000)

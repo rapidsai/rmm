@@ -63,7 +63,7 @@ All containers use stream-ordered allocation and work with any memory resource.
 
 // Use CUDA async memory pool
 auto async_mr = rmm::mr::cuda_async_memory_resource{};
-rmm::mr::set_current_device_resource(&async_mr);
+rmm::mr::set_current_device_resource_ref(async_mr);
 
 // Allocate device memory asynchronously
 rmm::cuda_stream stream;
