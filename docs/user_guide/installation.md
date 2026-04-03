@@ -100,7 +100,7 @@ include(CPM)
 
 CPMAddPackage(
   NAME rmm
-  VERSION 26.02
+  VERSION 26.06
   GITHUB_REPOSITORY rapidsai/rmm
   GIT_TAG main
   SOURCE_SUBDIR cpp
