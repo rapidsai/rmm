@@ -77,34 +77,6 @@ rmm.mr.set_current_device_resource(async_mr)
 
 RMM provides base memory resources (e.g., `CudaAsyncMemoryResource`, `ManagedMemoryResource`) and resource adaptors (e.g., `PoolMemoryResource`, `StatisticsResourceAdaptor`) that wrap an upstream resource to add functionality. See [Choosing a Memory Resource](choosing_memory_resources.md) for recommendations and the API references ([C++](../cpp/memory_resources/index.md), [Python](../python/index.md)) for the full list.
 
-### Per-Device Resources
-
-For multi-GPU systems, each device can have its own resource:
-
-`````{tabs}
-````{code-tab} c++
-#include <rmm/mr/per_device_resource.hpp>
-#include <rmm/cuda_device.hpp>
-
-// Get per-device resource ref
-rmm::device_async_resource_ref mr0 = rmm::mr::get_per_device_resource_ref(rmm::cuda_device_id{0});
-
-// Set per-device resource ref
-rmm::mr::cuda_async_memory_resource async_mr;
-rmm::mr::set_per_device_resource_ref(rmm::cuda_device_id{0}, async_mr);
-````
-````{code-tab} python
-import rmm
-
-# Get per-device resource
-mr0 = rmm.mr.get_per_device_resource(0)
-
-# Set per-device resource
-async_mr = rmm.mr.CudaAsyncMemoryResource()
-rmm.mr.set_per_device_resource(0, async_mr)
-````
-`````
-
 ## Containers
 
 RMM provides RAII containers that automatically manage device memory lifetime.
@@ -421,6 +393,8 @@ tensor = torch.zeros(1000, device='cuda')
 
 ## Multi-Device Usage
 
+For multi-GPU systems, each device can have its own memory resource. Use `set_per_device_resource_ref` (C++) or `set_per_device_resource` (Python) to configure each device before allocating memory on it:
+
 `````{tabs}
 ````{code-tab} c++
 #include <rmm/mr/cuda_async_memory_resource.hpp>
@@ -471,23 +445,3 @@ for device_id in range(num_devices):
 buffer = rmm.DeviceBuffer(size=1024)  # Uses device 0's resource
 ````
 `````
-
-## Best Practices
-
-1. **Use `CudaAsyncMemoryResource` by default** - best performance for most workloads
-
-2. **Set resources before any allocations** - changing resources after allocation can cause crashes
-
-3. **Maintain resource lifetime** - resources must outlive any allocations from them
-
-4. **Use RAII containers** - prefer `device_buffer` over raw pointers
-
-5. **Profile and measure** - use statistics and logging to understand allocation patterns
-
-## See Also
-
-- [Choosing a Memory Resource](choosing_memory_resources.md)
-- [Stream-Ordered Allocation](stream_ordered_allocation.md)
-- [Managed Memory and Prefetching](managed_memory.md)
-- [Pool Allocators](pool_allocators.md)
-- [Logging and Profiling](logging.md)
