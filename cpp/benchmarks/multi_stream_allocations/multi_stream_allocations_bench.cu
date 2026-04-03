@@ -111,7 +111,7 @@ inline auto make_binning()
   return mr;
 }
 
-static void benchmark_range(benchmark::internal::Benchmark* bench)
+static void benchmark_range(benchmark::Benchmark* bench)
 {
   bench  //
     ->RangeMultiplier(2)
