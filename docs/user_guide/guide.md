@@ -75,56 +75,7 @@ rmm.mr.set_current_device_resource(async_mr)
 
 ### Available Resources
 
-RMM provides several memory resource implementations:
-
-| Resource | Description | Use Case |
-|----------|-------------|----------|
-| `CudaAsyncMemoryResource` | Uses `cudaMallocAsync` (driver-managed pool) | **Recommended default** |
-| `CudaMemoryResource` | Uses `cudaMalloc`/`cudaFree` | Simple, no pooling |
-| `ManagedMemoryResource` | Uses `cudaMallocManaged` (unified memory) | Datasets larger than GPU memory |
-| `PoolMemoryResource` | Coalescing pool over upstream resource | Custom pool configuration |
-| `ArenaMemoryResource` | Size-binned arenas | Mixed allocation sizes |
-
-`````{tabs}
-````{code-tab} c++
-#include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/cuda_async_memory_resource.hpp>
-#include <rmm/mr/managed_memory_resource.hpp>
-#include <rmm/mr/pool_memory_resource.hpp>
-
-// CudaMemoryResource - uses cudaMalloc/cudaFree
-auto cuda_mr = rmm::mr::cuda_memory_resource{};
-
-// CudaAsyncMemoryResource - uses cudaMallocAsync (recommended)
-auto async_mr = rmm::mr::cuda_async_memory_resource{};
-
-// ManagedMemoryResource - uses cudaMallocManaged
-auto managed_mr = rmm::mr::managed_memory_resource{};
-
-// PoolMemoryResource - coalescing pool with 1 GiB initial size
-rmm::mr::pool_memory_resource pool_mr{cuda_mr, 1ULL << 30};
-````
-````{code-tab} python
-import rmm
-
-# CudaMemoryResource - uses cudaMalloc/cudaFree
-cuda_mr = rmm.mr.CudaMemoryResource()
-
-# CudaAsyncMemoryResource - uses cudaMallocAsync (recommended)
-async_mr = rmm.mr.CudaAsyncMemoryResource()
-
-# ManagedMemoryResource - uses cudaMallocManaged
-managed_mr = rmm.mr.ManagedMemoryResource()
-
-# PoolMemoryResource - coalescing pool with 1 GiB initial size
-pool_mr = rmm.mr.PoolMemoryResource(
-    rmm.mr.CudaMemoryResource(),
-    initial_pool_size=2**30  # 1 GiB
-)
-````
-`````
-
-See [Choosing a Memory Resource](choosing_memory_resources.md) for detailed guidance.
+RMM provides base memory resources (e.g., `CudaAsyncMemoryResource`, `ManagedMemoryResource`) and resource adaptors (e.g., `PoolMemoryResource`, `StatisticsResourceAdaptor`) that wrap an upstream resource to add functionality. See [Choosing a Memory Resource](choosing_memory_resources.md) for recommendations and the [C++ API Reference](../cpp/memory_resources/index.md) for the full list.
 
 ### Per-Device Resources
 
