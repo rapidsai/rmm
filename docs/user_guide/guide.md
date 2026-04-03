@@ -75,7 +75,7 @@ rmm.mr.set_current_device_resource(async_mr)
 
 ### Available Resources
 
-RMM provides base memory resources (e.g., `CudaAsyncMemoryResource`, `ManagedMemoryResource`) and resource adaptors (e.g., `PoolMemoryResource`, `StatisticsResourceAdaptor`) that wrap an upstream resource to add functionality. See [Choosing a Memory Resource](choosing_memory_resources.md) for recommendations and the [C++ API Reference](../cpp/memory_resources/index.md) for the full list.
+RMM provides base memory resources (e.g., `CudaAsyncMemoryResource`, `ManagedMemoryResource`) and resource adaptors (e.g., `PoolMemoryResource`, `StatisticsResourceAdaptor`) that wrap an upstream resource to add functionality. See [Choosing a Memory Resource](choosing_memory_resources.md) for recommendations and the API references ([C++](../cpp/memory_resources/index.md), [Python](../python/index.md)) for the full list.
 
 ### Per-Device Resources
 
