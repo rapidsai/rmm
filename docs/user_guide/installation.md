@@ -4,7 +4,7 @@ This guide covers installing RMM. For general RAPIDS installation instructions, 
 
 ## System Requirements
 
-See [RAPIDS Platform Support](https://docs.rapids.ai/platform-support/) for supported operating systems, CUDA versions, GPU architectures, and Python versions.
+See the [RAPIDS Platform Support](https://docs.rapids.ai/platform-support/) for supported operating systems, CUDA versions, GPU architectures, and Python versions for each release.
 
 ## Installing with conda
 
@@ -30,7 +30,7 @@ Nightly builds are created from the `main` branch and may contain unreleased fea
 
 ## Installing with pip
 
-RMM can also be installed using pip, but requires that CUDA is already installed on your system.
+RMM can also be installed using pip. The CUDA driver must already be installed on your system.
 
 ```bash
 pip install rmm-cu13  # For CUDA 13
@@ -42,48 +42,20 @@ pip install rmm-cu12  # For CUDA 12
 
 Building from source gives you the latest features and allows you to customize the build.
 
-### Development Environment
+### Clone and Create Development Environment
 
-For a complete development environment, you can create an environment with all dependencies:
+The conda environment files in `conda/environments/` pin all build prerequisites (compiler, CUDA toolkit, CMake, etc.) to known-good versions:
 
 ```bash
-# Clone the repository
 git clone https://github.com/rapidsai/rmm.git
 cd rmm
 
 # Create environment for CUDA 13
-conda env create --name rmm_env --file conda/environments/all_cuda-130_arch-$(uname -m).yaml
-
-# Activate the environment
-conda activate rmm_env
-```
-
-### Prerequisites
-
-- **GCC**: 13 or later
-- **nvcc**: CUDA 12.2 or later
-- **CMake**: 3.30.4 or later
-
-### Build Steps
-
-#### Clone the Repository
-
-```bash
-git clone https://github.com/rapidsai/rmm.git
-cd rmm
-```
-
-#### Create Conda Development Environment
-
-```bash
-# For CUDA 13
-conda env create --name rmm_dev --file conda/environments/all_cuda-130_arch-$(uname -m).yaml
-
-# Activate the environment
+conda env create --name rmm_dev --file conda/environments/all_cuda-131_arch-$(uname -m).yaml
 conda activate rmm_dev
 ```
 
-#### Build Using build.sh
+### Build Using build.sh
 
 RMM provides a convenience script `build.sh` that handles the build process.
 The `build.sh` script is meant to be used with the developer conda environment above, which installs all prerequisites.
