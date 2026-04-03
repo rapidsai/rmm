@@ -112,7 +112,7 @@ To use RMM in your own CMake project, add the following to your `CMakeLists.txt`
 ```cmake
 find_package(rmm REQUIRED)
 
-# Link your target with RMM (header-only, pulls in dependencies)
+# Link your target with RMM
 target_link_libraries(your_target PRIVATE rmm::rmm)
 ```
 
@@ -156,7 +156,7 @@ int main() {
     auto mr = rmm::mr::cuda_memory_resource{};
     rmm::mr::set_current_device_resource_ref(mr);
 
-    rmm::device_buffer buf(100);
+    rmm::device_buffer buf(100, rmm::cuda_stream_view{});
     std::cout << "Allocated " << buf.size() << " bytes\n";
 
     return 0;

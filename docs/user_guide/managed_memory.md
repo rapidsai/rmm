@@ -38,12 +38,14 @@ buffer = rmm.DeviceBuffer(size=1000000)
 
 ```cpp
 #include <rmm/mr/managed_memory_resource.hpp>
+#include <rmm/device_buffer.hpp>
 
 auto managed_mr = rmm::mr::managed_memory_resource{};
 rmm::mr::set_current_device_resource_ref(managed_mr);
 
 // Allocations use managed memory
-rmm::device_buffer buffer(1000000);
+rmm::cuda_stream stream;
+rmm::device_buffer buffer(1000000, stream.view());
 ```
 
 ## Performance Considerations

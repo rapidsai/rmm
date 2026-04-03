@@ -475,24 +475,23 @@ tensor = torch.zeros(1000, device='cuda')
 #include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/cuda_device.hpp>
-#include <memory>
 #include <vector>
 
 int num_devices;
 cudaGetDeviceCount(&num_devices);
 
-// Store resources to maintain lifetime
-std::vector<std::unique_ptr<rmm::mr::cuda_async_memory_resource>> resources;
+// Store resources to maintain lifetime (resources are copyable value types)
+std::vector<rmm::mr::cuda_async_memory_resource> resources;
 
 for (int i = 0; i < num_devices; ++i) {
     // Set device BEFORE creating resource
     cudaSetDevice(i);
 
     // Create resource for this device
-    resources.push_back(std::make_unique<rmm::mr::cuda_async_memory_resource>());
+    resources.emplace_back();
 
     // Set as per-device resource ref
-    rmm::mr::set_per_device_resource_ref(rmm::cuda_device_id{i}, *resources.back());
+    rmm::mr::set_per_device_resource_ref(rmm::cuda_device_id{i}, resources.back());
 }
 
 // Use device 0
