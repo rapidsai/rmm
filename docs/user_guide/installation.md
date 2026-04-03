@@ -4,10 +4,7 @@ This guide covers installing RMM. For general RAPIDS installation instructions, 
 
 ## System Requirements
 
-- **Operating System**: Linux or Windows Subsystem for Linux 2 (WSL2)
-- **Python**: 3.10, 3.11, 3.12, or 3.13
-- **CUDA**: 12.2 or later
-- **GPU**: Volta architecture or newer (Compute Capability 7.0+)
+See [RAPIDS Platform Support](https://docs.rapids.ai/platform-support/) for supported operating systems, CUDA versions, GPU architectures, and Python versions.
 
 ## Installing with conda
 
