@@ -331,9 +331,9 @@ TEST(ForwardPropertyAdaptor, TypeEraseSyncAdaptor)
   forwarding_sync_adaptor adaptor{upstream};
   cuda::mr::synchronous_resource_ref<cuda::mr::device_accessible> erased{adaptor};
 
-  void* ptr = erased.allocate_sync(1024);
+  void* ptr = erased.allocate_sync(1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   ASSERT_NE(ptr, nullptr);
-  erased.deallocate_sync(ptr, 1024);
+  erased.deallocate_sync(ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 // Verify that get_property still works correctly through the forwarding adaptor.
