@@ -18,8 +18,8 @@ Enable logging by wrapping your memory resource with `LoggingResourceAdaptor`:
 import rmm
 
 # Wrap the current resource with logging adaptor
-base = rmm.mr.CudaAsyncMemoryResource()
-log_mr = rmm.mr.LoggingResourceAdaptor(base, log_file_name="memory_log.csv")
+base_mr = rmm.mr.CudaAsyncMemoryResource()
+log_mr = rmm.mr.LoggingResourceAdaptor(base_mr, log_file_name="memory_log.csv")
 rmm.mr.set_current_device_resource(log_mr)
 
 # Allocations are now logged
@@ -431,8 +431,8 @@ Use multiple logging features together:
 import rmm
 
 # Enable memory event logging by wrapping with adaptor
-base = rmm.mr.CudaAsyncMemoryResource()
-log_mr = rmm.mr.LoggingResourceAdaptor(base, log_file_name="events.csv")
+base_mr = rmm.mr.CudaAsyncMemoryResource()
+log_mr = rmm.mr.LoggingResourceAdaptor(base_mr, log_file_name="events.csv")
 rmm.mr.set_current_device_resource(log_mr)
 
 # Enable statistics and profiling
@@ -496,8 +496,8 @@ int main() {
 import rmm
 
 # Enable detailed logging
-base = rmm.mr.CudaAsyncMemoryResource()
-log_mr = rmm.mr.LoggingResourceAdaptor(base, log_file_name="oom_debug.csv")
+base_mr = rmm.mr.CudaAsyncMemoryResource()
+log_mr = rmm.mr.LoggingResourceAdaptor(base_mr, log_file_name="oom_debug.csv")
 rmm.mr.set_current_device_resource(log_mr)
 rmm.set_logging_level("debug")
 rmm.statistics.enable_statistics()
