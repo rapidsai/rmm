@@ -2,11 +2,11 @@
 
 One of the most common questions when using RMM is: "Which memory resource should I use?"
 
-This guide provides recommendations for selecting the appropriate memory resource based on your application's needs.
+This guide recommends memory resources based on optimal allocation performance for common workloads.
 
 ## Recommended Defaults
 
-For most applications, use the CUDA async memory pool.
+For most applications, the CUDA async memory pool provides the best allocation performance with no tuning required.
 
 `````{tabs}
 ````{code-tab} c++
@@ -24,7 +24,7 @@ rmm.mr.set_current_device_resource(mr)
 ````
 `````
 
-For applications exceeding GPU memory limits, use a pooled managed memory resource with prefetching. Note: managed memory is not supported on WSL2 systems.
+For applications that require GPU memory oversubscription (allocating more memory than physically available on the GPU), use a pooled managed memory resource with prefetching. This uses [CUDA Unified Memory](https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/unified-memory.html) (`cudaMallocManaged`) to enable automatic page migration between CPU and GPU at the cost of slower allocation performance. Coupling the managed memory "base" allocator with adaptors for pool allocation and prefetching to device on allocation recovers some of the performance lost to the overhead of managed allocations. Note: Managed memory has [limited support on WSL2](https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/unified-memory.html#unified-memory-on-windows-wsl-and-tegra).
 
 `````{tabs}
 ````{code-tab} c++
@@ -62,17 +62,17 @@ rmm.mr.set_current_device_resource(mr)
 
 ## Memory Resource Considerations
 
-It is usually best to use resources that allow the CUDA driver to manage pool suballocation via `cudaMallocFromPoolAsync`.
+Resources that use the CUDA driver's pool suballocation (`cudaMallocFromPoolAsync`) provide the best performance because the driver can manage virtual address space efficiently, avoid fragmentation, and share memory across libraries without synchronization overhead.
 
 ### CudaAsyncMemoryResource
 
 The `CudaAsyncMemoryResource` uses CUDA's driver-managed memory pool (via `cudaMallocAsync`). This is the **recommended default** for most applications.
 
 **Advantages:**
-- **Driver-managed pool**: Uses efficient suballocation with virtual addressing to avoid fragmentation
-- **Cross-library sharing**: The pool can be shared across multiple applications and libraries, even those not using RMM directly
-- **Stream-ordered semantics**: Allocations and deallocations are stream-ordered by default
-- **Performance**: Similar or better performance compared to RMM's pool implementations
+- **Fastest allocation performance**: Driver-managed suballocation with virtual addressing eliminates fragmentation and minimizes latency
+- **Cross-library sharing**: The pool is shared across all libraries on the device, even those not using RMM directly
+- **Stream-ordered semantics**: Allocations and deallocations are stream-ordered by default, avoiding pipeline stalls in multi-stream workloads
+- **Zero configuration**: No pool sizes to tune — the driver manages growth automatically
 
 **When to use:**
 - Default choice for GPU-accelerated applications
@@ -82,98 +82,73 @@ The `CudaAsyncMemoryResource` uses CUDA's driver-managed memory pool (via `cudaM
 
 ### CudaMemoryResource
 
-The `CudaMemoryResource` uses `cudaMalloc` directly for each allocation, with no pooling.
-
-**Advantages:**
-- Simple and predictable
-- No fragmentation concerns
-- Memory is immediately returned to the system on deallocation
-
-**Disadvantages:**
-- Slower than pooled allocators due to synchronization overhead
-
-**Example:**
-```python
-import rmm
-
-rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
-```
+The `CudaMemoryResource` uses the legacy `cudaMalloc`/`cudaFree` APIs directly with no pooling or stream-ordering support. It is generally not recommended.
 
 **When to use:**
-- Simple applications with infrequent allocations
-- Debugging memory issues
-- Testing or benchmarking baseline performance
+- Debugging memory issues (to isolate allocator-related problems)
+- Benchmarking baseline allocation overhead
 
 ### PoolMemoryResource
 
-The `PoolMemoryResource` maintains a pool of memory allocated from an upstream resource.
+The `PoolMemoryResource` maintains a pool of memory allocated from an upstream resource. It provides fast suballocation but requires manual tuning for pool sizes and does not match the performance of `CudaAsyncMemoryResource` in multi-stream workloads.
 
 **Advantages:**
 - Fast suballocation from pre-allocated pool
-- Configurable initial and maximum pool sizes
+- Configurable initial and maximum pool sizes for explicit memory budgeting
 
 **Disadvantages:**
-- Can suffer from fragmentation (unlike async MR)
-- Pool is not shared across applications
-- Requires careful tuning of pool sizes
+- **Slower than async MR** in multi-stream workloads due to internal locking
+- Can suffer from fragmentation (async MR reduces this with virtual addressing)
+- Pool cannot be shared across CUDA applications unless all applications are using RMM
+- May require tuning of pool size for optimal performance
+
+**When to use:**
+- Explicit memory budgeting with fixed pool sizes
+- Wrapping non-CUDA memory sources (e.g., managed memory)
+- Prefer `CudaAsyncMemoryResource` for new code unless you need explicit pool size control
+
+**Note**: If using `PoolMemoryResource`, prefer wrapping `CudaAsyncMemoryResource` as the upstream rather than `CudaMemoryResource`:
 
 **Example:**
 ```python
 import rmm
 
 pool = rmm.mr.PoolMemoryResource(
-    rmm.mr.CudaMemoryResource(),  # upstream resource
-    initial_pool_size=2**30,  # 1 GiB
-    maximum_pool_size=2**32   # 4 GiB
+    rmm.mr.CudaAsyncMemoryResource(),  # upstream resource
+    initial_pool_size=2**32,  #  4 GiB
+    maximum_pool_size=2**34   # 16 GiB
 )
 rmm.mr.set_current_device_resource(pool)
 ```
 
-**When to use:**
-- Legacy applications (prefer `CudaAsyncMemoryResource` for new code)
-- Specific tuning requirements not met by async MR
-- Wrapping non-CUDA memory sources
-
-**Important**: If using `PoolMemoryResource`, prefer wrapping `CudaAsyncMemoryResource` as the upstream rather than `CudaMemoryResource`:
-
-```python
-# Better: Pool wrapping async MR
-pool = rmm.mr.PoolMemoryResource(
-    rmm.mr.CudaAsyncMemoryResource(),
-    initial_pool_size=2**30
-)
-```
-
-This combines the benefits of both: fast suballocation from RMM's pool and the driver's virtual addressing capabilities.
-
 ### ManagedMemoryResource
 
-The `ManagedMemoryResource` uses CUDA unified memory (via `cudaMallocManaged`), allowing memory to be accessible from both CPU and GPU.
+The `ManagedMemoryResource` allocates [CUDA Unified Memory](https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/unified-memory.html) via `cudaMallocManaged`. Unified Memory creates a single address space accessible from both CPU and GPU, with the CUDA driver migrating pages between processors on demand. This enables [GPU memory oversubscription](https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/unified-memory.html) — allocating more memory than physically available on the GPU — but generally comes with a performance cost.
 
 **Advantages:**
-- Enables working with datasets larger than GPU memory
+- Enables GPU memory oversubscription for datasets larger than GPU memory
 - Automatic page migration between CPU and GPU
-- Simplifies memory management for host/device code
 
 **Disadvantages:**
-- Performance overhead due to page faults and migration
-- Requires careful prefetching for optimal performance
+- **Slower than device memory** due to page faults and migration overhead, especially in multi-stream workloads (see [Performance Tuning](https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/unified-memory.html#performance-tuning) in the CUDA Programming Guide)
+- Requires prefetching to achieve acceptable performance (see [Managed Memory guide](managed_memory.md))
 
 **Example:**
 ```python
 import rmm
 
-# Always combine managed memory with prefetching for acceptable performance.
-# Without prefetching, page faults cause significant overhead, especially
-# in multi-stream workloads.
+# Always combine managed memory with a pool and prefetching for acceptable
+# performance. Without prefetching, page faults cause significant overhead,
+# especially in multi-stream workloads.
 base = rmm.mr.ManagedMemoryResource()
-prefetch_mr = rmm.mr.PrefetchResourceAdaptor(base)
+pool = rmm.mr.PoolMemoryResource(base, initial_pool_size=2**30)
+prefetch_mr = rmm.mr.PrefetchResourceAdaptor(pool)
 rmm.mr.set_current_device_resource(prefetch_mr)
 ```
 
 **When to use:**
 - Datasets larger than available GPU memory
-- Always combine with prefetching strategies (see [Managed Memory guide](managed_memory.md))
+- Always combine with a pool and prefetching (see [Managed Memory guide](managed_memory.md))
 
 ### ArenaMemoryResource
 
@@ -230,10 +205,20 @@ rmm.mr.set_current_device_resource(prefetch)
 ```python
 import rmm
 
-# Track allocation statistics
+# Track allocation statistics (counts, peak, and total bytes)
 base = rmm.mr.CudaAsyncMemoryResource()
 stats = rmm.mr.StatisticsResourceAdaptor(base)
 rmm.mr.set_current_device_resource(stats)
+```
+
+**Allocation logging:**
+```python
+import rmm
+
+# Log every allocation and deallocation to a file
+base = rmm.mr.CudaAsyncMemoryResource()
+logged = rmm.mr.LoggingResourceAdaptor(base, log_file_name="allocations.csv")
+rmm.mr.set_current_device_resource(logged)
 ```
 
 ## Multi-Library Applications
@@ -259,31 +244,9 @@ torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
 
 With this setup, both PyTorch and any other RMM-using code (like cuDF) will share the same driver-managed pool.
 
-## Performance Considerations
-
-### Async MR vs. Pool MR
-
-In most cases, `CudaAsyncMemoryResource` provides similar or better performance than `PoolMemoryResource`:
-
-- Both use pooling for fast suballocation
-- Async MR uses virtual addressing to avoid fragmentation
-- Async MR shares memory across applications
-
-**When Pool MR might be faster:**
-- Very specific allocation patterns that align well with pool design
-- Custom upstream resources (not CUDA memory)
-
-### Multi-stream Applications
-
-For applications using multiple CUDA streams or threads:
-
-- `CudaAsyncMemoryResource` is **strongly recommended**
-- Pool allocators can create "pipeline bubbles" where streams wait for allocations
-- The async MR handles stream synchronization efficiently
-
 ## Best Practices
 
-1. **Set the memory resource before any allocations**: Once memory is allocated, changing the resource can lead to crashes
+1. **Set the memory resource before any allocations**: Changing the resource after allocations have been made can lead to crashes.
 
    ```python
    import rmm
@@ -292,11 +255,7 @@ For applications using multiple CUDA streams or threads:
    rmm.mr.set_current_device_resource(rmm.mr.CudaAsyncMemoryResource())
    ```
 
-2. **Prefer async MR by default**: Unless you have specific requirements, start with `CudaAsyncMemoryResource`
-
-3. **Use statistics for tuning**: If you need to understand allocation patterns, wrap with `StatisticsResourceAdaptor`
-
-4. **Don't over-engineer**: Start simple, profile, and optimize only if needed
+2. **Use adaptors for diagnostics**: Wrap with `StatisticsResourceAdaptor` to track allocation counts and peak usage, or `LoggingResourceAdaptor` to log every allocation and deallocation (see [Logging and Profiling](logging.md)).
 
 ## See Also
 
