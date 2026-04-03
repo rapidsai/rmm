@@ -75,20 +75,13 @@ stream.synchronize();
 
 ```python
 import rmm
-import cupy as cp
 
-# Create a CUDA async memory resource
+# Use CUDA async memory pool
 mr = rmm.mr.CudaAsyncMemoryResource()
-
-# Set the current device memory resource
 rmm.mr.set_current_device_resource(mr)
 
-# Allocating device memory uses the current device resource by default
+# Allocate device memory
 buffer = rmm.DeviceBuffer(size=1024)
-
-# Use the current device resource with CuPy
-cp.cuda.set_allocator(rmm.allocators.cupy.rmm_cupy_allocator)
-array = cp.zeros(1000)  # Now uses RMM for allocation
 ```
 
 ## Integration with GPU Libraries
@@ -121,6 +114,9 @@ from rmm.allocators.cupy import rmm_cupy_allocator
 mr = rmm.mr.CudaAsyncMemoryResource()
 rmm.mr.set_current_device_resource(mr)
 cupy.cuda.set_allocator(rmm_cupy_allocator)
+
+# CuPy allocations now use RMM
+array = cupy.zeros(1000)
 ```
 
 ### Numba
