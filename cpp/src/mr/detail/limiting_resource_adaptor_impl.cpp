@@ -37,13 +37,13 @@ std::size_t limiting_resource_adaptor_impl::get_allocation_limit() const
 
 void* limiting_resource_adaptor_impl::allocate(cuda::stream_ref stream,
                                                std::size_t bytes,
-                                               std::size_t /*alignment*/)
+                                               std::size_t alignment)
 {
   auto const proposed_size = rmm::align_up(bytes, alignment_);
   auto const old           = allocated_bytes_.fetch_add(proposed_size);
   if (old + proposed_size <= allocation_limit_) {
     try {
-      return upstream_mr_.allocate(stream, bytes);
+      return upstream_mr_.allocate(stream, bytes, alignment);
     } catch (...) {
       allocated_bytes_ -= proposed_size;
       throw;
@@ -59,10 +59,10 @@ void* limiting_resource_adaptor_impl::allocate(cuda::stream_ref stream,
 void limiting_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
                                                 void* ptr,
                                                 std::size_t bytes,
-                                                std::size_t /*alignment*/) noexcept
+                                                std::size_t alignment) noexcept
 {
   std::size_t const allocated_size = rmm::align_up(bytes, alignment_);
-  upstream_mr_.deallocate(stream, ptr, bytes);
+  upstream_mr_.deallocate(stream, ptr, bytes, alignment);
   allocated_bytes_ -= allocated_size;
 }
 

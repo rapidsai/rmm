@@ -29,7 +29,7 @@ fixed_size_memory_resource_impl::fixed_size_memory_resource_impl(device_async_re
                                                                  std::size_t block_size,
                                                                  std::size_t blocks_to_preallocate)
   : upstream_mr_{upstream},
-    block_size_{align_up(block_size, CUDA_ALLOCATION_ALIGNMENT)},
+    block_size_{align_up(block_size, rmm::CUDA_ALLOCATION_ALIGNMENT)},
     upstream_chunk_size_{block_size_ * blocks_to_preallocate}
 {
   this->insert_blocks(std::move(blocks_from_upstream(cuda_stream_legacy)), cuda_stream_legacy);
@@ -60,7 +60,7 @@ fixed_size_memory_resource_impl::block_type fixed_size_memory_resource_impl::exp
 fixed_size_memory_resource_impl::free_list fixed_size_memory_resource_impl::blocks_from_upstream(
   cuda_stream_view stream)
 {
-  void* ptr = upstream_mr_.allocate(stream, upstream_chunk_size_);
+  void* ptr = upstream_mr_.allocate(stream, upstream_chunk_size_, rmm::CUDA_ALLOCATION_ALIGNMENT);
   block_type block{ptr};
   upstream_blocks_.push_back(block);
 
@@ -84,7 +84,7 @@ fixed_size_memory_resource_impl::split_block fixed_size_memory_resource_impl::al
 fixed_size_memory_resource_impl::block_type fixed_size_memory_resource_impl::free_block(
   void* ptr, [[maybe_unused]] std::size_t size) noexcept
 {
-  RMM_LOGGING_ASSERT(align_up(size, CUDA_ALLOCATION_ALIGNMENT) <= block_size_);
+  RMM_LOGGING_ASSERT(align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT) <= block_size_);
   return block_type{ptr};
 }
 
@@ -93,7 +93,8 @@ void fixed_size_memory_resource_impl::release()
   lock_guard lock(this->get_mutex());
 
   for (auto block : upstream_blocks_) {
-    upstream_mr_.deallocate_sync(block.pointer(), upstream_chunk_size_);
+    upstream_mr_.deallocate_sync(
+      block.pointer(), upstream_chunk_size_, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
   upstream_blocks_.clear();
 }

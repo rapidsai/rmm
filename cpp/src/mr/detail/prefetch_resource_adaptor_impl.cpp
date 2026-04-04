@@ -24,9 +24,9 @@ device_async_resource_ref prefetch_resource_adaptor_impl::get_upstream_resource(
 
 void* prefetch_resource_adaptor_impl::allocate(cuda::stream_ref stream,
                                                std::size_t bytes,
-                                               std::size_t /*alignment*/)
+                                               std::size_t alignment)
 {
-  void* ptr = upstream_mr_.allocate(stream, bytes);
+  void* ptr = upstream_mr_.allocate(stream, bytes, alignment);
   rmm::prefetch(ptr, bytes, rmm::get_current_cuda_device(), cuda_stream_view{stream.get()});
   return ptr;
 }
@@ -34,9 +34,9 @@ void* prefetch_resource_adaptor_impl::allocate(cuda::stream_ref stream,
 void prefetch_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
                                                 void* ptr,
                                                 std::size_t bytes,
-                                                std::size_t /*alignment*/) noexcept
+                                                std::size_t alignment) noexcept
 {
-  upstream_mr_.deallocate(stream, ptr, bytes);
+  upstream_mr_.deallocate(stream, ptr, bytes, alignment);
 }
 
 void* prefetch_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)

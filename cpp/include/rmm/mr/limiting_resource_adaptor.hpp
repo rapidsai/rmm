@@ -55,7 +55,7 @@ class RMM_EXPORT limiting_resource_adaptor
    */
   limiting_resource_adaptor(device_async_resource_ref upstream,
                             std::size_t allocation_limit,
-                            std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT);
+                            std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   ~limiting_resource_adaptor() = default;
 

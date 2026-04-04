@@ -42,7 +42,7 @@ device_async_resource_ref binning_memory_resource_impl::get_upstream_resource() 
 void binning_memory_resource_impl::add_bin(std::size_t allocation_size,
                                            std::optional<device_async_resource_ref> bin_resource)
 {
-  allocation_size = align_up(allocation_size, CUDA_ALLOCATION_ALIGNMENT);
+  allocation_size = align_up(allocation_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   if (bin_resource.has_value()) {
     resource_bins_.insert({allocation_size, bin_resource.value()});
