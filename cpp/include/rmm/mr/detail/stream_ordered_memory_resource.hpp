@@ -248,6 +248,46 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     log_summary_trace();
   }
 
+  /**
+   * @brief Get an available memory block of at least `size` bytes
+   *
+   * @param size The number of bytes to allocate
+   * @param stream_event The stream and associated event on which the allocation will be used.
+   * @return block_type A block of memory of at least `size` bytes
+   */
+  block_type get_block(std::size_t size, stream_event_pair stream_event)
+  {
+    // Try to find a satisfactory block in free list for the same stream (no sync required)
+    auto iter = stream_free_blocks_.find(stream_event);
+    if (iter != stream_free_blocks_.end()) {
+      block_type const block = iter->second.get_block(size);
+      if (block.is_valid()) { return allocate_and_insert_remainder(block, size, iter->second); }
+    }
+
+    free_list& blocks =
+      (iter != stream_free_blocks_.end()) ? iter->second : stream_free_blocks_[stream_event];
+
+    // Try to find an existing block in another stream
+    {
+      block_type const block = get_block_from_other_stream(size, stream_event, blocks, false);
+      if (block.is_valid()) { return block; }
+    }
+
+    // no large enough blocks available on other streams, so sync and merge until we find one
+    {
+      block_type const block = get_block_from_other_stream(size, stream_event, blocks, true);
+      if (block.is_valid()) { return block; }
+    }
+
+    log_summary_trace();
+
+    // no large enough blocks available after merging, so grow the pool
+    block_type const block =
+      this->underlying().expand_pool(size, blocks, cuda_stream_view{stream_event.stream});
+
+    return allocate_and_insert_remainder(block, size, blocks);
+  }
+
  private:
   /**
    * @brief get a unique CUDA event (possibly new) associated with `stream`
@@ -314,46 +354,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
     auto const [allocated, remainder] = this->underlying().allocate_from_block(block, size);
     if (remainder.is_valid()) { blocks.insert(remainder); }
     return allocated;
-  }
-
-  /**
-   * @brief Get an available memory block of at least `size` bytes
-   *
-   * @param size The number of bytes to allocate
-   * @param stream_event The stream and associated event on which the allocation will be used.
-   * @return block_type A block of memory of at least `size` bytes
-   */
-  block_type get_block(std::size_t size, stream_event_pair stream_event)
-  {
-    // Try to find a satisfactory block in free list for the same stream (no sync required)
-    auto iter = stream_free_blocks_.find(stream_event);
-    if (iter != stream_free_blocks_.end()) {
-      block_type const block = iter->second.get_block(size);
-      if (block.is_valid()) { return allocate_and_insert_remainder(block, size, iter->second); }
-    }
-
-    free_list& blocks =
-      (iter != stream_free_blocks_.end()) ? iter->second : stream_free_blocks_[stream_event];
-
-    // Try to find an existing block in another stream
-    {
-      block_type const block = get_block_from_other_stream(size, stream_event, blocks, false);
-      if (block.is_valid()) { return block; }
-    }
-
-    // no large enough blocks available on other streams, so sync and merge until we find one
-    {
-      block_type const block = get_block_from_other_stream(size, stream_event, blocks, true);
-      if (block.is_valid()) { return block; }
-    }
-
-    log_summary_trace();
-
-    // no large enough blocks available after merging, so grow the pool
-    block_type const block =
-      this->underlying().expand_pool(size, blocks, cuda_stream_view{stream_event.stream});
-
-    return allocate_and_insert_remainder(block, size, blocks);
   }
 
   /**

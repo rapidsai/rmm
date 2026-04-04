@@ -152,6 +152,7 @@ ConfigureTest(PINNED_POOL_MR_REF_TEST mr/mr_ref_pinned_pool_tests.cpp GPUS 1 PER
 
 # Small test suites (minimal allocations = 5%)
 ConfigureTest(FIXED_SIZE_MR_REF_TEST mr/mr_ref_fixed_size_tests.cpp GPUS 1 PERCENT 5)
+ConfigureTest(FIXED_SIZE_MR_TEST mr/fixed_size_mr_test.cpp GPUS 1 PERCENT 15)
 ConfigureTest(DEFAULT_MR_REF_TEST mr/mr_ref_default_tests.cpp GPUS 1 PERCENT 5)
 
 # device_memory_resource_view tests
