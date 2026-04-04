@@ -195,17 +195,17 @@ namespace detail {
 inline device_async_resource_ref set_per_device_resource_ref_unsafe(
   cuda_device_id device_id, device_async_resource_ref new_resource_ref)
 {
-  using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
-  auto& map                 = detail::get_ref_map();
-  auto const old_itr        = map.find(device_id.value());
+  auto& map          = detail::get_ref_map();
+  auto const old_itr = map.find(device_id.value());
   // If a resource didn't previously exist for `device_id`, return ref to initial_resource
   if (old_itr == map.end()) {
-    map.emplace(device_id.value(), static_cast<any_device_resource>(new_resource_ref));
+    map.emplace(device_id.value(),
+                cuda::mr::any_resource<cuda::mr::device_accessible>{new_resource_ref});
     return device_async_resource_ref{*detail::initial_resource()};
   }
 
   device_async_resource_ref old_resource_ref{old_itr->second};
-  old_itr->second = static_cast<any_device_resource>(new_resource_ref);  // reify and store
+  old_itr->second = cuda::mr::any_resource<cuda::mr::device_accessible>{new_resource_ref};
   return old_resource_ref;
 }
 }  // namespace detail
@@ -336,15 +336,14 @@ inline device_memory_resource* set_current_device_resource(device_memory_resourc
  */
 inline device_async_resource_ref get_per_device_resource_ref(cuda_device_id device_id)
 {
-  using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
   std::lock_guard<std::mutex> lock{detail::ref_map_lock()};
   auto& map = detail::get_ref_map();
   // If a resource was never set for `id`, set to the initial resource
   auto const found = map.find(device_id.value());
   if (found == map.end()) {
-    // Create a resource_ref from the initial resource, then reify it to any_resource
     device_async_resource_ref initial_ref{*detail::initial_resource()};
-    auto item = map.emplace(device_id.value(), static_cast<any_device_resource>(initial_ref));
+    auto item = map.emplace(device_id.value(),
+                            cuda::mr::any_resource<cuda::mr::device_accessible>{initial_ref});
     return device_async_resource_ref{item.first->second};
   }
   return device_async_resource_ref{found->second};
