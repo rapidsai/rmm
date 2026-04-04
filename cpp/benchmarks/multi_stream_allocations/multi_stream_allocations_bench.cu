@@ -109,7 +109,7 @@ inline any_device_resource make_binning()
   return rmm::mr::binning_memory_resource{pool, min_bin_pow2, max_bin_pow2};
 }
 
-static void benchmark_range(benchmark::internal::Benchmark* bench)
+static void benchmark_range(benchmark::Benchmark* bench)
 {
   bench  //
     ->RangeMultiplier(2)

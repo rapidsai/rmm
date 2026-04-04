@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/error.hpp>
 #include <rmm/mr/aligned_resource_adaptor.hpp>
@@ -184,10 +185,12 @@ TEST(CallbackMRAdaptorTest, EqualityAndSharedOwnership)
   rmm::device_async_resource_ref upstream{cuda};
 
   auto alloc_cb = [](std::size_t bytes, rmm::cuda_stream_view stream, void* arg) {
-    return static_cast<rmm::device_async_resource_ref*>(arg)->allocate(stream, bytes);
+    return static_cast<rmm::device_async_resource_ref*>(arg)->allocate(
+      stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   };
   auto dealloc_cb = [](void* ptr, std::size_t bytes, rmm::cuda_stream_view stream, void* arg) {
-    static_cast<rmm::device_async_resource_ref*>(arg)->deallocate(stream, ptr, bytes);
+    static_cast<rmm::device_async_resource_ref*>(arg)->deallocate(
+      stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   };
 
   callback_memory_resource mr{alloc_cb, dealloc_cb, &upstream, &upstream};

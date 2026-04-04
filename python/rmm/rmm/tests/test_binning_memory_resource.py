@@ -3,6 +3,8 @@
 
 """Tests for BinningMemoryResource."""
 
+from collections.abc import Callable
+
 import numpy as np
 import pytest
 from test_helpers import (
@@ -21,7 +23,9 @@ _BINNING_NELEMS = [128, 256, 512, 1024, 4096, 16384]
 _LARGE_NELEM = 16777216
 
 
-def _make_binning_mr(upstream_mr):
+def _make_binning_mr(
+    upstream_mr: Callable[[], rmm.mr.DeviceMemoryResource],
+) -> rmm.mr.DeviceMemoryResource:
     """Build a BinningMemoryResource from the given upstream factory."""
     upstream = upstream_mr()
 

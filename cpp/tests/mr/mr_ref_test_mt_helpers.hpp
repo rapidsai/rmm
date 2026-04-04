@@ -52,7 +52,7 @@ inline void async_allocate_loop(rmm::device_async_resource_ref ref,
 
   for (std::size_t i = 0; i < num_allocations; ++i) {
     std::size_t size = size_distribution(generator);
-    void* ptr        = ref.allocate(stream, size);
+    void* ptr        = ref.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     {
       std::lock_guard<std::mutex> lock(mtx);
       RMM_CUDA_TRY(cudaEventRecord(event, stream.value()));
@@ -79,7 +79,7 @@ inline void async_deallocate_loop(rmm::device_async_resource_ref ref,
     RMM_CUDA_TRY(cudaStreamWaitEvent(stream.value(), event));
     allocation alloc = allocations.front();
     allocations.pop_front();
-    ref.deallocate(stream, alloc.ptr, alloc.size);
+    ref.deallocate(stream, alloc.ptr, alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   // Work around for threads going away before cudaEvent has finished async processing
