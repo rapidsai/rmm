@@ -141,18 +141,18 @@ class arena_memory_resource final : public device_memory_resource {
 #else
     bytes = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
 #endif
-    auto& arena = get_arena(stream);
+    auto& stream_arena = get_arena(stream);
 
     {
       std::shared_lock lock(mtx_);
-      void* pointer = arena.allocate_sync(bytes);
+      void* pointer = stream_arena.allocate_sync(bytes);
       if (pointer != nullptr) { return pointer; }
     }
 
     {
       std::unique_lock lock(mtx_);
       defragment();
-      void* pointer = arena.allocate_sync(bytes);
+      void* pointer = stream_arena.allocate_sync(bytes);
       if (pointer == nullptr) {
         if (dump_log_on_failure_) { dump_memory_log(bytes); }
         auto const msg = std::string("Maximum pool size exceeded (failed to allocate ") +
@@ -193,12 +193,12 @@ class arena_memory_resource final : public device_memory_resource {
 #else
     bytes = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
 #endif
-    auto& arena = get_arena(stream);
+    auto& dealloc_arena = get_arena(stream);
 
     {
       std::shared_lock lock(mtx_);
       // If the memory being freed does not belong to the arena, the following will return false.
-      if (arena.deallocate(stream, ptr, bytes)) { return; }
+      if (dealloc_arena.deallocate(stream, ptr, bytes)) { return; }
     }
 
     {

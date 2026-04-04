@@ -37,7 +37,7 @@ struct PrefetchTest : public ::testing::Test {
   }
 
   // Test that the memory range was last prefetched to the specified device
-  void expect_prefetched(void const* ptr, std::size_t size, rmm::cuda_device_id device)
+  void expect_prefetched(void const* ptr, std::size_t num_bytes, rmm::cuda_device_id device)
   {
     if (!rmm::detail::concurrent_managed_access::is_supported()) {
       GTEST_SKIP() << "Skipping test: concurrent managed access not supported";
@@ -55,7 +55,7 @@ struct PrefetchTest : public ::testing::Test {
                                  prefetch_data_size,
                                  cudaMemRangeAttribute::cudaMemRangeAttributeLastPrefetchLocation,
                                  ptr,
-                                 size));
+                                 num_bytes));
       EXPECT_EQ(prefetch_location, device.value());
     }
   }

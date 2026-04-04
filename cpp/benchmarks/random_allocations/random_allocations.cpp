@@ -29,7 +29,7 @@ constexpr std::size_t size_mb{1 << 20};
 struct allocation {
   void* ptr{nullptr};
   std::size_t size{0};
-  allocation(void* ptr, std::size_t size) : ptr{ptr}, size{size} {}
+  allocation(void* p, std::size_t sz) : ptr{p}, size{sz} {}
   allocation() = default;
 };
 
@@ -262,13 +262,13 @@ void declare_benchmark(std::string const& name)
 }
 
 static void profile_random_allocations(MRFactoryFunc const& factory,
-                                       std::size_t num_allocations,
-                                       std::size_t max_size)
+                                       std::size_t alloc_count,
+                                       std::size_t max_alloc_size)
 {
   auto mr = factory();
 
   try {
-    uniform_random_allocations(*mr, num_allocations, max_size, max_usage);
+    uniform_random_allocations(*mr, alloc_count, max_alloc_size, max_usage);
   } catch (std::exception const& e) {
     std::cout << "Error: " << e.what() << "\n";
   }

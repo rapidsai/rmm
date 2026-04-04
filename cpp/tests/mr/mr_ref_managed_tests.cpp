@@ -13,17 +13,17 @@ namespace {
 INSTANTIATE_TEST_SUITE_P(ManagedResourceTests,
                          mr_ref_test,
                          ::testing::Values("Managed"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 INSTANTIATE_TEST_SUITE_P(ManagedResourceAllocationTests,
                          mr_ref_allocation_test,
                          ::testing::Values("Managed"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 INSTANTIATE_TEST_SUITE_P(ManagedMultiThreadResourceTests,
                          mr_ref_test_mt,
                          ::testing::Values("Managed"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 }  // namespace
 }  // namespace rmm::test

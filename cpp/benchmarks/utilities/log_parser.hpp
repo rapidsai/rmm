@@ -35,29 +35,28 @@ struct event {
   event(event&&) noexcept            = default;
   event& operator=(event&&) noexcept = default;
   ~event()                           = default;
-  event(action act, std::size_t size, void const* ptr)
+  event(action a, std::size_t sz, void const* ptr)
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    : act{act}, size{size}, pointer{reinterpret_cast<uintptr_t>(ptr)}
+    : act{a}, size{sz}, pointer{reinterpret_cast<uintptr_t>(ptr)}
   {
   }
 
   // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-  event(action act, std::size_t size, uintptr_t ptr) : act{act}, size{size}, pointer{ptr} {}
+  event(action a, std::size_t sz, uintptr_t ptr) : act{a}, size{sz}, pointer{ptr} {}
 
   event(std::size_t tid,
-        action act,
-        std::size_t size,  // NOLINT(bugprone-easily-swappable-parameters)
+        action a,
+        std::size_t sz,  // NOLINT(bugprone-easily-swappable-parameters)
         uintptr_t ptr,
-        uintptr_t stream,
-        std::size_t index)
-    : act{act}, size{size}, pointer{ptr}, thread_id{tid}, stream{stream}, index{index}
+        uintptr_t strm,
+        std::size_t idx)
+    : act{a}, size{sz}, pointer{ptr}, thread_id{tid}, stream{strm}, index{idx}
   {
   }
 
-  event(
-    std::size_t tid, action act, std::size_t size, void* ptr, uintptr_t stream, std::size_t index)
+  event(std::size_t tid, action a, std::size_t sz, void* ptr, uintptr_t strm, std::size_t idx)
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    : event{tid, act, size, reinterpret_cast<uintptr_t>(ptr), stream, index}
+    : event{tid, a, sz, reinterpret_cast<uintptr_t>(ptr), strm, idx}
   {
   }
 
