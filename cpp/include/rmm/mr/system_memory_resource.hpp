@@ -98,7 +98,9 @@ class system_memory_resource final {
   {
     try {
       return rmm::detail::aligned_host_allocate(
-        bytes, CUDA_ALLOCATION_ALIGNMENT, [](std::size_t size) { return ::operator new(size); });
+        bytes, rmm::CUDA_ALLOCATION_ALIGNMENT, [](std::size_t size) {
+          return ::operator new(size);
+        });
     } catch (std::bad_alloc const& e) {
       auto const msg = std::string("Failed to allocate ") + rmm::detail::format_bytes(bytes) +
                        std::string("of memory: ") + e.what();
@@ -129,7 +131,7 @@ class system_memory_resource final {
     RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 
     rmm::detail::aligned_host_deallocate(
-      ptr, bytes, CUDA_ALLOCATION_ALIGNMENT, [](void* ptr) { ::operator delete(ptr); });
+      ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT, [](void* ptr) { ::operator delete(ptr); });
   }
 
   /**
