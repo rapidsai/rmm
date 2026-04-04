@@ -275,19 +275,17 @@ class cccl_resource_ref
 };
 
 /**
- * @brief A wrapper around CCCL resource_ref (async) that adds compatibility with
- * device_memory_resource pointers.
+ * @brief Private base class that holds optional device_memory_resource_view storage.
  *
- * This class is a standalone implementation (not inheriting from cccl_resource_ref)
- * to avoid recursive constraint satisfaction issues with CCCL 3.2's basic_any-based
- * resource_ref types. It provides both synchronous and asynchronous allocation methods.
- *
- * Inherits from cuda::forward_property to delegate property queries to the wrapped
- * resource_ref, avoiding ambiguity with CCCL's default get_property overloads
- * (e.g. for dynamic_accessibility_property, NVIDIA/cccl#7727).
- *
- * @tparam ResourceType The underlying CCCL resource_ref type (async)
+ * This base must be inherited before ResourceType so that view_ is constructed
+ * before the resource_ref base class, allowing the resource_ref to be initialized
+ * from the view in the same initializer list.
  */
+struct cccl_async_view_holder {
+ protected:
+  cuda::std::optional<rmm::mr::detail::device_memory_resource_view> view_;
+};
+
 // Suppress spurious warning about calling a __host__ function from __host__ __device__ context
 // when this class is used as a member in thrust allocators that inherit __host__ __device__
 // attributes.
@@ -295,9 +293,23 @@ class cccl_resource_ref
 #pragma nv_diagnostic push
 #pragma nv_diag_suppress 20011
 #endif
+/**
+ * @brief A wrapper around CCCL resource_ref (async) that adds compatibility with
+ * device_memory_resource pointers.
+ *
+ * This class inherits from ResourceType (a CCCL resource_ref) so that it IS-A
+ * resource_ref. Because CCCL's any_resource generic constructor excludes types
+ * that derive from __basic_any (which resource_ref does), converting this wrapper
+ * to any_resource uses the ref-to-value path instead of wrapping the entire
+ * wrapper as the erased type.
+ *
+ * The cccl_async_view_holder base is listed before ResourceType to ensure view_
+ * is constructed first, allowing the ResourceType base to be initialized from it.
+ *
+ * @tparam ResourceType The underlying CCCL resource_ref type (async)
+ */
 template <typename ResourceType>
-class cccl_async_resource_ref
-  : public cuda::forward_property<cccl_async_resource_ref<ResourceType>, ResourceType> {
+class cccl_async_resource_ref : private cccl_async_view_holder, public ResourceType {
  public:
   using wrapped_type = ResourceType;
 
@@ -313,7 +325,9 @@ class cccl_async_resource_ref
    *
    * @param ptr Non-null pointer to a `device_memory_resource`
    */
-  cccl_async_resource_ref(rmm::mr::device_memory_resource* ptr) : view_{ptr}, ref_{*view_} {}
+  cccl_async_resource_ref(rmm::mr::device_memory_resource* ptr) : ResourceType{view_.emplace(ptr)}
+  {
+  }
 
   /**
    * @brief Constructs a resource reference from a `device_memory_resource` reference.
@@ -323,7 +337,9 @@ class cccl_async_resource_ref
    *
    * @param res Reference to a `device_memory_resource`
    */
-  cccl_async_resource_ref(rmm::mr::device_memory_resource& res) : view_{&res}, ref_{*view_} {}
+  cccl_async_resource_ref(rmm::mr::device_memory_resource& res) : ResourceType{view_.emplace(&res)}
+  {
+  }
 
   /**
    * @brief Constructs a resource reference from a CCCL resource_ref directly.
@@ -334,8 +350,7 @@ class cccl_async_resource_ref
    * @param ref A CCCL resource_ref of the appropriate type
    */
   template <typename... Properties>
-  cccl_async_resource_ref(cuda::mr::resource_ref<Properties...> const& ref)
-    : view_{cuda::std::nullopt}, ref_{ref}
+  cccl_async_resource_ref(cuda::mr::resource_ref<Properties...> const& ref) : ResourceType{ref}
   {
   }
 
@@ -350,7 +365,7 @@ class cccl_async_resource_ref
    */
   template <typename... Properties>
   cccl_async_resource_ref(cuda::mr::resource_ref<Properties...>&& ref)
-    : view_{cuda::std::nullopt}, ref_{std::move(ref)}
+    : ResourceType{std::move(ref)}
   {
   }
 
@@ -363,31 +378,31 @@ class cccl_async_resource_ref
    * @param res A CCCL any_resource to reference
    */
   template <typename... Properties>
-  cccl_async_resource_ref(cuda::mr::any_resource<Properties...>& res)
-    : view_{cuda::std::nullopt}, ref_{res}
+  cccl_async_resource_ref(cuda::mr::any_resource<Properties...>& res) : ResourceType{res}
   {
   }
 
   /**
-   * @brief Copy constructor that properly reconstructs the ref to point to the new view.
+   * @brief Copy constructor that properly reconstructs the base to point to the new view.
    *
    * If the view is present (e.g., when constructed from device_memory_resource*), we reconstruct
-   * the ref from our local view. Otherwise, we copy the ref directly.
+   * the base from our local view. Otherwise, we copy the base directly.
    */
   cccl_async_resource_ref(cccl_async_resource_ref const& other)
-    : view_{other.view_}, ref_{view_.has_value() ? ResourceType{*view_} : other.ref_}
+    : ResourceType{other.view_.has_value() ? (view_ = other.view_, ResourceType{*view_})
+                                           : static_cast<ResourceType const&>(other)}
   {
   }
 
   /**
-   * @brief Move constructor that properly reconstructs the ref to point to the new view.
+   * @brief Move constructor that properly reconstructs the base to point to the new view.
    *
    * If the view is present (e.g., when constructed from device_memory_resource*), we reconstruct
-   * the ref from our local view. Otherwise, we move the ref directly.
+   * the base from our local view. Otherwise, we move the base directly.
    */
   cccl_async_resource_ref(cccl_async_resource_ref&& other) noexcept
-    : view_{std::move(other.view_)},
-      ref_{view_.has_value() ? ResourceType{*view_} : std::move(other.ref_)}
+    : ResourceType{other.view_.has_value() ? (view_ = std::move(other.view_), ResourceType{*view_})
+                                           : static_cast<ResourceType&&>(other)}
   {
   }
 
@@ -398,16 +413,18 @@ class cccl_async_resource_ref
    * where the source type has a superset of properties compared to the target type.
    * The underlying CCCL resource_ref types handle the actual property compatibility check.
    *
-   * IMPORTANT: This constructor must copy the view_ from the source to preserve the
-   * device_memory_resource pointer. Without this, the converted resource_ref will have
-   * an empty view_, causing corrupt pointer dereferences during deallocation.
+   * This constructor copies view_ from the source to preserve the device_memory_resource
+   * pointer. Without this, the converted resource_ref would have an empty view_,
+   * leading to dangling pointer dereferences during deallocation.
    *
    * @tparam OtherResourceType A CCCL async resource_ref type that is convertible to ResourceType
    * @param other The source async resource_ref to convert from
    */
   template <typename OtherResourceType>
   cccl_async_resource_ref(cccl_async_resource_ref<OtherResourceType> const& other)
-    : view_{other.view_}, ref_{view_.has_value() ? ResourceType{*view_} : ResourceType{other.ref_}}
+    : ResourceType{other.view_.has_value()
+                     ? (view_ = other.view_, ResourceType{*view_})
+                     : ResourceType{static_cast<OtherResourceType const&>(other)}}
   {
   }
 
@@ -436,21 +453,22 @@ class cccl_async_resource_ref
       not std::is_base_of_v<rmm::mr::device_memory_resource,
                             std::remove_cv_t<OtherResourceType>> and
       cuda::mr::resource<OtherResourceType>>* = nullptr>
-  cccl_async_resource_ref(OtherResourceType& other) : view_{}, ref_{ResourceType{other}}
+  cccl_async_resource_ref(OtherResourceType& other) : ResourceType{other}
   {
   }
 
   /**
    * @brief Copy assignment operator.
    *
-   * If the view is present, we reconstruct the ref from our local view.
-   * Otherwise, we copy the ref directly.
+   * If the view is present, we reconstruct the base from our local view.
+   * Otherwise, we copy the base directly.
    */
   cccl_async_resource_ref& operator=(cccl_async_resource_ref const& other)
   {
     if (this != std::addressof(other)) {
       view_ = other.view_;
-      ref_  = view_.has_value() ? ResourceType{*view_} : other.ref_;
+      base_ref() =
+        view_.has_value() ? ResourceType{*view_} : static_cast<ResourceType const&>(other);
     }
     return *this;
   }
@@ -458,53 +476,54 @@ class cccl_async_resource_ref
   /**
    * @brief Move assignment operator.
    *
-   * If the view is present, we reconstruct the ref from our local view.
-   * Otherwise, we move the ref directly.
+   * If the view is present, we reconstruct the base from our local view.
+   * Otherwise, we move the base directly.
    */
   cccl_async_resource_ref& operator=(cccl_async_resource_ref&& other) noexcept
   {
     if (this != std::addressof(other)) {
-      view_ = std::move(other.view_);
-      ref_  = view_.has_value() ? ResourceType{*view_} : std::move(other.ref_);
+      view_      = std::move(other.view_);
+      base_ref() = view_.has_value() ? ResourceType{*view_} : static_cast<ResourceType&&>(other);
     }
     return *this;
   }
 
-  // Synchronous allocation methods (delegated to the underlying ref)
+  // Shadow base class allocation methods to provide RMM's default alignment
+  // (CUDA_ALLOCATION_ALIGNMENT) and cuda_stream_view overloads, and to hide
+  // deprecated no-alignment overloads inherited from the CCCL base.
   void* allocate_sync(std::size_t bytes)
   {
-    return ref_.allocate_sync(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    return ResourceType::allocate_sync(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment)
   {
-    return ref_.allocate_sync(bytes, alignment);
+    return ResourceType::allocate_sync(bytes, alignment);
   }
 
   void deallocate_sync(void* ptr, std::size_t bytes) noexcept
   {
-    return ref_.deallocate_sync(ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    return ResourceType::deallocate_sync(ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
   {
-    return ref_.deallocate_sync(ptr, bytes, alignment);
+    return ResourceType::deallocate_sync(ptr, bytes, alignment);
   }
 
-  // Asynchronous allocation methods
   void* allocate(cuda_stream_view stream, std::size_t bytes)
   {
-    return ref_.allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    return ResourceType::allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   void* allocate(cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
   {
-    return ref_.allocate(stream, bytes, alignment);
+    return ResourceType::allocate(stream, bytes, alignment);
   }
 
   void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes) noexcept
   {
-    return ref_.deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    return ResourceType::deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   void deallocate(cuda_stream_view stream,
@@ -512,15 +531,7 @@ class cccl_async_resource_ref
                   std::size_t bytes,
                   std::size_t alignment) noexcept
   {
-    return ref_.deallocate(stream, ptr, bytes, alignment);
-  }
-
-  /**
-   * @brief Returns the type_info of the wrapped resource.
-   */
-  [[nodiscard]] auto type() const noexcept -> decltype(std::declval<ResourceType const&>().type())
-  {
-    return ref_.type();
+    return ResourceType::deallocate(stream, ptr, bytes, alignment);
   }
 
   /**
@@ -529,7 +540,7 @@ class cccl_async_resource_ref
   friend bool operator==(cccl_async_resource_ref const& lhs,
                          cccl_async_resource_ref const& rhs) noexcept
   {
-    return lhs.ref_ == rhs.ref_;
+    return static_cast<ResourceType const&>(lhs) == static_cast<ResourceType const&>(rhs);
   }
 
   /**
@@ -541,39 +552,9 @@ class cccl_async_resource_ref
     return !(lhs == rhs);
   }
 
-  /**
-   * @brief Returns a const reference to the wrapped resource_ref.
-   *
-   * Required by cuda::forward_property to forward stateful property queries.
-   */
-  [[nodiscard]] ResourceType const& upstream_resource() const noexcept { return ref_; }
-
-  /**
-   * @brief Attempts to get a property from the wrapped resource_ref.
-   */
-  template <typename Property>
-  friend auto try_get_property(cccl_async_resource_ref const& ref, Property prop) noexcept
-    -> decltype(try_get_property(std::declval<ResourceType const&>(), prop))
-  {
-    return try_get_property(ref.ref_, prop);
-  }
-
-  /**
-   * @brief Implicit conversion to cuda::mr::any_resource<>.
-   *
-   * This enables reification of the resource_ref to an owning any_resource type.
-   * The conversion copies the underlying resource into the any_resource.
-   */
-  template <typename... Properties>
-  operator cuda::mr::any_resource<Properties...>() const
-  {
-    if (view_.has_value()) { return cuda::mr::any_resource<Properties...>{*view_}; }
-    return cuda::mr::any_resource<Properties...>{ref_};
-  }
-
  protected:
-  cuda::std::optional<rmm::mr::detail::device_memory_resource_view> view_;
-  ResourceType ref_;
+  ResourceType& base_ref() noexcept { return static_cast<ResourceType&>(*this); }
+  ResourceType const& base_ref() const noexcept { return static_cast<ResourceType const&>(*this); }
 };
 #ifdef __CUDACC__
 #pragma nv_diagnostic pop
