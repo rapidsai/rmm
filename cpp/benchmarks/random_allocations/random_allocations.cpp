@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/binning_memory_resource.hpp>
@@ -83,7 +84,7 @@ void random_allocation_free(rmm::device_async_resource_ref mr,
     void* ptr = nullptr;
     if (do_alloc) {  // try to allocate
       try {
-        ptr = mr.allocate(stream, size);
+        ptr = mr.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
       } catch (rmm::bad_alloc const&) {
         do_alloc = false;
 #if VERBOSE
@@ -107,7 +108,7 @@ void random_allocation_free(rmm::device_async_resource_ref mr,
         std::size_t index = index_distribution(generator) % active_allocations;
         active_allocations--;
         allocation to_free = remove_at(allocations, index);
-        mr.deallocate(stream, to_free.ptr, to_free.size);
+        mr.deallocate(stream, to_free.ptr, to_free.size, rmm::CUDA_ALLOCATION_ALIGNMENT);
         allocation_size -= to_free.size;
 
 #if VERBOSE

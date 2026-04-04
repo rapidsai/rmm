@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/detail/exec_check_disable.hpp>
 #include <rmm/detail/export.hpp>
@@ -136,7 +137,8 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   pointer allocate(size_type num)
   {
     cuda_set_device_raii dev{_device};
-    return thrust::device_pointer_cast(static_cast<T*>(_mr.allocate(_stream, num * sizeof(T))));
+    return thrust::device_pointer_cast(
+      static_cast<T*>(_mr.allocate(_stream, num * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT)));
   }
 
   /**
@@ -149,7 +151,8 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   void deallocate(pointer ptr, size_type num) noexcept
   {
     cuda_set_device_raii dev{_device};
-    return _mr.deallocate(_stream, thrust::raw_pointer_cast(ptr), num * sizeof(T));
+    return _mr.deallocate(
+      _stream, thrust::raw_pointer_cast(ptr), num * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   /**
