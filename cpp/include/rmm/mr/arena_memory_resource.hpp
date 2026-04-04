@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -155,8 +155,13 @@ class arena_memory_resource final : public device_memory_resource {
       void* pointer = arena.allocate_sync(bytes);
       if (pointer == nullptr) {
         if (dump_log_on_failure_) { dump_memory_log(bytes); }
+        auto const [free_memory, total_memory] = rmm::available_device_memory();
         auto const msg = std::string("Maximum pool size exceeded (failed to allocate ") +
-                         rmm::detail::format_bytes(bytes) + "): No room in arena.";
+                         rmm::detail::format_bytes(bytes) +
+                         ", arena size=" + rmm::detail::format_bytes(global_arena_.size()) +
+                         ", device free=" + rmm::detail::format_bytes(free_memory) +
+                         " total=" + rmm::detail::format_bytes(total_memory) +
+                         "): No room in arena.";
         RMM_FAIL(msg.c_str(), rmm::out_of_memory);
       }
       return pointer;

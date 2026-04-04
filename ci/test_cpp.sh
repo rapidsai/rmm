@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 set -euo pipefail
@@ -33,14 +33,19 @@ set -u
 
 rapids-print-env
 
-rapids-logger "Check GPU usage"
+rapids-logger "Check system info"
+uname -a
 nvidia-smi
 
 # Run librmm gtests from librmm-tests package
 rapids-logger "Run gtests"
 
 export GTEST_OUTPUT=xml:${RAPIDS_TESTS_DIR}/
-timeout 15m ./ci/run_ctests.sh -j20 && EXITCODE=$? || EXITCODE=$?;
+CTEST_TIMEOUT=15m
+if grep -qi microsoft /proc/version 2>/dev/null; then
+    CTEST_TIMEOUT=30m  # WSL is slow for large device memory allocations
+fi
+timeout "${CTEST_TIMEOUT}" ./ci/run_ctests.sh -j20 && EXITCODE=$? || EXITCODE=$?;
 
 # Run all examples from librmm-example package
 for example in "${CONDA_PREFIX}"/bin/examples/librmm/*; do

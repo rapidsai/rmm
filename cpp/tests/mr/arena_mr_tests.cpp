@@ -4,6 +4,7 @@
  */
 
 #include "../byte_literals.hpp"
+#include "test_utils.hpp"
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
@@ -483,11 +484,12 @@ TEST_F(ArenaTest, SizeSmallerThanSuperblockSize)  // NOLINT
   EXPECT_THROW(construct_small(), rmm::logic_error);
 }
 
-TEST_F(ArenaTest, AllocateNinetyPercent)  // NOLINT
+TEST_F(ArenaTest, AllocateMostOfFreeMemory)  // NOLINT
 {
-  EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
-    auto const ninety_percent = rmm::percent_of_free_device_memory(90);
-    arena_mr mr(rmm::mr::get_current_device_resource_ref(), ninety_percent);
+  auto const percent = is_wsl() ? 70 : 90;
+  EXPECT_NO_THROW([percent]() {  // NOLINT(cppcoreguidelines-avoid-goto)
+    auto const pool_size = rmm::percent_of_free_device_memory(percent);
+    arena_mr mr(rmm::mr::get_current_device_resource_ref(), pool_size);
   }());
 }
 

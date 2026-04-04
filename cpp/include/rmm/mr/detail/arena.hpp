@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -516,6 +516,13 @@ class global_arena final {
     std::lock_guard lock(mtx_);
     upstream_mr_.deallocate_sync(upstream_block_.pointer(), upstream_block_.size());
   }
+
+  /**
+   * @brief Returns the total size of the global arena in bytes.
+   *
+   * @return std::size_t The size of the upstream block allocated for the arena.
+   */
+  [[nodiscard]] std::size_t size() const noexcept { return upstream_block_.size(); }
 
   /**
    * @brief Should allocation of `size` bytes be handled by the global arena directly?
