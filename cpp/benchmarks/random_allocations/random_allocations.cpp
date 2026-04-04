@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/binning_memory_resource.hpp>
@@ -83,7 +84,7 @@ void random_allocation_free(rmm::device_async_resource_ref mr,
     void* ptr = nullptr;
     if (do_alloc) {  // try to allocate
       try {
-        ptr = mr.allocate(stream, size);
+        ptr = mr.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
       } catch (rmm::bad_alloc const&) {
         do_alloc = false;
 #if VERBOSE
@@ -107,7 +108,7 @@ void random_allocation_free(rmm::device_async_resource_ref mr,
         std::size_t index = index_distribution(generator) % active_allocations;
         active_allocations--;
         allocation to_free = remove_at(allocations, index);
-        mr.deallocate(stream, to_free.ptr, to_free.size);
+        mr.deallocate(stream, to_free.ptr, to_free.size, rmm::CUDA_ALLOCATION_ALIGNMENT);
         allocation_size -= to_free.size;
 
 #if VERBOSE
@@ -197,21 +198,21 @@ static void BM_RandomAllocations(benchmark::State& state, MRFactoryFunc const& f
   }
 }
 
-static void num_range(benchmark::internal::Benchmark* bench, int size)
+static void num_range(benchmark::Benchmark* bench, int size)
 {
   for (int num_allocations : std::vector<int>{1000, 10000, 100000}) {
     bench->Args({num_allocations, size})->Unit(benchmark::kMillisecond);
   }
 }
 
-static void size_range(benchmark::internal::Benchmark* bench, int num)
+static void size_range(benchmark::Benchmark* bench, int num)
 {
   for (int max_size : std::vector<int>{1, 4, 64, 256, 1024, 4096}) {
     bench->Args({num, max_size})->Unit(benchmark::kMillisecond);
   }
 }
 
-static void num_size_range(benchmark::internal::Benchmark* bench)
+static void num_size_range(benchmark::Benchmark* bench)
 {
   for (int num_allocations : std::vector<int>{1000, 10000, 100000}) {
     size_range(bench, num_allocations);
@@ -221,7 +222,7 @@ static void num_size_range(benchmark::internal::Benchmark* bench)
 int num_allocations = -1;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 int max_size        = -1;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
-void benchmark_range(benchmark::internal::Benchmark* bench)
+void benchmark_range(benchmark::Benchmark* bench)
 {
   if (num_allocations > 0) {
     if (max_size > 0) {

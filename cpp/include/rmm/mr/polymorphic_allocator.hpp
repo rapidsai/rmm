@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/per_device_resource.hpp>
@@ -77,7 +78,8 @@ class polymorphic_allocator {
    */
   value_type* allocate(std::size_t num, cuda_stream_view stream)
   {
-    return static_cast<value_type*>(mr_.allocate(stream, num * sizeof(T)));
+    return static_cast<value_type*>(
+      mr_.allocate(stream, num * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT));
   }
 
   /**
@@ -92,7 +94,7 @@ class polymorphic_allocator {
    */
   void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream) noexcept
   {
-    mr_.deallocate(stream, ptr, num * sizeof(T));
+    mr_.deallocate(stream, ptr, num * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   /**

@@ -4,6 +4,7 @@
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/failure_callback_t.hpp>
@@ -65,7 +66,7 @@ class failure_callback_resource_adaptor_impl {
     void* ret{};
     while (true) {
       try {
-        ret = upstream_mr_.allocate(stream, bytes);
+        ret = upstream_mr_.allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
         break;
       } catch (ExceptionType const&) {
         if (!callback_(bytes, callback_arg_)) { throw; }
@@ -79,7 +80,7 @@ class failure_callback_resource_adaptor_impl {
                   std::size_t bytes,
                   std::size_t /*alignment*/ = alignof(std::max_align_t)) noexcept
   {
-    upstream_mr_.deallocate(stream, ptr, bytes);
+    upstream_mr_.deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t))

@@ -5,6 +5,7 @@
 
 // Tests for resource_ref type conversions between host_device and device/host variants
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
@@ -75,9 +76,9 @@ TEST(ResourceRefConversion, ResourceToRef)
                             new_delete_memory_resource&>);
   rmm::host_resource_ref mr_ref{mr};
   // Use the converted ref
-  void* ptr = mr_ref.allocate_sync(1024);
+  void* ptr = mr_ref.allocate_sync(1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   ASSERT_NE(ptr, nullptr);
-  mr_ref.deallocate_sync(ptr, 1024);
+  mr_ref.deallocate_sync(ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 // Test conversion from host_device_async_resource_ref to device_async_resource_ref
@@ -100,9 +101,9 @@ TEST(ResourceRefConversion, HostDeviceToDeviceSync)
   static_assert(cuda::has_property<decltype(d_ref), cuda::mr::device_accessible>);
 
   // Use the converted ref
-  void* ptr = d_ref.allocate_sync(1024);
+  void* ptr = d_ref.allocate_sync(1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   ASSERT_NE(ptr, nullptr);
-  d_ref.deallocate_sync(ptr, 1024);
+  d_ref.deallocate_sync(ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 TEST(ResourceRefConversion, HostDeviceToDeviceAsync)
@@ -117,9 +118,9 @@ TEST(ResourceRefConversion, HostDeviceToDeviceAsync)
 
   // Use the converted ref
   rmm::cuda_stream stream{};
-  void* ptr = d_ref.allocate(stream, 1024);
+  void* ptr = d_ref.allocate(stream, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   ASSERT_NE(ptr, nullptr);
-  d_ref.deallocate(stream, ptr, 1024);
+  d_ref.deallocate(stream, ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 // Host allocator that takes a resource_ref (similar to cudf's rmm_host_allocator)
@@ -140,12 +141,15 @@ class host_allocator {
 
   T* allocate(std::size_t n)
   {
-    auto const result = mr_.allocate(stream_, n * sizeof(T));
+    auto const result = mr_.allocate(stream_, n * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT);
     stream_.synchronize();
     return static_cast<T*>(result);
   }
 
-  void deallocate(T* p, std::size_t n) noexcept { mr_.deallocate(stream_, p, n * sizeof(T)); }
+  void deallocate(T* p, std::size_t n) noexcept
+  {
+    mr_.deallocate(stream_, p, n * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT);
+  }
 
   bool operator==(host_allocator const& other) const { return mr_ == other.mr_; }
   bool operator!=(host_allocator const& other) const { return !(*this == other); }
@@ -331,9 +335,9 @@ TEST(ForwardPropertyAdaptor, TypeEraseSyncAdaptor)
   forwarding_sync_adaptor adaptor{upstream};
   cuda::mr::synchronous_resource_ref<cuda::mr::device_accessible> erased{adaptor};
 
-  void* ptr = erased.allocate_sync(1024);
+  void* ptr = erased.allocate_sync(1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   ASSERT_NE(ptr, nullptr);
-  erased.deallocate_sync(ptr, 1024);
+  erased.deallocate_sync(ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 // Verify that get_property still works correctly through the forwarding adaptor.
