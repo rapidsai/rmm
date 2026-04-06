@@ -30,22 +30,22 @@ TYPED_TEST_P(CcclMrRefTest, SetCurrentDeviceResourceRef)
   auto old = rmm::mr::set_current_device_resource_ref(this->ref);
 
   constexpr std::size_t size{100};
-  void* ptr = old.allocate(rmm::cuda_stream_default, size);
+  void* ptr = old.allocate(rmm::cuda_stream_default, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   EXPECT_NE(ptr, nullptr);
-  old.deallocate(rmm::cuda_stream_default, ptr, size);
+  old.deallocate(rmm::cuda_stream_default, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   auto current = rmm::mr::get_current_device_resource_ref();
-  ptr          = current.allocate(rmm::cuda_stream_default, size);
+  ptr          = current.allocate(rmm::cuda_stream_default, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   EXPECT_NE(ptr, nullptr);
-  current.deallocate(rmm::cuda_stream_default, ptr, size);
+  current.deallocate(rmm::cuda_stream_default, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   test_get_current_device_resource_ref();
 
   rmm::mr::reset_current_device_resource_ref();
   current = rmm::mr::get_current_device_resource_ref();
-  ptr     = current.allocate(rmm::cuda_stream_default, size);
+  ptr     = current.allocate(rmm::cuda_stream_default, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   EXPECT_NE(ptr, nullptr);
-  current.deallocate(rmm::cuda_stream_default, ptr, size);
+  current.deallocate(rmm::cuda_stream_default, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 TYPED_TEST_P(CcclMrRefTest, SelfEquality) { EXPECT_TRUE(this->ref == this->ref); }

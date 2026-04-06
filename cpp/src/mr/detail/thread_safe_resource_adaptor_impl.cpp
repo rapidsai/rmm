@@ -23,19 +23,19 @@ device_async_resource_ref thread_safe_resource_adaptor_impl::get_upstream_resour
 
 void* thread_safe_resource_adaptor_impl::allocate(cuda::stream_ref stream,
                                                   std::size_t bytes,
-                                                  std::size_t /*alignment*/)
+                                                  std::size_t alignment)
 {
   std::lock_guard<std::mutex> lock(mtx_);
-  return upstream_mr_.allocate(stream, bytes);
+  return upstream_mr_.allocate(stream, bytes, alignment);
 }
 
 void thread_safe_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
                                                    void* ptr,
                                                    std::size_t bytes,
-                                                   std::size_t /*alignment*/) noexcept
+                                                   std::size_t alignment) noexcept
 {
   std::lock_guard<std::mutex> lock(mtx_);
-  upstream_mr_.deallocate(stream, ptr, bytes);
+  upstream_mr_.deallocate(stream, ptr, bytes, alignment);
 }
 
 void* thread_safe_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)

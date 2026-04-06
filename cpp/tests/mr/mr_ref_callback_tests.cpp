@@ -7,6 +7,7 @@
 #include "cccl_mr_ref_test_basic.hpp"
 #include "cccl_mr_ref_test_mt.hpp"
 
+#include <rmm/aligned.hpp>
 #include <rmm/mr/callback_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 
@@ -18,10 +19,12 @@ struct CallbackMRFixture : public ::testing::Test {
 
   rmm::mr::callback_memory_resource mr{
     [](std::size_t bytes, rmm::cuda_stream_view stream, void* arg) {
-      return static_cast<rmm::device_async_resource_ref*>(arg)->allocate(stream, bytes);
+      return static_cast<rmm::device_async_resource_ref*>(arg)->allocate(
+        stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
     },
     [](void* ptr, std::size_t bytes, rmm::cuda_stream_view stream, void* arg) {
-      static_cast<rmm::device_async_resource_ref*>(arg)->deallocate(stream, ptr, bytes);
+      static_cast<rmm::device_async_resource_ref*>(arg)->deallocate(
+        stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
     },
     &upstream,
     &upstream};

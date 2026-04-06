@@ -57,12 +57,12 @@ TEST(DefaultTest, SetCurrentDeviceResourceRef)
   auto ref = rmm::mr::get_current_device_resource_ref();
 
   constexpr std::size_t size{1024};
-  void* ptr = ref.allocate_sync(size);
+  void* ptr = ref.allocate_sync(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   EXPECT_NE(ptr, nullptr);
   EXPECT_TRUE(is_properly_aligned(ptr));
   EXPECT_TRUE(is_device_accessible_memory(ptr));
 
-  ref.deallocate_sync(ptr, size);
+  ref.deallocate_sync(ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   rmm::mr::reset_current_device_resource_ref();
 }

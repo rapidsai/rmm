@@ -513,7 +513,8 @@ class global_arena final {
   ~global_arena()
   {
     std::lock_guard lock(mtx_);
-    upstream_mr_.deallocate_sync(upstream_block_.pointer(), upstream_block_.size());
+    upstream_mr_.deallocate_sync(
+      upstream_block_.pointer(), upstream_block_.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   /**
@@ -689,7 +690,7 @@ class global_arena final {
    */
   void initialize(std::size_t size)
   {
-    upstream_block_ = {upstream_mr_.allocate_sync(size), size};
+    upstream_block_ = {upstream_mr_.allocate_sync(size, rmm::CUDA_ALLOCATION_ALIGNMENT), size};
     superblocks_.emplace(upstream_block_.pointer(), size);
   }
 
