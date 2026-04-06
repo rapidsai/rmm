@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -110,9 +110,7 @@ class callback_memory_resource final : public device_memory_resource {
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
-  {
-    return allocate_callback_(bytes, stream, allocate_callback_arg_);
-  }
+  { return allocate_callback_(bytes, stream, allocate_callback_arg_); }
 
   /**
    * @brief Deallocate memory pointed to by \p ptr.
@@ -126,9 +124,7 @@ class callback_memory_resource final : public device_memory_resource {
    * @param stream Stream on which to perform deallocation
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
-  {
-    deallocate_callback_(ptr, bytes, stream, deallocate_callback_arg_);
-  }
+  { deallocate_callback_(ptr, bytes, stream, deallocate_callback_arg_); }
 
   allocate_callback_t allocate_callback_;
   deallocate_callback_t deallocate_callback_;

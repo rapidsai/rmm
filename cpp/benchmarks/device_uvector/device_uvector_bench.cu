@@ -102,9 +102,7 @@ Vector make_vector(std::size_t num_elements, rmm::cuda_stream_view stream, bool 
 
 template <typename Vector>
 int32_t* vector_data(Vector& vec)
-{
-  return thrust::raw_pointer_cast(vec.data());
-}
+{ return thrust::raw_pointer_cast(vec.data()); }
 
 template <typename Vector>
 void vector_workflow(std::size_t num_elements,

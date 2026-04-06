@@ -406,19 +406,13 @@ inline auto make_pool()
 }
 
 inline auto make_pinned_pool()
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_pinned(), 2_GiB, 8_GiB);
-}
+{ return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_pinned(), 2_GiB, 8_GiB); }
 
 inline auto make_arena()
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
-}
+{ return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda()); }
 
 inline auto make_fixed_size()
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_size_memory_resource>(make_cuda());
-}
+{ return rmm::mr::make_owning_wrapper<rmm::mr::fixed_size_memory_resource>(make_cuda()); }
 
 inline auto make_binning()
 {

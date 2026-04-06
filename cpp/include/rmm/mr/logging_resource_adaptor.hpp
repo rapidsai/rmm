@@ -187,9 +187,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_;
-  }
+  { return upstream_; }
 
   /**
    * @brief Flush logger contents.
@@ -202,9 +200,7 @@ class logging_resource_adaptor final : public device_memory_resource {
    * @return CSV formatted header string of column names
    */
   [[nodiscard]] std::string header() const
-  {
-    return std::string{"Thread,Time,Action,Pointer,Size,Stream"};
-  }
+  { return std::string{"Thread,Time,Action,Pointer,Size,Stream"}; }
 
   /**
    * @brief Return the value of the environment variable RMM_LOG_FILE.
@@ -223,19 +219,13 @@ class logging_resource_adaptor final : public device_memory_resource {
 
  private:
   static auto make_logger(std::ostream& stream)
-  {
-    return std::make_shared<rapids_logger::logger>("RMM", stream);
-  }
+  { return std::make_shared<rapids_logger::logger>("RMM", stream); }
 
   static auto make_logger(std::string const& filename)
-  {
-    return std::make_shared<rapids_logger::logger>("RMM", filename);
-  }
+  { return std::make_shared<rapids_logger::logger>("RMM", filename); }
 
   static auto make_logger(std::initializer_list<rapids_logger::sink_ptr> sinks)
-  {
-    return std::make_shared<rapids_logger::logger>("RMM", sinks);
-  }
+  { return std::make_shared<rapids_logger::logger>("RMM", sinks); }
 
   logging_resource_adaptor(std::shared_ptr<rapids_logger::logger> logger,
                            device_async_resource_ref upstream,

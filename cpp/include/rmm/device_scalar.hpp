@@ -111,9 +111,7 @@ class device_scalar {
                          cuda_stream_view stream,
                          device_async_resource_ref mr = mr::get_current_device_resource_ref())
     : _storage{1, stream, mr}
-  {
-    set_value_async(initial_value, stream);
-  }
+  { set_value_async(initial_value, stream); }
 
   /**
    * @brief Construct a new `device_scalar` by deep copying the contents of
@@ -151,9 +149,7 @@ class device_scalar {
    * @param stream CUDA stream on which to perform the copy and synchronize.
    */
   [[nodiscard]] value_type value(cuda_stream_view stream) const
-  {
-    return _storage.front_element(stream);
-  }
+  { return _storage.front_element(stream); }
 
   /**
    * @brief Sets the value of the `device_scalar` to the value of `v`.
@@ -189,9 +185,7 @@ class device_scalar {
    * @param stream CUDA stream on which to perform the copy
    */
   void set_value_async(value_type const& value, cuda_stream_view stream)
-  {
-    _storage.set_element_async(0, value, stream);
-  }
+  { _storage.set_element_async(0, value, stream); }
 
   // Disallow passing literals to set_value to avoid race conditions where the memory holding the
   // literal can be freed before the async memcpy / memset executes.
@@ -212,9 +206,7 @@ class device_scalar {
    * @param stream CUDA stream on which to perform the copy
    */
   void set_value_to_zero_async(cuda_stream_view stream)
-  {
-    _storage.set_element_to_zero_async(value_type{0}, stream);
-  }
+  { _storage.set_element_to_zero_async(value_type{0}, stream); }
 
   /**
    * @brief Returns pointer to object in device memory.
@@ -239,9 +231,7 @@ class device_scalar {
    * @return Const pointer to underlying device memory
    */
   [[nodiscard]] const_pointer data() const noexcept
-  {
-    return static_cast<const_pointer>(_storage.data());
-  }
+  { return static_cast<const_pointer>(_storage.data()); }
 
   /**
    * @briefreturn{The size of the scalar: always 1}

@@ -95,9 +95,7 @@ inline auto make_pool()
 }
 
 inline auto make_arena()
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
-}
+{ return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda()); }
 
 inline auto make_binning()
 {

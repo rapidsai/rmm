@@ -71,9 +71,7 @@ class raii_temp_directory {
   raii_temp_directory(raii_temp_directory const&)            = delete;
 
   [[nodiscard]] std::string generate_path(std::string filename) const
-  {
-    return directory_path_ / filename;
-  }
+  { return directory_path_ / filename; }
 
  private:
   std::filesystem::path directory_path_{};

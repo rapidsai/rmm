@@ -31,18 +31,14 @@ class delayed_memory_resource {
   {
   }
   void* allocate_sync(std::size_t bytes, std::size_t alignment)
-  {
-    return upstream_.allocate_sync(bytes, alignment);
-  }
+  { return upstream_.allocate_sync(bytes, alignment); }
   void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment)
   {
     upstream_.deallocate_sync(ptr, bytes, alignment);
     std::this_thread::sleep_for(delay_);
   }
   void* allocate(rmm::cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
-  {
-    return upstream_.allocate(stream, bytes, alignment);
-  }
+  { return upstream_.allocate(stream, bytes, alignment); }
   void deallocate(rmm::cuda_stream_view stream, void* ptr, std::size_t bytes, std::size_t alignment)
   {
     upstream_.deallocate(stream, ptr, bytes, alignment);
@@ -50,9 +46,7 @@ class delayed_memory_resource {
   }
   friend void get_property(delayed_memory_resource const&, cuda::mr::device_accessible) noexcept {}
   bool operator==(delayed_memory_resource const& other) const noexcept
-  {
-    return this == std::addressof(other);
-  }
+  { return this == std::addressof(other); }
 
   bool operator!=(delayed_memory_resource const& other) const noexcept { return !(*this == other); }
 

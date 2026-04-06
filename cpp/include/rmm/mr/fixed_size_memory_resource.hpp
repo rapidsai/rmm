@@ -112,9 +112,7 @@ class fixed_size_memory_resource
    * @briefreturn{device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_mr_;
-  }
+  { return upstream_mr_; }
 
   /**
    * @brief Get the size of blocks allocated by this memory resource.
@@ -189,9 +187,7 @@ class fixed_size_memory_resource
    * block.
    */
   split_block allocate_from_block(block_type const& block, [[maybe_unused]] std::size_t size)
-  {
-    return {block, block_type{nullptr}};
-  }
+  { return {block, block_type{nullptr}}; }
 
   /**
    * @brief Finds, frees and returns the block associated with pointer.

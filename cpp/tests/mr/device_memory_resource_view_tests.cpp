@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -37,9 +37,7 @@ TEST(DeviceMemoryResourceViewTest, ConstructFromPointer)
  * @brief Test that device_memory_resource_view rejects null pointers
  */
 TEST(DeviceMemoryResourceViewTest, RejectsNullPointer)
-{
-  EXPECT_THROW(rmm::mr::detail::device_memory_resource_view view{nullptr}, rmm::logic_error);
-}
+{ EXPECT_THROW(rmm::mr::detail::device_memory_resource_view view{nullptr}, rmm::logic_error); }
 
 /**
  * @brief Test that device_memory_resource_view is copyable

@@ -89,9 +89,7 @@ class limiting_resource_adaptor final : public device_memory_resource {
    * @briefreturn{device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_;
-  }
+  { return upstream_; }
 
   /**
    * @brief Query the number of bytes that have been allocated. Note that

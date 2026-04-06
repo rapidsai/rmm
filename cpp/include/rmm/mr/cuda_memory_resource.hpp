@@ -65,9 +65,7 @@ class cuda_memory_resource final : public device_memory_resource {
   void do_deallocate(void* ptr,
                      [[maybe_unused]] std::size_t bytes,
                      [[maybe_unused]] cuda_stream_view stream) noexcept override
-  {
-    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaFree(ptr));
-  }
+  { RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaFree(ptr)); }
 
   /**
    * @brief Compare this resource to another.
@@ -80,9 +78,7 @@ class cuda_memory_resource final : public device_memory_resource {
    * @return false If the two resources are not equal
    */
   [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
-  {
-    return dynamic_cast<cuda_memory_resource const*>(&other) != nullptr;
-  }
+  { return dynamic_cast<cuda_memory_resource const*>(&other) != nullptr; }
 };
 /** @} */  // end of group
 }  // namespace mr

@@ -122,8 +122,8 @@ struct concurrent_managed_access {
     static auto driver_supports_concurrent_managed_access{[] {
       int concurrentManagedAccess = 0;
       auto result                 = cudaDeviceGetAttribute(&concurrentManagedAccess,
-                                           cudaDevAttrConcurrentManagedAccess,
-                                           rmm::get_current_cuda_device().value());
+                                                           cudaDevAttrConcurrentManagedAccess,
+                                                           rmm::get_current_cuda_device().value());
       return result == cudaSuccess and concurrentManagedAccess == 1;
     }()};
     return driver_supports_concurrent_managed_access;

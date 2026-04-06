@@ -188,9 +188,7 @@ class pool_memory_resource final
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_mr_;
-  }
+  { return upstream_mr_; }
 
   /**
    * @brief Computes the size of the current pool
@@ -217,9 +215,7 @@ class pool_memory_resource final
    * @return std::size_t The maximum size of a single allocation supported by this memory resource
    */
   [[nodiscard]] std::size_t get_maximum_allocation_size() const
-  {
-    return std::numeric_limits<std::size_t>::max();
-  }
+  { return std::numeric_limits<std::size_t>::max(); }
 
   /**
    * @brief Try to expand the pool by allocating a block of at least `min_size` bytes from
@@ -261,9 +257,9 @@ class pool_memory_resource final
 
     auto const max_size = maximum_pool_size_.value_or(std::numeric_limits<std::size_t>::max());
     auto const msg      = std::string("Not enough room to grow, current/max/try size = ") +
-                     rmm::detail::format_bytes(pool_size()) + ", " +
-                     rmm::detail::format_bytes(max_size) + ", " +
-                     rmm::detail::format_bytes(min_size);
+                          rmm::detail::format_bytes(pool_size()) + ", " +
+                          rmm::detail::format_bytes(max_size) + ", " +
+                          rmm::detail::format_bytes(min_size);
     report_error(msg.c_str());
     return {};
   }

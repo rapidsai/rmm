@@ -279,9 +279,7 @@ inline device_memory_resource* set_per_device_resource(cuda_device_id device_id,
  * @return Pointer to the resource for the current device
  */
 inline device_memory_resource* get_current_device_resource()
-{
-  return get_per_device_resource(rmm::get_current_cuda_device());
-}
+{ return get_per_device_resource(rmm::get_current_cuda_device()); }
 
 /**
  * @brief Set the memory resource for the current device.
@@ -308,9 +306,7 @@ inline device_memory_resource* get_current_device_resource()
  * @return Pointer to the previous resource for the current device
  */
 inline device_memory_resource* set_current_device_resource(device_memory_resource* new_mr)
-{
-  return set_per_device_resource(rmm::get_current_cuda_device(), new_mr);
-}
+{ return set_per_device_resource(rmm::get_current_cuda_device(), new_mr); }
 
 /**
  * @brief Get the `device_async_resource_ref` for the specified device.
@@ -403,9 +399,7 @@ inline device_async_resource_ref set_per_device_resource_ref(
  * @return `device_async_resource_ref` active for the current device
  */
 inline device_async_resource_ref get_current_device_resource_ref()
-{
-  return get_per_device_resource_ref(rmm::get_current_cuda_device());
-}
+{ return get_per_device_resource_ref(rmm::get_current_cuda_device()); }
 
 /**
  * @brief Set the `device_async_resource_ref` for the current device.
@@ -430,9 +424,7 @@ inline device_async_resource_ref get_current_device_resource_ref()
  */
 inline device_async_resource_ref set_current_device_resource_ref(
   device_async_resource_ref new_resource_ref)
-{
-  return set_per_device_resource_ref(rmm::get_current_cuda_device(), new_resource_ref);
-}
+{ return set_per_device_resource_ref(rmm::get_current_cuda_device(), new_resource_ref); }
 
 /**
  * @brief Reset the `device_async_resource_ref` for the specified device to the initial resource.
@@ -451,9 +443,7 @@ inline device_async_resource_ref set_current_device_resource_ref(
  * @return Previous `device_async_resource_ref` for `device_id`
  */
 inline device_async_resource_ref reset_per_device_resource_ref(cuda_device_id device_id)
-{
-  return set_per_device_resource_ref(device_id, *detail::initial_resource());
-}
+{ return set_per_device_resource_ref(device_id, *detail::initial_resource()); }
 
 /**
  * @brief Reset the `device_async_resource_ref` for the current device to the initial resource.
@@ -469,9 +459,7 @@ inline device_async_resource_ref reset_per_device_resource_ref(cuda_device_id de
  * @return Previous `device_async_resource_ref` for `device_id`
  */
 inline device_async_resource_ref reset_current_device_resource_ref()
-{
-  return reset_per_device_resource_ref(rmm::get_current_cuda_device());
-}
+{ return reset_per_device_resource_ref(rmm::get_current_cuda_device()); }
 /** @} */  // end of group
 }  // namespace mr
 }  // namespace RMM_NAMESPACE

@@ -108,9 +108,7 @@ class pinned_host_memory_resource final : public device_memory_resource {
    * @return false If the two resources are not equal
    */
   [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
-  {
-    return dynamic_cast<pinned_host_memory_resource const*>(&other) != nullptr;
-  }
+  { return dynamic_cast<pinned_host_memory_resource const*>(&other) != nullptr; }
 
   /**
    * @brief Enables the `cuda::mr::device_accessible` property

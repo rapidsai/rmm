@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -32,9 +32,7 @@ inline auto make_cuda_async_primed()
  * @brief Factory function to create a cuda_async_memory_resource without priming
  */
 inline auto make_cuda_async_unprimed()
-{
-  return std::make_shared<rmm::mr::cuda_async_memory_resource>();
-}
+{ return std::make_shared<rmm::mr::cuda_async_memory_resource>(); }
 
 /**
  * @brief Benchmark to measure the impact of async allocator priming

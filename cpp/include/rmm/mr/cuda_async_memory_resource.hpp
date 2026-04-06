@@ -145,9 +145,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
   [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return pool_.pool_handle(); }
 
   ~cuda_async_memory_resource() override
-  {
-    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaMemPoolDestroy(pool_handle()));
-  }
+  { RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaMemPoolDestroy(pool_handle())); }
   cuda_async_memory_resource(cuda_async_memory_resource const&)            = delete;
   cuda_async_memory_resource(cuda_async_memory_resource&&)                 = delete;
   cuda_async_memory_resource& operator=(cuda_async_memory_resource const&) = delete;
@@ -181,9 +179,7 @@ class cuda_async_memory_resource final : public device_memory_resource {
    * @param stream Stream on which to perform deallocation
    */
   void do_deallocate(void* ptr, std::size_t bytes, rmm::cuda_stream_view stream) noexcept override
-  {
-    pool_.deallocate(stream, ptr, bytes);
-  }
+  { pool_.deallocate(stream, ptr, bytes); }
 
   /**
    * @brief Compare this resource to another.

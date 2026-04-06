@@ -36,9 +36,7 @@ template <typename ExceptionType>
 class always_throw_memory_resource final : public mr::device_memory_resource {
  private:
   void* do_allocate(std::size_t /*bytes*/, cuda_stream_view /*stream*/) override
-  {
-    throw ExceptionType{"foo"};
-  }
+  { throw ExceptionType{"foo"}; }
   void do_deallocate(void* /*ptr*/,
                      std::size_t /*bytes*/,
                      cuda_stream_view /*stream*/) noexcept override {};

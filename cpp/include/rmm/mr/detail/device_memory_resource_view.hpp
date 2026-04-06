@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -40,9 +40,7 @@ class device_memory_resource_view {
    * @param ptr Non-null pointer to a `device_memory_resource`
    */
   device_memory_resource_view(device_memory_resource* ptr) : resource_ptr_{ptr}
-  {
-    RMM_EXPECTS(ptr != nullptr, "device_memory_resource_view cannot wrap a null pointer");
-  }
+  { RMM_EXPECTS(ptr != nullptr, "device_memory_resource_view cannot wrap a null pointer"); }
 
   /**
    * @brief Synchronously allocates memory of size at least `bytes`.
@@ -53,9 +51,7 @@ class device_memory_resource_view {
    */
   [[nodiscard]] void* allocate_sync(std::size_t bytes,
                                     std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
-  {
-    return resource_ptr_->allocate_sync(bytes, alignment);
-  }
+  { return resource_ptr_->allocate_sync(bytes, alignment); }
 
   /**
    * @brief Synchronously deallocates memory pointed to by `ptr`.
@@ -67,9 +63,7 @@ class device_memory_resource_view {
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    resource_ptr_->deallocate_sync(ptr, bytes, alignment);
-  }
+  { resource_ptr_->deallocate_sync(ptr, bytes, alignment); }
 
   /**
    * @brief Asynchronously allocates memory of size at least `bytes` on the specified stream.
@@ -82,9 +76,7 @@ class device_memory_resource_view {
   [[nodiscard]] void* allocate(cuda_stream_view stream,
                                std::size_t bytes,
                                std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
-  {
-    return resource_ptr_->allocate(stream, bytes, alignment);
-  }
+  { return resource_ptr_->allocate(stream, bytes, alignment); }
 
   /**
    * @brief Asynchronously deallocates memory pointed to by `ptr` on the specified stream.
@@ -98,9 +90,7 @@ class device_memory_resource_view {
                   void* ptr,
                   std::size_t bytes,
                   std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    resource_ptr_->deallocate(stream, ptr, bytes, alignment);
-  }
+  { resource_ptr_->deallocate(stream, ptr, bytes, alignment); }
 
   /**
    * @brief Returns the wrapped `device_memory_resource` pointer.
@@ -134,9 +124,7 @@ class device_memory_resource_view {
    * @return true If the wrapped resources are not equivalent
    */
   [[nodiscard]] bool operator!=(device_memory_resource_view const& other) const noexcept
-  {
-    return !(*this == other);
-  }
+  { return !(*this == other); }
 
   /**
    * @brief Enables the `cuda::mr::device_accessible` property

@@ -36,19 +36,13 @@
 
 /// MR factory functions
 std::shared_ptr<rmm::mr::device_memory_resource> make_cuda(std::size_t = 0)
-{
-  return std::make_shared<rmm::mr::cuda_memory_resource>();
-}
+{ return std::make_shared<rmm::mr::cuda_memory_resource>(); }
 
 std::shared_ptr<rmm::mr::device_memory_resource> make_managed(std::size_t = 0)
-{
-  return std::make_shared<rmm::mr::managed_memory_resource>();
-}
+{ return std::make_shared<rmm::mr::managed_memory_resource>(); }
 
 std::shared_ptr<rmm::mr::device_memory_resource> make_simulated(std::size_t simulated_size)
-{
-  return std::make_shared<rmm::mr::simulated_memory_resource>(simulated_size);
-}
+{ return std::make_shared<rmm::mr::simulated_memory_resource>(simulated_size); }
 
 inline auto make_pool(std::size_t simulated_size)
 {

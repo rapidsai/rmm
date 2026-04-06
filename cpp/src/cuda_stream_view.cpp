@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -45,9 +45,7 @@ bool cuda_stream_view::is_default() const noexcept
 void cuda_stream_view::synchronize() const { RMM_CUDA_TRY(cudaStreamSynchronize(stream_)); }
 
 void cuda_stream_view::synchronize_no_throw() const noexcept
-{
-  RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream_));
-}
+{ RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream_)); }
 
 bool operator==(cuda_stream_view lhs, cuda_stream_view rhs) { return lhs.value() == rhs.value(); }
 

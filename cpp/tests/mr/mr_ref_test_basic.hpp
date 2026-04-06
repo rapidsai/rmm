@@ -48,13 +48,9 @@ TEST_P(mr_ref_test, SelfEquality) { EXPECT_TRUE(this->ref == this->ref); }
 TEST_P(mr_ref_test, AllocationsAreDifferent) { concurrent_allocations_are_different(this->ref); }
 
 TEST_P(mr_ref_test, AsyncAllocationsAreDifferentDefaultStream)
-{
-  concurrent_async_allocations_are_different(this->ref, cuda_stream_view{});
-}
+{ concurrent_async_allocations_are_different(this->ref, cuda_stream_view{}); }
 
 TEST_P(mr_ref_test, AsyncAllocationsAreDifferent)
-{
-  concurrent_async_allocations_are_different(this->ref, this->stream);
-}
+{ concurrent_async_allocations_are_different(this->ref, this->stream); }
 
 }  // namespace rmm::test
