@@ -31,9 +31,7 @@ class new_delete_memory_resource {
   void* allocate([[maybe_unused]] cuda::stream_ref stream,
                  std::size_t bytes,
                  std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
-  {
-    return allocate_sync(bytes, alignment);
-  }
+  { return allocate_sync(bytes, alignment); }
 
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
@@ -47,9 +45,7 @@ class new_delete_memory_resource {
                   void* ptr,
                   std::size_t bytes,
                   std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    deallocate_sync(ptr, bytes, alignment);
-  }
+  { deallocate_sync(ptr, bytes, alignment); }
 
   bool operator==(new_delete_memory_resource const& /*other*/) const { return true; }
 
@@ -163,9 +159,7 @@ rmm::host_device_async_resource_ref get_pinned_resource()
 template <typename T>
 thrust::host_vector<T, host_allocator<T>> make_pinned_vector(std::size_t size,
                                                              rmm::cuda_stream_view stream)
-{
-  return thrust::host_vector<T, host_allocator<T>>(size, {get_pinned_resource(), stream});
-}
+{ return thrust::host_vector<T, host_allocator<T>>(size, {get_pinned_resource(), stream}); }
 
 // Test direct allocation through the converted ref
 TEST(ResourceRefConversionAllocator, DirectAllocation)
@@ -237,33 +231,21 @@ struct forwarding_adaptor
   rmm::device_async_resource_ref upstream_resource() const { return upstream_; }
 
   void* allocate(cuda::stream_ref stream, std::size_t bytes, std::size_t alignment)
-  {
-    return upstream_.allocate(stream, bytes, alignment);
-  }
+  { return upstream_.allocate(stream, bytes, alignment); }
   void deallocate(cuda::stream_ref stream,
                   void* ptr,
                   std::size_t bytes,
                   std::size_t alignment) noexcept
-  {
-    upstream_.deallocate(stream, ptr, bytes, alignment);
-  }
+  { upstream_.deallocate(stream, ptr, bytes, alignment); }
   void* allocate_sync(std::size_t bytes, std::size_t alignment)
-  {
-    return upstream_.allocate_sync(bytes, alignment);
-  }
+  { return upstream_.allocate_sync(bytes, alignment); }
   void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
-  {
-    upstream_.deallocate_sync(ptr, bytes, alignment);
-  }
+  { upstream_.deallocate_sync(ptr, bytes, alignment); }
 
   friend bool operator==(forwarding_adaptor const& lhs, forwarding_adaptor const& rhs)
-  {
-    return lhs.upstream_ == rhs.upstream_;
-  }
+  { return lhs.upstream_ == rhs.upstream_; }
   friend bool operator!=(forwarding_adaptor const& lhs, forwarding_adaptor const& rhs)
-  {
-    return !(lhs == rhs);
-  }
+  { return !(lhs == rhs); }
 
  private:
   rmm::device_async_resource_ref upstream_;
@@ -277,22 +259,14 @@ struct forwarding_sync_adaptor
   rmm::device_resource_ref upstream_resource() const { return upstream_; }
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment)
-  {
-    return upstream_.allocate_sync(bytes, alignment);
-  }
+  { return upstream_.allocate_sync(bytes, alignment); }
   void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
-  {
-    upstream_.deallocate_sync(ptr, bytes, alignment);
-  }
+  { upstream_.deallocate_sync(ptr, bytes, alignment); }
 
   friend bool operator==(forwarding_sync_adaptor const& lhs, forwarding_sync_adaptor const& rhs)
-  {
-    return lhs.upstream_ == rhs.upstream_;
-  }
+  { return lhs.upstream_ == rhs.upstream_; }
   friend bool operator!=(forwarding_sync_adaptor const& lhs, forwarding_sync_adaptor const& rhs)
-  {
-    return !(lhs == rhs);
-  }
+  { return !(lhs == rhs); }
 
  private:
   rmm::device_resource_ref upstream_;

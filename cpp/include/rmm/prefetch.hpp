@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -54,9 +54,7 @@ template <typename T>
 void prefetch(cuda::std::span<T const> data,
               rmm::cuda_device_id device,
               rmm::cuda_stream_view stream)
-{
-  prefetch(data.data(), data.size_bytes(), device, stream);
-}
+{ prefetch(data.data(), data.size_bytes(), device, stream); }
 
 /** @} */  // end of group
 

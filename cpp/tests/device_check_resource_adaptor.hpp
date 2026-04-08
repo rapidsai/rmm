@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -22,9 +22,7 @@ class device_check_resource_adaptor final : public rmm::mr::device_memory_resour
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_;
-  }
+  { return upstream_; }
 
  private:
   [[nodiscard]] bool check_device_id() const { return device_id == rmm::get_current_cuda_device(); }

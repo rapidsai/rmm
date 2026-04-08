@@ -86,9 +86,7 @@ class cuda_async_managed_memory_resource final : public device_memory_resource {
    * @return void* Pointer to the newly allocated memory
    */
   void* do_allocate(std::size_t bytes, rmm::cuda_stream_view stream) override
-  {
-    return pool_.allocate(stream, bytes);
-  }
+  { return pool_.allocate(stream, bytes); }
 
   /**
    * @brief Deallocate memory pointed to by \p ptr.
@@ -99,9 +97,7 @@ class cuda_async_managed_memory_resource final : public device_memory_resource {
    * @param stream Stream on which to perform deallocation
    */
   void do_deallocate(void* ptr, std::size_t bytes, rmm::cuda_stream_view stream) noexcept override
-  {
-    pool_.deallocate(stream, ptr, bytes);
-  }
+  { pool_.deallocate(stream, ptr, bytes); }
 
   /**
    * @brief Compare this resource to another.

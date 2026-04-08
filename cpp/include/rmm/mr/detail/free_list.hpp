@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -143,9 +143,7 @@ class free_list {
    * @param other The free list to insert.
    */
   void splice(const_iterator pos, free_list&& other)
-  {
-    return blocks.splice(pos, std::move(other.blocks));
-  }
+  { return blocks.splice(pos, std::move(other.blocks)); }
 
   /**
    * @brief Appends the given block to the end of the free list.

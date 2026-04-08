@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -18,9 +18,7 @@ struct CudaStreamPoolTest : public ::testing::Test {
 };
 
 TEST_F(CudaStreamPoolTest, ZeroSizePoolException)
-{
-  EXPECT_THROW(rmm::cuda_stream_pool pool{0}, rmm::logic_error);
-}
+{ EXPECT_THROW(rmm::cuda_stream_pool pool{0}, rmm::logic_error); }
 
 TEST_F(CudaStreamPoolTest, Unequal)
 {

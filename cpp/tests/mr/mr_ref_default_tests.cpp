@@ -34,9 +34,7 @@ void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
 
 template <typename Task, typename... Arguments>
 void spawn(Task task, Arguments&&... args)
-{
-  spawn_n(4, task, std::forward<Arguments>(args)...);
-}
+{ spawn_n(4, task, std::forward<Arguments>(args)...); }
 
 // Single-threaded default resource tests
 

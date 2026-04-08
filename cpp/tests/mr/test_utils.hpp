@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -24,8 +24,6 @@ inline bool is_device_accessible_memory(void* ptr)
 }
 
 inline bool is_properly_aligned(void* ptr)
-{
-  return rmm::is_pointer_aligned(ptr, rmm::CUDA_ALLOCATION_ALIGNMENT);
-}
+{ return rmm::is_pointer_aligned(ptr, rmm::CUDA_ALLOCATION_ALIGNMENT); }
 
 }  // namespace rmm::test

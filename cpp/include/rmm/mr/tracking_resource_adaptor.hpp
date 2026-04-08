@@ -113,9 +113,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_;
-  }
+  { return upstream_; }
 
   /**
    * @brief Get the outstanding allocations map
@@ -125,9 +123,7 @@ class tracking_resource_adaptor final : public device_memory_resource {
    * contains size and, potentially, stack traces.
    */
   std::map<void*, allocation_info> const& get_outstanding_allocations() const noexcept
-  {
-    return allocations_;
-  }
+  { return allocations_; }
 
   /**
    * @brief Query the number of bytes that have been allocated. Note that

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -125,9 +125,7 @@ class binning_memory_resource final : public device_memory_resource {
    * @briefreturn{device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_mr_;
-  }
+  { return upstream_mr_; }
 
   /**
    * @brief Add a bin allocator to this resource
@@ -197,9 +195,7 @@ class binning_memory_resource final : public device_memory_resource {
    * @param stream Stream on which to perform deallocation
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
-  {
-    get_resource_ref(bytes).deallocate(stream, ptr, bytes);
-  }
+  { get_resource_ref(bytes).deallocate(stream, ptr, bytes); }
 
   device_async_resource_ref
     upstream_mr_;  // The upstream memory_resource from which to allocate blocks.

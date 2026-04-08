@@ -115,9 +115,7 @@ class sam_headroom_memory_resource final : public device_memory_resource {
   void do_deallocate(void* ptr,
                      [[maybe_unused]] std::size_t bytes,
                      [[maybe_unused]] cuda_stream_view stream) noexcept override
-  {
-    system_mr_.deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  }
+  { system_mr_.deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT); }
 
   /**
    * @brief Compare this resource to another.

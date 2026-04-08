@@ -138,9 +138,7 @@ class statistics_resource_adaptor final : public device_memory_resource {
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_;
-  }
+  { return upstream_; }
 
   /**
    * @brief Returns a `counter` struct for this adaptor containing the current,

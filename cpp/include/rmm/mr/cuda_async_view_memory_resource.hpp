@@ -114,9 +114,7 @@ class cuda_async_view_memory_resource final : public device_memory_resource {
    * @return false If the two resources are not equal
    */
   [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
-  {
-    return dynamic_cast<cuda_async_view_memory_resource const*>(&other) != nullptr;
-  }
+  { return dynamic_cast<cuda_async_view_memory_resource const*>(&other) != nullptr; }
 };
 
 /** @} */  // end of group

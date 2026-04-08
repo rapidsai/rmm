@@ -209,48 +209,34 @@ class cccl_resource_ref
   }
 
   void* allocate_sync(std::size_t bytes)
-  {
-    return ref_.allocate_sync(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  }
+  { return ref_.allocate_sync(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT); }
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment)
-  {
-    return ref_.allocate_sync(bytes, alignment);
-  }
+  { return ref_.allocate_sync(bytes, alignment); }
 
   void deallocate_sync(void* ptr, std::size_t bytes) noexcept
-  {
-    return ref_.deallocate_sync(ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  }
+  { return ref_.deallocate_sync(ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT); }
 
   void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
-  {
-    return ref_.deallocate_sync(ptr, bytes, alignment);
-  }
+  { return ref_.deallocate_sync(ptr, bytes, alignment); }
 
   /**
    * @brief Returns the type_info of the wrapped resource.
    */
   [[nodiscard]] auto type() const noexcept -> decltype(std::declval<ResourceType const&>().type())
-  {
-    return ref_.type();
-  }
+  { return ref_.type(); }
 
   /**
    * @brief Equality comparison operator.
    */
   friend bool operator==(cccl_resource_ref const& lhs, cccl_resource_ref const& rhs) noexcept
-  {
-    return lhs.ref_ == rhs.ref_;
-  }
+  { return lhs.ref_ == rhs.ref_; }
 
   /**
    * @brief Inequality comparison operator.
    */
   friend bool operator!=(cccl_resource_ref const& lhs, cccl_resource_ref const& rhs) noexcept
-  {
-    return !(lhs == rhs);
-  }
+  { return !(lhs == rhs); }
 
   /**
    * @brief Returns a const reference to the wrapped resource_ref.
@@ -265,9 +251,7 @@ class cccl_resource_ref
   template <typename Property>
   friend auto try_get_property(cccl_resource_ref const& ref, Property prop) noexcept
     -> decltype(try_get_property(std::declval<ResourceType const&>(), prop))
-  {
-    return try_get_property(ref.ref_, prop);
-  }
+  { return try_get_property(ref.ref_, prop); }
 
  protected:
   cuda::std::optional<rmm::mr::detail::device_memory_resource_view> view_;
@@ -492,65 +476,45 @@ class cccl_async_resource_ref : private cccl_async_view_holder, public ResourceT
   // (CUDA_ALLOCATION_ALIGNMENT) and cuda_stream_view overloads, and to hide
   // deprecated no-alignment overloads inherited from the CCCL base.
   void* allocate_sync(std::size_t bytes)
-  {
-    return ResourceType::allocate_sync(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  }
+  { return ResourceType::allocate_sync(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT); }
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment)
-  {
-    return ResourceType::allocate_sync(bytes, alignment);
-  }
+  { return ResourceType::allocate_sync(bytes, alignment); }
 
   void deallocate_sync(void* ptr, std::size_t bytes) noexcept
-  {
-    return ResourceType::deallocate_sync(ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  }
+  { return ResourceType::deallocate_sync(ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT); }
 
   void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
-  {
-    return ResourceType::deallocate_sync(ptr, bytes, alignment);
-  }
+  { return ResourceType::deallocate_sync(ptr, bytes, alignment); }
 
   void* allocate(cuda_stream_view stream, std::size_t bytes)
-  {
-    return ResourceType::allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  }
+  { return ResourceType::allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT); }
 
   void* allocate(cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
-  {
-    return ResourceType::allocate(stream, bytes, alignment);
-  }
+  { return ResourceType::allocate(stream, bytes, alignment); }
 
   void deallocate(cuda_stream_view stream, void* ptr, std::size_t bytes) noexcept
-  {
-    return ResourceType::deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  }
+  { return ResourceType::deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT); }
 
   void deallocate(cuda_stream_view stream,
                   void* ptr,
                   std::size_t bytes,
                   std::size_t alignment) noexcept
-  {
-    return ResourceType::deallocate(stream, ptr, bytes, alignment);
-  }
+  { return ResourceType::deallocate(stream, ptr, bytes, alignment); }
 
   /**
    * @brief Equality comparison operator.
    */
   friend bool operator==(cccl_async_resource_ref const& lhs,
                          cccl_async_resource_ref const& rhs) noexcept
-  {
-    return static_cast<ResourceType const&>(lhs) == static_cast<ResourceType const&>(rhs);
-  }
+  { return static_cast<ResourceType const&>(lhs) == static_cast<ResourceType const&>(rhs); }
 
   /**
    * @brief Inequality comparison operator.
    */
   friend bool operator!=(cccl_async_resource_ref const& lhs,
                          cccl_async_resource_ref const& rhs) noexcept
-  {
-    return !(lhs == rhs);
-  }
+  { return !(lhs == rhs); }
 
  protected:
   ResourceType& base_ref() noexcept { return static_cast<ResourceType&>(*this); }

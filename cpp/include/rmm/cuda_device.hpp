@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -54,9 +54,7 @@ struct cuda_device_id {
    */
   [[nodiscard]] constexpr friend bool operator==(cuda_device_id const& lhs,
                                                  cuda_device_id const& rhs) noexcept
-  {
-    return lhs.value() == rhs.value();
-  }
+  { return lhs.value() == rhs.value(); }
 
   /**
    * @brief Compare two `cuda_device_id`s for inequality.
@@ -67,9 +65,7 @@ struct cuda_device_id {
    */
   [[nodiscard]] constexpr friend bool operator!=(cuda_device_id const& lhs,
                                                  cuda_device_id const& rhs) noexcept
-  {
-    return lhs.value() != rhs.value();
-  }
+  { return lhs.value() != rhs.value(); }
   //! @endcond
  private:
   value_type id_;

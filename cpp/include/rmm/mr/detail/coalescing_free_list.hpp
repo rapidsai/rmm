@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -111,9 +111,7 @@ struct block : public block_base {
    * @return false If this block does not fit `bytes` bytes or `blk` is a tighter fit.
    */
   [[nodiscard]] inline bool is_better_fit(std::size_t bytes, block const& blk) const noexcept
-  {
-    return fits(bytes) && (size() < blk.size() || blk.size() < bytes);
-  }
+  { return fits(bytes) && (size() < blk.size() || blk.size() < bytes); }
 
 #ifdef RMM_DEBUG_PRINT
   /**

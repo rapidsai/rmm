@@ -133,9 +133,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_;
-  }
+  { return upstream_; }
 
  private:
   /**
@@ -172,9 +170,7 @@ class failure_callback_resource_adaptor final : public device_memory_resource {
    * @param stream Stream on which to perform the deallocation
    */
   void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
-  {
-    get_upstream_resource().deallocate(stream, ptr, bytes);
-  }
+  { get_upstream_resource().deallocate(stream, ptr, bytes); }
 
   /**
    * @brief Compare the upstream resource to another.

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -329,9 +329,7 @@ class arena_memory_resource final : public device_memory_resource {
    * @return true if per-thread arena should be used, false otherwise.
    */
   static bool use_per_thread_arena(cuda_stream_view stream)
-  {
-    return stream.is_per_thread_default();
-  }
+  { return stream.is_per_thread_default(); }
 
   /// The global arena to allocate superblocks from.
   global_arena global_arena_;

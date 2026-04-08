@@ -134,9 +134,7 @@ class device_memory_resource {
     void* ptr,
     std::size_t bytes,
     [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    do_deallocate(ptr, bytes, cuda_stream_view{});
-  }
+  { do_deallocate(ptr, bytes, cuda_stream_view{}); }
 
   /**
    * @brief Allocates memory of size at least \p bytes on the specified stream.
@@ -175,9 +173,7 @@ class device_memory_resource {
                   void* ptr,
                   std::size_t bytes,
                   [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    do_deallocate(ptr, bytes, stream);
-  }
+  { do_deallocate(ptr, bytes, stream); }
 
   /**
    * @brief Compare this resource to another.
@@ -193,9 +189,7 @@ class device_memory_resource {
    * @returns If the two resources are equivalent
    */
   [[nodiscard]] bool is_equal(device_memory_resource const& other) const noexcept
-  {
-    return do_is_equal(other);
-  }
+  { return do_is_equal(other); }
 
   /**
    * @brief Comparison operator with another device_memory_resource
@@ -205,9 +199,7 @@ class device_memory_resource {
    * @return false If the two resources are not equivalent
    */
   [[nodiscard]] bool operator==(device_memory_resource const& other) const noexcept
-  {
-    return do_is_equal(other);
-  }
+  { return do_is_equal(other); }
 
   /**
    * @brief Comparison operator with another device_memory_resource
@@ -217,9 +209,7 @@ class device_memory_resource {
    * @return true If the two resources are not equivalent
    */
   [[nodiscard]] bool operator!=(device_memory_resource const& other) const noexcept
-  {
-    return !do_is_equal(other);
-  }
+  { return !do_is_equal(other); }
 
   /**
    * @brief Enables the `cuda::mr::device_accessible` property
@@ -271,9 +261,7 @@ class device_memory_resource {
    * @return false If the two resources are not equal
    */
   [[nodiscard]] virtual bool do_is_equal(device_memory_resource const& other) const noexcept
-  {
-    return this == std::addressof(other);
-  }
+  { return this == std::addressof(other); }
 };
 
 // static property checks
