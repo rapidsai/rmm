@@ -18,16 +18,16 @@ device_buffer::device_buffer() : _mr{rmm::mr::get_current_device_resource_ref()}
 
 device_buffer::device_buffer(std::size_t size,
                              cuda_stream_view stream,
-                             device_async_resource_ref mr)
-  : device_buffer::device_buffer(size, rmm::CUDA_ALLOCATION_ALIGNMENT, stream, mr)
+                             cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+  : device_buffer::device_buffer(size, rmm::CUDA_ALLOCATION_ALIGNMENT, stream, std::move(mr))
 {
 }
 
 device_buffer::device_buffer(std::size_t size,
                              std::size_t alignment,
                              cuda_stream_view stream,
-                             device_async_resource_ref mr)
-  : _alignment{alignment}, _stream{stream}, _mr{mr}
+                             cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+  : _alignment{alignment}, _stream{stream}, _mr{std::move(mr)}
 {
   RMM_EXPECTS(rmm::is_supported_alignment(alignment),
               "Requested alignment is not a power of 2",
@@ -39,8 +39,9 @@ device_buffer::device_buffer(std::size_t size,
 device_buffer::device_buffer(void const* source_data,
                              std::size_t size,
                              cuda_stream_view stream,
-                             device_async_resource_ref mr)
-  : device_buffer::device_buffer(source_data, size, rmm::CUDA_ALLOCATION_ALIGNMENT, stream, mr)
+                             cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+  : device_buffer::device_buffer(
+      source_data, size, rmm::CUDA_ALLOCATION_ALIGNMENT, stream, std::move(mr))
 {
 }
 
@@ -48,8 +49,8 @@ device_buffer::device_buffer(void const* source_data,
                              std::size_t size,
                              std::size_t alignment,
                              cuda_stream_view stream,
-                             device_async_resource_ref mr)
-  : _alignment{alignment}, _stream{stream}, _mr{mr}
+                             cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+  : _alignment{alignment}, _stream{stream}, _mr{std::move(mr)}
 {
   RMM_EXPECTS(rmm::is_supported_alignment(alignment),
               "Requested alignment is not a power of 2",
@@ -61,8 +62,8 @@ device_buffer::device_buffer(void const* source_data,
 
 device_buffer::device_buffer(device_buffer const& other,
                              cuda_stream_view stream,
-                             device_async_resource_ref mr)
-  : device_buffer{other.data(), other.size(), other.alignment(), stream, mr}
+                             cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+  : device_buffer{other.data(), other.size(), other.alignment(), stream, std::move(mr)}
 {
 }
 

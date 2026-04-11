@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
-from rmm.librmm.memory_resource cimport device_async_resource_ref
+from rmm.librmm.memory_resource cimport any_resource, device_accessible
 
 
 cdef extern from "rmm/mr/per_device_resource.hpp" namespace "rmm" nogil:
@@ -26,18 +26,18 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
         device_buffer(
             size_t size,
             cuda_stream_view stream,
-            device_async_resource_ref mr
+            any_resource[device_accessible] mr
         ) except +
         device_buffer(
             const void* source_data,
             size_t size,
             cuda_stream_view stream,
-            device_async_resource_ref mr
+            any_resource[device_accessible] mr
         ) except +
         device_buffer(
             const device_buffer buf,
             cuda_stream_view stream,
-            device_async_resource_ref mr
+            any_resource[device_accessible] mr
         ) except +
         void reserve(size_t new_capacity, cuda_stream_view stream) except +
         void resize(size_t new_size, cuda_stream_view stream) except +

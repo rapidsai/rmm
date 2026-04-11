@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -45,8 +45,9 @@ class exec_policy : public thrust_exec_policy_t {
    * @param stream The stream on which to allocate temporary memory
    * @param mr The resource to use for allocating temporary memory
    */
-  explicit exec_policy(cuda_stream_view stream      = cuda_stream_default,
-                       device_async_resource_ref mr = mr::get_current_device_resource_ref());
+  explicit exec_policy(
+    cuda_stream_view stream                                = cuda_stream_default,
+    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 };
 
 /**
@@ -70,8 +71,9 @@ class exec_policy_nosync : public thrust_exec_policy_nosync_t {
    * @param stream The stream on which to allocate temporary memory
    * @param mr The resource to use for allocating temporary memory
    */
-  explicit exec_policy_nosync(cuda_stream_view stream      = cuda_stream_default,
-                              device_async_resource_ref mr = mr::get_current_device_resource_ref());
+  explicit exec_policy_nosync(
+    cuda_stream_view stream                                = cuda_stream_default,
+    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 };
 
 /** @} */  // end of group

@@ -50,7 +50,7 @@ cdef extern from *:
     }
     """
     any_resource[device_accessible] make_any_device_resource(
-        device_async_resource_ref) except +
+        device_async_resource_ref) nogil except +
 
 
 # Inline C++ helper to construct optional[device_async_resource_ref] from any

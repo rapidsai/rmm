@@ -80,8 +80,8 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @param stream The stream to be used for device memory (de)allocation
    */
   RMM_EXEC_CHECK_DISABLE
-  thrust_allocator(cuda_stream_view stream, rmm::device_async_resource_ref mr)
-    : _stream{stream}, _mr(mr)
+  thrust_allocator(cuda_stream_view stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+    : _stream{stream}, _mr(std::move(mr))
   {
   }
 
