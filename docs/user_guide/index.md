@@ -9,6 +9,5 @@ guide
 choosing_memory_resources
 stream_ordered_allocation
 managed_memory
-pool_allocators
 logging
 ```

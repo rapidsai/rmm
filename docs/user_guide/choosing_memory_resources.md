@@ -107,14 +107,14 @@ The `PoolMemoryResource` maintains a pool of memory allocated from an upstream r
 - Wrapping non-CUDA memory sources (e.g., managed memory)
 - Prefer `CudaAsyncMemoryResource` for new code unless you need explicit pool size control
 
-**Note**: If using `PoolMemoryResource`, prefer wrapping `CudaAsyncMemoryResource` as the upstream rather than `CudaMemoryResource`:
+**Note**: `PoolMemoryResource` does not return memory to the upstream resource on deallocation. Once the pool grows, that memory stays allocated until the resource is destroyed. Set `maximum_pool_size` to limit growth.
 
 **Example:**
 ```python
 import rmm
 
 pool = rmm.mr.PoolMemoryResource(
-    rmm.mr.CudaAsyncMemoryResource(),  # upstream resource
+    rmm.mr.CudaMemoryResource(),
     initial_pool_size=2**32,  #  4 GiB
     maximum_pool_size=2**34   # 16 GiB
 )
@@ -259,6 +259,5 @@ With this setup, both PyTorch and any other RMM-using code (like cuDF) will shar
 
 ## See Also
 
-- [Pool Allocators](pool_allocators.md) - Detailed guide on pool and arena allocators
 - [Managed Memory](managed_memory.md) - Guide to using managed memory and prefetching
 - [Stream-Ordered Allocation](stream_ordered_allocation.md) - Understanding stream-ordered semantics
