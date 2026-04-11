@@ -54,7 +54,8 @@ class RMM_EXPORT statistics_resource_adaptor
    *
    * @param upstream The resource used for allocating/deallocating device memory.
    */
-  explicit statistics_resource_adaptor(device_async_resource_ref upstream);
+  explicit statistics_resource_adaptor(
+    cuda::mr::any_resource<cuda::mr::device_accessible> upstream);
 
   ~statistics_resource_adaptor() = default;
 

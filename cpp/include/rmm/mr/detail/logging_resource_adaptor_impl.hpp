@@ -27,7 +27,7 @@ namespace detail {
 class logging_resource_adaptor_impl {
  public:
   logging_resource_adaptor_impl(std::shared_ptr<rapids_logger::logger> logger,
-                                device_async_resource_ref upstream,
+                                cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
                                 bool auto_flush);
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t));

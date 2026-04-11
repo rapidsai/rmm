@@ -11,8 +11,10 @@
 namespace RMM_NAMESPACE {
 namespace mr {
 
-statistics_resource_adaptor::statistics_resource_adaptor(device_async_resource_ref upstream)
-  : shared_base(cuda::mr::make_shared_resource<detail::statistics_resource_adaptor_impl>(upstream))
+statistics_resource_adaptor::statistics_resource_adaptor(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream)
+  : shared_base(
+      cuda::mr::make_shared_resource<detail::statistics_resource_adaptor_impl>(std::move(upstream)))
 {
 }
 

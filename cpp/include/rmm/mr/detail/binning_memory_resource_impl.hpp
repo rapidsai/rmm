@@ -31,9 +31,10 @@ namespace detail {
  */
 class binning_memory_resource_impl {
  public:
-  explicit binning_memory_resource_impl(device_async_resource_ref upstream);
+  explicit binning_memory_resource_impl(
+    cuda::mr::any_resource<cuda::mr::device_accessible> upstream);
 
-  binning_memory_resource_impl(device_async_resource_ref upstream,
+  binning_memory_resource_impl(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
                                int8_t min_size_exponent,
                                int8_t max_size_exponent);
 

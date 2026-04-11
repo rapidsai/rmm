@@ -10,8 +10,8 @@ namespace mr {
 namespace detail {
 
 thread_safe_resource_adaptor_impl::thread_safe_resource_adaptor_impl(
-  device_async_resource_ref upstream)
-  : upstream_mr_{upstream}
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream)
+  : upstream_mr_{std::move(upstream)}
 {
 }
 

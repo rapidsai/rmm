@@ -51,17 +51,17 @@ class RMM_EXPORT fixed_size_memory_resource
 
   /**
    * @brief Construct a new `fixed_size_memory_resource` that allocates memory from
-   * `upstream_mr`.
+   * `upstream`.
    *
    * When the pool of blocks is all allocated, grows the pool by allocating
-   * `blocks_to_preallocate` more blocks from `upstream_mr`.
+   * `blocks_to_preallocate` more blocks from `upstream`.
    *
-   * @param upstream_mr The device_async_resource_ref from which to allocate blocks for the pool.
+   * @param upstream The resource from which to allocate blocks for the pool.
    * @param block_size The size of blocks to allocate.
    * @param blocks_to_preallocate The number of blocks to allocate to initialize the pool.
    */
   explicit fixed_size_memory_resource(
-    device_async_resource_ref upstream_mr,
+    cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
     // NOLINTNEXTLINE bugprone-easily-swappable-parameters
     std::size_t block_size            = default_block_size,
     std::size_t blocks_to_preallocate = default_blocks_to_preallocate);

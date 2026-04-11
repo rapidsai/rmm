@@ -45,12 +45,12 @@ class RMM_EXPORT binning_memory_resource
   /**
    * @brief Construct a new binning memory resource object.
    *
-   * Initially has no bins, so simply uses the upstream_resource until bin resources are added
+   * Initially has no bins, so simply uses the upstream resource until bin resources are added
    * with `add_bin`.
    *
-   * @param upstream_resource The upstream memory resource used to allocate bin pools.
+   * @param upstream The resource used to allocate bin pools.
    */
-  explicit binning_memory_resource(device_async_resource_ref upstream_resource);
+  explicit binning_memory_resource(cuda::mr::any_resource<cuda::mr::device_accessible> upstream);
 
   /**
    * @brief Construct a new binning memory resource object with a range of initial bins.
@@ -60,11 +60,11 @@ class RMM_EXPORT binning_memory_resource
    * and `max_size_exponent==22`, creates bins of sizes 256KiB, 512KiB, 1024KiB, 2048KiB and
    * 4096KiB.
    *
-   * @param upstream_resource The upstream memory resource used to allocate bin pools.
+   * @param upstream The resource used to allocate bin pools.
    * @param min_size_exponent The minimum base-2 exponent bin size.
    * @param max_size_exponent The maximum base-2 exponent bin size.
    */
-  binning_memory_resource(device_async_resource_ref upstream_resource,
+  binning_memory_resource(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
                           int8_t min_size_exponent,  // NOLINT(bugprone-easily-swappable-parameters)
                           int8_t max_size_exponent);
 

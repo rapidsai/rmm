@@ -44,7 +44,7 @@ class RMM_EXPORT prefetch_resource_adaptor
    *
    * @param upstream The resource_ref used for allocating/deallocating device memory
    */
-  explicit prefetch_resource_adaptor(device_async_resource_ref upstream);
+  explicit prefetch_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream);
 
   ~prefetch_resource_adaptor() = default;
 

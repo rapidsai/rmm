@@ -59,7 +59,7 @@ class RMM_EXPORT aligned_resource_adaptor
    * if smaller).
    * @param alignment_threshold Only allocations >= this size are aligned to `alignment`.
    */
-  explicit aligned_resource_adaptor(device_async_resource_ref upstream,
+  explicit aligned_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
                                     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
                                     std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT,
                                     std::size_t alignment_threshold = default_alignment_threshold);

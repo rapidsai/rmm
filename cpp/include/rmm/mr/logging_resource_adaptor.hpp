@@ -69,7 +69,7 @@ class RMM_EXPORT logging_resource_adaptor
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
-  logging_resource_adaptor(device_async_resource_ref upstream,
+  logging_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
                            std::string const& filename = get_default_filename(),
                            bool auto_flush             = false);
 
@@ -85,7 +85,7 @@ class RMM_EXPORT logging_resource_adaptor
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
-  logging_resource_adaptor(device_async_resource_ref upstream,
+  logging_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
                            std::ostream& stream,
                            bool auto_flush = false);
 
@@ -101,7 +101,7 @@ class RMM_EXPORT logging_resource_adaptor
    * @param auto_flush If true, flushes the log for every (de)allocation. Warning, this will degrade
    * performance.
    */
-  logging_resource_adaptor(device_async_resource_ref upstream,
+  logging_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
                            std::initializer_list<rapids_logger::sink_ptr> sinks,
                            bool auto_flush = false);
 

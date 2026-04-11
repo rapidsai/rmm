@@ -12,11 +12,12 @@
 namespace RMM_NAMESPACE {
 namespace mr {
 
-pool_memory_resource::pool_memory_resource(device_async_resource_ref upstream,
-                                           std::size_t initial_pool_size,
-                                           std::optional<std::size_t> maximum_pool_size)
+pool_memory_resource::pool_memory_resource(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  std::size_t initial_pool_size,
+  std::optional<std::size_t> maximum_pool_size)
   : shared_base(cuda::mr::make_shared_resource<detail::pool_memory_resource_impl>(
-      upstream, initial_pool_size, maximum_pool_size))
+      std::move(upstream), initial_pool_size, maximum_pool_size))
 {
 }
 

@@ -12,10 +12,11 @@ namespace RMM_NAMESPACE {
 namespace mr {
 namespace detail {
 
-limiting_resource_adaptor_impl::limiting_resource_adaptor_impl(device_async_resource_ref upstream,
-                                                               std::size_t allocation_limit,
-                                                               std::size_t alignment)
-  : upstream_mr_{upstream},
+limiting_resource_adaptor_impl::limiting_resource_adaptor_impl(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  std::size_t allocation_limit,
+  std::size_t alignment)
+  : upstream_mr_{std::move(upstream)},
     allocation_limit_{allocation_limit},
     allocated_bytes_(0),
     alignment_(alignment)
