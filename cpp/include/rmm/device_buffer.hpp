@@ -103,17 +103,16 @@ class device_buffer {
     cuda_stream_view stream,
     cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 
-  /**
-   * @copydoc device_buffer(std::size_t, cuda_stream_view,
-   * cuda::mr::any_resource<cuda::mr::device_accessible>)
-   *
-   * @throws rmm::bad_alloc If the requested alignment cannot be satisfied by the provided
-   * memory resource.
-   * @throws rmm::invalid_argument If the requested alignment is not a power of two
-   *
-   * @param alignment Required alignment of the allocation. The actual alignment will be
-   * at least the requested alignment.
-   */
+  // clang-format off
+  /// @copydoc device_buffer(std::size_t, cuda_stream_view, cuda::mr::any_resource<cuda::mr::device_accessible>)
+  // clang-format on
+  ///
+  /// @throws rmm::bad_alloc If the requested alignment cannot be satisfied by the provided
+  /// memory resource.
+  /// @throws rmm::invalid_argument If the requested alignment is not a power of two
+  ///
+  /// @param alignment Required alignment of the allocation. The actual alignment will be
+  /// at least the requested alignment.
   explicit device_buffer(
     std::size_t size,
     std::size_t alignment,
@@ -149,17 +148,16 @@ class device_buffer {
     cuda_stream_view stream,
     cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 
-  /**
-   * @copydoc device_buffer(void const *, std::size_t, cuda_stream_view,
-   * cuda::mr::any_resource<cuda::mr::device_accessible>)
-   *
-   * @throws rmm::bad_alloc If the requested alignment cannot be satisfied by the provided
-   * memory resource.
-   * @throws rmm::invalid_argument If the requested alignment is not a power of two
-   *
-   * @param alignment Required alignment of the allocation. The actual alignment will be
-   * at least the requested alignment.
-   */
+  // clang-format off
+  /// @copydoc device_buffer(void const*, std::size_t, cuda_stream_view, cuda::mr::any_resource<cuda::mr::device_accessible>)
+  // clang-format on
+  ///
+  /// @throws rmm::bad_alloc If the requested alignment cannot be satisfied by the provided
+  /// memory resource.
+  /// @throws rmm::invalid_argument If the requested alignment is not a power of two
+  ///
+  /// @param alignment Required alignment of the allocation. The actual alignment will be
+  /// at least the requested alignment.
   explicit device_buffer(
     void const* source_data,
     std::size_t size,
