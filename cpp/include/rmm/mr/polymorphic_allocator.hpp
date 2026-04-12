@@ -55,7 +55,9 @@ class polymorphic_allocator {
    *
    * @param mr The upstream memory resource to use for allocation.
    */
-  polymorphic_allocator(device_async_resource_ref mr) : mr_(mr) {}
+  polymorphic_allocator(cuda::mr::any_resource<cuda::mr::device_accessible> mr) : mr_(std::move(mr))
+  {
+  }
 
   /**
    * @brief Construct a `polymorphic_allocator` using the underlying memory resource of `other`.

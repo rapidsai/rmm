@@ -8,11 +8,12 @@
 namespace RMM_NAMESPACE {
 namespace mr {
 
-arena_memory_resource::arena_memory_resource(device_async_resource_ref upstream_mr,
-                                             std::optional<std::size_t> arena_size,
-                                             bool dump_log_on_failure)
+arena_memory_resource::arena_memory_resource(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  std::optional<std::size_t> arena_size,
+  bool dump_log_on_failure)
   : shared_base(cuda::mr::make_shared_resource<detail::arena_memory_resource_impl>(
-      upstream_mr, arena_size, dump_log_on_failure))
+      std::move(upstream), arena_size, dump_log_on_failure))
 {
 }
 

@@ -27,7 +27,8 @@ namespace detail {
  */
 class thread_safe_resource_adaptor_impl {
  public:
-  explicit thread_safe_resource_adaptor_impl(device_async_resource_ref upstream);
+  explicit thread_safe_resource_adaptor_impl(
+    cuda::mr::any_resource<cuda::mr::device_accessible> upstream);
 
   ~thread_safe_resource_adaptor_impl() = default;
 

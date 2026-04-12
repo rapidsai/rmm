@@ -15,10 +15,11 @@ namespace RMM_NAMESPACE {
 namespace mr {
 namespace detail {
 
-aligned_resource_adaptor_impl::aligned_resource_adaptor_impl(device_async_resource_ref upstream,
-                                                             std::size_t alignment,
-                                                             std::size_t alignment_threshold)
-  : upstream_mr_{upstream},
+aligned_resource_adaptor_impl::aligned_resource_adaptor_impl(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  std::size_t alignment,
+  std::size_t alignment_threshold)
+  : upstream_mr_{std::move(upstream)},
     alignment_{std::max(alignment, rmm::CUDA_ALLOCATION_ALIGNMENT)},
     alignment_threshold_{alignment_threshold}
 {

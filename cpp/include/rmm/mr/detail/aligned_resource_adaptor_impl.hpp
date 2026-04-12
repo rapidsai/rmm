@@ -29,7 +29,7 @@ class aligned_resource_adaptor_impl {
  public:
   static constexpr std::size_t default_alignment_threshold = 0;
 
-  aligned_resource_adaptor_impl(device_async_resource_ref upstream,
+  aligned_resource_adaptor_impl(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
                                 std::size_t alignment,
                                 std::size_t alignment_threshold);
 

@@ -18,15 +18,17 @@ namespace RMM_NAMESPACE {
 namespace mr {
 namespace detail {
 
-binning_memory_resource_impl::binning_memory_resource_impl(device_async_resource_ref upstream)
-  : upstream_mr_{upstream}
+binning_memory_resource_impl::binning_memory_resource_impl(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream)
+  : upstream_mr_{std::move(upstream)}
 {
 }
 
-binning_memory_resource_impl::binning_memory_resource_impl(device_async_resource_ref upstream,
-                                                           int8_t min_size_exponent,
-                                                           int8_t max_size_exponent)
-  : upstream_mr_{upstream}
+binning_memory_resource_impl::binning_memory_resource_impl(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  int8_t min_size_exponent,
+  int8_t max_size_exponent)
+  : upstream_mr_{std::move(upstream)}
 {
   for (auto i = min_size_exponent; i <= max_size_exponent; i++) {
     add_bin(1 << i);

@@ -57,7 +57,8 @@ class RMM_EXPORT tracking_resource_adaptor
    * @param upstream The resource used for allocating/deallocating device memory.
    * @param capture_stacks If true, capture stacks for each allocation.
    */
-  tracking_resource_adaptor(device_async_resource_ref upstream, bool capture_stacks = false);
+  tracking_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+                            bool capture_stacks = false);
 
   ~tracking_resource_adaptor() = default;
 

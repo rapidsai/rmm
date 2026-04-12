@@ -15,10 +15,11 @@ namespace RMM_NAMESPACE {
 namespace mr {
 namespace detail {
 
-arena_memory_resource_impl::arena_memory_resource_impl(device_async_resource_ref upstream_mr,
-                                                       std::optional<std::size_t> arena_size,
-                                                       bool dump_log_on_failure)
-  : global_arena_{upstream_mr, arena_size}, dump_log_on_failure_{dump_log_on_failure}
+arena_memory_resource_impl::arena_memory_resource_impl(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr,
+  std::optional<std::size_t> arena_size,
+  bool dump_log_on_failure)
+  : global_arena_{std::move(upstream_mr), arena_size}, dump_log_on_failure_{dump_log_on_failure}
 {
   if (dump_log_on_failure_) {
     logger_ =

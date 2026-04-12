@@ -38,7 +38,7 @@ void test_conversion(rmm::mr::polymorphic_allocator<int> /*unused*/) {}
 TEST_F(allocator_test, implicit_conversion)
 {
   rmm::mr::cuda_memory_resource mr;
-  test_conversion(rmm::device_async_resource_ref{mr});
+  test_conversion(cuda::mr::any_resource<cuda::mr::device_accessible>{mr});
 }
 
 TEST_F(allocator_test, self_equality)
