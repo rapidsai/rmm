@@ -62,22 +62,23 @@ rmm.mr.set_current_device_resource(mr)
 
 ## Memory Resource Considerations
 
-Resources that use the CUDA driver's pool suballocation (`cudaMallocFromPoolAsync`) provide the best performance because the driver can manage virtual address space efficiently, avoid fragmentation, and share memory across libraries without synchronization overhead.
+Resources that use the CUDA driver's pool suballocation (`cudaMallocFromPoolAsync`) provide fast allocation performance because the driver can manage virtual address space efficiently and reduce fragmentation.
 
 ### CudaAsyncMemoryResource
 
-The `CudaAsyncMemoryResource` uses CUDA's driver-managed memory pool (via `cudaMallocAsync`). This is the **recommended default** for most applications.
+The `CudaAsyncMemoryResource` allocates from a custom CUDA memory pool using `cudaMallocFromPoolAsync`. This is the **recommended default** for most applications.
+
+Note: This creates a *custom* mempool, not the default device mempool. A custom pool is used to enable features like Blackwell decompression engine support and custom release thresholds.
 
 **Advantages:**
-- **Fastest allocation performance**: Driver-managed suballocation with virtual addressing eliminates fragmentation and minimizes latency
-- **Cross-library sharing**: The pool is shared across all libraries on the device, even those not using RMM directly
+- **Fast allocation**: Driver-managed pool reuses previously allocated memory
+- **Reduced fragmentation**: Virtual addressing allows non-contiguous physical memory to back contiguous allocations, unlike `PoolMemoryResource` which requires contiguous free regions
 - **Stream-ordered semantics**: Allocations and deallocations are stream-ordered by default, avoiding pipeline stalls in multi-stream workloads
-- **Zero configuration**: No pool sizes to tune — the driver manages growth automatically
+- **Low configuration**: The driver manages pool growth automatically, though release threshold and maximum size may need tuning in some environments (e.g., when co-existing with libraries that allocate outside the pool)
 
 **When to use:**
 - Default choice for GPU-accelerated applications
 - Multi-stream or multi-threaded applications
-- Applications using multiple GPU libraries (e.g., cuDF + PyTorch)
 - Most production workloads
 
 ### CudaMemoryResource
@@ -223,11 +224,9 @@ rmm.mr.set_current_device_resource(logged)
 
 ## Multi-Library Applications
 
-When using RMM with multiple GPU libraries (e.g., cuDF, PyTorch, CuPy), `CudaAsyncMemoryResource` is especially important because:
+When using RMM with multiple GPU libraries (e.g., cuDF, PyTorch, CuPy), configuring each library to allocate through RMM ensures all allocations flow through the same resource. This avoids memory partitioning where each library holds its own pool, leaving less memory available for the others.
 
-1. The driver-managed pool is shared automatically across all libraries
-2. You don't need to configure every library to use RMM
-3. Memory is not artificially partitioned between libraries
+Each library must be explicitly configured to use RMM. RMM provides allocator integrations for common libraries:
 
 **Example: RMM + PyTorch**
 ```python
@@ -235,14 +234,14 @@ import rmm
 import torch
 from rmm.allocators.torch import rmm_torch_allocator
 
-# Use async MR as the base
+# Configure RMM
 rmm.mr.set_current_device_resource(rmm.mr.CudaAsyncMemoryResource())
 
-# Configure PyTorch to use RMM
+# Configure PyTorch to allocate through RMM
 torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
 ```
 
-With this setup, both PyTorch and any other RMM-using code (like cuDF) will share the same driver-managed pool.
+With this setup, both PyTorch and any other RMM-configured library (like cuDF) allocate from the same resource.
 
 ## Best Practices
 
