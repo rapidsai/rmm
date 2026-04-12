@@ -10,63 +10,39 @@ Memory event logging writes details of every allocation and deallocation to a CS
 - Profiling memory usage
 - Replaying workloads for benchmarking
 
-### Python: Using Memory Event Logging
+### Using the Logging Adaptor
 
-Enable logging by wrapping your memory resource with `LoggingResourceAdaptor`:
+Wrap any memory resource with the logging adaptor to record allocations and deallocations to a CSV file:
 
-```python
-import rmm
-
-# Wrap the current resource with logging adaptor
-base_mr = rmm.mr.CudaAsyncMemoryResource()
-log_mr = rmm.mr.LoggingResourceAdaptor(base_mr, log_file_name="memory_log.csv")
-rmm.mr.set_current_device_resource(log_mr)
-
-# Allocations are now logged
-buffer1 = rmm.DeviceBuffer(size=1024)
-buffer2 = rmm.DeviceBuffer(size=2048)
-
-# All allocations/deallocations written to memory_log.csv
-```
-
-If `log_file_name` is not provided, the environment variable `RMM_LOG_FILE` is used:
-
-```bash
-export RMM_LOG_FILE="allocations.csv"
-python script.py
-```
-
-### C++: Using logging_resource_adaptor
-
-Wrap any memory resource with `logging_resource_adaptor`:
-
-```cpp
+`````{tabs}
+````{code-tab} c++
 #include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/mr/logging_resource_adaptor.hpp>
 
-int main() {
-    // Create upstream resource
-    auto cuda_mr = rmm::mr::cuda_async_memory_resource{};
+rmm::mr::cuda_async_memory_resource cuda_mr;
+rmm::mr::logging_resource_adaptor log_mr{cuda_mr, "memory_log.csv"};
 
-    // Wrap with logging adaptor
-    auto log_mr = rmm::mr::logging_resource_adaptor{cuda_mr, "memory_log.csv"};
+// Allocations through log_mr are logged to CSV
+rmm::cuda_stream stream;
+rmm::device_buffer buf1(1024, stream.view(), log_mr);
+rmm::device_buffer buf2(2048, stream.view(), log_mr);
+````
+````{code-tab} python
+import rmm
 
-    // Set as current resource
-    rmm::mr::set_current_device_resource_ref(log_mr);
+base_mr = rmm.mr.CudaAsyncMemoryResource()
+log_mr = rmm.mr.LoggingResourceAdaptor(base_mr, log_file_name="memory_log.csv")
 
-    // All allocations logged to CSV
-    rmm::cuda_stream stream;
-    rmm::device_buffer buffer(1024, stream.view());
+# Allocations through log_mr are logged to CSV
+buf1 = rmm.DeviceBuffer(size=1024, mr=log_mr)
+buf2 = rmm.DeviceBuffer(size=2048, mr=log_mr)
+````
+`````
 
-    return 0;
-}
-```
-
-If filename is not provided, `RMM_LOG_FILE` environment variable is checked:
+If no filename is provided, the `RMM_LOG_FILE` environment variable is used:
 
 ```bash
 export RMM_LOG_FILE="allocations.csv"
-./my_app
 ```
 
 ### CSV Log Format
@@ -135,9 +111,50 @@ This replays the allocation pattern from the log, useful for:
 
 ## Memory Statistics
 
-RMM provides statistics tracking for allocations using `statistics_resource_adaptor`.
+RMM provides statistics tracking for allocations using `statistics_resource_adaptor`. The adaptor tracks current, peak, and total allocation bytes and counts.
 
-### Python: Enabling Statistics
+### Using the Statistics Adaptor
+
+`````{tabs}
+````{code-tab} c++
+#include <rmm/mr/cuda_async_memory_resource.hpp>
+#include <rmm/mr/statistics_resource_adaptor.hpp>
+#include <iostream>
+
+rmm::mr::cuda_async_memory_resource cuda_mr;
+rmm::mr::statistics_resource_adaptor stats_mr{cuda_mr};
+
+// Allocate using the statistics-wrapped resource
+rmm::cuda_stream stream;
+rmm::device_buffer buf1(1024, stream.view(), stats_mr);
+rmm::device_buffer buf2(2048, stream.view(), stats_mr);
+
+// Get statistics
+auto bytes = stats_mr.get_bytes_counter();
+auto allocs = stats_mr.get_allocations_counter();
+std::cout << "Current bytes: " << bytes.value << "\n";
+std::cout << "Peak bytes: " << bytes.peak << "\n";
+std::cout << "Allocation count: " << allocs.value << "\n";
+````
+````{code-tab} python
+import rmm
+
+cuda_mr = rmm.mr.CudaAsyncMemoryResource()
+stats_mr = rmm.mr.StatisticsResourceAdaptor(cuda_mr)
+
+# Allocate using the statistics-wrapped resource
+buf1 = rmm.DeviceBuffer(size=1024, mr=stats_mr)
+buf2 = rmm.DeviceBuffer(size=2048, mr=stats_mr)
+
+# Get statistics
+stats = stats_mr.allocation_counts
+print(f"Current bytes: {stats.current_bytes}")
+print(f"Peak bytes: {stats.peak_bytes}")
+print(f"Total allocations: {stats.total_count}")
+````
+`````
+
+Python also provides a convenience API for enabling statistics globally:
 
 ```python
 import rmm
@@ -149,51 +166,10 @@ rmm.statistics.enable_statistics()
 with rmm.statistics.statistics():
     buffer = rmm.DeviceBuffer(size=1024)
 
-    # Get current statistics
     stats = rmm.statistics.get_statistics()
     print(f"Current bytes: {stats.current_bytes}")
     print(f"Peak bytes: {stats.peak_bytes}")
     print(f"Total allocations: {stats.total_count}")
-```
-
-Available statistics:
-
-```python
-class Statistics:
-    current_bytes: int    # Currently allocated bytes
-    current_count: int    # Number of active allocations
-    peak_bytes: int       # Peak bytes allocated
-    peak_count: int       # Peak number of allocations
-    total_bytes: int      # Total bytes ever allocated
-    total_count: int      # Total number of allocations
-```
-
-### C++: Using statistics_resource_adaptor
-
-```cpp
-#include <rmm/mr/cuda_async_memory_resource.hpp>
-#include <rmm/mr/statistics_resource_adaptor.hpp>
-#include <iostream>
-
-int main() {
-    auto cuda_mr = rmm::mr::cuda_async_memory_resource{};
-    auto stats_mr = rmm::mr::statistics_resource_adaptor{cuda_mr};
-    rmm::mr::set_current_device_resource_ref(stats_mr);
-
-    // Allocate
-    rmm::cuda_stream stream;
-    rmm::device_buffer buffer1(1024, stream.view());
-    rmm::device_buffer buffer2(2048, stream.view());
-
-    // Get statistics
-    auto bytes = stats_mr.get_bytes_counter();
-    auto allocs = stats_mr.get_allocations_counter();
-    std::cout << "Current bytes: " << bytes.value << "\n";
-    std::cout << "Peak bytes: " << bytes.peak << "\n";
-    std::cout << "Allocation count: " << allocs.value << "\n";
-
-    return 0;
-}
 ```
 
 ### Tracking Memory Growth
@@ -227,13 +203,11 @@ buffers.extend([rmm.DeviceBuffer(size=2*1024*1024) for _ in range(5)])
 checkpoint("After 5x2MB allocations")
 ```
 
-## Memory Profiling
+## Memory Profiling (Python)
 
 The memory profiler tracks allocations by function/code block.
 
-### Python: Using the Profiler
-
-#### Profiling Functions
+### Profiling Functions
 
 ```python
 import rmm
@@ -255,23 +229,9 @@ process_data(1000000)
 print(rmm.statistics.default_profiler_records.report())
 ```
 
-Output:
-```
-Memory Profiling
-================
+The report shows the number of calls, peak memory, and total memory for each profiled function.
 
-Legends:
-  ncalls       - number of times the function or code block was called
-  memory_peak  - peak memory allocated in function or code block (in bytes)
-  memory_total - total memory allocated in function or code block (in bytes)
-
-Ordered by: memory_peak
-
-ncalls     memory_peak    memory_total  filename:lineno(function)
-     1       1,000,016       1,000,016  script.py:5(process_data)
-```
-
-#### Profiling Code Blocks
+### Profiling Code Blocks
 
 ```python
 import rmm
@@ -290,14 +250,7 @@ with rmm.statistics.profiler(name="processing"):
 print(rmm.statistics.default_profiler_records.report())
 ```
 
-Output:
-```
-ncalls     memory_peak    memory_total  filename:lineno(function)
-     1       1,000,016       1,000,016  data loading
-     1       1,000,032       1,000,032  processing
-```
-
-#### Nested Profiling
+### Nested Profiling
 
 ```python
 import rmm
@@ -315,12 +268,7 @@ with rmm.statistics.profiler(name="outer"):
 print(rmm.statistics.default_profiler_records.report())
 ```
 
-Output shows both nested and total allocations:
-```
-ncalls     memory_peak    memory_total  filename:lineno(function)
-     1           3,520           3,520  outer
-     1           2,016           2,016  inner
-```
+The report includes entries for both the outer and inner profiling scopes.
 
 ### Custom Profiler Records
 
@@ -375,35 +323,23 @@ Available levels (increasing verbosity):
 - `DEBUG` - Detailed debug info
 - `TRACE` - Very verbose tracing
 
-#### Runtime Log Level (Python)
+#### Runtime Log Level
 
 Even with verbose logging compiled in, you must enable it at runtime:
 
-```python
-import rmm
-
-# Enable all logging down to TRACE level
-rmm.set_logging_level("trace")
-
-# Now you'll see TRACE and DEBUG messages
-```
-
-Available Python levels: `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"critical"`, `"off"`
-
-#### Runtime Log Level (C++)
-
-```cpp
+`````{tabs}
+````{code-tab} c++
 #include <rmm/logger.hpp>
 
-int main() {
-    // Enable all logging down to TRACE level
-    rmm::default_logger().set_level(rapids_logger::level_enum::trace);
+rmm::default_logger().set_level(rapids_logger::level_enum::trace);
+````
+````{code-tab} python
+import rmm
 
-    // Your code here
-
-    return 0;
-}
-```
+# Available levels: "trace", "debug", "info", "warn", "error", "critical", "off"
+rmm.set_logging_level("trace")
+````
+`````
 
 ### What Gets Logged
 
@@ -425,68 +361,60 @@ Example debug output:
 
 ## Combining Logging Features
 
-Use multiple logging features together:
+Multiple logging features can be composed together by stacking adaptors:
 
-```python
+`````{tabs}
+````{code-tab} c++
+#include <rmm/mr/cuda_async_memory_resource.hpp>
+#include <rmm/mr/statistics_resource_adaptor.hpp>
+#include <rmm/mr/logging_resource_adaptor.hpp>
+#include <rmm/logger.hpp>
+
+// Set debug log level
+rmm::default_logger().set_level(rapids_logger::level_enum::debug);
+
+// Build resource stack: statistics + logging
+rmm::mr::cuda_async_memory_resource cuda_mr;
+rmm::mr::statistics_resource_adaptor stats_mr{cuda_mr};
+rmm::mr::logging_resource_adaptor log_mr{stats_mr, "events.csv"};
+
+// All allocations through log_mr are tracked and logged
+rmm::cuda_stream stream;
+rmm::device_buffer buffer(1024, stream.view(), log_mr);
+
+// Get statistics
+auto bytes = stats_mr.get_bytes_counter();
+std::cout << "Peak bytes: " << bytes.peak << "\n";
+````
+````{code-tab} python
 import rmm
-
-# Enable memory event logging by wrapping with adaptor
-base_mr = rmm.mr.CudaAsyncMemoryResource()
-log_mr = rmm.mr.LoggingResourceAdaptor(base_mr, log_file_name="events.csv")
-rmm.mr.set_current_device_resource(log_mr)
-
-# Enable statistics and profiling
-rmm.statistics.enable_statistics()
 
 # Set debug log level
 rmm.set_logging_level("debug")
 
-# Now all logging is active
-@rmm.statistics.profiler()
-def my_function():
-    buffer = rmm.DeviceBuffer(size=1024)
-    return buffer
+# Build resource stack: statistics + logging
+cuda_mr = rmm.mr.CudaAsyncMemoryResource()
+stats_mr = rmm.mr.StatisticsResourceAdaptor(cuda_mr)
+log_mr = rmm.mr.LoggingResourceAdaptor(stats_mr, log_file_name="events.csv")
 
-my_function()
+# All allocations through log_mr are tracked and logged
+buffer = rmm.DeviceBuffer(size=1024, mr=log_mr)
 
 # Get statistics
-stats = rmm.statistics.get_statistics()
+stats = stats_mr.allocation_counts
 print(f"Peak bytes: {stats.peak_bytes}")
 
-# View profiler report
+# Profiling can also be used alongside event logging
+rmm.statistics.enable_statistics()
+
+@rmm.statistics.profiler()
+def my_function():
+    return rmm.DeviceBuffer(size=1024, mr=log_mr)
+
+my_function()
 print(rmm.statistics.default_profiler_records.report())
-```
-
-C++ equivalent:
-
-```cpp
-#include <rmm/mr/cuda_async_memory_resource.hpp>
-#include <rmm/mr/logging_resource_adaptor.hpp>
-#include <rmm/mr/statistics_resource_adaptor.hpp>
-#include <rmm/logger.hpp>
-
-int main() {
-    // Set debug log level
-    rmm::default_logger().set_level(rapids_logger::level_enum::debug);
-
-    // Build resource stack
-    auto cuda_mr = rmm::mr::cuda_async_memory_resource{};
-    auto stats_mr = rmm::mr::statistics_resource_adaptor{cuda_mr};
-    auto log_mr = rmm::mr::logging_resource_adaptor{stats_mr, "events.csv"};
-
-    rmm::mr::set_current_device_resource_ref(log_mr);
-
-    // Now all logging is active
-    rmm::cuda_stream stream;
-    rmm::device_buffer buffer(1024, stream.view());
-
-    // Get statistics
-    auto bytes = stats_mr.get_bytes_counter();
-    std::cout << "Peak bytes: " << bytes.peak << "\n";
-
-    return 0;
-}
-```
+````
+`````
 
 ## Use Cases
 
@@ -497,16 +425,15 @@ import rmm
 
 # Enable detailed logging
 base_mr = rmm.mr.CudaAsyncMemoryResource()
-log_mr = rmm.mr.LoggingResourceAdaptor(base_mr, log_file_name="oom_debug.csv")
-rmm.mr.set_current_device_resource(log_mr)
+stats_mr = rmm.mr.StatisticsResourceAdaptor(base_mr)
+log_mr = rmm.mr.LoggingResourceAdaptor(stats_mr, log_file_name="oom_debug.csv")
 rmm.set_logging_level("debug")
-rmm.statistics.enable_statistics()
 
 # Run problematic code
 try:
-    large_buffer = rmm.DeviceBuffer(size=100 * 2**30)  # 100 GiB
+    large_buffer = rmm.DeviceBuffer(size=100 * 2**30, mr=log_mr)  # 100 GiB
 except MemoryError as e:
-    stats = rmm.statistics.get_statistics()
+    stats = stats_mr.allocation_counts
     print(f"Peak before OOM: {stats.peak_bytes / 2**30:.2f} GiB")
     print(f"Check oom_debug.csv for allocation history")
     raise
@@ -549,12 +476,10 @@ import rmm
 import time
 
 def benchmark_allocations(mr_name, mr):
-    rmm.mr.set_current_device_resource(mr)
-
     start = time.time()
     buffers = []
     for _ in range(1000):
-        buffers.append(rmm.DeviceBuffer(size=1024))
+        buffers.append(rmm.DeviceBuffer(size=1024, mr=mr))
     end = time.time()
 
     print(f"{mr_name}: {(end - start) * 1000:.2f} ms for 1000 allocations")
@@ -562,8 +487,8 @@ def benchmark_allocations(mr_name, mr):
 # Compare resources
 benchmark_allocations("CudaMemoryResource", rmm.mr.CudaMemoryResource())
 benchmark_allocations("CudaAsyncMemoryResource", rmm.mr.CudaAsyncMemoryResource())
-pool = rmm.mr.PoolMemoryResource(rmm.mr.CudaAsyncMemoryResource(), initial_pool_size=2**20)
-benchmark_allocations("PoolMemoryResource", pool)
+pool_mr = rmm.mr.PoolMemoryResource(rmm.mr.CudaMemoryResource(), initial_pool_size=2**20)
+benchmark_allocations("PoolMemoryResource", pool_mr)
 ```
 
 ## Best Practices
