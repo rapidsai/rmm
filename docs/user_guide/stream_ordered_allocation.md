@@ -6,8 +6,8 @@ RMM provides **stream-ordered memory allocation**, which means that memory alloc
 
 In stream-ordered allocation:
 
-1. **Allocations are asynchronous**: Calling `allocate()` schedules the allocation on a stream and returns immediately
-2. **Memory is available after stream synchronization**: The allocated memory is guaranteed to be available for use by operations scheduled after the allocation on the same stream
+1. **Allocations are asynchronous**: Calling `allocate()` schedules the allocation on a stream and returns a pointer immediately
+2. **The pointer is usable immediately**: The returned pointer can be stored and used for any operations that are stream-ordered after the allocation (e.g., kernel launches on the same stream, copy operations on the same stream, or operations on another stream that has been synchronized with the allocating stream using CUDA events)
 3. **Deallocations are also stream-ordered**: Memory is not actually freed until all prior operations on the stream complete
 
 This allows memory operations to be interleaved with kernel launches and other CUDA operations without explicit synchronization.
@@ -103,7 +103,7 @@ This ensures that:
 
 ### Stream Synchronization
 
-To guarantee that an allocation has completed (for example, if you need to access it from the CPU), synchronize the stream:
+The pointer returned by a stream-ordered allocation is available on the CPU immediately — it can be stored, compared, or passed to other API calls without synchronization. Synchronization is only needed before accessing the *contents* of the GPU memory from the CPU:
 
 ```python
 import rmm
@@ -112,11 +112,11 @@ from rmm.pylibrmm.stream import Stream
 stream = Stream()
 buffer = rmm.DeviceBuffer(size=1000, stream=stream)
 
-# Synchronize to ensure allocation completes
-stream.synchronize()
+# buffer.ptr is available immediately (no sync needed to use the pointer)
+print(f"Pointer: {buffer.ptr}")  # OK
 
-# Now safe to do CPU operations with buffer.ptr
-# (though accessing GPU memory from CPU usually requires managed memory)
+# To read GPU memory contents from the CPU, synchronize first
+stream.synchronize()
 ```
 
 ## Memory Resources and Stream Ordering
@@ -124,10 +124,10 @@ stream.synchronize()
 ### Which Resources Support Stream Ordering?
 
 - **`CudaAsyncMemoryResource`**: Fully stream-ordered (recommended)
-- **`PoolMemoryResource`**: Can be stream-ordered when wrapping a stream-ordered upstream
-- **`ArenaMemoryResource`**: Stream-ordered when wrapping a stream-ordered upstream
-- **`CudaMemoryResource`**: NOT stream-ordered (synchronous `cudaMalloc`)
-- **`ManagedMemoryResource`**: NOT stream-ordered (synchronous `cudaMallocManaged`)
+- **`PoolMemoryResource`**: Internally stream-safe — suballocations are mutex-protected, independent of upstream
+- **`ArenaMemoryResource`**: Internally stream-safe — uses per-stream arenas, independent of upstream
+- **`CudaMemoryResource`**: NOT stream-ordered (`cudaMalloc` is synchronous)
+- **`ManagedMemoryResource`**: NOT stream-ordered (`cudaMallocManaged` is synchronous)
 
 ### Example
 
@@ -242,7 +242,7 @@ for stream in streams:
    # Now safe to use buffer in operations on stream B
    ```
 
-2. **Don't access from CPU without sync**: Stream-ordered allocations are asynchronous - accessing from CPU requires synchronization:
+2. **Synchronize before reading GPU memory from the CPU**: The pointer is available immediately, but the memory contents are not readable from the CPU until the stream catches up:
 
    ```python
    from rmm.pylibrmm.stream import Stream
@@ -250,12 +250,9 @@ for stream in streams:
    stream = Stream()
    buffer = rmm.DeviceBuffer(size=1000, stream=stream)
 
-   # BAD: May access uninitialized memory
-   # some_function(buffer.ptr)
-
-   # GOOD: Synchronize first
+   # buffer.ptr is usable immediately (e.g., pass to a kernel)
+   # Synchronize the stream before reading memory contents from the CPU.
    stream.synchronize()
-   some_function(buffer.ptr)
    ```
 
 3. **Resource lifetime**: Ensure buffers live until all stream operations complete:
@@ -318,10 +315,10 @@ stream.synchronize();
 ## Summary
 
 - Stream-ordered allocation enables asynchronous, non-blocking memory operations
-- Allocated pointers can be used immediately in subsequent operations on the same stream
+- Allocated pointers are available immediately and can be used in operations on the same stream
 - Deallocations are also stream-ordered, preventing use-after-free
 - `CudaAsyncMemoryResource` provides the best stream-ordered allocation support
-- Always synchronize before accessing memory from the CPU
+- Synchronize before reading GPU memory contents from the CPU
 - Ensure buffer lifetimes extend until all stream operations complete
 
 For more details on choosing memory resources, see [Choosing a Memory Resource](choosing_memory_resources.md).
