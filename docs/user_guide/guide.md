@@ -7,18 +7,16 @@ This guide covers using RMM in C++ and Python applications, including memory res
 `````{tabs}
 ````{code-tab} c++
 #include <rmm/mr/cuda_async_memory_resource.hpp>
-#include <rmm/mr/per_device_resource.hpp>
 #include <rmm/device_buffer.hpp>
 #include <iostream>
 
 int main() {
-    // Use async MR (recommended)
+    // Create a memory resource
     rmm::mr::cuda_async_memory_resource async_mr;
-    rmm::mr::set_current_device_resource_ref(async_mr);
 
-    // Allocate device memory
+    // Allocate device memory using the resource
     rmm::cuda_stream stream;
-    rmm::device_buffer buffer(1024, stream.view());
+    rmm::device_buffer buffer(1024, stream.view(), async_mr);
 
     std::cout << "Allocated " << buffer.size() << " bytes\n";
 
@@ -28,12 +26,11 @@ int main() {
 ````{code-tab} python
 import rmm
 
-# Use async MR (recommended)
+# Create a memory resource
 mr = rmm.mr.CudaAsyncMemoryResource()
-rmm.mr.set_current_device_resource(mr)
 
-# Allocate device memory
-buffer = rmm.DeviceBuffer(size=1024)
+# Allocate device memory using the resource
+buffer = rmm.DeviceBuffer(size=1024, mr=mr)
 
 print(f"Allocated {buffer.size} bytes at {hex(buffer.ptr)}")
 ````
@@ -43,31 +40,49 @@ print(f"Allocated {buffer.size} bytes at {hex(buffer.ptr)}")
 
 Memory resources control how device memory is allocated. RMM provides several resource types optimized for different use cases.
 
-### Setting the Current Resource
+### Explicit Resource Passing
 
-The current device resource is used by default for all allocations:
+The preferred way to use a memory resource is to pass it explicitly when allocating memory. This makes it clear which resource handles each allocation:
+
+`````{tabs}
+````{code-tab} c++
+rmm::mr::cuda_async_memory_resource async_mr;
+rmm::cuda_stream stream;
+
+// Pass the resource explicitly
+rmm::device_buffer buffer(1024, stream.view(), async_mr);
+````
+````{code-tab} python
+mr = rmm.mr.CudaAsyncMemoryResource()
+
+# Pass the resource explicitly
+buffer = rmm.DeviceBuffer(size=1024, mr=mr)
+````
+`````
+
+### Setting the Current Device Resource
+
+RMM also provides a global "current device resource" that is used when no resource is passed explicitly:
 
 `````{tabs}
 ````{code-tab} c++
 #include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 
-// Get current device resource ref
-rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref();
-
-// Set current device resource ref
 rmm::mr::cuda_async_memory_resource async_mr;
 rmm::mr::set_current_device_resource_ref(async_mr);
+
+// Allocations that don't specify a resource use the current device resource
+rmm::device_async_resource_ref mr = rmm::mr::get_current_device_resource_ref();
 ````
 ````{code-tab} python
 import rmm
 
-# Get current device resource
-mr = rmm.mr.get_current_device_resource()
-
-# Set current device resource
 async_mr = rmm.mr.CudaAsyncMemoryResource()
 rmm.mr.set_current_device_resource(async_mr)
+
+# Allocations that don't specify a resource use the current device resource
+mr = rmm.mr.get_current_device_resource()
 ````
 `````
 
@@ -184,15 +199,13 @@ Adaptors wrap resources to add functionality like statistics tracking and loggin
 `````{tabs}
 ````{code-tab} c++
 #include <rmm/mr/statistics_resource_adaptor.hpp>
-#include <rmm/mr/per_device_resource.hpp>
 
 rmm::mr::cuda_async_memory_resource cuda_mr;
 rmm::mr::statistics_resource_adaptor stats_mr{cuda_mr};
-rmm::mr::set_current_device_resource_ref(stats_mr);
 
-// Allocate
+// Allocate using the statistics-wrapped resource
 rmm::cuda_stream stream;
-rmm::device_buffer buffer(1024, stream.view());
+rmm::device_buffer buffer(1024, stream.view(), stats_mr);
 
 // Get statistics
 auto bytes = stats_mr.get_bytes_counter();
@@ -206,10 +219,9 @@ import rmm
 # Wrap base resource with statistics adaptor
 cuda_mr = rmm.mr.CudaAsyncMemoryResource()
 stats_mr = rmm.mr.StatisticsResourceAdaptor(cuda_mr)
-rmm.mr.set_current_device_resource(stats_mr)
 
-# Allocate
-buffer = rmm.DeviceBuffer(size=1024)
+# Allocate using the statistics-wrapped resource
+buffer = rmm.DeviceBuffer(size=1024, mr=stats_mr)
 
 # Get statistics
 stats = stats_mr.allocation_counts
@@ -224,25 +236,22 @@ print(f"Total bytes: {stats.total_bytes}")
 `````{tabs}
 ````{code-tab} c++
 #include <rmm/mr/logging_resource_adaptor.hpp>
-#include <rmm/mr/per_device_resource.hpp>
 
 rmm::mr::cuda_async_memory_resource cuda_mr;
 rmm::mr::logging_resource_adaptor log_mr{cuda_mr, "allocations.csv"};
-rmm::mr::set_current_device_resource_ref(log_mr);
 
-// All allocations logged to CSV
-rmm::device_buffer buffer(1024, rmm::cuda_stream_default);
+// Allocations through log_mr are logged to CSV
+rmm::cuda_stream stream;
+rmm::device_buffer buffer(1024, stream.view(), log_mr);
 ````
 ````{code-tab} python
 import rmm
 
-# Wrap the current resource with logging adaptor
-base = rmm.mr.CudaAsyncMemoryResource()
-log_mr = rmm.mr.LoggingResourceAdaptor(base, log_file_name="allocations.csv")
-rmm.mr.set_current_device_resource(log_mr)
+base_mr = rmm.mr.CudaAsyncMemoryResource()
+log_mr = rmm.mr.LoggingResourceAdaptor(base_mr, log_file_name="allocations.csv")
 
-# All allocations logged to CSV
-buffer = rmm.DeviceBuffer(size=1024)
+# Allocations through log_mr are logged to CSV
+buffer = rmm.DeviceBuffer(size=1024, mr=log_mr)
 ````
 `````
 
@@ -256,14 +265,13 @@ Adaptors can be stacked to combine functionality:
 
 `````{tabs}
 ````{code-tab} c++
-#include <rmm/mr/cuda_async_memory_resource.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 #include <rmm/mr/statistics_resource_adaptor.hpp>
 #include <rmm/mr/logging_resource_adaptor.hpp>
-#include <rmm/mr/per_device_resource.hpp>
 
 // Base resource
-rmm::mr::cuda_async_memory_resource cuda_mr;
+rmm::mr::cuda_memory_resource cuda_mr;
 
 // Add pool
 rmm::mr::pool_memory_resource pool_mr{cuda_mr, 1ULL << 30};
@@ -274,14 +282,15 @@ rmm::mr::statistics_resource_adaptor stats_mr{pool_mr};
 // Add logging
 rmm::mr::logging_resource_adaptor log_mr{stats_mr, "log.csv"};
 
-// Set as current
-rmm::mr::set_current_device_resource_ref(log_mr);
+// Use log_mr for allocations — all allocations are pooled, tracked, and logged
+rmm::cuda_stream stream;
+rmm::device_buffer buffer(1024, stream.view(), log_mr);
 ````
 ````{code-tab} python
 import rmm
 
 # Base resource
-cuda_mr = rmm.mr.CudaAsyncMemoryResource()
+cuda_mr = rmm.mr.CudaMemoryResource()
 
 # Add pool
 pool_mr = rmm.mr.PoolMemoryResource(cuda_mr, initial_pool_size=2**30)
@@ -292,8 +301,8 @@ stats_mr = rmm.mr.StatisticsResourceAdaptor(pool_mr)
 # Add logging
 log_mr = rmm.mr.LoggingResourceAdaptor(stats_mr, log_file_name="log.csv")
 
-# Set as current
-rmm.mr.set_current_device_resource(log_mr)
+# Use log_mr for allocations — all allocations are pooled, tracked, and logged
+buffer = rmm.DeviceBuffer(size=1024, mr=log_mr)
 ````
 `````
 
@@ -303,30 +312,30 @@ Order matters: outer adaptors see all allocations from inner resources.
 
 ### Thrust (C++)
 
-Use `rmm::exec_policy` to make Thrust algorithms use RMM for temporary storage:
+Use `rmm::exec_policy_nosync` to make Thrust algorithms use RMM for temporary storage. Passing the resource explicitly makes it clear which resource handles temporaries:
 
 ```cpp
 #include <rmm/exec_policy.hpp>
+#include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/device_uvector.hpp>
 #include <thrust/sequence.h>
 #include <thrust/sort.h>
 
+rmm::mr::cuda_async_memory_resource mr;
 rmm::cuda_stream stream;
-rmm::device_uvector<int> vec(1000, stream.view());
+rmm::device_uvector<int> vec(1000, stream.view(), mr);
 
 // Fill with descending values
-thrust::sequence(rmm::exec_policy(stream.view()),
+thrust::sequence(rmm::exec_policy_nosync(stream.view(), mr),
                  vec.begin(), vec.end(), vec.size() - 1, -1);
 
-// Sort using current device resource for temporary storage
-thrust::sort(rmm::exec_policy(stream.view()), vec.begin(), vec.end());
-
-// Or use a specific memory resource for temporary storage
-rmm::mr::cuda_async_memory_resource custom_mr;
-thrust::sort(rmm::exec_policy(stream.view(), custom_mr), vec.begin(), vec.end());
+// Sort — temporaries allocated from mr
+thrust::sort(rmm::exec_policy_nosync(stream.view(), mr), vec.begin(), vec.end());
 
 stream.synchronize();
 ```
+
+`exec_policy_nosync` allows the Thrust backend to skip stream synchronizations that are not required for correctness, improving performance. Stream-ordered applications using RMM should always prefer `exec_policy_nosync`. If stream synchronizations are required, the application should insert them explicitly before reading device data from the host.
 
 ### CuPy (Python)
 
