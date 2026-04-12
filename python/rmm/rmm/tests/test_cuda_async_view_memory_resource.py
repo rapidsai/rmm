@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for CudaAsyncViewMemoryResource."""
@@ -21,7 +21,7 @@ def test_cuda_async_view_memory_resource_default_pool(dtype, nelem, alloc):
 
     mr = rmm.mr.CudaAsyncViewMemoryResource(pool)
     rmm.mr.set_current_device_resource(mr)
-    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    assert type(rmm.mr.get_current_device_resource()) is type(mr)
     array_tester(dtype, nelem, alloc)
 
 
@@ -39,7 +39,7 @@ def test_cuda_async_view_memory_resource_custom_pool(dtype, nelem, alloc):
 
     mr = rmm.mr.CudaAsyncViewMemoryResource(pool)
     rmm.mr.set_current_device_resource(mr)
-    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    assert type(rmm.mr.get_current_device_resource()) is type(mr)
     array_tester(dtype, nelem, alloc)
 
     # After the pool is destroyed, new allocations should raise

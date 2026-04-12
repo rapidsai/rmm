@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for CudaAsyncMemoryResource."""
@@ -24,7 +24,7 @@ from rmm.pylibrmm.stream import Stream
 def test_cuda_async_memory_resource(dtype, nelem, alloc):
     mr = rmm.mr.CudaAsyncMemoryResource()
     rmm.mr.set_current_device_resource(mr)
-    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    assert type(rmm.mr.get_current_device_resource()) is type(mr)
     array_tester(dtype, nelem, alloc)
 
 
@@ -40,7 +40,7 @@ def test_cuda_async_memory_resource_ipc():
     # CUDA 11.3+ is required for IPC memory handle support
     mr = rmm.mr.CudaAsyncMemoryResource(enable_ipc=True)
     rmm.mr.set_current_device_resource(mr)
-    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    assert type(rmm.mr.get_current_device_resource()) is type(mr)
 
 
 def test_cuda_async_memory_resource_fabric():
@@ -67,7 +67,7 @@ def test_cuda_async_memory_resource_fabric():
         )
     else:
         rmm.mr.set_current_device_resource(mr)
-        assert rmm.mr.get_current_device_resource_type() is type(mr)
+        assert type(rmm.mr.get_current_device_resource()) is type(mr)
 
 
 @pytest.mark.parametrize("nelems", _nelems)

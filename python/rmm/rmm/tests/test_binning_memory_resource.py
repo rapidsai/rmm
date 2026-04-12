@@ -74,7 +74,7 @@ class TestBinningMemoryResource:
     @pytest.mark.parametrize("alloc", _allocs)
     def test_binning_memory_resource(self, binning_mr, dtype, nelem, alloc):
         assert (
-            rmm.mr.get_current_device_resource_type()
+            type(rmm.mr.get_current_device_resource())
             is rmm.mr.BinningMemoryResource
         )
         array_tester(dtype, nelem, alloc)
@@ -83,7 +83,7 @@ class TestBinningMemoryResource:
     def test_binning_large_allocation(self, binning_mr, alloc):
         """Allocate 128 MiB to exercise the explicit CudaMemoryResource bin."""
         assert (
-            rmm.mr.get_current_device_resource_type()
+            type(rmm.mr.get_current_device_resource())
             is rmm.mr.BinningMemoryResource
         )
         array_tester(np.float64, _LARGE_NELEM, alloc)
