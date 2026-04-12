@@ -1,127 +1,194 @@
 # Stream-Ordered Memory Allocation
 
-RMM provides **stream-ordered memory allocation**, which means that memory allocations and deallocations are ordered with respect to operations on a CUDA stream. This is a fundamental concept for achieving optimal performance in asynchronous CUDA applications.
-
-## What is Stream-Ordered Allocation?
-
-In stream-ordered allocation:
-
-1. **Allocations are asynchronous**: Calling `allocate()` schedules the allocation on a stream and returns a pointer immediately
-2. **The pointer is usable immediately**: The returned pointer can be stored and used for any operations that are stream-ordered after the allocation (e.g., kernel launches on the same stream, copy operations on the same stream, or operations on another stream that has been synchronized with the allocating stream using CUDA events)
-3. **Deallocations are also stream-ordered**: Memory is not actually freed until all prior operations on the stream complete
-
-This allows memory operations to be interleaved with kernel launches and other CUDA operations without explicit synchronization.
-
-## Why Stream-Ordered Allocation Matters
-
-Traditional memory allocation (e.g., `cudaMalloc`) is **synchronous** - it blocks until the allocation completes. This creates bubbles in the execution pipeline where the CPU waits for GPU operations to complete.
-
-Stream-ordered allocation enables:
-- **Overlapping compute and memory operations**: Allocations can be scheduled while kernels are running
-- **Reduced synchronization overhead**: No need to synchronize the stream before allocating
-- **Better multi-stream performance**: Different streams can allocate independently
+RMM containers and memory resources are stream-ordered: allocations and deallocations are enqueued on a CUDA stream rather than blocking the CPU. This lets memory operations overlap with kernel execution and avoids the synchronization cost of `cudaMalloc`/`cudaFree`. For background on CUDA streams and asynchronous execution, see the [CUDA Programming Guide: Asynchronous Concurrent Execution](https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/asynchronous-execution.html#what-is-asynchronous-concurrent-execution).
 
 ## How It Works
 
-Consider the following example of allocating memory from a stream-ordered memory resource.
+When you allocate from a stream-ordered resource, the call returns a pointer immediately. The pointer value is available on the CPU right away — you can store it, pass it to kernel launch arguments, or hand it to another API. The memory backing behind the pointer becomes available for GPU operations enqueued on the same stream after the allocation:
 
-C++:
-
-```cpp
+`````{tabs}
+````{code-tab} c++
 #include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/device_buffer.hpp>
 
-rmm::cuda_stream_view stream;
-auto buffer = rmm::device_buffer(1000, stream);
-```
+rmm::mr::cuda_async_memory_resource mr;
+rmm::cuda_stream stream;
+rmm::device_buffer buffer(1000, stream.view(), mr);
 
-Python:
-
-```python
-import rmm
-
-# Allocate on a specific stream
-from rmm.pylibrmm.stream import Stream
-
-stream = Stream()
-buffer = rmm.DeviceBuffer(size=1000, stream=stream)
-```
-
-The following happens:
-
-1. The allocation request is **scheduled** on `stream`
-2. The function returns immediately (asynchronous)
-3. The memory is **guaranteed to be available** for operations enqueued on `stream` after the allocation
-4. You can use `buffer.data()` (the pointer) immediately in subsequent stream operations
-
-## Key Semantics
-
-### Safe to Use the Pointer Immediately
-
-**You can use the returned pointer in stream-ordered operations without synchronization:**
-
-```python
+// buffer.data() is usable immediately in stream-ordered operations
+launch_kernel<<<grid, block, 0, stream.value()>>>(buffer.data());
+````
+````{code-tab} python
 import rmm
 from rmm.pylibrmm.stream import Stream
 
+mr = rmm.mr.CudaAsyncMemoryResource()
 stream = Stream()
+buffer = rmm.DeviceBuffer(size=1000, stream=stream, mr=mr)
 
-# Allocate memory on the stream
-buffer = rmm.DeviceBuffer(size=1000, stream=stream)
+# buffer.ptr is usable immediately in stream-ordered operations
+````
+`````
 
-# The pointer (buffer.ptr) is available immediately and can be passed to
-# stream-ordered operations (e.g., kernel launches) on the same stream
-# without synchronization.
-```
+Deallocations are also stream-ordered: when a buffer is destroyed, the deallocation is enqueued on the stream, so the memory is not actually freed until all prior work on that stream completes.
 
-The allocation is guaranteed to complete before the kernel that uses it, as long as both are on the same stream.
+## When to Synchronize
 
-### Deallocations Are Also Stream-Ordered
+### Reading results on the host
 
-When you deallocate (e.g., a buffer goes out of scope), the deallocation is also stream-ordered:
+The pointer returned by a stream-ordered allocation is a CPU value — you can store it or pass it to other APIs without synchronization. However, the stream must be synchronized before the CPU reads data that was written by GPU operations on that stream. The most common case is a device-to-host copy followed by a sync:
 
-```python
+`````{tabs}
+````{code-tab} c++
+rmm::mr::cuda_async_memory_resource mr;
+rmm::cuda_stream stream;
+rmm::device_buffer d_buf(1000 * sizeof(float), stream.view(), mr);
+
+// Launch kernel that writes to d_buf on stream ...
+
+// Copy results to host on the same stream
+std::vector<float> h_buf(1000);
+cudaMemcpyAsync(h_buf.data(), d_buf.data(), d_buf.size(),
+                cudaMemcpyDeviceToHost, stream.value());
+
+// Synchronize before reading h_buf on the CPU
+stream.synchronize();
+````
+````{code-tab} python
 import rmm
 from rmm.pylibrmm.stream import Stream
 
+mr = rmm.mr.CudaAsyncMemoryResource()
 stream = Stream()
+d_buf = rmm.DeviceBuffer(size=1000, stream=stream, mr=mr)
 
-# Allocate
-buffer = rmm.DeviceBuffer(size=1000, stream=stream)
+# ... GPU work writes to d_buf on stream ...
 
-# Schedule some work on the stream
-# ... kernels using buffer.ptr ...
-
-# When buffer is destroyed, deallocation is scheduled on the stream
-# The memory won't actually be freed until all prior work completes
-buffer = None  # triggers deallocation
-```
-
-This ensures that:
-- Memory is not freed while still in use by a kernel
-- Deallocations don't block waiting for kernels to complete
-
-### Stream Synchronization
-
-The pointer returned by a stream-ordered allocation is available on the CPU immediately — it can be stored, compared, or passed to other API calls without synchronization. Synchronization is only needed before accessing the *contents* of the GPU memory from the CPU:
-
-```python
-import rmm
-from rmm.pylibrmm.stream import Stream
-
-stream = Stream()
-buffer = rmm.DeviceBuffer(size=1000, stream=stream)
-
-# buffer.ptr is available immediately (no sync needed to use the pointer)
-print(f"Pointer: {buffer.ptr}")  # OK
-
-# To read GPU memory contents from the CPU, synchronize first
+# Async copy to host on the same stream, then sync before reading
+h_buf = bytearray(d_buf.size)
+d_buf.copy_to_host(h_buf, stream)
 stream.synchronize()
-```
+````
+`````
 
-## Memory Resources and Stream Ordering
+### Cross-stream usage
 
-### Which Resources Support Stream Ordering?
+Memory allocated on one stream can only be safely used on a different stream after the allocation is known to have completed. The simplest approach is to synchronize the allocating stream, but that stalls the CPU. A lighter-weight alternative is to record a CUDA event on the allocating stream and have the consuming stream wait on it:
+
+`````{tabs}
+````{code-tab} c++
+#include <rmm/mr/cuda_async_memory_resource.hpp>
+#include <rmm/device_buffer.hpp>
+
+rmm::mr::cuda_async_memory_resource mr;
+rmm::cuda_stream stream_a;
+rmm::cuda_stream stream_b;
+
+rmm::device_buffer buffer(1000, stream_a.view(), mr);
+
+// Record an event after the allocation on stream_a
+cudaEvent_t event;
+cudaEventCreateWithFlags(&event, cudaEventDisableTiming);
+cudaEventRecord(event, stream_a.value());
+
+// stream_b waits for the event — no CPU synchronization needed
+cudaStreamWaitEvent(stream_b.value(), event);
+
+// Now safe to use buffer.data() in operations on stream_b
+launch_kernel<<<grid, block, 0, stream_b.value()>>>(buffer.data());
+
+cudaEventDestroy(event);
+````
+````{code-tab} python
+import rmm
+from rmm.pylibrmm.stream import Stream
+from cuda.core import Device
+
+dev = Device()
+dev.set_current()
+
+mr = rmm.mr.CudaAsyncMemoryResource()
+stream_a = dev.create_stream()
+stream_b = dev.create_stream()
+
+buffer = rmm.DeviceBuffer(size=1000, stream=Stream(obj=stream_a), mr=mr)
+
+# Record an event after the allocation on stream_a
+alloc_event = dev.create_event(options={"enable_timing": False})
+stream_a.record(alloc_event)
+
+# stream_b waits for the event — no CPU synchronization needed
+stream_b.wait(alloc_event)
+
+# Now safe to use buffer.ptr in operations on stream_b
+````
+`````
+
+### Buffer lifetime across streams
+
+If a buffer is allocated and used on the same stream, deallocation is safe — stream ordering guarantees prior work completes first. The problem arises when a buffer is used on a *different* stream from the one it will be deallocated on. In that case, you need to ensure the consuming stream's work finishes before the buffer is destroyed. The same event pattern works here — record an event on the consuming stream and have the deallocating stream wait on it:
+
+`````{tabs}
+````{code-tab} c++
+rmm::mr::cuda_async_memory_resource mr;
+rmm::cuda_stream stream_a;
+rmm::cuda_stream stream_b;
+
+rmm::device_buffer buffer(1000, stream_a.view(), mr);
+
+// Make stream_b wait for the allocation on stream_a
+cudaEvent_t alloc_event;
+cudaEventCreateWithFlags(&alloc_event, cudaEventDisableTiming);
+cudaEventRecord(alloc_event, stream_a.value());
+cudaStreamWaitEvent(stream_b.value(), alloc_event);
+
+// Use buffer on stream_b
+launch_kernel<<<grid, block, 0, stream_b.value()>>>(buffer.data());
+
+// Before destroying buffer, make stream_a wait for stream_b's work
+cudaEvent_t done_event;
+cudaEventCreateWithFlags(&done_event, cudaEventDisableTiming);
+cudaEventRecord(done_event, stream_b.value());
+cudaStreamWaitEvent(stream_a.value(), done_event);
+
+// Now safe to destroy buffer — deallocation on stream_a is ordered after the kernel on stream_b
+buffer = rmm::device_buffer{};
+
+cudaEventDestroy(alloc_event);
+cudaEventDestroy(done_event);
+````
+````{code-tab} python
+import rmm
+from rmm.pylibrmm.stream import Stream
+from cuda.core import Device
+
+dev = Device()
+dev.set_current()
+
+mr = rmm.mr.CudaAsyncMemoryResource()
+stream_a = dev.create_stream()
+stream_b = dev.create_stream()
+
+buffer = rmm.DeviceBuffer(size=1000, stream=Stream(obj=stream_a), mr=mr)
+
+# Make stream_b wait for the allocation on stream_a
+alloc_event = dev.create_event(options={"enable_timing": False})
+stream_a.record(alloc_event)
+stream_b.wait(alloc_event)
+
+# Use buffer on stream_b ...
+
+# Before destroying buffer, make stream_a wait for stream_b's work
+done_event = dev.create_event(options={"enable_timing": False})
+stream_b.record(done_event)
+stream_a.wait(done_event)
+
+# Now safe to destroy buffer
+del buffer
+````
+`````
+
+## Which Resources Support Stream Ordering?
 
 - **`CudaAsyncMemoryResource`**: Fully stream-ordered (recommended)
 - **`PoolMemoryResource`**: Internally stream-safe — suballocations are mutex-protected, independent of upstream
@@ -129,26 +196,18 @@ stream.synchronize()
 - **`CudaMemoryResource`**: NOT stream-ordered (`cudaMalloc` is synchronous)
 - **`ManagedMemoryResource`**: NOT stream-ordered (`cudaMallocManaged` is synchronous)
 
-### Example
+## Example: Numba Kernel with RMM Stream
+
+This example allocates an RMM buffer and launches a Numba kernel on the same stream, so the allocation is guaranteed to complete before the kernel accesses the memory:
 
 ```python
 import rmm
 from rmm.pylibrmm.stream import Stream
-
-rmm.mr.set_current_device_resource(rmm.mr.CudaAsyncMemoryResource())
-
-stream = Stream()
-buffer = rmm.DeviceBuffer(size=1000, stream=stream)
-```
-
-## Common Patterns
-
-### Pattern 1: Allocate and Use in Kernel
-
-```python
-import rmm
-from rmm.pylibrmm.stream import Stream
+from cuda.core import Device
 from numba import cuda
+
+dev = Device()
+dev.set_current()
 
 @cuda.jit
 def kernel(data, n):
@@ -156,169 +215,18 @@ def kernel(data, n):
     if idx < n:
         data[idx] = idx * 2
 
-stream = Stream()
+mr = rmm.mr.CudaAsyncMemoryResource()
+stream = dev.create_stream()
 
-# Allocate
-buffer = rmm.DeviceBuffer(size=1000 * 4, stream=stream)  # 1000 float32s
+buffer = rmm.DeviceBuffer(size=1000 * 4, stream=Stream(obj=stream), mr=mr)
 
-# Launch kernel on the same stream
-numba_stream = cuda.external_stream(stream.__cuda_stream__()[1])
+numba_stream = cuda.external_stream(int(stream.handle))
 kernel[100, 10, numba_stream](cuda.as_cuda_array(buffer).view('float32'), 1000)
 
-# Synchronize to wait for kernel
-stream.synchronize()
+stream.sync()
 ```
 
-### Pattern 2: Allocate, Compute, Deallocate, Repeat
+## See Also
 
-```python
-import rmm
-from rmm.pylibrmm.stream import Stream
-
-stream = Stream()
-
-for i in range(100):
-    # Allocate
-    buffer = rmm.DeviceBuffer(size=1000000, stream=stream)
-
-    # Use buffer in computations
-    # ... launch kernels on stream ...
-
-    # Deallocate (automatic, or explicitly set buffer = None)
-    buffer = None
-
-# All allocations and deallocations are stream-ordered
-# No need to synchronize between iterations
-```
-
-### Pattern 3: Multi-Stream Allocation
-
-```python
-import rmm
-from rmm.pylibrmm.stream import Stream
-
-# Create multiple streams
-streams = [Stream() for _ in range(4)]
-
-# Allocate on different streams independently
-buffers = []
-for stream in streams:
-    # Each allocation is independent
-    buffer = rmm.DeviceBuffer(size=1000000, stream=stream)
-    buffers.append(buffer)
-
-    # Launch work on this stream
-    # ... kernels using buffer ...
-
-# Synchronize all streams
-for stream in streams:
-    stream.synchronize()
-```
-
-## Performance Implications
-
-### Benefits
-
-1. **Reduced CPU-GPU synchronization**: No blocking on allocations
-2. **Better pipeline utilization**: Memory operations overlap with compute
-3. **Multi-stream scalability**: Streams can allocate independently
-
-### Pitfalls to Avoid
-
-1. **Don't mix streams**: Using memory allocated on stream A in operations on stream B requires synchronization:
-
-   ```python
-   from rmm.pylibrmm.stream import Stream
-
-   stream_a = Stream()
-   stream_b = Stream()
-
-   # Allocate on stream A
-   buffer = rmm.DeviceBuffer(size=1000, stream=stream_a)
-
-   # To use on stream B, synchronize stream A first
-   stream_a.synchronize()
-
-   # Now safe to use buffer in operations on stream B
-   ```
-
-2. **Synchronize before reading GPU memory from the CPU**: The pointer is available immediately, but the memory contents are not readable from the CPU until the stream catches up:
-
-   ```python
-   from rmm.pylibrmm.stream import Stream
-
-   stream = Stream()
-   buffer = rmm.DeviceBuffer(size=1000, stream=stream)
-
-   # buffer.ptr is usable immediately (e.g., pass to a kernel)
-   # Synchronize the stream before reading memory contents from the CPU.
-   stream.synchronize()
-   ```
-
-3. **Resource lifetime**: Ensure buffers live until all stream operations complete:
-
-   ```python
-   from rmm.pylibrmm.stream import Stream
-
-   stream = Stream()
-
-   def allocate_and_use():
-       buffer = rmm.DeviceBuffer(size=1000, stream=stream)
-       # Launch kernel using buffer
-       kernel[...](buffer.ptr)
-       # BAD: buffer is deallocated when function returns
-       # but kernel may still be running!
-
-   allocate_and_use()
-   stream.synchronize()  # May crash - buffer already freed
-   ```
-
-   Fix: Keep buffer alive until synchronization:
-
-   ```python
-   from rmm.pylibrmm.stream import Stream
-
-   stream = Stream()
-   buffer = allocate_and_use()  # Return the buffer
-   stream.synchronize()  # Now safe
-   buffer = None  # Explicit cleanup after sync
-   ```
-
-## C++ API
-
-In C++, stream-ordered allocation is the default for most RMM containers:
-
-```cpp
-#include <rmm/mr/cuda_async_memory_resource.hpp>
-#include <rmm/device_uvector.hpp>
-#include <rmm/device_buffer.hpp>
-#include <rmm/cuda_stream_view.hpp>
-
-// Set async MR as default
-auto async_mr = rmm::mr::cuda_async_memory_resource{};
-rmm::mr::set_current_device_resource_ref(async_mr);
-
-// Create a stream
-rmm::cuda_stream stream;
-
-// Allocate stream-ordered memory
-rmm::device_buffer buffer(1000, stream.view());
-rmm::device_uvector<float> vec(1000, stream.view());
-
-// Use immediately in stream-ordered operations
-launch_kernel<<<grid, block, 0, stream.value()>>>(buffer.data(), vec.data());
-
-// Synchronize
-stream.synchronize();
-```
-
-## Summary
-
-- Stream-ordered allocation enables asynchronous, non-blocking memory operations
-- Allocated pointers are available immediately and can be used in operations on the same stream
-- Deallocations are also stream-ordered, preventing use-after-free
-- `CudaAsyncMemoryResource` provides the best stream-ordered allocation support
-- Synchronize before reading GPU memory contents from the CPU
-- Ensure buffer lifetimes extend until all stream operations complete
-
-For more details on choosing memory resources, see [Choosing a Memory Resource](choosing_memory_resources.md).
+- [Choosing a Memory Resource](choosing_memory_resources.md) - Which resources support stream ordering
+- [CUDA Programming Guide: Asynchronous Concurrent Execution](https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/asynchronous-execution.html#what-is-asynchronous-concurrent-execution)
