@@ -121,7 +121,9 @@ rmm.mr.set_current_device_resource(rmm.mr.ManagedMemoryResource())
 buffer = rmm.DeviceBuffer(size=1000000)
 
 # ... later, just before using on GPU ...
-stream = rmm.cuda_stream()
+from rmm.pylibrmm.stream import Stream
+
+stream = Stream()
 buffer.prefetch(device=0, stream=stream)  # Prefetch to device 0
 
 # Launch kernel on the same stream
@@ -211,14 +213,14 @@ pool = rmm.mr.PoolMemoryResource(prefetch_mr, initial_pool_size=2**30)  # Wrong!
 When manually prefetching, use the same stream as the subsequent kernel:
 
 ```python
-stream = rmm.cuda_stream()
+from rmm.pylibrmm.stream import Stream
+
+stream = Stream()
 
 # Prefetch on stream
 buffer.prefetch(device=0, stream=stream)
 
-# Use on the same stream
-with stream:
-    # ... operations using buffer ...
+# Launch kernel on the same stream to avoid page faults
 ```
 
 ### 3. Prefetch Size Considerations

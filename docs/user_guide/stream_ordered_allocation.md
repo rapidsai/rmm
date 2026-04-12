@@ -41,7 +41,9 @@ Python:
 import rmm
 
 # Allocate on a specific stream
-stream = rmm.cuda_stream()
+from rmm.pylibrmm.stream import Stream
+
+stream = Stream()
 buffer = rmm.DeviceBuffer(size=1000, stream=stream)
 ```
 
@@ -60,22 +62,16 @@ The following happens:
 
 ```python
 import rmm
-import cupy as cp
+from rmm.pylibrmm.stream import Stream
 
-stream = rmm.cuda_stream()
+stream = Stream()
 
 # Allocate memory on the stream
 buffer = rmm.DeviceBuffer(size=1000, stream=stream)
 
-# Use the pointer immediately in a CuPy operation on the same stream
-# This is SAFE - no synchronization needed
-with stream:
-    array = cp.ndarray(shape=(250,), dtype=cp.float32,
-                       memptr=cp.cuda.MemoryPointer(
-                           cp.cuda.UnownedMemory(buffer.ptr, buffer.size, buffer),
-                           0))
-    # Kernel launches on this stream will see the allocated memory
-    array[:] = 42
+# The pointer (buffer.ptr) is available immediately and can be passed to
+# stream-ordered operations (e.g., kernel launches) on the same stream
+# without synchronization.
 ```
 
 The allocation is guaranteed to complete before the kernel that uses it, as long as both are on the same stream.
@@ -86,8 +82,9 @@ When you deallocate (e.g., a buffer goes out of scope), the deallocation is also
 
 ```python
 import rmm
+from rmm.pylibrmm.stream import Stream
 
-stream = rmm.cuda_stream()
+stream = Stream()
 
 # Allocate
 buffer = rmm.DeviceBuffer(size=1000, stream=stream)
@@ -110,8 +107,9 @@ To guarantee that an allocation has completed (for example, if you need to acces
 
 ```python
 import rmm
+from rmm.pylibrmm.stream import Stream
 
-stream = rmm.cuda_stream()
+stream = Stream()
 buffer = rmm.DeviceBuffer(size=1000, stream=stream)
 
 # Synchronize to ensure allocation completes
@@ -131,20 +129,15 @@ stream.synchronize()
 - **`CudaMemoryResource`**: NOT stream-ordered (synchronous `cudaMalloc`)
 - **`ManagedMemoryResource`**: NOT stream-ordered (synchronous `cudaMallocManaged`)
 
-### Example: Pool Wrapping Async MR
+### Example
 
 ```python
 import rmm
+from rmm.pylibrmm.stream import Stream
 
-# Create a pool that maintains stream-ordered semantics
-pool = rmm.mr.PoolMemoryResource(
-    rmm.mr.CudaAsyncMemoryResource(),  # stream-ordered upstream
-    initial_pool_size=2**30
-)
-rmm.mr.set_current_device_resource(pool)
+rmm.mr.set_current_device_resource(rmm.mr.CudaAsyncMemoryResource())
 
-# Allocations from this pool are stream-ordered
-stream = rmm.cuda_stream()
+stream = Stream()
 buffer = rmm.DeviceBuffer(size=1000, stream=stream)
 ```
 
@@ -154,6 +147,7 @@ buffer = rmm.DeviceBuffer(size=1000, stream=stream)
 
 ```python
 import rmm
+from rmm.pylibrmm.stream import Stream
 from numba import cuda
 
 @cuda.jit
@@ -162,14 +156,14 @@ def kernel(data, n):
     if idx < n:
         data[idx] = idx * 2
 
-stream = rmm.cuda_stream()
+stream = Stream()
 
 # Allocate
 buffer = rmm.DeviceBuffer(size=1000 * 4, stream=stream)  # 1000 float32s
 
-# Use immediately
-with stream:
-    kernel[100, 10](cuda.as_cuda_array(buffer).view('float32'), 1000)
+# Launch kernel on the same stream
+numba_stream = cuda.external_stream(stream.__cuda_stream__()[1])
+kernel[100, 10, numba_stream](cuda.as_cuda_array(buffer).view('float32'), 1000)
 
 # Synchronize to wait for kernel
 stream.synchronize()
@@ -179,8 +173,9 @@ stream.synchronize()
 
 ```python
 import rmm
+from rmm.pylibrmm.stream import Stream
 
-stream = rmm.cuda_stream()
+stream = Stream()
 
 for i in range(100):
     # Allocate
@@ -200,9 +195,10 @@ for i in range(100):
 
 ```python
 import rmm
+from rmm.pylibrmm.stream import Stream
 
 # Create multiple streams
-streams = [rmm.cuda_stream() for _ in range(4)]
+streams = [Stream() for _ in range(4)]
 
 # Allocate on different streams independently
 buffers = []
@@ -232,8 +228,10 @@ for stream in streams:
 1. **Don't mix streams**: Using memory allocated on stream A in operations on stream B requires synchronization:
 
    ```python
-   stream_a = rmm.cuda_stream()
-   stream_b = rmm.cuda_stream()
+   from rmm.pylibrmm.stream import Stream
+
+   stream_a = Stream()
+   stream_b = Stream()
 
    # Allocate on stream A
    buffer = rmm.DeviceBuffer(size=1000, stream=stream_a)
@@ -241,15 +239,15 @@ for stream in streams:
    # To use on stream B, synchronize stream A first
    stream_a.synchronize()
 
-   # Now safe to use on stream B
-   with stream_b:
-       # ... operations using buffer ...
+   # Now safe to use buffer in operations on stream B
    ```
 
 2. **Don't access from CPU without sync**: Stream-ordered allocations are asynchronous - accessing from CPU requires synchronization:
 
    ```python
-   stream = rmm.cuda_stream()
+   from rmm.pylibrmm.stream import Stream
+
+   stream = Stream()
    buffer = rmm.DeviceBuffer(size=1000, stream=stream)
 
    # BAD: May access uninitialized memory
@@ -263,7 +261,9 @@ for stream in streams:
 3. **Resource lifetime**: Ensure buffers live until all stream operations complete:
 
    ```python
-   stream = rmm.cuda_stream()
+   from rmm.pylibrmm.stream import Stream
+
+   stream = Stream()
 
    def allocate_and_use():
        buffer = rmm.DeviceBuffer(size=1000, stream=stream)
@@ -279,7 +279,9 @@ for stream in streams:
    Fix: Keep buffer alive until synchronization:
 
    ```python
-   stream = rmm.cuda_stream()
+   from rmm.pylibrmm.stream import Stream
+
+   stream = Stream()
    buffer = allocate_and_use()  # Return the buffer
    stream.synchronize()  # Now safe
    buffer = None  # Explicit cleanup after sync
