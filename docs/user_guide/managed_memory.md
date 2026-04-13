@@ -2,7 +2,7 @@
 
 CUDA Managed Memory (also called Unified Memory) provides a single address space accessible from both CPU and GPU. The CUDA driver migrates pages between host and device memory on demand, which means you can work with datasets larger than GPU memory or share data between host and device code without explicit copies.
 
-RMM's `ManagedMemoryResource` allocates managed memory via `cudaMallocManaged`. For background on how Unified Memory works at the driver level, see the [CUDA Programming Guide: Unified Memory](https://docs.nvidia.com/cuda/cuda-c-programming-guide/#unified-memory-programming).
+RMM's {cpp:class}`~rmm::mr::managed_memory_resource` (C++) / {py:class}`~rmm.mr.ManagedMemoryResource` (Python) allocates managed memory via `cudaMallocManaged`. For background on how Unified Memory works at the driver level, see the [CUDA Programming Guide: Unified Memory](https://docs.nvidia.com/cuda/cuda-c-programming-guide/#unified-memory-programming).
 
 The main trade-off is performance: on-demand page migration introduces latency from page faults. For production workloads, combining managed memory with prefetching (described below) is essential to avoid this overhead.
 
@@ -14,7 +14,7 @@ Prefetching migrates data to the GPU ahead of time so that kernels find it alrea
 
 ### Prefetch on Allocate (Eager)
 
-`PrefetchResourceAdaptor` wraps another resource and prefetches each allocation to the current device as soon as it's made. This works well when data is used on the GPU shortly after allocation, such as when copying or writing to the new allocation:
+{cpp:class}`~rmm::mr::prefetch_resource_adaptor` (C++) / {py:class}`~rmm.mr.PrefetchResourceAdaptor` (Python) wraps another resource and prefetches each allocation to the current device as soon as it's made. This works well when data is used on the GPU shortly after allocation, such as when copying or writing to the new allocation:
 
 ```python
 import rmm

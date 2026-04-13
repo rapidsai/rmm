@@ -90,7 +90,7 @@ mr = rmm.mr.get_current_device_resource()
 
 ### Available Resources
 
-RMM provides base memory resources (e.g., `CudaAsyncMemoryResource`, `ManagedMemoryResource`) and resource adaptors (e.g., `PoolMemoryResource`, `StatisticsResourceAdaptor`) that wrap an upstream resource to add functionality. See [Choosing a Memory Resource](choosing_memory_resources.md) for recommendations and the API references ([C++](../cpp/memory_resources/index.md), [Python](../python/index.md)) for the full list.
+RMM provides base memory resources (e.g., {py:class}`~rmm.mr.CudaAsyncMemoryResource`, {py:class}`~rmm.mr.ManagedMemoryResource`) and resource adaptors (e.g., {py:class}`~rmm.mr.PoolMemoryResource`, {py:class}`~rmm.mr.StatisticsResourceAdaptor`) that wrap an upstream resource to add functionality. See [Choosing a Memory Resource](choosing_memory_resources.md) for recommendations and the API references ([C++ memory resources](../cpp/memory_resources/memory_resources.md), [C++ adaptors](../cpp/memory_resources/memory_resource_adaptors.md), [Python](../python/mr.md)) for the full list.
 
 ## Containers
 
@@ -98,7 +98,7 @@ RMM provides RAII containers that automatically manage device memory lifetime.
 
 ### DeviceBuffer
 
-Untyped, uninitialized device memory:
+Untyped, uninitialized device memory ({cpp:class}`C++ <rmm::device_buffer>`, {py:class}`Python <rmm.DeviceBuffer>`):
 
 `````{tabs}
 ````{code-tab} c++
@@ -139,7 +139,7 @@ buffer2 = buffer.copy()
 
 ### device_uvector (C++)
 
-Typed, uninitialized device vector for trivially copyable types:
+Typed, uninitialized device vector for trivially copyable types ({cpp:class}`API <rmm::device_uvector>`):
 
 ```cpp
 #include <rmm/device_uvector.hpp>
@@ -167,7 +167,7 @@ vec.resize(200, stream.view());
 
 ### device_scalar (C++)
 
-Single typed element with host-device transfer convenience:
+Single typed element with host-device transfer convenience ({cpp:class}`API <rmm::device_scalar>`):
 
 ```cpp
 #include <rmm/device_scalar.hpp>
@@ -312,7 +312,7 @@ Order matters: outer adaptors see all allocations from inner resources.
 
 ### Thrust (C++)
 
-Use `rmm::exec_policy_nosync` to make Thrust algorithms use RMM for temporary storage. Passing the resource explicitly makes it clear which resource handles temporaries:
+Use {cpp:class}`rmm::exec_policy_nosync` to make Thrust algorithms use RMM for temporary storage. Passing the resource explicitly makes it clear which resource handles temporaries:
 
 ```cpp
 #include <rmm/exec_policy.hpp>
@@ -339,7 +339,7 @@ stream.synchronize();
 
 ### CuPy (Python)
 
-Configure CuPy to use RMM for all device memory allocations:
+Configure CuPy to use RMM for all device memory allocations ({py:func}`API <rmm.allocators.cupy.rmm_cupy_allocator>`):
 
 ```python
 import rmm
@@ -359,7 +359,7 @@ array = cp.zeros(1000)
 
 ### Numba (Python)
 
-Configure Numba to use RMM for device memory in CUDA JIT-compiled functions:
+Configure Numba to use RMM for device memory in CUDA JIT-compiled functions ({py:class}`API <rmm.allocators.numba.RMMNumbaManager>`):
 
 ```python
 from numba import cuda
@@ -382,7 +382,7 @@ NUMBA_CUDA_MEMORY_MANAGER=rmm.allocators.numba python script.py
 
 ### PyTorch (Python)
 
-Configure PyTorch to use RMM for CUDA tensor allocations:
+Configure PyTorch to use RMM for CUDA tensor allocations ({py:func}`API <rmm.allocators.torch.rmm_torch_allocator>`):
 
 ```python
 import rmm

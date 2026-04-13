@@ -10,20 +10,20 @@ RMM provides integrations with GPU libraries including cuDF, cuML, cuGraph, PyTo
 
 ### Memory Resources
 
-A memory resource is an object that knows how to allocate and deallocate memory. The choice of resource determines the kind of memory (device, host, managed, pinned) and the allocation strategy (pooled, stream-ordered, etc.). RMM's resources implement the `cuda::mr::resource` concept defined by [CCCL](https://github.com/NVIDIA/cccl) (CUDA Core Compute Libraries), so they interoperate directly with any library that accepts CCCL resources.
+A memory resource is an object that knows how to allocate and deallocate memory. The choice of resource determines the kind of memory (device, host, managed, pinned) and the allocation strategy (pooled, stream-ordered, etc.). RMM's resources implement the `cuda::mr::resource` concept defined by [CCCL](https://github.com/NVIDIA/cccl) (CUDA Core Compute Libraries), so they interoperate directly with any library that accepts CCCL resources. See the API references for the full list ([C++ memory resources](../cpp/memory_resources/memory_resources.md), [C++ adaptors](../cpp/memory_resources/memory_resource_adaptors.md), [Python](../python/mr.md)).
 
-For most applications, the CUDA async memory resource (`rmm::mr::cuda_async_memory_resource` in C++, `rmm.mr.CudaAsyncMemoryResource` in Python) is a good starting point — it uses a CUDA driver-managed pool and supports stream-ordered (asynchronous) allocations. See [Choosing a Memory Resource](choosing_memory_resources.md) for guidance on when to use other resources.
+For most applications, the CUDA async memory resource ({cpp:class}`~rmm::mr::cuda_async_memory_resource` in C++, {py:class}`~rmm.mr.CudaAsyncMemoryResource` in Python) is a good starting point — it uses a CUDA driver-managed pool and supports stream-ordered (asynchronous) allocations. See [Choosing a Memory Resource](choosing_memory_resources.md) for guidance on when to use other resources.
 
 ### Resource Adaptors
 
-Resource adaptors wrap an existing resource to add functionality. For example, `StatisticsResourceAdaptor` tracks allocation statistics, and `LoggingResourceAdaptor` logs allocations to a CSV file. Adaptors are composable — you can stack several to get combined functionality. See [Logging and Profiling](logging.md) for details.
+Resource adaptors wrap an existing resource to add functionality. For example, {py:class}`~rmm.mr.StatisticsResourceAdaptor` tracks allocation statistics, and {py:class}`~rmm.mr.LoggingResourceAdaptor` logs allocations to a CSV file. Adaptors are composable — you can stack several to get combined functionality. See [Logging and Profiling](logging.md) for details and the API references for the full list ([C++](../cpp/memory_resources/memory_resource_adaptors.md), [Python](../python/mr.md)).
 
 ### Containers
 
 RMM provides [RAII](https://en.cppreference.com/w/cpp/language/raii.html) containers that manage device memory lifetime, avoiding common problems like memory leaks or improper stream ordering:
 
-- C++: `device_buffer` (untyped), `device_uvector<T>` (typed, uninitialized), `device_scalar<T>` (single element)
-- Python: `DeviceBuffer` (untyped)
+- C++: {cpp:class}`~rmm::device_buffer` (untyped), {cpp:class}`~rmm::device_uvector` (typed, uninitialized), {cpp:class}`~rmm::device_scalar` (single element)
+- Python: {py:class}`~rmm.DeviceBuffer` (untyped)
 
 All containers accept a stream and a memory resource, and use stream-ordered allocation.
 

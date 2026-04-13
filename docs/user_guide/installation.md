@@ -18,6 +18,8 @@ Install the latest stable release:
 conda install -c rapidsai -c conda-forge rmm cuda-version=13
 ```
 
+The `cuda-version` metapackage selects the CUDA Toolkit major version, and requires a CUDA driver to be installed from that major version or newer.
+
 ### Nightly Builds
 
 For the latest development version, install from the nightly channel:
@@ -26,7 +28,7 @@ For the latest development version, install from the nightly channel:
 conda install -c rapidsai-nightly -c conda-forge rmm cuda-version=13
 ```
 
-Nightly builds are created from the `main` branch and may contain unreleased features or bug fixes.
+Nightly builds are created from the `main` branch and may contain unreleased features or bug fixes. They provide no stability guarantees.
 
 ## Installing with pip
 

@@ -1,6 +1,6 @@
 # Stream-Ordered Memory Allocation
 
-RMM containers and memory resources are stream-ordered: allocations and deallocations are enqueued on a CUDA stream rather than blocking the CPU. This lets memory operations overlap with kernel execution and avoids the synchronization cost of `cudaMalloc`/`cudaFree`. For background on CUDA streams and asynchronous execution, see the [CUDA Programming Guide: Asynchronous Concurrent Execution](https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/asynchronous-execution.html#what-is-asynchronous-concurrent-execution).
+RMM containers ({cpp:class}`~rmm::device_buffer`, {py:class}`~rmm.DeviceBuffer`) and [memory resources](../python/mr.md) are stream-ordered: allocations and deallocations are enqueued on a CUDA stream rather than blocking the CPU. This lets memory operations overlap with kernel execution and avoids the synchronization cost of `cudaMalloc`/`cudaFree`. For background on CUDA streams and asynchronous execution, see the [CUDA Programming Guide: Asynchronous Concurrent Execution](https://docs.nvidia.com/cuda/cuda-programming-guide/02-basics/asynchronous-execution.html#what-is-asynchronous-concurrent-execution).
 
 ## How It Works
 
@@ -190,11 +190,11 @@ del buffer
 
 ## Which Resources Support Stream Ordering?
 
-- **`CudaAsyncMemoryResource`**: Fully stream-ordered (recommended)
-- **`PoolMemoryResource`**: Internally stream-safe — suballocations are mutex-protected, independent of upstream
-- **`ArenaMemoryResource`**: Internally stream-safe — uses per-stream arenas, independent of upstream
-- **`CudaMemoryResource`**: NOT stream-ordered (`cudaMalloc` is synchronous)
-- **`ManagedMemoryResource`**: NOT stream-ordered (`cudaMallocManaged` is synchronous)
+- **{py:class}`~rmm.mr.CudaAsyncMemoryResource`**: Fully stream-ordered (recommended)
+- **{py:class}`~rmm.mr.PoolMemoryResource`**: Internally stream-safe — suballocations are mutex-protected, independent of upstream
+- **{py:class}`~rmm.mr.ArenaMemoryResource`**: Internally stream-safe — uses per-stream arenas, independent of upstream
+- **{py:class}`~rmm.mr.CudaMemoryResource`**: NOT stream-ordered (`cudaMalloc` is synchronous)
+- **{py:class}`~rmm.mr.ManagedMemoryResource`**: NOT stream-ordered (`cudaMallocManaged` is synchronous)
 
 ## Example: Numba Kernel with RMM Stream
 

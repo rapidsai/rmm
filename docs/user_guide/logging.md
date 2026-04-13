@@ -1,6 +1,10 @@
 # Logging and Profiling
 
-RMM provides two types of logging: **memory event logging** for tracking allocations and deallocations, and **debug logging** for troubleshooting internal behavior.
+RMM provides adaptors for tracking memory allocations and deallocations.
+
+The {cpp:class}`~rmm::mr::logging_resource_adaptor` / {py:class}`~rmm.mr.LoggingResourceAdaptor` will produce a CSV file of all allocations/deallocations with timestamps and stream IDs.
+
+The {cpp:class}`~rmm::mr::statistics_resource_adaptor` / {py:class}`~rmm.mr.StatisticsResourceAdaptor`, and {py:mod}`rmm.statistics`, can be used to track allocation statistics such as peak memory and total memory.
 
 ## Memory Event Logging
 
