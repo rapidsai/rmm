@@ -105,13 +105,12 @@ RMM_EXPORT inline auto& get_ref_map()
  */
 inline device_async_resource_ref get_per_device_resource_ref(cuda_device_id device_id)
 {
-  using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
   std::lock_guard<std::mutex> lock{detail::ref_map_lock()};
   auto& map = detail::get_ref_map();
   // If a resource was never set for `id`, set to the initial resource
   auto const found = map.find(device_id.value());
   if (found == map.end()) {
-    auto item = map.emplace(device_id.value(), any_device_resource{detail::initial_resource()});
+    auto item = map.emplace(device_id.value(), detail::initial_resource());
     return device_async_resource_ref{item.first->second};
   }
   return device_async_resource_ref{found->second};
@@ -144,13 +143,12 @@ inline device_async_resource_ref get_per_device_resource_ref(cuda_device_id devi
 inline cuda::mr::any_resource<cuda::mr::device_accessible> set_per_device_resource(
   cuda_device_id device_id, cuda::mr::any_resource<cuda::mr::device_accessible> new_resource)
 {
-  using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
   std::lock_guard<std::mutex> lock{detail::ref_map_lock()};
   auto& map          = detail::get_ref_map();
   auto const old_itr = map.find(device_id.value());
   if (old_itr == map.end()) {
     map.emplace(device_id.value(), std::move(new_resource));
-    return any_device_resource{detail::initial_resource()};
+    return {detail::initial_resource()};
   }
   return std::exchange(old_itr->second, std::move(new_resource));
 }
@@ -294,8 +292,7 @@ set_current_device_resource_ref(device_async_resource_ref new_resource_ref)
 inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_per_device_resource(
   cuda_device_id device_id)
 {
-  return set_per_device_resource(
-    device_id, cuda::mr::any_resource<cuda::mr::device_accessible>{detail::initial_resource()});
+  return set_per_device_resource(device_id, {detail::initial_resource()});
 }
 
 /**
