@@ -1,142 +1,50 @@
 # Introduction to RMM
 
-**RMM (RAPIDS Memory Manager)** is a library for allocating and managing GPU memory in C++ and Python. It provides a flexible interface for customizing how device memory is allocated, along with efficient implementations and containers.
+RMM (RAPIDS Memory Manager) is a C++ and Python library for GPU memory allocation. It provides a common interface — the **memory resource** — that lets you swap allocation strategies at runtime without recompiling, and a set of containers that manage device memory lifetime automatically.
 
-## Purpose
+GPU applications often benefit from customizing how memory is allocated. For example, pooling reduces the overhead of frequent small allocations, managed memory enables working with datasets larger than GPU memory, and pinned host memory speeds up CPU-GPU transfers compared to pageable host memory. RMM provides these and other features as interchangeable memory resources, so you can experiment with different strategies and measure their impact on your workload.
 
-Achieving optimal performance in GPU-accelerated applications frequently requires customizing memory allocation strategies. For example:
+RMM provides integrations with GPU libraries including cuDF, cuML, cuGraph, PyTorch, and CuPy, enabling uniform memory handling across your application.
 
-- Using **memory pools** to reduce the overhead of dynamic allocation
-- Using **managed memory** to work with datasets larger than GPU memory
-- Using **pinned host memory** for faster asynchronous CPU ↔ GPU transfers
-- Customizing allocation strategies for specific workload patterns
+## Key Concepts
 
-RMM provides a unified interface, called a **memory resource**, which is a building block for GPU-accelerated applications.
+### Memory Resources
 
-Memory resources provide a **minimal-overhead abstraction** over memory allocation that is **pluggable at runtime**, making it possible to debug, measure performance, and optimize a CUDA application without recompiling.
-Memory resources aim to serve the needs of a wide range of applications, from data science and machine learning to high-performance simulation.
+A memory resource is an object that knows how to allocate and deallocate memory. The choice of resource determines the kind of memory (device, host, managed, pinned) and the allocation strategy (pooled, stream-ordered, etc.). RMM's resources implement the `cuda::mr::resource` concept defined by [CCCL](https://github.com/NVIDIA/cccl) (CUDA Core Compute Libraries), so they interoperate directly with any library that accepts CCCL resources.
 
-RMM's memory resources leverage CUDA features like **stream-ordered** (asynchronous) pipeline parallelism, **managed** memory (also known as unified virtual memory, UVM), and **pinned** memory, making it easier to write complex workflows that optimally use both device and host memory.
-The integrations provided in RMM allow memory resources to benefit memory management across libraries frequently used together, such as **PyTorch** and **RAPIDS**.
+For most applications, the CUDA async memory resource (`rmm::mr::cuda_async_memory_resource` in C++, `rmm.mr.CudaAsyncMemoryResource` in Python) is a good starting point — it uses a CUDA driver-managed pool and supports stream-ordered (asynchronous) allocations. See [Choosing a Memory Resource](choosing_memory_resources.md) for guidance on when to use other resources.
 
-## Key Features
+### Resource Adaptors
 
-RMM is built around three main concepts.
+Resource adaptors wrap an existing resource to add functionality. For example, `StatisticsResourceAdaptor` tracks allocation statistics, and `LoggingResourceAdaptor` logs allocations to a CSV file. Adaptors are composable — you can stack several to get combined functionality. See [Logging and Profiling](logging.md) for details.
 
-### 1. Memory Resources
+### Containers
 
-Memory resources provide a common abstraction for device memory allocation.
-The API of RMM's memory resources is based on the CCCL memory resource design to facilitate interoperability.
+RMM provides [RAII](https://en.cppreference.com/w/cpp/language/raii.html) containers that manage device memory lifetime, avoiding common problems like memory leaks or improper stream ordering:
 
-The choice of resource determines the underlying type of memory and thus its accessibility from host or device.
-For example, the `cuda_async_memory_resource` uses a pool of memory managed by the CUDA driver.
-This resource is recommended for most applications, because of its performance and support for asynchrous (stream-ordered) allocations. See [Stream-Ordered Allocation](stream_ordered_allocation.md) for details.
-As another example, the `managed_memory_resource` provides unified memory for CPU+GPU, and is recommended for applications exceeding the available GPU memory.
+- C++: `device_buffer` (untyped), `device_uvector<T>` (typed, uninitialized), `device_scalar<T>` (single element)
+- Python: `DeviceBuffer` (untyped)
 
-See [Choosing a Memory Resource](choosing_memory_resources.md) for guidance on the available memory resources, performance considerations, and how they fit into efficient CUDA application design strategies.
-[NVIDIA Nsight™ Systems](https://developer.nvidia.com/nsight-systems) can be used to profile memory resource performance.
-
-### 2. Resource Adaptors
-
-Resource adaptors wrap and add functionality to existing resources.
-For example, the `statistics_resource_adaptor` can be used to track allocation statistics.
-The `logging_resource_adaptor` logs allocations to a CSV file.
-Adaptors are composable - wrap multiple adaptors for combined functionality.
-
-### 3. Containers
-
-RMM provides [RAII](https://en.cppreference.com/w/cpp/language/raii.html) container classes that manage memory lifetime.
-Using these containers avoids common problems with performing raw allocation such as memory leaks or improper stream ordering.
-- `device_buffer`: Untyped device memory
-- `device_uvector<T>`: Typed, uninitialized vector of device memory (trivially copyable types)
-- `device_scalar<T>`: Single typed element
-
-All containers use stream-ordered allocation and work with any memory resource.
+All containers accept a stream and a memory resource, and use stream-ordered allocation.
 
 ## Basic Example
 
-### C++
-
-```cpp
+`````{tabs}
+````{code-tab} c++
 #include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/device_buffer.hpp>
 
-// Use CUDA async memory pool
-auto async_mr = rmm::mr::cuda_async_memory_resource{};
-rmm::mr::set_current_device_resource_ref(async_mr);
-
-// Allocate device memory asynchronously
+rmm::mr::cuda_async_memory_resource mr;
 rmm::cuda_stream stream;
-rmm::device_buffer buffer(1024, stream.view());
-stream.synchronize();
-```
-
-### Python
-
-```python
+rmm::device_buffer buffer(1024, stream.view(), mr);
+````
+````{code-tab} python
 import rmm
 
-# Use CUDA async memory pool
 mr = rmm.mr.CudaAsyncMemoryResource()
-rmm.mr.set_current_device_resource(mr)
-
-# Allocate device memory
-buffer = rmm.DeviceBuffer(size=1024)
-```
-
-## Integration with GPU Libraries
-
-RMM integrates seamlessly with popular GPU libraries:
-
-### PyTorch
-
-Set the PyTorch allocator to use the current device resource:
-
-```python
-import rmm
-import torch
-from rmm.allocators.torch import rmm_torch_allocator
-
-mr = rmm.mr.CudaAsyncMemoryResource()
-rmm.mr.set_current_device_resource(mr)
-torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
-```
-
-### CuPy
-
-Set the CuPy allocator to use the current device resource:
-
-```python
-import rmm
-import cupy
-from rmm.allocators.cupy import rmm_cupy_allocator
-
-mr = rmm.mr.CudaAsyncMemoryResource()
-rmm.mr.set_current_device_resource(mr)
-cupy.cuda.set_allocator(rmm_cupy_allocator)
-
-# CuPy allocations now use RMM
-array = cupy.zeros(1000)
-```
-
-### Numba
-
-When launching a script:
-```bash
-NUMBA_CUDA_MEMORY_MANAGER=rmm.allocators.numba python script.py
-```
-
-Or from Python:
-
-```python
-import rmm
-from numba import cuda
-from rmm.allocators.numba import RMMNumbaManager
-
-mr = rmm.mr.CudaAsyncMemoryResource()
-rmm.mr.set_current_device_resource(mr)
-cuda.set_memory_manager(RMMNumbaManager)
-```
+buffer = rmm.DeviceBuffer(size=1024, mr=mr)
+````
+`````
 
 ## Resources and Support
 
