@@ -50,9 +50,7 @@ TEST(DefaultTest, GetCurrentDeviceResourceRef)
 
 TEST(DefaultTest, SetCurrentDeviceResourceRef)
 {
-  rmm::mr::cuda_memory_resource cuda_mr{};
-
-  rmm::mr::set_current_device_resource_ref(cuda_mr);
+  rmm::mr::set_current_device_resource(rmm::mr::cuda_memory_resource{});
 
   auto ref = rmm::mr::get_current_device_resource_ref();
 
@@ -64,7 +62,7 @@ TEST(DefaultTest, SetCurrentDeviceResourceRef)
 
   ref.deallocate_sync(ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
-  rmm::mr::reset_current_device_resource_ref();
+  rmm::mr::reset_current_device_resource();
 }
 
 // Multi-threaded default resource tests

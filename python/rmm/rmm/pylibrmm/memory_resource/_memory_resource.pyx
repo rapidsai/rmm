@@ -30,7 +30,7 @@ from rmm.pylibrmm.stream import DEFAULT_STREAM
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 from rmm.librmm.per_device_resource cimport (
     cuda_device_id,
-    set_per_device_resource_ref as cpp_set_per_device_resource_ref,
+    set_per_device_resource as cpp_set_per_device_resource,
 )
 from rmm.pylibrmm.helper cimport parse_bytes
 
@@ -1101,7 +1101,10 @@ cpdef set_per_device_resource(int device, DeviceMemoryResource mr):
     cdef unique_ptr[cuda_device_id] device_id = \
         make_unique[cuda_device_id](device)
 
-    cpp_set_per_device_resource_ref(deref(device_id), mr.c_ref.value())
+    cpp_set_per_device_resource(
+        deref(device_id),
+        make_any_device_resource(mr.c_ref.value())
+    )
 
 
 cpdef set_current_device_resource(DeviceMemoryResource mr):

@@ -122,8 +122,7 @@ TEST(PoolTest, NonAlignedPoolSize)
 
 TEST(PoolTest, UpstreamDoesntSupportMemInfo)
 {
-  cuda_mr cuda;
-  pool_mr mr1{cuda, 0};
+  pool_mr mr1{cuda_mr{}, 0};
   pool_mr mr2{mr1, 0};
   auto* ptr = mr2.allocate_sync(1024);
   mr2.deallocate_sync(ptr, 1024);
@@ -146,7 +145,7 @@ TEST(PoolTest, MultidevicePool)
     for (int i = 0; i < devices; ++i) {
       RMM_CUDA_TRY(cudaSetDevice(i));
       auto mr = pool_mr{general_mr, pool_size, pool_size};
-      rmm::mr::set_per_device_resource_ref(rmm::cuda_device_id{i}, mr);
+      rmm::mr::set_per_device_resource(rmm::cuda_device_id{i}, mr);
       mrs.emplace_back(mr);
     }
 

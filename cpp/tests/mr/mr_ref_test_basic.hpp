@@ -13,11 +13,8 @@ namespace rmm::test {
 
 TEST_P(mr_ref_test, SetCurrentDeviceResourceRef)
 {
-  rmm::mr::cuda_memory_resource cuda_mr{};
-  auto cuda_ref = rmm::device_async_resource_ref{cuda_mr};
-
-  rmm::mr::set_current_device_resource_ref(cuda_ref);
-  auto old = rmm::mr::set_current_device_resource_ref(this->ref);
+  rmm::mr::set_current_device_resource(rmm::mr::cuda_memory_resource{});
+  auto old = rmm::mr::set_current_device_resource(this->ref);
 
   // Old ref should be functional (verify by successful allocation)
   constexpr std::size_t size{100};
@@ -34,7 +31,7 @@ TEST_P(mr_ref_test, SetCurrentDeviceResourceRef)
   test_get_current_device_resource_ref();
 
   // Resetting should reset to initial cuda resource
-  rmm::mr::reset_current_device_resource_ref();
+  rmm::mr::reset_current_device_resource();
   // Verify reset worked by checking allocation succeeds with initial resource
   current = rmm::mr::get_current_device_resource_ref();
   ptr     = current.allocate(rmm::cuda_stream_default, size, rmm::CUDA_ALLOCATION_ALIGNMENT);

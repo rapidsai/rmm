@@ -49,8 +49,7 @@ inline any_device_resource make_pool(std::size_t simulated_size)
     rmm::mr::simulated_memory_resource sim{simulated_size};
     return rmm::mr::pool_memory_resource{sim, simulated_size, simulated_size};
   }
-  rmm::mr::cuda_memory_resource cuda{};
-  return rmm::mr::pool_memory_resource{cuda, 0};
+  return rmm::mr::pool_memory_resource{rmm::mr::cuda_memory_resource{}, 0};
 }
 
 inline any_device_resource make_arena(std::size_t simulated_size)
