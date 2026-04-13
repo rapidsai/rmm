@@ -158,6 +158,8 @@ inline cuda::mr::any_resource<cuda::mr::device_accessible> set_per_device_resour
 /**
  * @brief Set the `device_async_resource_ref` for the specified device to `new_resource_ref`
  *
+ * @deprecated Use `set_per_device_resource` instead.
+ *
  * `device_id.value()` must be in the range `[0, cudaGetDeviceCount())`, otherwise behavior is
  * undefined.
  *
@@ -180,8 +182,9 @@ inline cuda::mr::any_resource<cuda::mr::device_accessible> set_per_device_resour
  * @param new_resource_ref new `device_async_resource_ref` to use as new resource for `device_id`
  * @return An owning `any_resource` holding the previous resource for `device_id`
  */
-inline cuda::mr::any_resource<cuda::mr::device_accessible> set_per_device_resource_ref(
-  cuda_device_id device_id, device_async_resource_ref new_resource_ref)
+[[deprecated("Use set_per_device_resource instead.")]]  //
+inline cuda::mr::any_resource<cuda::mr::device_accessible>
+set_per_device_resource_ref(cuda_device_id device_id, device_async_resource_ref new_resource_ref)
 {
   return set_per_device_resource(
     device_id, cuda::mr::any_resource<cuda::mr::device_accessible>{new_resource_ref});
@@ -242,6 +245,8 @@ inline cuda::mr::any_resource<cuda::mr::device_accessible> set_current_device_re
 /**
  * @brief Set the `device_async_resource_ref` for the current device.
  *
+ * @deprecated Use `set_current_device_resource` instead.
+ *
  * The "current device" is the device returned by `cudaGetDevice`.
  *
  * The object referenced by `new_resource_ref` must outlive the last use of the resource, otherwise
@@ -261,51 +266,104 @@ inline cuda::mr::any_resource<cuda::mr::device_accessible> set_current_device_re
  * @param new_resource_ref New `device_async_resource_ref` to use for the current device
  * @return An owning `any_resource` holding the previous resource for the current device
  */
-inline cuda::mr::any_resource<cuda::mr::device_accessible> set_current_device_resource_ref(
-  device_async_resource_ref new_resource_ref)
+[[deprecated("Use set_current_device_resource instead.")]]  //
+inline cuda::mr::any_resource<cuda::mr::device_accessible>
+set_current_device_resource_ref(device_async_resource_ref new_resource_ref)
 {
   return set_current_device_resource(
     cuda::mr::any_resource<cuda::mr::device_accessible>{new_resource_ref});
 }
 
 /**
+ * @brief Reset the memory resource for the specified device to the initial resource.
+ *
+ * Resets to the initial `cuda_memory_resource`.
+ *
+ * `device_id.value()` must be in the range `[0, cudaGetDeviceCount())`, otherwise behavior is
+ * undefined.
+ *
+ * This function is thread-safe with respect to concurrent calls to `set_per_device_resource`,
+ * `set_per_device_resource_ref`, `get_per_device_resource_ref`,
+ * `get_current_device_resource_ref`, `set_current_device_resource`,
+ * `set_current_device_resource_ref` and `reset_current_device_resource_ref`. Concurrent calls to
+ * any of these functions will result in a valid state, but the order of execution is undefined.
+ *
+ * @param device_id The id of the target device
+ * @return An owning `any_resource` holding the previous resource for `device_id`
+ */
+inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_per_device_resource(
+  cuda_device_id device_id)
+{
+  return set_per_device_resource(
+    device_id, cuda::mr::any_resource<cuda::mr::device_accessible>{detail::initial_resource()});
+}
+
+/**
+ * @brief Reset the memory resource for the current device to the initial resource.
+ *
+ * Resets to the initial `cuda_memory_resource`. The "current device" is the device returned by
+ * `cudaGetDevice`.
+ *
+ * This function is thread-safe with respect to concurrent calls to `set_per_device_resource`,
+ * `set_per_device_resource_ref`, `get_per_device_resource_ref`,
+ * `get_current_device_resource_ref`, `set_current_device_resource`,
+ * `set_current_device_resource_ref` and `reset_current_device_resource_ref`. Concurrent calls to
+ * any of these functions will result in a valid state, but the order of execution is undefined.
+ *
+ * @return An owning `any_resource` holding the previous resource for the current device
+ */
+inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_current_device_resource()
+{
+  return reset_per_device_resource(rmm::get_current_cuda_device());
+}
+
+/**
  * @brief Reset the `device_async_resource_ref` for the specified device to the initial resource.
+ *
+ * @deprecated Use `reset_per_device_resource` instead.
  *
  * Resets to a reference to the initial `cuda_memory_resource`.
  *
  * `device_id.value()` must be in the range `[0, cudaGetDeviceCount())`, otherwise behavior is
  * undefined.
  *
- * This function is thread-safe with respect to concurrent calls to `set_per_device_resource_ref`,
- * `get_per_device_resource_ref`, `get_current_device_resource_ref`,
- * `set_current_device_resource_ref` and `reset_current_device_resource_ref. Concurrent calls to any
- * of these functions will result in a valid state, but the order of execution is undefined.
+ * This function is thread-safe with respect to concurrent calls to `set_per_device_resource`,
+ * `set_per_device_resource_ref`, `get_per_device_resource_ref`,
+ * `get_current_device_resource_ref`, `set_current_device_resource`,
+ * `set_current_device_resource_ref` and `reset_current_device_resource_ref`. Concurrent calls to
+ * any of these functions will result in a valid state, but the order of execution is undefined.
  *
  * @param device_id The id of the target device
  * @return An owning `any_resource` holding the previous resource for `device_id`
  */
-inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_per_device_resource_ref(
-  cuda_device_id device_id)
+[[deprecated("Use reset_per_device_resource instead.")]]  //
+inline cuda::mr::any_resource<cuda::mr::device_accessible>
+reset_per_device_resource_ref(cuda_device_id device_id)
 {
-  return set_per_device_resource_ref(device_id, detail::initial_resource());
+  return reset_per_device_resource(device_id);
 }
 
 /**
  * @brief Reset the `device_async_resource_ref` for the current device to the initial resource.
  *
+ * @deprecated Use `reset_current_device_resource` instead.
+ *
  * Resets to a reference to the initial `cuda_memory_resource`. The "current device" is the device
  * returned by `cudaGetDevice`.
  *
- * This function is thread-safe with respect to concurrent calls to `set_per_device_resource_ref`,
- * `get_per_device_resource_ref`, `get_current_device_resource_ref`,
- * `set_current_device_resource_ref` and `reset_current_device_resource_ref. Concurrent calls to any
- * of these functions will result in a valid state, but the order of execution is undefined.
+ * This function is thread-safe with respect to concurrent calls to `set_per_device_resource`,
+ * `set_per_device_resource_ref`, `get_per_device_resource_ref`,
+ * `get_current_device_resource_ref`, `set_current_device_resource`,
+ * `set_current_device_resource_ref` and `reset_current_device_resource_ref`. Concurrent calls to
+ * any of these functions will result in a valid state, but the order of execution is undefined.
  *
  * @return An owning `any_resource` holding the previous resource for the current device
  */
-inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_current_device_resource_ref()
+[[deprecated("Use reset_current_device_resource instead.")]]  //
+inline cuda::mr::any_resource<cuda::mr::device_accessible>
+reset_current_device_resource_ref()
 {
-  return reset_per_device_resource_ref(rmm::get_current_cuda_device());
+  return reset_current_device_resource();
 }
 /** @} */  // end of group
 }  // namespace mr

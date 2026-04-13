@@ -28,7 +28,7 @@ void BM_UvectorSizeConstruction(benchmark::State& state)
 {
   rmm::mr::cuda_memory_resource cuda_mr{};
   rmm::mr::pool_memory_resource mr{cuda_mr, rmm::percent_of_free_device_memory(50)};
-  rmm::mr::set_current_device_resource_ref(mr);
+  rmm::mr::set_current_device_resource(mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     rmm::device_uvector<std::int32_t> vec(static_cast<std::size_t>(state.range(0)),
@@ -38,7 +38,7 @@ void BM_UvectorSizeConstruction(benchmark::State& state)
 
   state.SetItemsProcessed(static_cast<std::int64_t>(state.iterations()));
 
-  rmm::mr::reset_current_device_resource_ref();
+  rmm::mr::reset_current_device_resource();
 }
 
 BENCHMARK(BM_UvectorSizeConstruction)
@@ -50,7 +50,7 @@ void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 {
   rmm::mr::cuda_memory_resource cuda_mr{};
   rmm::mr::pool_memory_resource mr{cuda_mr, rmm::percent_of_free_device_memory(50)};
-  rmm::mr::set_current_device_resource_ref(mr);
+  rmm::mr::set_current_device_resource(mr);
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     rmm::device_vector<std::int32_t> vec(static_cast<std::size_t>(state.range(0)));
@@ -59,7 +59,7 @@ void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 
   state.SetItemsProcessed(static_cast<std::int64_t>(state.iterations()));
 
-  rmm::mr::reset_current_device_resource_ref();
+  rmm::mr::reset_current_device_resource();
 }
 
 BENCHMARK(BM_ThrustVectorSizeConstruction)
@@ -128,7 +128,7 @@ template <typename Vector>
 void BM_VectorWorkflow(benchmark::State& state)
 {
   rmm::mr::cuda_async_memory_resource cuda_async_mr{};
-  rmm::mr::set_current_device_resource_ref(cuda_async_mr);
+  rmm::mr::set_current_device_resource(cuda_async_mr);
 
   rmm::cuda_stream input_stream;
   std::vector<rmm::cuda_stream> streams(4);
@@ -147,7 +147,7 @@ void BM_VectorWorkflow(benchmark::State& state)
   state.SetBytesProcessed(
     static_cast<std::int64_t>(static_cast<std::size_t>(state.iterations()) * bytes));
 
-  rmm::mr::reset_current_device_resource_ref();
+  rmm::mr::reset_current_device_resource();
 }
 
 BENCHMARK_TEMPLATE(BM_VectorWorkflow, thrust_vector)  // NOLINT

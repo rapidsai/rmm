@@ -64,7 +64,7 @@ static void BM_MultiStreamAllocations(benchmark::State& state, MRFactoryFunc con
 {
   auto mr = factory();
 
-  rmm::mr::set_current_device_resource_ref(mr);
+  rmm::mr::set_current_device_resource(mr);
 
   auto num_streams = state.range(0);
   auto num_kernels = state.range(1);
@@ -81,7 +81,7 @@ static void BM_MultiStreamAllocations(benchmark::State& state, MRFactoryFunc con
 
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * num_kernels));
 
-  rmm::mr::reset_current_device_resource_ref();
+  rmm::mr::reset_current_device_resource();
 }
 
 inline any_device_resource make_cuda() { return rmm::mr::cuda_memory_resource{}; }

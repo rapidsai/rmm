@@ -17,7 +17,7 @@ struct mr_ref_test_mt : public mr_ref_test {};
 TEST_P(mr_ref_test_mt, SetCurrentDeviceResourceRef_mt)
 {
   // Single thread changes default resource, then multiple threads use it
-  rmm::mr::set_current_device_resource_ref(this->ref);
+  rmm::mr::set_current_device_resource(this->ref);
   test_get_current_device_resource_ref();
 
   int device;
@@ -25,12 +25,11 @@ TEST_P(mr_ref_test_mt, SetCurrentDeviceResourceRef_mt)
 
   spawn([device]() {
     RMM_CUDA_TRY(cudaSetDevice(device));
-    // Verify the current resource is functional
     test_get_current_device_resource_ref();
   });
 
   // Resetting default resource should reset to initial
-  rmm::mr::reset_current_device_resource_ref();
+  rmm::mr::reset_current_device_resource();
   // Verify reset worked by testing allocation with initial resource
   test_get_current_device_resource_ref();
 }
@@ -52,12 +51,12 @@ TEST_P(mr_ref_test_mt, SetCurrentDeviceResourceRefPerThread_mt)
         // Verify initial resource is functional
         test_get_current_device_resource_ref();
 
-        rmm::mr::set_current_device_resource_ref(mr);
+        rmm::mr::set_current_device_resource(mr);
         // Verify newly set resource is functional
         test_get_current_device_resource_ref();
 
         // Resetting current dev resource ref should restore initial resource
-        rmm::mr::reset_current_device_resource_ref();
+        rmm::mr::reset_current_device_resource();
         // Verify reset resource is functional
         test_get_current_device_resource_ref();
       },

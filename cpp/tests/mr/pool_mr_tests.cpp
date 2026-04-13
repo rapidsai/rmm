@@ -146,7 +146,7 @@ TEST(PoolTest, MultidevicePool)
     for (int i = 0; i < devices; ++i) {
       RMM_CUDA_TRY(cudaSetDevice(i));
       auto mr = pool_mr{general_mr, pool_size, pool_size};
-      rmm::mr::set_per_device_resource_ref(rmm::cuda_device_id{i}, mr);
+      rmm::mr::set_per_device_resource(rmm::cuda_device_id{i}, mr);
       mrs.emplace_back(mr);
     }
 
