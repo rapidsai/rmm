@@ -50,9 +50,7 @@ TEST(DefaultTest, GetCurrentDeviceResourceRef)
 
 TEST(DefaultTest, SetCurrentDeviceResourceRef)
 {
-  rmm::mr::cuda_memory_resource cuda_mr{};
-
-  rmm::mr::set_current_device_resource(cuda_mr);
+  rmm::mr::set_current_device_resource(rmm::mr::cuda_memory_resource{});
 
   auto ref = rmm::mr::get_current_device_resource_ref();
 

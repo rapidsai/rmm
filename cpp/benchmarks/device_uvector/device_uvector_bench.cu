@@ -26,9 +26,8 @@
 
 void BM_UvectorSizeConstruction(benchmark::State& state)
 {
-  rmm::mr::cuda_memory_resource cuda_mr{};
-  rmm::mr::pool_memory_resource mr{cuda_mr, rmm::percent_of_free_device_memory(50)};
-  rmm::mr::set_current_device_resource(mr);
+  rmm::mr::set_current_device_resource(rmm::mr::pool_memory_resource{
+    rmm::mr::cuda_memory_resource{}, rmm::percent_of_free_device_memory(50)});
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     rmm::device_uvector<std::int32_t> vec(static_cast<std::size_t>(state.range(0)),
@@ -48,9 +47,8 @@ BENCHMARK(BM_UvectorSizeConstruction)
 
 void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 {
-  rmm::mr::cuda_memory_resource cuda_mr{};
-  rmm::mr::pool_memory_resource mr{cuda_mr, rmm::percent_of_free_device_memory(50)};
-  rmm::mr::set_current_device_resource(mr);
+  rmm::mr::set_current_device_resource(rmm::mr::pool_memory_resource{
+    rmm::mr::cuda_memory_resource{}, rmm::percent_of_free_device_memory(50)});
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     rmm::device_vector<std::int32_t> vec(static_cast<std::size_t>(state.range(0)));
@@ -127,8 +125,7 @@ void vector_workflow(std::size_t num_elements,
 template <typename Vector>
 void BM_VectorWorkflow(benchmark::State& state)
 {
-  rmm::mr::cuda_async_memory_resource cuda_async_mr{};
-  rmm::mr::set_current_device_resource(cuda_async_mr);
+  rmm::mr::set_current_device_resource(rmm::mr::cuda_async_memory_resource{});
 
   rmm::cuda_stream input_stream;
   std::vector<rmm::cuda_stream> streams(4);
