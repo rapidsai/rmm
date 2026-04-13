@@ -18,7 +18,9 @@ TEST(PinnedPoolTest, ThrowMaxLessThanInitial)
   // Make sure first argument is enough larger than the second that alignment rounding doesn't
   // make them equal
   auto max_less_than_initial = []() {
-    pool_mr mr{rmm::mr::pinned_host_memory_resource{}, 1024, 256};
+    const auto initial{1024};
+    const auto maximum{256};
+    pool_mr mr{rmm::mr::pinned_host_memory_resource{}, initial, maximum};
   };
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }
@@ -28,7 +30,9 @@ TEST(PinnedPoolTest, ReferenceThrowMaxLessThanInitial)
   // Make sure first argument is enough larger than the second that alignment rounding doesn't
   // make them equal
   auto max_less_than_initial = []() {
-    pool_mr mr{rmm::mr::pinned_host_memory_resource{}, 1024, 256};
+    const auto initial{1024};
+    const auto maximum{256};
+    pool_mr mr{rmm::mr::pinned_host_memory_resource{}, initial, maximum};
   };
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }
@@ -61,7 +65,9 @@ TEST(PinnedPoolTest, NonAlignedPoolSize)
 
 TEST(PinnedPoolTest, ThrowOutOfMemory)
 {
-  pool_mr mr{rmm::mr::pinned_host_memory_resource{}, 0, 1024};
+  const auto initial{0};
+  const auto maximum{1024};
+  pool_mr mr{rmm::mr::pinned_host_memory_resource{}, initial, maximum};
   (void)mr.allocate_sync(1024);
 
   EXPECT_THROW((void)mr.allocate_sync(1024), rmm::out_of_memory);
