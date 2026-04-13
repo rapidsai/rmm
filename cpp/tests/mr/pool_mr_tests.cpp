@@ -122,8 +122,7 @@ TEST(PoolTest, NonAlignedPoolSize)
 
 TEST(PoolTest, UpstreamDoesntSupportMemInfo)
 {
-  cuda_mr cuda;
-  pool_mr mr1{cuda, 0};
+  pool_mr mr1{cuda_mr{}, 0};
   pool_mr mr2{mr1, 0};
   auto* ptr = mr2.allocate_sync(1024);
   mr2.deallocate_sync(ptr, 1024);

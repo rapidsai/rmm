@@ -50,12 +50,10 @@ TEST_F(allocator_test, equal_allocators)
 
 TEST_F(allocator_test, unequal_resources)
 {
-  rmm::mr::cuda_memory_resource mr0;
-  rmm::mr::polymorphic_allocator<int> alloc0{mr0};
+  rmm::mr::polymorphic_allocator<int> alloc0{rmm::mr::cuda_memory_resource{}};
   auto adapted0 = rmm::mr::stream_allocator_adaptor(alloc0, stream);
 
-  rmm::mr::managed_memory_resource mr1;
-  rmm::mr::polymorphic_allocator<int> alloc1{mr1};
+  rmm::mr::polymorphic_allocator<int> alloc1{rmm::mr::managed_memory_resource{}};
   auto adapted1 = rmm::mr::stream_allocator_adaptor(alloc1, stream);
 
   EXPECT_NE(adapted0, adapted1);
