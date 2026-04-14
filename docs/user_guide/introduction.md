@@ -30,19 +30,24 @@ All containers accept a stream and a memory resource, and use stream-ordered all
 ## Basic Example
 
 `````{tabs}
-````{code-tab} c++
-#include <rmm/mr/cuda_async_memory_resource.hpp>
-#include <rmm/device_buffer.hpp>
-
-rmm::mr::cuda_async_memory_resource mr;
-rmm::cuda_stream stream;
-rmm::device_buffer buffer(1024, stream.view(), mr);
+````{group-tab} C++
+```{literalinclude} ../../cpp/examples/docs/src/introduction.cpp
+---
+language: cpp
+start-after: "// [basic-example]"
+end-before: "// [/basic-example]"
+dedent:
+---
+```
 ````
-````{code-tab} python
-import rmm
-
-mr = rmm.mr.CudaAsyncMemoryResource()
-buffer = rmm.DeviceBuffer(size=1024, mr=mr)
+````{group-tab} Python
+```{literalinclude} ../../python/rmm/rmm/tests/examples/introduction.py
+---
+language: python
+start-after: "# [basic-example]"
+end-before: "# [/basic-example]"
+---
+```
 ````
 `````
 

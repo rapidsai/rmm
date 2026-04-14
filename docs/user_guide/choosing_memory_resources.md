@@ -9,53 +9,50 @@ This guide recommends memory resources based on optimal allocation performance f
 For most applications, the CUDA async memory pool provides the best allocation performance with no tuning required.
 
 `````{tabs}
-````{code-tab} c++
-#include <rmm/mr/cuda_async_memory_resource.hpp>
-#include <rmm/device_buffer.hpp>
-
-rmm::mr::cuda_async_memory_resource mr;
-rmm::cuda_stream stream;
-rmm::device_buffer buffer(1024, stream.view(), mr);
+````{group-tab} C++
+```{literalinclude} ../../cpp/examples/docs/src/choosing_memory_resources.cpp
+---
+language: cpp
+start-after: "// [recommended-default]"
+end-before: "// [/recommended-default]"
+dedent:
+---
+```
 ````
-````{code-tab} python
-import rmm
-
-mr = rmm.mr.CudaAsyncMemoryResource()
-buffer = rmm.DeviceBuffer(size=1024, mr=mr)
+````{group-tab} Python
+```{literalinclude} ../../python/rmm/rmm/tests/examples/choosing_memory_resources.py
+---
+language: python
+start-after: "# [recommended-default]"
+end-before: "# [/recommended-default]"
+dedent:
+---
+```
 ````
 `````
 
 For applications that require GPU memory oversubscription (allocating more memory than physically available on the GPU), use a pooled managed memory resource with prefetching. This uses [CUDA Unified Memory](https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/unified-memory.html) (`cudaMallocManaged`) to enable automatic page migration between CPU and GPU at the cost of slower allocation performance. Coupling the managed memory "base" allocator with adaptors for pool allocation and prefetching to device on allocation recovers some of the performance lost to the overhead of managed allocations. Note: Managed memory has [limited support on WSL2](https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/unified-memory.html#unified-memory-on-windows-wsl-and-tegra).
 
 `````{tabs}
-````{code-tab} c++
-#include <rmm/mr/managed_memory_resource.hpp>
-#include <rmm/mr/pool_memory_resource.hpp>
-#include <rmm/mr/prefetch_resource_adaptor.hpp>
-#include <rmm/aligned.hpp>
-#include <rmm/cuda_device.hpp>
-
-// Use 80% of GPU memory, rounded down to nearest 256 bytes
-auto [free_memory, total_memory] = rmm::available_device_memory();
-auto pool_size = rmm::align_down(static_cast<std::size_t>(total_memory * 0.8), 256);
-
-rmm::mr::managed_memory_resource managed_mr;
-rmm::mr::pool_memory_resource pool_mr{managed_mr, pool_size};
-rmm::mr::prefetch_resource_adaptor prefetch_mr{pool_mr};
+````{group-tab} C++
+```{literalinclude} ../../cpp/examples/docs/src/choosing_memory_resources.cpp
+---
+language: cpp
+start-after: "// [managed-pool-prefetch]"
+end-before: "// [/managed-pool-prefetch]"
+dedent:
+---
+```
 ````
-````{code-tab} python
-import rmm
-
-# Use 80% of GPU memory, rounded down to nearest 256 bytes
-free_memory, total_memory = rmm.mr.available_device_memory()
-pool_size = int(total_memory * 0.8) // 256 * 256
-
-mr = rmm.mr.PrefetchResourceAdaptor(
-    rmm.mr.PoolMemoryResource(
-        rmm.mr.ManagedMemoryResource(),
-        initial_pool_size=pool_size,
-    )
-)
+````{group-tab} Python
+```{literalinclude} ../../python/rmm/rmm/tests/examples/choosing_memory_resources.py
+---
+language: python
+start-after: "# [managed-pool-prefetch]"
+end-before: "# [/managed-pool-prefetch]"
+dedent:
+---
+```
 ````
 `````
 
@@ -104,15 +101,14 @@ By default, managed memory adds overhead for page faults and migration (see [Per
 - Typically combined with a pool and prefetching (see [Managed Memory guide](managed_memory.md))
 
 **Example:**
-```python
-import rmm
 
-# Combine managed memory with a pool and prefetching for performance.
-# Without prefetching, page faults cause significant overhead.
-base = rmm.mr.ManagedMemoryResource()
-pool = rmm.mr.PoolMemoryResource(base, initial_pool_size=2**30)
-prefetch_mr = rmm.mr.PrefetchResourceAdaptor(pool)
-buffer = rmm.DeviceBuffer(size=1024, mr=prefetch_mr)
+```{literalinclude} ../../python/rmm/rmm/tests/examples/choosing_memory_resources.py
+---
+language: python
+start-after: "# [managed-memory-example]"
+end-before: "# [/managed-memory-example]"
+dedent:
+---
 ```
 
 ### Pool Memory Resource
@@ -134,57 +130,62 @@ Also, RMM's pool can be slower than the CUDA driver's pool implementation in hea
 **Note**: `PoolMemoryResource` does not return memory to the upstream resource on deallocation. Once the pool grows, that memory stays allocated until the resource is destroyed. Set `maximum_pool_size` to limit growth.
 
 **Example:**
-```python
-import rmm
 
-pool = rmm.mr.PoolMemoryResource(
-    rmm.mr.CudaMemoryResource(),
-    initial_pool_size=2**32,  #  4 GiB
-    maximum_pool_size=2**34   # 16 GiB
-)
-buffer = rmm.DeviceBuffer(size=1024, mr=pool)
+```{literalinclude} ../../python/rmm/rmm/tests/examples/choosing_memory_resources.py
+---
+language: python
+start-after: "# [pool-memory-example]"
+end-before: "# [/pool-memory-example]"
+dedent:
+---
 ```
 
 ## Composing Memory Resources
 
 Memory resources can be composed (wrapped) to combine their properties. The general pattern is:
 
-```python
-# Adaptor wrapping a base resource
-adaptor = rmm.mr.SomeAdaptor(base_resource)
+```{literalinclude} ../../python/rmm/rmm/tests/examples/choosing_memory_resources.py
+---
+language: python
+start-after: "# [composing-adaptor]"
+end-before: "# [/composing-adaptor]"
+dedent:
+---
 ```
 
 ### Common Compositions
 
 **Prefetching with managed memory:**
-```python
-import rmm
 
-# Prefetch adaptor wrapping managed memory pool
-base = rmm.mr.ManagedMemoryResource()
-pool = rmm.mr.PoolMemoryResource(base, initial_pool_size=2**30)
-prefetch = rmm.mr.PrefetchResourceAdaptor(pool)
-buffer = rmm.DeviceBuffer(size=1024, mr=prefetch)
+```{literalinclude} ../../python/rmm/rmm/tests/examples/choosing_memory_resources.py
+---
+language: python
+start-after: "# [prefetch-composition]"
+end-before: "# [/prefetch-composition]"
+dedent:
+---
 ```
 
 **Statistics tracking** (see [Logging and Profiling](logging.md)):
-```python
-import rmm
 
-# Track allocation statistics (counts, peak, and total bytes)
-base = rmm.mr.CudaAsyncMemoryResource()
-stats_mr = rmm.mr.StatisticsResourceAdaptor(base)
-buffer = rmm.DeviceBuffer(size=1024, mr=stats_mr)
+```{literalinclude} ../../python/rmm/rmm/tests/examples/choosing_memory_resources.py
+---
+language: python
+start-after: "# [statistics-composition]"
+end-before: "# [/statistics-composition]"
+dedent:
+---
 ```
 
 **Allocation logging** (see [Logging and Profiling](logging.md)):
-```python
-import rmm
 
-# Log every allocation and deallocation to a file
-base = rmm.mr.CudaAsyncMemoryResource()
-logging_mr = rmm.mr.LoggingResourceAdaptor(base, log_file_name="allocations.csv")
-buffer = rmm.DeviceBuffer(size=1024, mr=logging_mr)
+```{literalinclude} ../../python/rmm/rmm/tests/examples/choosing_memory_resources.py
+---
+language: python
+start-after: "# [logging-composition]"
+end-before: "# [/logging-composition]"
+dedent:
+---
 ```
 
 ## Multi-Library Applications
@@ -194,16 +195,14 @@ When using RMM with multiple GPU libraries (e.g., cuDF, PyTorch, CuPy), configur
 Each library must be explicitly configured to use RMM. RMM provides allocator integrations for common libraries:
 
 **Example: RMM + PyTorch**
-```python
-import rmm
-import torch
-from rmm.allocators.torch import rmm_torch_allocator
 
-# Configure RMM
-rmm.mr.set_current_device_resource(rmm.mr.CudaAsyncMemoryResource())
-
-# Configure PyTorch to allocate through RMM
-torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
+```{literalinclude} ../../python/rmm/rmm/tests/examples/choosing_memory_resources.py
+---
+language: python
+start-after: "# [multi-library-pytorch]"
+end-before: "# [/multi-library-pytorch]"
+dedent:
+---
 ```
 
 With this setup, both PyTorch and any other RMM-configured library (like cuDF) allocate from the same resource.
@@ -212,11 +211,13 @@ With this setup, both PyTorch and any other RMM-configured library (like cuDF) a
 
 1. **Set the memory resource before any allocations**: Changing the resource after allocations have been made can lead to crashes.
 
-   ```python
-   import rmm
-
-   # Do this first, before any GPU allocations
-   rmm.mr.set_current_device_resource(rmm.mr.CudaAsyncMemoryResource())
+   ```{literalinclude} ../../python/rmm/rmm/tests/examples/choosing_memory_resources.py
+   ---
+   language: python
+   start-after: "# [best-practices-set-early]"
+   end-before: "# [/best-practices-set-early]"
+   dedent:
+   ---
    ```
 
 2. **Use adaptors for diagnostics**: Wrap with {cpp:class}`~rmm::mr::statistics_resource_adaptor` (C++) / {py:class}`~rmm.mr.StatisticsResourceAdaptor` (Python) to track allocation counts and peak usage, or {cpp:class}`~rmm::mr::logging_resource_adaptor` (C++) / {py:class}`~rmm.mr.LoggingResourceAdaptor` (Python) to log every allocation and deallocation (see [Logging and Profiling](logging.md)).

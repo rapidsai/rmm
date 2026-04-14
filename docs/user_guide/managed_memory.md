@@ -16,30 +16,24 @@ Prefetching migrates data to the GPU ahead of time so that kernels find it alrea
 
 {cpp:class}`~rmm::mr::prefetch_resource_adaptor` (C++) / {py:class}`~rmm.mr.PrefetchResourceAdaptor` (Python) wraps another resource and prefetches each allocation to the current device as soon as it's made. This works well when data is used on the GPU shortly after allocation, such as when copying or writing to the new allocation:
 
-```python
-import rmm
-
-managed_mr = rmm.mr.ManagedMemoryResource()
-prefetch_mr = rmm.mr.PrefetchResourceAdaptor(managed_mr)
-
-# This allocation is prefetched to the GPU automatically
-buffer = rmm.DeviceBuffer(size=1000000, mr=prefetch_mr)
+```{literalinclude} ../../python/rmm/rmm/tests/examples/managed_memory.py
+---
+language: python
+start-after: "# [prefetch-on-allocate]"
+end-before: "# [/prefetch-on-allocate]"
+dedent:
+---
 ```
 
 Adding a pool between the managed resource and the prefetch adaptor avoids calling `cudaMallocManaged` on every allocation. The pool grabs large chunks of managed memory upfront, and the prefetch adaptor ensures each suballocation is migrated to the GPU before use. Non-allocating adaptors like logging or statistics can safely wrap the prefetch adaptor on the outside:
 
-```python
-import rmm
-
-managed_mr = rmm.mr.ManagedMemoryResource()
-pool_mr = rmm.mr.PoolMemoryResource(managed_mr, initial_pool_size=2**30)
-prefetch_mr = rmm.mr.PrefetchResourceAdaptor(pool_mr)
-
-# Logging and statistics don't allocate, so they can go on the outside
-stats_mr = rmm.mr.StatisticsResourceAdaptor(prefetch_mr)
-log_mr = rmm.mr.LoggingResourceAdaptor(stats_mr, log_file_name="log.csv")
-
-buffer = rmm.DeviceBuffer(size=1000000, mr=log_mr)
+```{literalinclude} ../../python/rmm/rmm/tests/examples/managed_memory.py
+---
+language: python
+start-after: "# [prefetch-with-pool]"
+end-before: "# [/prefetch-with-pool]"
+dedent:
+---
 ```
 
 ### Prefetch on Access (Lazy)
@@ -47,34 +41,25 @@ buffer = rmm.DeviceBuffer(size=1000000, mr=log_mr)
 When you need control over exactly when data moves to the GPU — for instance because the allocation happens long before the kernel that consumes it — you can prefetch manually:
 
 `````{tabs}
-````{code-tab} c++
-#include <rmm/mr/managed_memory_resource.hpp>
-#include <rmm/device_buffer.hpp>
-#include <rmm/prefetch.hpp>
-
-rmm::mr::managed_memory_resource managed_mr;
-rmm::cuda_stream stream;
-rmm::device_buffer buffer(1000000, stream.view(), managed_mr);
-
-// Prefetch to the current device on this stream
-rmm::prefetch(buffer.data(), buffer.size(),
-              rmm::get_current_cuda_device(), stream.view());
-
-// Kernel on the same stream finds the data already resident
-launch_kernel<<<grid, block, 0, stream.value()>>>(buffer.data());
+````{group-tab} C++
+```{literalinclude} ../../cpp/examples/docs/src/managed_memory.cu
+---
+language: cuda
+start-after: "// [prefetch-on-access]"
+end-before: "// [/prefetch-on-access]"
+dedent:
+---
+```
 ````
-````{code-tab} python
-import rmm
-from rmm.pylibrmm.stream import Stream
-
-managed_mr = rmm.mr.ManagedMemoryResource()
-buffer = rmm.DeviceBuffer(size=1000000, mr=managed_mr)
-
-# Prefetch to device 0 on this stream
-stream = Stream()
-buffer.prefetch(device=0, stream=stream)
-
-# Kernel on the same stream finds the data already resident
+````{group-tab} Python
+```{literalinclude} ../../python/rmm/rmm/tests/examples/managed_memory.py
+---
+language: python
+start-after: "# [prefetch-on-access]"
+end-before: "# [/prefetch-on-access]"
+dedent:
+---
+```
 ````
 `````
 

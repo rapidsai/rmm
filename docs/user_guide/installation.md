@@ -117,21 +117,13 @@ target_link_libraries(your_target PRIVATE rmm::rmm)
 
 Create a test file `test_rmm.cpp`:
 
-```cpp
-#include <rmm/device_buffer.hpp>
-#include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/per_device_resource.hpp>
-#include <iostream>
-
-int main() {
-    auto mr = rmm::mr::cuda_memory_resource{};
-    rmm::mr::set_current_device_resource_ref(mr);
-
-    rmm::device_buffer buf(100, rmm::cuda_stream_view{});
-    std::cout << "Allocated " << buf.size() << " bytes\n";
-
-    return 0;
-}
+```{literalinclude} ../../cpp/examples/docs/src/installation.cpp
+---
+language: cpp
+start-after: "// [test-installation]"
+end-before: "// [/test-installation]"
+dedent:
+---
 ```
 
 Compile and run:
@@ -143,11 +135,11 @@ nvcc -std=c++17 -I/path/to/rmm/include test_rmm.cpp -o test_rmm
 
 ### Python
 
-```python
-import rmm
-print(rmm.__version__)
-
-# Quick test
-buffer = rmm.DeviceBuffer(size=100)
-print(f"Allocated {buffer.size} bytes")
+```{literalinclude} ../../python/rmm/rmm/tests/examples/installation.py
+---
+language: python
+start-after: "# [test-installation]"
+end-before: "# [/test-installation]"
+dedent:
+---
 ```
