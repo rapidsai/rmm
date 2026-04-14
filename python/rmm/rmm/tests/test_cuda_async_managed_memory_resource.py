@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for CudaAsyncManagedMemoryResource."""
@@ -27,7 +27,7 @@ from rmm.pylibrmm.stream import Stream
 def test_cuda_async_managed_memory_resource(dtype, nelem, alloc):
     mr = rmm.mr.experimental.CudaAsyncManagedMemoryResource()
     rmm.mr.set_current_device_resource(mr)
-    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    assert type(rmm.mr.get_current_device_resource()) is type(mr)
     array_tester(dtype, nelem, alloc)
 
 

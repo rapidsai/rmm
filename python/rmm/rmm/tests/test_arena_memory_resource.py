@@ -42,5 +42,5 @@ def test_arena_memory_resource(
     mr = rmm.mr.ArenaMemoryResource(upstream, arena_size=_TEST_POOL_SIZE)
 
     rmm.mr.set_current_device_resource(mr)
-    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    assert type(rmm.mr.get_current_device_resource()) is type(mr)
     array_tester(dtype, nelem, alloc)
