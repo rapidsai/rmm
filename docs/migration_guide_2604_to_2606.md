@@ -431,6 +431,153 @@ void my_test() {
 }
 ```
 
+### 14c. Resource Pointers No Longer Convert to `device_async_resource_ref`
+
+In 26.04, `device_async_resource_ref` was implicitly constructible from any
+`device_memory_resource*`, so code could pass a raw pointer wherever a ref was
+expected. In 26.06, `device_memory_resource` is gone, so pointers to concrete
+resource types (e.g., `limiting_resource_adaptor*`, `pool_memory_resource*`) do
+**not** implicitly convert to `device_async_resource_ref`.
+
+If you have a function that returns a resource pointer, **dereference** the
+pointer when passing it to APIs that accept `device_async_resource_ref`:
+
+```cpp
+// 26.04 — implicit conversion from pointer
+rmm::mr::limiting_resource_adaptor<rmm::mr::device_memory_resource>* mr = get_some_resource();
+rmm::device_buffer buf(size, stream, mr);   // OK: device_memory_resource* -> resource_ref
+
+// 26.06 — dereference the pointer
+rmm::mr::limiting_resource_adaptor* mr = get_some_resource();
+rmm::device_buffer buf(size, stream, *mr);  // OK: limiting_resource_adaptor& -> resource_ref
+//                                    ^ dereference
+```
+
+This applies to all APIs accepting `device_async_resource_ref`, including
+`device_buffer`, `device_uvector`, `make_device_mdarray`, and any downstream
+functions with `device_async_resource_ref` parameters.
+
+> **Tip:** If you see confusing compilation errors about `cuda_stream_view`
+> not converting to `std::size_t`, it likely means the compiler skipped a
+> `(size, stream, mr)` overload (because `mr` didn't match
+> `device_async_resource_ref`) and tried a `(size, alignment, stream, mr)`
+> overload instead. The fix is to dereference the pointer or use a ref-returning
+> API.
+
+### 14d. `dynamic_cast` on Resources Is No Longer Possible
+
+In 26.04, all resources inherited from `device_memory_resource`, so
+`dynamic_cast` could be used to test the runtime type of a resource pointer:
+
+```cpp
+// 26.04
+auto* mr = rmm::mr::get_current_device_resource();
+auto* pool = dynamic_cast<rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>*>(mr);
+if (pool != nullptr) { /* it's a pool */ }
+```
+
+In 26.06, there is no common base class and `get_current_device_resource()` is
+removed, so this pattern is impossible. If your code used `dynamic_cast` to
+detect the type of the current device resource (e.g., to decide whether to
+create a pool), you must find an alternative:
+
+- **Remove the check** — just create the pool unconditionally if your
+  application logic requires one.
+- **Track resource type explicitly** — use a flag or enum alongside the
+  resource to record what was set.
+- **Use `any_resource`** — store the resource as
+  `cuda::mr::any_resource<cuda::mr::device_accessible>` and track type
+  information separately.
+
+### 14e. `const` Data Members Prevent `resource_ref` Construction
+
+The CCCL `resource_ref` (and `any_resource`) requires stored types to satisfy
+`semiregular`, which includes copy and move *assignability*. A `const` data
+member prevents the compiler from generating copy/move assignment operators,
+so a resource with `const` members will fail concept checks even if it is
+otherwise well-formed:
+
+```cpp
+// Won't work — const member prevents assignment
+struct my_resource {
+  const std::size_t limit;  // ERROR: makes type non-assignable
+  void* allocate(cuda::stream_ref, std::size_t, std::size_t) { ... }
+  // ...
+};
+// static_assert(cuda::mr::resource<my_resource>);  // FAILS
+
+// Fix: remove const
+struct my_resource {
+  std::size_t limit;  // OK: type is now assignable
+  // ...
+};
+```
+
+This is easy to miss because `const` members don't prevent *construction*
+or *copy construction* — only assignment. The error messages from the concept
+check can be cryptic (e.g., "type must be movable").
+
+### 14f. Brace Initialization Fails for `shared_resource`-Derived Types
+
+Types inheriting from `cuda::mr::shared_resource<Impl>` cannot be
+brace-initialized (`MyResource{args...}`). The `shared_resource` base class
+has constructors that prevent aggregate initialization, so brace-init is
+ambiguous or fails. Use parenthesized initialization instead:
+
+```cpp
+// Won't compile
+rmm::mr::pool_memory_resource pool{cuda_mr, initial_size};  // ERROR
+
+// Fix: use parentheses
+rmm::mr::pool_memory_resource pool(cuda_mr, initial_size);  // OK
+```
+
+This applies to all RMM resource types that use `shared_resource` internally
+(which is most of them in 26.06), and to any downstream custom resources
+built on `shared_resource`.
+
+### 14g. `cuda::stream_ref{}` Default Constructor Is Deprecated
+
+The default constructor `cuda::stream_ref{}` is deprecated in CCCL. Use
+`cuda::stream_ref{cudaStream_t{nullptr}}` when you need a null/default
+stream reference (e.g., in `allocate_sync`/`deallocate_sync` implementations
+that delegate to the async methods):
+
+```cpp
+// Deprecated — generates a warning
+void* allocate_sync(std::size_t bytes, std::size_t alignment) {
+  return allocate(cuda::stream_ref{}, bytes, alignment);  // WARNING
+}
+
+// Fix
+void* allocate_sync(std::size_t bytes, std::size_t alignment) {
+  return allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);  // OK
+}
+```
+
+### 14h. `any_resource` Is Fully Type-Erased (No `get<T>()`)
+
+`cuda::mr::any_resource<cuda::mr::device_accessible>` does not provide a
+`get<T>()` method to recover the concrete resource type. Once a resource is
+stored in `any_resource`, the concrete type is lost.
+
+If you need access to concrete type information after construction (e.g.,
+calling `pool_memory_resource::pool_size()` or capturing a
+`cuda_async_memory_resource::pool_handle()`), you must extract that
+information *before* storing the resource into `any_resource`:
+
+```cpp
+// Won't work — can't get concrete type back
+cuda::mr::any_resource<cuda::mr::device_accessible> mr =
+    rmm::mr::pool_memory_resource(cuda_mr, pool_size);
+// mr.get<rmm::mr::pool_memory_resource>()  // NO SUCH METHOD
+
+// Fix: capture what you need before type-erasing
+rmm::mr::pool_memory_resource pool(cuda_mr, pool_size);
+auto pool_sz = pool.pool_size();  // capture before storing
+cuda::mr::any_resource<cuda::mr::device_accessible> mr = std::move(pool);
+```
+
 ## Python / Cython Changes
 
 ### 15. `DeviceMemoryResource` Internal Representation
@@ -550,6 +697,55 @@ with nogil:
 This is a mechanical replacement. Search for `\.get_mr()` across all `.pyx`
 files and replace with `.c_ref.value()`.
 
+### 21. Downstream Cython Wrappers Need `make_*_resource_ref` Helpers
+
+RMM's Python bindings include inline C++ helper functions
+(`make_device_async_resource_ref`) that produce
+`optional[device_async_resource_ref]` from each concrete RMM resource type.
+These are needed because Cython cannot invoke C++ implicit conversion
+operators directly.
+
+Downstream projects that wrap their own `shared_resource`-based types in
+Cython must define similar helpers. Define an inline C++ function in a
+`cdef extern from *` block in your `.pxd` file:
+
+```cython
+# my_project/my_resource.pxd
+from libcpp.optional cimport optional
+from rmm.librmm.memory_resource cimport device_async_resource_ref
+
+cdef extern from "<my_project/my_resource.hpp>" nogil:
+    cdef cppclass cpp_MyResource "my_project::MyResource":
+        cpp_MyResource(device_async_resource_ref upstream) except +
+        # ...
+
+cdef extern from *:
+    """
+    #include <optional>
+    #include <rmm/resource_ref.hpp>
+    #include <my_project/my_resource.hpp>
+    std::optional<rmm::device_async_resource_ref>
+    make_my_resource_ref(my_project::MyResource& r) {
+        return std::optional<rmm::device_async_resource_ref>(
+            rmm::device_async_resource_ref(r));
+    }
+    """
+    optional[device_async_resource_ref] make_my_resource_ref(
+        cpp_MyResource&) except +
+```
+
+Then in your `.pyx`, after constructing the C++ object, set `c_ref`:
+
+```cython
+# my_project/my_resource.pyx
+self.c_obj.reset(new cpp_MyResource(upstream_mr.c_ref.value()))
+self.c_ref = make_my_resource_ref(deref(self.c_obj))
+```
+
+This pattern matches how RMM's own Python bindings work internally. The
+`optional` return type avoids issues with `device_async_resource_ref`'s
+non-default-constructible nature during Cython assignment.
+
 ## Removed Headers
 
 | Removed Header | Replacement |
@@ -572,10 +768,22 @@ files and replace with `.c_ref.value()`.
 9. **Ensure custom resources are copyable** if stored in `any_resource`; wrap non-copyable
    members (mutexes, unique_ptrs) in `std::shared_ptr`.
 10. **Move resource structs with `get_property` friends out of function scope** to namespace scope.
-11. **Update Cython `.pxd` files**: `device_memory_resource *mr` → `device_async_resource_ref mr`.
-12. **Update Cython `.pyx` files**: `mr.get_mr()` → `mr.c_ref.value()`.
-13. **Update `#include` directives** for removed headers.
-14. **Link against `librmm`** if your project previously used RMM resources
+11. **Dereference resource pointers** when passing to APIs expecting `device_async_resource_ref`.
+12. **Remove `dynamic_cast` on resource pointers**; there is no common base class.
+13. **Update Cython `.pxd` files**: `device_memory_resource *mr` → `device_async_resource_ref mr`.
+14. **Update Cython `.pyx` files**: `mr.get_mr()` → `mr.c_ref.value()`.
+15. **Update `#include` directives** for removed headers.
+16. **Link against `librmm`** if your project previously used RMM resources
     as header-only; resource implementations are now compiled.
-15. **Verify** with `static_assert(cuda::mr::resource_with<MyResource, cuda::mr::device_accessible>)`
+17. **Verify** with `static_assert(cuda::mr::resource_with<MyResource, cuda::mr::device_accessible>)`
     that custom resources satisfy the CCCL concept.
+18. **Remove `const` from data members** in custom resources if the type must be assignable
+    (required by `resource_ref` and `any_resource`).
+19. **Use parenthesized initialization** for `shared_resource`-derived types (`Resource(args...)`,
+    not `Resource{args...}`).
+20. **Replace `cuda::stream_ref{}`** with `cuda::stream_ref{cudaStream_t{nullptr}}` to avoid
+    deprecation warnings.
+21. **Capture concrete type info before type-erasing** into `any_resource` — there is no
+    `get<T>()` to recover the concrete type.
+22. **Add `make_*_resource_ref` inline C++ helpers** in downstream Cython `.pxd` files for
+    custom resource types that need `c_ref` assignment.
