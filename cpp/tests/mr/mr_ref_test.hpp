@@ -85,7 +85,7 @@ constexpr size_in_bytes default_max_size{5_MiB};
 struct allocation {
   void* ptr{nullptr};
   std::size_t size{0};
-  allocation(void* ptr, std::size_t size) : ptr{ptr}, size{size} {}
+  allocation(void* p, std::size_t sz) : ptr{p}, size{sz} {}
   allocation() = default;
 };
 
@@ -442,8 +442,8 @@ struct mr_factory_base {
 /// Encapsulates a memory resource factory function and associated name
 template <class Resource, typename MRFactoryFunc>
 struct mr_factory : mr_factory_base {
-  mr_factory(std::string_view name, MRFactoryFunc factory)
-    : mr_factory_base{std::string{name}}, owned_mr{std::move(factory())}
+  mr_factory(std::string_view factory_name, MRFactoryFunc factory)
+    : mr_factory_base{std::string{factory_name}}, owned_mr{std::move(factory())}
   {
     if (owned_mr == nullptr) {
       skip_test = true;

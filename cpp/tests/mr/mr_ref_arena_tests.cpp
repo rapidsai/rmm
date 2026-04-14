@@ -13,17 +13,17 @@ namespace {
 INSTANTIATE_TEST_SUITE_P(ArenaResourceTests,
                          mr_ref_test,
                          ::testing::Values("Arena"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 INSTANTIATE_TEST_SUITE_P(ArenaResourceAllocationTests,
                          mr_ref_allocation_test,
                          ::testing::Values("Arena"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 INSTANTIATE_TEST_SUITE_P(ArenaMultiThreadResourceTests,
                          mr_ref_test_mt,
                          ::testing::Values("Arena"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 }  // namespace
 }  // namespace rmm::test

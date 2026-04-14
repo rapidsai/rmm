@@ -9,9 +9,19 @@
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 option(PER_THREAD_DEFAULT_STREAM "Build with per-thread default stream" OFF)
 
-set(RMM_BENCHMARKS_CXX_FLAGS -Wall -Werror -Wextra -Wsign-conversion -Wno-unknown-pragmas)
-set(RMM_BENCHMARKS_CUDA_FLAGS -Werror=all-warnings
-                              -Xcompiler=-Wall,-Werror,-Wextra,-Wsign-conversion)
+set(RMM_BENCHMARKS_CXX_FLAGS
+    -Wall
+    -Werror
+    -Wextra
+    -Wshadow
+    -Wnon-virtual-dtor
+    -Woverloaded-virtual
+
+    -Wsign-conversion
+    -Wno-unknown-pragmas)
+set(RMM_BENCHMARKS_CUDA_FLAGS
+    -Werror=all-warnings
+    -Xcompiler=-Wall,-Werror,-Wextra,-Wshadow,-Wnon-virtual-dtor,-Woverloaded-virtual,-Wsign-conversion)
 
 if(PER_THREAD_DEFAULT_STREAM)
   message(STATUS "RMM: Building benchmarks with per-thread default stream")

@@ -13,17 +13,17 @@ namespace {
 INSTANTIATE_TEST_SUITE_P(PoolResourceTests,
                          mr_ref_test,
                          ::testing::Values("Pool"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 INSTANTIATE_TEST_SUITE_P(PoolResourceAllocationTests,
                          mr_ref_allocation_test,
                          ::testing::Values("Pool"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 INSTANTIATE_TEST_SUITE_P(PoolMultiThreadResourceTests,
                          mr_ref_test_mt,
                          ::testing::Values("Pool"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 }  // namespace
 }  // namespace rmm::test

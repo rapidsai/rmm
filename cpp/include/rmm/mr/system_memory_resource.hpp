@@ -121,7 +121,7 @@ class system_memory_resource final : public device_memory_resource {
     stream.synchronize();
 
     rmm::detail::aligned_host_deallocate(
-      ptr, bytes, CUDA_ALLOCATION_ALIGNMENT, [](void* ptr) { ::operator delete(ptr); });
+      ptr, bytes, CUDA_ALLOCATION_ALIGNMENT, [](void* p) { ::operator delete(p); });
   }
 
   /**

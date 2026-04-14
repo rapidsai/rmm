@@ -76,6 +76,16 @@ create_logger_macros(RMM "rmm::default_logger()" include/rmm)
 include(cmake/thirdparty/get_cccl.cmake)
 include(cmake/thirdparty/get_nvtx.cmake)
 
+# Mark third-party includes as SYSTEM to suppress warnings from upstream headers
+foreach(_dep rapids_logger spdlog)
+  if(TARGET ${_dep})
+    get_target_property(_inc ${_dep} INTERFACE_INCLUDE_DIRECTORIES)
+    if(_inc)
+      set_target_properties(${_dep} PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_inc}")
+    endif()
+  endif()
+endforeach()
+
 # ##################################################################################################
 # * library targets --------------------------------------------------------------------------------
 
@@ -128,11 +138,20 @@ if(RMM_NVTX)
   target_compile_definitions(rmm PUBLIC RMM_NVTX)
 endif()
 
-set(RMM_CXX_FLAGS -Wall -Werror -Wextra -Wsign-conversion -Wno-unknown-pragmas
-                  -Wno-error=deprecated-declarations)
+set(RMM_CXX_FLAGS
+    -Wall
+    -Werror
+    -Wextra
+    -Wshadow
+    -Wnon-virtual-dtor
+    -Woverloaded-virtual
+
+    -Wsign-conversion
+    -Wno-unknown-pragmas
+    -Wno-error=deprecated-declarations)
 set(RMM_CUDA_FLAGS
     -Werror=all-warnings
-    -Xcompiler=-Wall,-Werror,-Wextra,-Wsign-conversion,-Wno-error=deprecated-declarations)
+    -Xcompiler=-Wall,-Werror,-Wextra,-Wshadow,-Wnon-virtual-dtor,-Woverloaded-virtual,-Wsign-conversion,-Wno-error=deprecated-declarations)
 target_compile_options(rmm PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${RMM_CXX_FLAGS}>"
                                    "$<$<COMPILE_LANGUAGE:CUDA>:${RMM_CUDA_FLAGS}>")
 
