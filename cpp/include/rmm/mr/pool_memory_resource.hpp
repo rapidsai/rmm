@@ -239,12 +239,25 @@ class pool_memory_resource final
   block_type try_to_expand(std::size_t try_size, std::size_t min_size, cuda_stream_view stream)
   {
     auto report_error = [&](const char* reason) {
-      RMM_LOG_ERROR("[A][Stream %s][Upstream %zuB][FAILURE maximum pool size exceeded: %s]",
-                    rmm::detail::format_stream(stream),
-                    min_size,
-                    reason);
+      auto const max_size = maximum_pool_size_.value_or(std::numeric_limits<std::size_t>::max());
+      auto const [free_memory, total_memory] = rmm::available_device_memory();
+      RMM_LOG_ERROR(
+        "[A][Stream %s][Upstream %zuB][FAILURE maximum pool size exceeded: %s]"
+        "[Pool current=%s max=%s][Device free=%s total=%s]",
+        rmm::detail::format_stream(stream),
+        min_size,
+        reason,
+        rmm::detail::format_bytes(pool_size()),
+        rmm::detail::format_bytes(max_size),
+        rmm::detail::format_bytes(free_memory),
+        rmm::detail::format_bytes(total_memory));
       auto const msg = std::string("Maximum pool size exceeded (failed to allocate ") +
-                       rmm::detail::format_bytes(min_size) + std::string("): ") + reason;
+                       rmm::detail::format_bytes(min_size) +
+                       ", pool current=" + rmm::detail::format_bytes(pool_size()) +
+                       " max=" + rmm::detail::format_bytes(max_size) +
+                       ", device free=" + rmm::detail::format_bytes(free_memory) +
+                       " total=" + rmm::detail::format_bytes(total_memory) + std::string("): ") +
+                       reason;
       RMM_FAIL(msg.c_str(), rmm::out_of_memory);
     };
 

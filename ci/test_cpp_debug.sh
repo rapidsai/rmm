@@ -33,7 +33,8 @@ set -u
 
 rapids-print-env
 
-rapids-logger "Check GPU usage"
+rapids-logger "Check system info"
+uname -a
 nvidia-smi
 
 rapids-logger "Building librmm in Debug mode"

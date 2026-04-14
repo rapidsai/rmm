@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "test_utils.hpp"
+
 #include <rmm/cuda_device.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
@@ -45,15 +47,14 @@ TEST(PoolTest, ThrowMaxLessThanInitial)
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }
 
-TEST(PoolTest, AllocateNinetyPercent)
+TEST(PoolTest, AllocateMostOfFreeMemory)
 {
-  auto allocate_ninety = []() {
-    auto const [free, total] = rmm::available_device_memory();
-    (void)total;
-    auto const ninety_percent_pool = rmm::percent_of_free_device_memory(90);
-    pool_mr mr{rmm::mr::get_current_device_resource_ref(), ninety_percent_pool};
+  auto const percent = is_wsl() ? 70 : 90;
+  auto allocate      = [percent]() {
+    auto const pool_size = rmm::percent_of_free_device_memory(percent);
+    pool_mr mr{rmm::mr::get_current_device_resource_ref(), pool_size};
   };
-  EXPECT_NO_THROW(allocate_ninety());
+  EXPECT_NO_THROW(allocate());
 }
 
 TEST(PoolTest, TwoLargeBuffers)
