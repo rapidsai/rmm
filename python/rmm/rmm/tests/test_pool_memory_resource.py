@@ -32,7 +32,7 @@ def test_pool_memory_resource(
         maximum_pool_size="8MiB",
     )
     rmm.mr.set_current_device_resource(mr)
-    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    assert type(rmm.mr.get_current_device_resource()) is type(mr)
     array_tester(dtype, nelem, alloc)
 
 

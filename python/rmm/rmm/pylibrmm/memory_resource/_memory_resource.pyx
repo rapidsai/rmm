@@ -1125,11 +1125,20 @@ cpdef get_per_device_resource_type(int device):
     Get the memory resource type used for RMM device allocations on the
     specified device.
 
+    .. deprecated:: 26.06
+        Use ``type(get_per_device_resource(device))`` instead.
+
     Parameters
     ----------
     device : int
         The device ID
     """
+    warnings.warn(
+        "get_per_device_resource_type is deprecated. "
+        "Use type(get_per_device_resource(device)) instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
     return type(get_per_device_resource(device))
 
 
@@ -1148,7 +1157,16 @@ cpdef get_current_device_resource_type():
     """
     Get the memory resource type used for RMM device allocations on the
     current device.
+
+    .. deprecated:: 26.06
+        Use ``type(get_current_device_resource())`` instead.
     """
+    warnings.warn(
+        "get_current_device_resource_type is deprecated. "
+        "Use type(get_current_device_resource()) instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
     return type(get_current_device_resource())
 
 
