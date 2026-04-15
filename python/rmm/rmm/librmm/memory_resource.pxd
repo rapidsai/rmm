@@ -16,8 +16,56 @@ from libcpp.string cimport string
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 
 
-cdef extern from "rmm/resource_ref.hpp" namespace "rmm" nogil:
-    cdef cppclass device_async_resource_ref:
+cdef extern from * nogil:
+    """
+    #include <optional>
+    #include <rmm/aligned.hpp>
+    #include <rmm/resource_ref.hpp>
+
+    // Default-constructible wrapper around rmm::device_async_resource_ref.
+    //
+    // Cython requires every C++ type used as a local variable or return
+    // value to be default-constructible (it emits `T __pyx_r;` for the
+    // return slot).  rmm::device_async_resource_ref inherits a deleted
+    // default constructor from cuda::mr::basic_any_ref, so it cannot be
+    // used directly.
+    //
+    // This wrapper stores the ref inside std::optional (which IS
+    // default-constructible) and provides an implicit conversion
+    // operator back to rmm::device_async_resource_ref so that C++
+    // call sites that expect the real type work transparently.
+    //
+    // The Cython declaration below maps the Cython name
+    // "device_async_resource_ref" to this struct, so all existing
+    // Cython code continues to use the familiar name while the
+    // generated C++ uses the default-constructible wrapper.
+    struct cython_device_async_resource_ref {
+        std::optional<rmm::device_async_resource_ref> ref;
+
+        cython_device_async_resource_ref() noexcept = default;
+
+        cython_device_async_resource_ref(
+            rmm::device_async_resource_ref r) noexcept : ref(r) {}
+
+        operator rmm::device_async_resource_ref() const noexcept {
+            return ref.value();
+        }
+
+        void* allocate(rmm::cuda_stream_view stream, std::size_t bytes) {
+            return ref.value().allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        }
+
+        void deallocate(
+            rmm::cuda_stream_view stream,
+            void* ptr,
+            std::size_t bytes) noexcept {
+            ref.value().deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        }
+    };
+    """
+    cdef cppclass device_async_resource_ref \
+            "cython_device_async_resource_ref":
+        device_async_resource_ref() noexcept
         void* allocate(cuda_stream_view stream, size_t bytes) except +
         void deallocate(
             cuda_stream_view stream,
@@ -63,9 +111,9 @@ cdef extern from *:
     #include <optional>
     #include <rmm/resource_ref.hpp>
     template <typename T>
-    std::optional<rmm::device_async_resource_ref>
+    std::optional<cython_device_async_resource_ref>
     make_device_async_resource_ref(T& r) {
-        return std::optional<rmm::device_async_resource_ref>(
+        return std::optional<cython_device_async_resource_ref>(
             rmm::device_async_resource_ref(r));
     }
     """
