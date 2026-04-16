@@ -30,6 +30,8 @@ from rmm.librmm.memory_resource cimport (
 cdef class DeviceMemoryResource:
     cdef optional[device_async_resource_ref] c_ref
 
+    cdef device_async_resource_ref get_mr(self) noexcept nogil
+
 cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
     cdef readonly DeviceMemoryResource upstream_mr
 

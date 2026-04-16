@@ -47,7 +47,7 @@ class logging_resource_adaptor_impl {
 
   bool operator==(logging_resource_adaptor_impl const& other) const noexcept
   {
-    return upstream_ == other.upstream_ && logger_ == other.logger_;
+    return upstream_mr_ == other.upstream_mr_ && logger_ == other.logger_;
   }
 
   bool operator!=(logging_resource_adaptor_impl const& other) const noexcept
@@ -68,7 +68,7 @@ class logging_resource_adaptor_impl {
 
  private:
   std::shared_ptr<rapids_logger::logger> logger_{};
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_;
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
 };
 
 }  // namespace detail

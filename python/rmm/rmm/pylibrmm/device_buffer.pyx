@@ -90,12 +90,12 @@ cdef class DeviceBuffer:
             if c_ptr == NULL or size == 0:
                 self.c_obj.reset(new device_buffer(
                     size, stream.view(),
-                    make_any_device_resource(self.mr.c_ref.value())
+                    make_any_device_resource(self.mr.get_mr())
                 ))
             else:
                 self.c_obj.reset(new device_buffer(
                     c_ptr, size, stream.view(),
-                    make_any_device_resource(self.mr.c_ref.value())
+                    make_any_device_resource(self.mr.get_mr())
                 ))
 
                 if stream.c_is_default():
