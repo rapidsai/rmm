@@ -51,20 +51,6 @@ cdef extern from * nogil:
             return ref.value();
         }
 
-        // Equality is only needed to satisfy CCCL's any_resource SFINAE checks
-        // during Cython template instantiation. Avoid delegating to
-        // optional/resource_ref operator== which triggers recursive constraint
-        // satisfaction in CCCL (NVIDIA/cccl#8320).
-        friend bool operator==(cython_device_async_resource_ref const& lhs,
-                               cython_device_async_resource_ref const& rhs) noexcept {
-            return &lhs == &rhs;
-        }
-
-        friend bool operator!=(cython_device_async_resource_ref const& lhs,
-                               cython_device_async_resource_ref const& rhs) noexcept {
-            return !(lhs == rhs);
-        }
-
         void* allocate(rmm::cuda_stream_view stream, std::size_t bytes) {
             return ref.value().allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
         }
