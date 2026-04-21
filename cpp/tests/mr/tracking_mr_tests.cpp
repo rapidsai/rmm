@@ -6,6 +6,7 @@
 #include "../byte_literals.hpp"
 #include "delayed_memory_resource.hpp"
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
@@ -27,7 +28,7 @@
 namespace rmm::test {
 namespace {
 
-using tracking_adaptor = rmm::mr::tracking_resource_adaptor<rmm::mr::device_memory_resource>;
+using tracking_adaptor = rmm::mr::tracking_resource_adaptor;
 
 constexpr auto num_allocations{10};
 constexpr auto num_more_allocations{5};
@@ -43,8 +44,8 @@ TEST_P(allocation_size, MultiThreaded)
   auto upstream                     = rmm::mr::cuda_memory_resource{};
   std::vector<std::thread> threads;
   auto delayed = delayed_memory_resource(upstream, std::chrono::milliseconds{300});
-  auto mr      = rmm::mr::tracking_resource_adaptor<delayed_memory_resource>(delayed);
-  auto stream  = rmm::cuda_stream{};
+  tracking_adaptor mr{rmm::device_async_resource_ref{delayed}};
+  auto stream = rmm::cuda_stream{};
   // Idea, we want to provoke address reuse to test ABA problems in the tracking resource
   // adaptor. To do so, the delayed memory resource frees (and hence returns to the
   // upstream) an address immediately and then makes that thread sleep. So thread 0
@@ -66,14 +67,14 @@ TEST_P(allocation_size, MultiThreaded)
     threads.emplace_back([&, i = i]() {
       void* ptr{nullptr};
       if (i != 0) { std::this_thread::sleep_for(std::chrono::milliseconds{100}); }
-      EXPECT_NO_THROW(ptr = mr.allocate(stream, allocation_size));
+      EXPECT_NO_THROW(ptr = mr.allocate(stream, allocation_size, rmm::CUDA_ALLOCATION_ALIGNMENT));
       if (allocation_size != 0) {
         EXPECT_NE(ptr, nullptr);
       } else {
         EXPECT_EQ(ptr, nullptr);
       }
       if (i == 0) { std::this_thread::sleep_for(std::chrono::milliseconds{100}); }
-      mr.deallocate(stream, ptr, allocation_size);
+      mr.deallocate(stream, ptr, allocation_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     });
   }
   for (auto& t : threads) {
@@ -81,12 +82,6 @@ TEST_P(allocation_size, MultiThreaded)
   }
   EXPECT_EQ(mr.get_outstanding_allocations().size(), 0);
   EXPECT_EQ(mr.get_allocated_bytes(), 0);
-}
-
-TEST(TrackingTest, ThrowOnNullUpstream)
-{
-  auto construct_nullptr = []() { tracking_adaptor mr{nullptr}; };
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 
 TEST(TrackingTest, Empty)
@@ -158,16 +153,17 @@ TEST(TrackingTest, MultiTracking)
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
     allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, &mr));
+      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, mr));
   }
 
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations);
 
-  tracking_adaptor inner_mr{&mr};
+  tracking_adaptor inner_mr{rmm::device_async_resource_ref{mr}};
 
+  rmm::device_async_resource_ref inner_ref{inner_mr};
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
     allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, &inner_mr));
+      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, inner_ref));
   }
 
   // Check the allocated bytes for both MRs
@@ -203,7 +199,7 @@ TEST(TrackingTest, NegativeInnerTracking)
 
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations);
 
-  tracking_adaptor inner_mr{&mr};
+  tracking_adaptor inner_mr{rmm::device_async_resource_ref{mr}};
 
   // Add more allocations
   for (std::size_t i = 0; i < num_more_allocations; ++i) {

@@ -48,7 +48,10 @@ class delayed_memory_resource {
     upstream_.deallocate(stream, ptr, bytes, alignment);
     std::this_thread::sleep_for(delay_);
   }
-  friend void get_property(delayed_memory_resource const&, cuda::mr::device_accessible) noexcept {}
+  constexpr friend void get_property(delayed_memory_resource const&,
+                                     cuda::mr::device_accessible) noexcept
+  {
+  }
   bool operator==(delayed_memory_resource const& other) const noexcept
   {
     return this == std::addressof(other);

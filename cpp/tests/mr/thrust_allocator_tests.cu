@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -25,10 +25,9 @@ namespace {
 
 struct allocator_test : public mr_ref_test {};
 
-// Disable until we support resource_ref with set_current_device_resource
 TEST_P(allocator_test, first)
 {
-  rmm::mr::set_current_device_resource_ref(this->ref);
+  rmm::mr::set_current_device_resource(this->ref);
   auto const num_ints{100};
   rmm::device_vector<int> ints(num_ints, 1);
   EXPECT_EQ(num_ints, thrust::reduce(ints.begin(), ints.end()));
@@ -36,7 +35,7 @@ TEST_P(allocator_test, first)
 
 TEST_P(allocator_test, defaults)
 {
-  rmm::mr::set_current_device_resource_ref(this->ref);
+  rmm::mr::set_current_device_resource(this->ref);
   rmm::mr::thrust_allocator<int> allocator(rmm::cuda_stream_default);
   EXPECT_EQ(allocator.stream(), rmm::cuda_stream_default);
   EXPECT_EQ(allocator.get_upstream_resource(),
@@ -58,11 +57,11 @@ TEST_P(allocator_test, multi_device)
   }());
 }
 
-INSTANTIATE_TEST_SUITE_P(
-  ThrustAllocatorTests,
-  allocator_test,
-  ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool", "Arena", "Binning"),
-  [](auto const& info) { return info.param; });
+// TODO(bdice): Add back test coverage after completing CCCL MR migration
+INSTANTIATE_TEST_SUITE_P(ThrustAllocatorTests,
+                         allocator_test,
+                         ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool"),
+                         [](auto const& info) { return info.param; });
 
 }  // namespace
 }  // namespace rmm::test

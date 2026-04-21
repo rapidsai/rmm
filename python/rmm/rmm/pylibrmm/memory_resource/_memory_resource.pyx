@@ -48,12 +48,14 @@ from rmm.librmm.memory_resource cimport (
     cuda_async_view_memory_resource,
     cuda_memory_resource,
     deallocate_callback_t,
-    device_memory_resource,
-    failure_callback_resource_adaptor,
+    device_async_resource_ref,
+    failure_callback_resource_adaptor_oom,
     failure_callback_t,
     fixed_size_memory_resource,
     limiting_resource_adaptor,
     logging_resource_adaptor,
+    make_any_device_resource,
+    make_device_async_resource_ref,
     managed_memory_resource,
     percent_of_free_device_memory as c_percent_of_free_device_memory,
     pinned_host_memory_resource,
@@ -70,9 +72,8 @@ from rmm.librmm.memory_resource cimport (
 
 cdef class DeviceMemoryResource:
 
-    cdef device_memory_resource* get_mr(self) noexcept nogil:
-        """Get the underlying C++ memory resource object."""
-        return self.c_obj.get()
+    cdef device_async_resource_ref get_mr(self) noexcept nogil:
+        return deref(self.c_ref)
 
     def allocate(self, size_t nbytes, Stream stream=DEFAULT_STREAM):
         """Allocate ``nbytes`` bytes of memory.
@@ -98,7 +99,9 @@ cdef class DeviceMemoryResource:
         stream = as_stream(stream)
         cdef uintptr_t ptr
         with nogil:
-            ptr = <uintptr_t>(self.c_obj.get().allocate(stream.view(), nbytes))
+            ptr = <uintptr_t>(self.get_mr().allocate(
+                stream.view(), nbytes
+            ))
         return ptr
 
     def deallocate(self, uintptr_t ptr, size_t nbytes, Stream stream=DEFAULT_STREAM):
@@ -115,14 +118,13 @@ cdef class DeviceMemoryResource:
         """
         stream = as_stream(stream)
         with nogil:
-            self.c_obj.get().deallocate(stream.view(), <void*>(ptr), nbytes)
+            self.get_mr().deallocate(
+                stream.view(), <void*>(ptr), nbytes
+            )
 
     def __dealloc__(self):
-        # See the __dealloc__ method on DeviceBuffer for discussion of why we must
-        # explicitly call reset here instead of relying on the unique_ptr's
-        # destructor.
         with nogil:
-            self.c_obj.reset()
+            self.c_ref.reset()
 
 
 # See the note about `no_gc_clear` in `device_buffer.pyx`.
@@ -146,18 +148,17 @@ cdef class UpstreamResourceAdaptor(DeviceMemoryResource):
         return self.upstream_mr
 
     def __dealloc__(self):
-        # Need to override the parent method with an identical implementation
-        # to ensure that self.upstream_mr is still alive when the C++ mr's
-        # destructor is invoked since it will reference self.upstream_mr.c_obj.
+        # Need to override the parent method to ensure that self.upstream_mr
+        # is still alive when the C++ resource's destructor is invoked since
+        # it holds a device_async_resource_ref to the upstream.
         with nogil:
-            self.c_obj.reset()
+            self.c_ref.reset()
 
 
 cdef class CudaMemoryResource(DeviceMemoryResource):
     def __cinit__(self):
-        self.c_obj.reset(
-            new cuda_memory_resource()
-        )
+        self.c_obj.reset(new cuda_memory_resource())
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(self):
         """
@@ -227,13 +228,12 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
             else optional[allocation_handle_type]()
         )
 
-        self.c_obj.reset(
-            new cuda_async_memory_resource(
-                c_initial_pool_size,
-                c_release_threshold,
-                c_export_handle_type
-            )
-        )
+        self.c_obj.reset(new cuda_async_memory_resource(
+            c_initial_pool_size,
+            c_release_threshold,
+            c_export_handle_type
+        ))
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
 
 cdef class CudaAsyncViewMemoryResource(DeviceMemoryResource):
@@ -266,21 +266,17 @@ cdef class CudaAsyncViewMemoryResource(DeviceMemoryResource):
         cdef cyruntime.cudaMemPool_t c_pool_handle
         c_pool_handle = <cyruntime.cudaMemPool_t>(<uintptr_t>(int(pool_handle)))
 
-        self.c_obj.reset(
-            new cuda_async_view_memory_resource(c_pool_handle)
-        )
+        self.c_obj.reset(new cuda_async_view_memory_resource(c_pool_handle))
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def pool_handle(self):
-        cdef cuda_async_view_memory_resource* c_mr = \
-            <cuda_async_view_memory_resource*>(self.c_obj.get())
-        return <uintptr_t>(c_mr.pool_handle())
+        return <uintptr_t>(deref(self.c_obj).pool_handle())
 
 
 cdef class ManagedMemoryResource(DeviceMemoryResource):
     def __cinit__(self):
-        self.c_obj.reset(
-            new managed_memory_resource()
-        )
+        self.c_obj.reset(new managed_memory_resource())
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(self):
         """
@@ -292,9 +288,8 @@ cdef class ManagedMemoryResource(DeviceMemoryResource):
 
 cdef class SystemMemoryResource(DeviceMemoryResource):
     def __cinit__(self):
-        self.c_obj.reset(
-            new system_memory_resource()
-        )
+        self.c_obj.reset(new system_memory_resource())
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(self):
         """
@@ -306,9 +301,8 @@ cdef class SystemMemoryResource(DeviceMemoryResource):
 
 cdef class PinnedHostMemoryResource(DeviceMemoryResource):
     def __cinit__(self):
-        self.c_obj.reset(
-            new pinned_host_memory_resource()
-        )
+        self.c_obj.reset(new pinned_host_memory_resource())
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(self):
         """
@@ -327,6 +321,7 @@ cdef class SamHeadroomMemoryResource(DeviceMemoryResource):
         size_t headroom
     ):
         self.c_obj.reset(new sam_headroom_memory_resource(headroom))
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(
         self,
@@ -364,13 +359,12 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
             maximum_pool_size is None
             else optional[size_t](<size_t> parse_bytes(maximum_pool_size))
         )
-        self.c_obj.reset(
-            new pool_memory_resource[device_memory_resource](
-                upstream_mr.get_mr(),
-                c_initial_pool_size,
-                c_maximum_pool_size
-            )
-        )
+        self.c_obj.reset(new pool_memory_resource(
+            make_any_device_resource(upstream_mr.get_mr()),
+            c_initial_pool_size,
+            c_maximum_pool_size
+        ))
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(
             self,
@@ -396,10 +390,7 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
         pass
 
     def pool_size(self):
-        cdef pool_memory_resource[device_memory_resource]* c_mr = (
-            <pool_memory_resource[device_memory_resource]*>(self.get_mr())
-        )
-        return c_mr.pool_size()
+        return deref(self.c_obj).pool_size()
 
 cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
     def __cinit__(
@@ -412,13 +403,12 @@ cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
             arena_size is None
             else optional[size_t](<size_t> parse_bytes(arena_size))
         )
-        self.c_obj.reset(
-            new arena_memory_resource[device_memory_resource](
-                upstream_mr.get_mr(),
-                c_arena_size,
-                dump_log_on_failure,
-            )
-        )
+        self.c_obj.reset(new arena_memory_resource(
+            make_any_device_resource(upstream_mr.get_mr()),
+            c_arena_size,
+            dump_log_on_failure,
+        ))
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(
         self,
@@ -450,13 +440,12 @@ cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
             size_t block_size=1<<20,
             size_t blocks_to_preallocate=128
     ):
-        self.c_obj.reset(
-            new fixed_size_memory_resource[device_memory_resource](
-                upstream_mr.get_mr(),
-                block_size,
-                blocks_to_preallocate
-            )
-        )
+        self.c_obj.reset(new fixed_size_memory_resource(
+            make_any_device_resource(upstream_mr.get_mr()),
+            block_size,
+            blocks_to_preallocate
+        ))
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(
             self,
@@ -496,19 +485,16 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         self._bin_mrs = []
 
         if (min_size_exponent == -1 or max_size_exponent == -1):
-            self.c_obj.reset(
-                new binning_memory_resource[device_memory_resource](
-                    upstream_mr.get_mr()
-                )
-            )
+            self.c_obj.reset(new binning_memory_resource(
+                make_any_device_resource(upstream_mr.get_mr())
+            ))
         else:
-            self.c_obj.reset(
-                new binning_memory_resource[device_memory_resource](
-                    upstream_mr.get_mr(),
-                    min_size_exponent,
-                    max_size_exponent
-                )
-            )
+            self.c_obj.reset(new binning_memory_resource(
+                make_any_device_resource(upstream_mr.get_mr()),
+                min_size_exponent,
+                max_size_exponent
+            ))
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(
         self,
@@ -561,17 +547,20 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         bin_resource : DeviceMemoryResource
             The resource to use for this bin (optional)
         """
-        if bin_resource is None:
-            (<binning_memory_resource[device_memory_resource]*>(
-                self.c_obj.get()))[0].add_bin(allocation_size)
-        else:
+        if bin_resource is not None:
             # Save the ref to the new bin resource to ensure its lifetime
             self._bin_mrs.append(bin_resource)
-
-            (<binning_memory_resource[device_memory_resource]*>(
-                self.c_obj.get()))[0].add_bin(
-                    allocation_size,
-                    bin_resource.get_mr())
+            deref(self.c_obj).add_bin(
+                allocation_size,
+                optional[device_async_resource_ref](
+                    bin_resource.get_mr()
+                )
+            )
+        else:
+            deref(self.c_obj).add_bin(
+                allocation_size,
+                optional[device_async_resource_ref]()
+            )
 
     @property
     def bin_mrs(self) -> list:
@@ -657,14 +646,13 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     ):
         self._allocate_func = allocate_func
         self._deallocate_func = deallocate_func
-        self.c_obj.reset(
-            new callback_memory_resource(
-                <allocate_callback_t>(_allocate_callback_wrapper),
-                <deallocate_callback_t>(_deallocate_callback_wrapper),
-                <void*>(allocate_func),
-                <void*>(deallocate_func)
-            )
-        )
+        self.c_obj.reset(new callback_memory_resource(
+            <allocate_callback_t>(_allocate_callback_wrapper),
+            <deallocate_callback_t>(_deallocate_callback_wrapper),
+            <void*>(allocate_func),
+            <void*>(deallocate_func)
+        ))
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
 
 def _append_id(filename, id):
@@ -691,12 +679,11 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
         DeviceMemoryResource upstream_mr,
         size_t allocation_limit
     ):
-        self.c_obj.reset(
-            new limiting_resource_adaptor[device_memory_resource](
-                upstream_mr.get_mr(),
-                allocation_limit
-            )
-        )
+        self.c_obj.reset(new limiting_resource_adaptor(
+            make_any_device_resource(upstream_mr.get_mr()),
+            allocation_limit
+        ))
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(
         self,
@@ -723,9 +710,7 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
         possible fragmentation and also internal page sizes and alignment that
         is not tracked by this allocator.
         """
-        return (<limiting_resource_adaptor[device_memory_resource]*>(
-            self.c_obj.get())
-        )[0].get_allocated_bytes()
+        return deref(self.c_obj).get_allocated_bytes()
 
     def get_allocation_limit(self) -> size_t:
         """
@@ -734,9 +719,7 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
         of the underlying device. The device may not be able to support this
         limit.
         """
-        return (<limiting_resource_adaptor[device_memory_resource]*>(
-            self.c_obj.get())
-        )[0].get_allocation_limit()
+        return deref(self.c_obj).get_allocation_limit()
 
 
 cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
@@ -761,12 +744,11 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
         log_file_name = os.path.abspath(log_file_name)
         self._log_file_name = log_file_name
 
-        self.c_obj.reset(
-            new logging_resource_adaptor[device_memory_resource](
-                upstream_mr.get_mr(),
-                log_file_name.encode()
-            )
-        )
+        self.c_obj.reset(new logging_resource_adaptor(
+            make_any_device_resource(upstream_mr.get_mr()),
+            log_file_name.encode()
+        ))
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(
         self,
@@ -787,8 +769,7 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
         pass
 
     cpdef flush(self):
-        (<logging_resource_adaptor[device_memory_resource]*>(
-            self.get_mr()))[0].flush()
+        deref(self.c_obj).flush()
 
     cpdef get_file_name(self):
         return self._log_file_name
@@ -799,11 +780,10 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         self,
         DeviceMemoryResource upstream_mr
     ):
-        self.c_obj.reset(
-            new statistics_resource_adaptor[device_memory_resource](
-                upstream_mr.get_mr()
-            )
-        )
+        self.c_obj.reset(new statistics_resource_adaptor(
+            make_any_device_resource(upstream_mr.get_mr())
+        ))
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(
         self,
@@ -836,11 +816,8 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         Returns:
             dict: Dictionary containing allocation counts and bytes.
         """
-        cdef statistics_resource_adaptor[device_memory_resource]* mr = \
-            <statistics_resource_adaptor[device_memory_resource]*> self.c_obj.get()
-
-        counts = deref(mr).get_allocations_counter()
-        byte_counts = deref(mr).get_bytes_counter()
+        counts = deref(self.c_obj).get_allocations_counter()
+        byte_counts = deref(self.c_obj).get_bytes_counter()
         return Statistics(
             current_bytes=byte_counts.value,
             current_count=counts.value,
@@ -858,10 +835,7 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         -------
         The popped statistics
         """
-        cdef statistics_resource_adaptor[device_memory_resource]* mr = \
-            <statistics_resource_adaptor[device_memory_resource]*> self.c_obj.get()
-
-        bytes_and_allocs = deref(mr).pop_counters()
+        bytes_and_allocs = deref(self.c_obj).pop_counters()
         return Statistics(
             current_bytes=bytes_and_allocs.first.value,
             current_count=bytes_and_allocs.second.value,
@@ -880,10 +854,7 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         The statistics _before_ the push
         """
 
-        cdef statistics_resource_adaptor[device_memory_resource]* mr = \
-            <statistics_resource_adaptor[device_memory_resource]*> self.c_obj.get()
-
-        bytes_and_allocs = deref(mr).push_counters()
+        bytes_and_allocs = deref(self.c_obj).push_counters()
         return Statistics(
             current_bytes=bytes_and_allocs.first.value,
             current_count=bytes_and_allocs.second.value,
@@ -900,12 +871,11 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         DeviceMemoryResource upstream_mr,
         bool capture_stacks=False
     ):
-        self.c_obj.reset(
-            new tracking_resource_adaptor[device_memory_resource](
-                upstream_mr.get_mr(),
-                capture_stacks
-            )
-        )
+        self.c_obj.reset(new tracking_resource_adaptor(
+            make_any_device_resource(upstream_mr.get_mr()),
+            capture_stacks
+        ))
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(
         self,
@@ -933,9 +903,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         possible fragmentation and also internal page sizes and alignment that
         is not tracked by this allocator.
         """
-        return (<tracking_resource_adaptor[device_memory_resource]*>(
-            self.c_obj.get())
-        )[0].get_allocated_bytes()
+        return deref(self.c_obj).get_allocated_bytes()
 
     def get_outstanding_allocations_str(self) -> str:
         """
@@ -943,19 +911,16 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         allocations. For each allocation, the address, size and optional
         stack trace are shown.
         """
-
-        return (<tracking_resource_adaptor[device_memory_resource]*>(
-            self.c_obj.get())
-        )[0].get_outstanding_allocations_str().decode('UTF-8')
+        return deref(self.c_obj).get_outstanding_allocations_str().decode(
+            'UTF-8'
+        )
 
     def log_outstanding_allocations(self):
         """
         Logs the output of :meth:`get_outstanding_allocations_str` to the
         current RMM log file if enabled.
         """
-
-        (<tracking_resource_adaptor[device_memory_resource]*>(
-            self.c_obj.get()))[0].log_outstanding_allocations()
+        deref(self.c_obj).log_outstanding_allocations()
 
 
 # Note that this function is specifically designed to rethrow Python exceptions
@@ -979,13 +944,12 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
         object callback,
     ):
         self._callback = callback
-        self.c_obj.reset(
-            new failure_callback_resource_adaptor[device_memory_resource](
-                upstream_mr.get_mr(),
-                <failure_callback_t>(_oom_callback_function),
-                <void*>(callback)
-            )
-        )
+        self.c_obj.reset(new failure_callback_resource_adaptor_oom(
+            make_any_device_resource(upstream_mr.get_mr()),
+            <failure_callback_t>(_oom_callback_function),
+            <void*>(callback)
+        ))
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(
         self,
@@ -1010,11 +974,10 @@ cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
         self,
         DeviceMemoryResource upstream_mr
     ):
-        self.c_obj.reset(
-            new prefetch_resource_adaptor[device_memory_resource](
-                upstream_mr.get_mr()
-            )
-        )
+        self.c_obj.reset(new prefetch_resource_adaptor(
+            make_any_device_resource(upstream_mr.get_mr())
+        ))
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def __init__(
         self,
@@ -1141,7 +1104,10 @@ cpdef set_per_device_resource(int device, DeviceMemoryResource mr):
     cdef unique_ptr[cuda_device_id] device_id = \
         make_unique[cuda_device_id](device)
 
-    cpp_set_per_device_resource(deref(device_id), mr.get_mr())
+    cpp_set_per_device_resource(
+        deref(device_id),
+        make_any_device_resource(mr.get_mr())
+    )
 
 
 cpdef set_current_device_resource(DeviceMemoryResource mr):
@@ -1214,7 +1180,7 @@ cpdef is_initialized():
     global _per_device_mrs
     cdef DeviceMemoryResource each_mr
     return all(
-        [each_mr.get_mr() is not NULL
+        [each_mr.c_ref.has_value()
             for each_mr in _per_device_mrs.values()]
     )
 

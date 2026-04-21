@@ -10,8 +10,8 @@
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/format.hpp>
 #include <rmm/logger.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 
+#include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
@@ -65,15 +65,124 @@ struct crtp {
  * 4. `block_type free_block(void* ptr, std::size_t size) noexcept`
  */
 template <typename PoolResource, typename FreeListType>
-class stream_ordered_memory_resource : public crtp<PoolResource>, public device_memory_resource {
+class stream_ordered_memory_resource : public crtp<PoolResource> {
  public:
-  ~stream_ordered_memory_resource() override { release(); }
+  ~stream_ordered_memory_resource() { release(); }
 
   stream_ordered_memory_resource()                                                 = default;
   stream_ordered_memory_resource(stream_ordered_memory_resource const&)            = delete;
   stream_ordered_memory_resource(stream_ordered_memory_resource&&)                 = delete;
   stream_ordered_memory_resource& operator=(stream_ordered_memory_resource const&) = delete;
   stream_ordered_memory_resource& operator=(stream_ordered_memory_resource&&)      = delete;
+
+  /**
+   * @brief Allocates memory of size at least `bytes` bytes.
+   *
+   * The returned pointer has at least 256B alignment.
+   *
+   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled
+   *
+   * @param stream The stream in which to order this allocation
+   * @param bytes The size in bytes of the allocation
+   * @param alignment Unused; alignment is always at least `CUDA_ALLOCATION_ALIGNMENT`
+   * @return void* Pointer to the newly allocated memory
+   */
+  void* allocate(cuda::stream_ref stream, std::size_t bytes, std::size_t /*alignment*/)
+  {
+    auto const strm = cuda_stream_view{stream};
+
+    RMM_LOG_TRACE("[A][stream %s][%zuB]", rmm::detail::format_stream(strm), bytes);
+
+    if (bytes == 0) { return nullptr; }
+
+    lock_guard lock(mtx_);
+
+    auto stream_event = get_event(strm);
+
+    bytes = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    RMM_EXPECTS(bytes <= this->underlying().get_maximum_allocation_size(),
+                std::string("Maximum allocation size exceeded (failed to allocate ") +
+                  rmm::detail::format_bytes(bytes) + ")",
+                rmm::out_of_memory);
+    auto const block = this->underlying().get_block(bytes, stream_event);
+
+    RMM_LOG_TRACE("[A][stream %s][%zuB][%p]",
+                  rmm::detail::format_stream(stream_event.stream),
+                  bytes,
+                  block.pointer());
+
+    log_summary_trace();
+
+    return block.pointer();
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by `ptr`.
+   *
+   * @param stream The stream in which to order this deallocation
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation to deallocate
+   * @param alignment Unused
+   */
+  void deallocate(cuda::stream_ref stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t /*alignment*/) noexcept
+  {
+    auto const strm = cuda_stream_view{stream};
+
+    RMM_LOG_TRACE("[D][stream %s][%zuB][%p]", rmm::detail::format_stream(strm), bytes, ptr);
+
+    if (bytes == 0 || ptr == nullptr) { return; }
+
+    lock_guard lock(mtx_);
+    auto stream_event = get_event(strm);
+
+    bytes            = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    auto const block = this->underlying().free_block(ptr, bytes);
+
+    // TODO: cudaEventRecord has significant overhead on deallocations. For the non-PTDS case
+    // we may be able to delay recording the event in some situations. But using events rather
+    // than streams allows stealing from deleted streams.
+    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, strm.value()));
+
+    stream_free_blocks_[stream_event].insert(block);
+
+    log_summary_trace();
+  }
+
+  /**
+   * @brief Allocates memory of size at least `bytes` synchronously.
+   *
+   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled
+   *
+   * @param bytes The size in bytes of the allocation
+   * @param alignment Alignment of the allocation
+   * @return void* Pointer to the newly allocated memory
+   */
+  [[nodiscard]] void* allocate_sync(std::size_t bytes,
+                                    std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+  {
+    auto const stream = cuda_stream_view{};
+    void* ptr         = allocate(stream, bytes, alignment);
+    stream.synchronize();
+    return ptr;
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by `ptr` synchronously.
+   *
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation to deallocate
+   * @param alignment Alignment of the allocation
+   */
+  void deallocate_sync(
+    void* ptr,
+    std::size_t bytes,
+    [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+  {
+    deallocate(cuda_stream_view{}, ptr, bytes, alignment);
+  }
 
  protected:
   using free_list  = FreeListType;
@@ -180,73 +289,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource>, public device_
 
     bool operator<(stream_event_pair const& rhs) const { return event < rhs.event; }
   };
-
-  /**
-   * @brief Allocates memory of size at least `bytes`.
-   *
-   * The returned pointer has at least 256B alignment.
-   *
-   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled
-   *
-   * @param size The size in bytes of the allocation
-   * @param stream The stream in which to order this allocation
-   * @return void* Pointer to the newly allocated memory
-   */
-  void* do_allocate(std::size_t size, cuda_stream_view stream) override
-  {
-    RMM_LOG_TRACE("[A][stream %s][%zuB]", rmm::detail::format_stream(stream), size);
-
-    if (size <= 0) { return nullptr; }
-
-    lock_guard lock(mtx_);
-
-    auto stream_event = get_event(stream);
-
-    size = rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
-    RMM_EXPECTS(size <= this->underlying().get_maximum_allocation_size(),
-                std::string("Maximum allocation size exceeded (failed to allocate ") +
-                  rmm::detail::format_bytes(size) + ")",
-                rmm::out_of_memory);
-    auto const block = this->underlying().get_block(size, stream_event);
-
-    RMM_LOG_TRACE("[A][stream %s][%zuB][%p]",
-                  rmm::detail::format_stream(stream_event.stream),
-                  size,
-                  block.pointer());
-
-    log_summary_trace();
-
-    return block.pointer();
-  }
-
-  /**
-   * @brief Deallocate memory pointed to by `ptr`.
-   *
-   * @param ptr Pointer to be deallocated
-   * @param size The size in bytes of the allocation to deallocate
-   * @param stream The stream in which to order this deallocation
-   */
-  void do_deallocate(void* ptr, std::size_t size, cuda_stream_view stream) noexcept override
-  {
-    RMM_LOG_TRACE("[D][stream %s][%zuB][%p]", rmm::detail::format_stream(stream), size, ptr);
-
-    if (size <= 0 || ptr == nullptr) { return; }
-
-    lock_guard lock(mtx_);
-    auto stream_event = get_event(stream);
-
-    size             = rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
-    auto const block = this->underlying().free_block(ptr, size);
-
-    // TODO: cudaEventRecord has significant overhead on deallocations. For the non-PTDS case
-    // we may be able to delay recording the event in some situations. But using events rather than
-    // streams allows stealing from deleted streams.
-    RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream.value()));
-
-    stream_free_blocks_[stream_event].insert(block);
-
-    log_summary_trace();
-  }
 
  private:
   /**

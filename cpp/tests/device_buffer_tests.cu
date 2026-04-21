@@ -11,7 +11,6 @@
 #include <rmm/error.hpp>
 #include <rmm/exec_policy.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/managed_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
@@ -176,7 +175,7 @@ TYPED_TEST(DeviceBufferTest, CopyFromNullptrNonZero)
 
 TYPED_TEST(DeviceBufferTest, CopyConstructor)
 {
-  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, this->mr);
 
   // Initialize buffer
   thrust::sequence(rmm::exec_policy(rmm::cuda_stream_default),
@@ -215,7 +214,7 @@ TYPED_TEST(DeviceBufferTest, CopyConstructor)
 
 TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize)
 {
-  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, this->mr);
 
   // Resizing smaller to make `size()` < `capacity()`
   auto new_size = this->size - 1;
@@ -246,14 +245,14 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSize)
 
 TYPED_TEST(DeviceBufferTest, CopyConstructorExplicitMr)
 {
-  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, this->mr);
 
   thrust::sequence(rmm::exec_policy(rmm::cuda_stream_default),
                    static_cast<signed char*>(buff.data()),
                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                    static_cast<signed char*>(buff.data()) + buff.size(),
                    0);
-  rmm::device_buffer buff_copy(buff, this->stream, &this->mr);
+  rmm::device_buffer buff_copy(buff, this->stream, this->mr);
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());
   EXPECT_EQ(buff.size(), buff_copy.size());
@@ -270,7 +269,7 @@ TYPED_TEST(DeviceBufferTest, CopyConstructorExplicitMr)
 
 TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr)
 {
-  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, this->mr);
 
   // Resizing smaller to make `size()` < `capacity()`
   auto new_size = this->size - 1;
@@ -281,7 +280,7 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr)
                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
                    static_cast<signed char*>(buff.data()) + buff.size(),
                    0);
-  rmm::device_buffer buff_copy(buff, this->stream, &this->mr);
+  rmm::device_buffer buff_copy(buff, this->stream, this->mr);
   EXPECT_NE(nullptr, buff_copy.data());
   EXPECT_NE(buff.data(), buff_copy.data());
   EXPECT_EQ(buff.size(), buff_copy.size());
@@ -301,7 +300,7 @@ TYPED_TEST(DeviceBufferTest, CopyCapacityLargerThanSizeExplicitMr)
 
 TYPED_TEST(DeviceBufferTest, MoveConstructor)
 {
-  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, this->mr);
   auto* ptr     = buff.data();
   auto size     = buff.size();
   auto capacity = buff.capacity();
@@ -327,7 +326,7 @@ TYPED_TEST(DeviceBufferTest, MoveConstructor)
 
 TYPED_TEST(DeviceBufferTest, MoveConstructorStream)
 {
-  rmm::device_buffer buff(this->size, this->stream, &this->mr);
+  rmm::device_buffer buff(this->size, this->stream, this->mr);
   this->stream.synchronize();
   auto* ptr     = buff.data();
   auto size     = buff.size();
@@ -355,7 +354,7 @@ TYPED_TEST(DeviceBufferTest, MoveConstructorStream)
 
 TYPED_TEST(DeviceBufferTest, MoveAssignmentToDefault)
 {
-  rmm::device_buffer src(this->size, rmm::cuda_stream_default, &this->mr);
+  rmm::device_buffer src(this->size, rmm::cuda_stream_default, this->mr);
   auto* ptr     = src.data();
   auto size     = src.size();
   auto capacity = src.capacity();
@@ -382,14 +381,14 @@ TYPED_TEST(DeviceBufferTest, MoveAssignmentToDefault)
 
 TYPED_TEST(DeviceBufferTest, MoveAssignment)
 {
-  rmm::device_buffer src(this->size, rmm::cuda_stream_default, &this->mr);
+  rmm::device_buffer src(this->size, rmm::cuda_stream_default, this->mr);
   auto* ptr     = src.data();
   auto size     = src.size();
   auto capacity = src.capacity();
   auto mr       = src.memory_resource();
   auto stream   = src.stream();
 
-  rmm::device_buffer dest(this->size - 1, rmm::cuda_stream_default, &this->mr);
+  rmm::device_buffer dest(this->size - 1, rmm::cuda_stream_default, this->mr);
   dest = std::move(src);
 
   // contents of `from` should be in `to`
@@ -409,7 +408,7 @@ TYPED_TEST(DeviceBufferTest, MoveAssignment)
 
 TYPED_TEST(DeviceBufferTest, SelfMoveAssignment)
 {
-  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, this->mr);
   auto* ptr     = buff.data();
   auto size     = buff.size();
   auto capacity = buff.capacity();
@@ -430,7 +429,7 @@ TYPED_TEST(DeviceBufferTest, SelfMoveAssignment)
 
 TYPED_TEST(DeviceBufferTest, ResizeSmaller)
 {
-  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, this->mr);
 
   thrust::sequence(rmm::exec_policy(rmm::cuda_stream_default),
                    static_cast<signed char*>(buff.data()),
@@ -440,7 +439,7 @@ TYPED_TEST(DeviceBufferTest, ResizeSmaller)
 
   auto* old_data = buff.data();
   rmm::device_buffer old_content(
-    old_data, buff.size(), rmm::cuda_stream_default, &this->mr);  // for comparison
+    old_data, buff.size(), rmm::cuda_stream_default, this->mr);  // for comparison
 
   auto new_size = this->size - 1;
   buff.resize(new_size, rmm::cuda_stream_default);
@@ -465,7 +464,7 @@ TYPED_TEST(DeviceBufferTest, ResizeSmaller)
 
 TYPED_TEST(DeviceBufferTest, ResizeBigger)
 {
-  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, this->mr);
   auto* old_data = buff.data();
   auto new_size  = this->size + 1;
   buff.resize(new_size, rmm::cuda_stream_default);
@@ -477,7 +476,7 @@ TYPED_TEST(DeviceBufferTest, ResizeBigger)
 
 TYPED_TEST(DeviceBufferTest, ReserveSmaller)
 {
-  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, this->mr);
   auto* const old_data    = buff.data();
   auto const old_capacity = buff.capacity();
   auto const new_capacity = buff.capacity() - 1;
@@ -490,7 +489,7 @@ TYPED_TEST(DeviceBufferTest, ReserveSmaller)
 
 TYPED_TEST(DeviceBufferTest, ReserveBigger)
 {
-  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, this->mr);
   auto* const old_data    = buff.data();
   auto const new_capacity = buff.capacity() + 1;
   buff.reserve(new_capacity, rmm::cuda_stream_default);
@@ -502,7 +501,7 @@ TYPED_TEST(DeviceBufferTest, ReserveBigger)
 
 TYPED_TEST(DeviceBufferTest, SetGetStream)
 {
-  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, &this->mr);
+  rmm::device_buffer buff(this->size, rmm::cuda_stream_default, this->mr);
 
   EXPECT_EQ(buff.stream(), rmm::cuda_stream_default);
 
@@ -536,7 +535,9 @@ TEST(DeviceBufferAlignmentTest, ExplicitAlignmentSmall)
   EXPECT_EQ(buff.size(), 100);
 }
 
-TEST(DeviceBufferAlignmentTest, ExplicitAlignmentTooLarge)
+// Disabled: leaf MRs silently ignore unsupported alignment after #2324.
+// See https://github.com/rapidsai/rmm/issues/2342
+TEST(DeviceBufferAlignmentTest, DISABLED_ExplicitAlignmentTooLarge)
 {
   auto constexpr alignment = rmm::CUDA_ALLOCATION_ALIGNMENT * 2;
   EXPECT_THROW(rmm::device_buffer(100, alignment, rmm::cuda_stream_default), rmm::bad_alloc);
@@ -559,7 +560,9 @@ TEST(DeviceBufferAlignmentTest, CopyFromSourceExplicitAlignment)
   EXPECT_EQ(buff.size(), host_data.size());
 }
 
-TEST(DeviceBufferAlignmentTest, CopyFromSourceAlignmentTooLarge)
+// Disabled: leaf MRs silently ignore unsupported alignment after #2324.
+// See https://github.com/rapidsai/rmm/issues/2342
+TEST(DeviceBufferAlignmentTest, DISABLED_CopyFromSourceAlignmentTooLarge)
 {
   std::vector<uint8_t> host_data(100, 42);
   auto constexpr alignment = rmm::CUDA_ALLOCATION_ALIGNMENT * 2;

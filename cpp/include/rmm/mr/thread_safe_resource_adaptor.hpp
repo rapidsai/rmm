@@ -4,14 +4,13 @@
  */
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
+#include <rmm/mr/detail/thread_safe_resource_adaptor_impl.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
+
 #include <cstddef>
-#include <memory>
 #include <mutex>
 
 namespace RMM_NAMESPACE {
@@ -22,109 +21,49 @@ namespace mr {
  * @file
  */
 /**
- * @brief Resource that adapts `Upstream` memory resource adaptor to be thread safe.
+ * @brief Resource that adapts an upstream resource to be thread safe.
  *
- * An instance of this resource can be constructured with an existing, upstream resource in order
- * to satisfy allocation requests. This adaptor wraps allocations and deallocations from Upstream
- * in a mutex lock.
+ * An instance of this resource can be constructed with an existing, upstream resource in order
+ * to satisfy allocation requests. This adaptor wraps allocations and deallocations from the
+ * upstream in a mutex lock.
  *
- * @tparam Upstream Type of the upstream resource used for allocation/deallocation.
+ * This class is copyable and shares ownership of its internal state via
+ * `cuda::mr::shared_resource`.
  */
-template <typename Upstream>
-class thread_safe_resource_adaptor final : public device_memory_resource {
+class RMM_EXPORT thread_safe_resource_adaptor
+  : public cuda::mr::shared_resource<detail::thread_safe_resource_adaptor_impl> {
+  using shared_base = cuda::mr::shared_resource<detail::thread_safe_resource_adaptor_impl>;
+
  public:
   using lock_t = std::lock_guard<std::mutex>;  ///< Type of lock used to synchronize access
 
   /**
-   * @brief Construct a new thread safe resource adaptor using `upstream` to satisfy
-   * allocation requests.
-   *
-   * All allocations and frees are protected by a mutex lock
-   *
-   * @param upstream The resource used for allocating/deallocating device memory.
+   * @brief Enables the `cuda::mr::device_accessible` property
    */
-  thread_safe_resource_adaptor(device_async_resource_ref upstream) : upstream_{upstream} {}
+  RMM_CONSTEXPR_FRIEND void get_property(thread_safe_resource_adaptor const&,
+                                         cuda::mr::device_accessible) noexcept
+  {
+  }
 
   /**
    * @brief Construct a new thread safe resource adaptor using `upstream` to satisfy
    * allocation requests.
    *
-   * All allocations and frees are protected by a mutex lock
-   *
-   * @throws rmm::logic_error if `upstream == nullptr`
-   *
    * @param upstream The resource used for allocating/deallocating device memory.
    */
-  thread_safe_resource_adaptor(Upstream* upstream)
-    : upstream_{to_device_async_resource_ref_checked(upstream)}
-  {
-  }
+  explicit thread_safe_resource_adaptor(
+    cuda::mr::any_resource<cuda::mr::device_accessible> upstream);
 
-  thread_safe_resource_adaptor()                                               = delete;
-  ~thread_safe_resource_adaptor() override                                     = default;
-  thread_safe_resource_adaptor(thread_safe_resource_adaptor const&)            = delete;
-  thread_safe_resource_adaptor(thread_safe_resource_adaptor&&)                 = delete;
-  thread_safe_resource_adaptor& operator=(thread_safe_resource_adaptor const&) = delete;
-  thread_safe_resource_adaptor& operator=(thread_safe_resource_adaptor&&)      = delete;
+  ~thread_safe_resource_adaptor() = default;
 
   /**
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
-  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return upstream_;
-  }
-
- private:
-  /**
-   * @brief Allocates memory of size at least `bytes` using the upstream
-   * resource with thread safety.
-   *
-   * @throws rmm::bad_alloc if the requested allocation could not be fulfilled
-   * by the upstream resource.
-   *
-   * @param bytes The size, in bytes, of the allocation
-   * @param stream Stream on which to perform the allocation
-   * @return void* Pointer to the newly allocated memory
-   */
-  void* do_allocate(std::size_t bytes, cuda_stream_view stream) override
-  {
-    lock_t lock(mtx);
-    return get_upstream_resource().allocate(stream, bytes);
-  }
-
-  /**
-   * @brief Free allocation of size `bytes` pointed to by `ptr`.
-   *
-   * @param ptr Pointer to be deallocated
-   * @param bytes Size of the allocation
-   * @param stream Stream on which to perform the deallocation
-   */
-  void do_deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream) noexcept override
-  {
-    lock_t lock(mtx);
-    get_upstream_resource().deallocate(stream, ptr, bytes);
-  }
-
-  /**
-   * @brief Compare the upstream resource to another.
-   *
-   * @param other The other resource to compare to
-   * @return true If the two resources are equivalent
-   * @return false If the two resources are not equivalent
-   */
-  bool do_is_equal(device_memory_resource const& other) const noexcept override
-  {
-    if (this == std::addressof(other)) { return true; }
-    auto cast = dynamic_cast<thread_safe_resource_adaptor<Upstream> const*>(&other);
-    if (cast == nullptr) { return false; }
-    return get_upstream_resource() == cast->get_upstream_resource();
-  }
-
-  std::mutex mutable mtx;  // mutex for thread safe access to upstream
-  device_async_resource_ref
-    upstream_;  ///< The upstream resource used for satisfying allocation requests
+  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
 };
+
+static_assert(cuda::mr::resource_with<thread_safe_resource_adaptor, cuda::mr::device_accessible>,
+              "thread_safe_resource_adaptor does not satisfy the cuda::mr::resource concept");
 
 /** @} */  // end of group
 }  // namespace mr

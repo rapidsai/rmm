@@ -28,8 +28,8 @@ namespace RMM_NAMESPACE {
  * @brief RAII construct for device memory allocation
  *
  * This class allocates untyped and *uninitialized* device memory using a
- * `device_async_resource_ref`. If not explicitly specified, the memory resource
- * returned from `get_current_device_resource_ref()` is used.
+ * `cuda::mr::any_resource<cuda::mr::device_accessible>`. If not explicitly specified, the memory
+ * resource returned from `get_current_device_resource_ref()` is used.
  *
  * @note Unlike `std::vector` or `thrust::device_vector`, the device memory
  * allocated by a `device_buffer` is uninitialized. Therefore, it is undefined
@@ -98,24 +98,26 @@ class device_buffer {
    * resource supports streams.
    * @param mr Memory resource to use for the device memory allocation.
    */
-  explicit device_buffer(std::size_t size,
-                         cuda_stream_view stream,
-                         device_async_resource_ref mr = mr::get_current_device_resource_ref());
+  explicit device_buffer(
+    std::size_t size,
+    cuda_stream_view stream,
+    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 
-  /**
-   * @copydoc device_buffer(std::size_t, cuda_stream_view, device_async_resource_ref)
-   *
-   * @throws rmm::bad_alloc If the requested alignment cannot be satisfied by the provided
-   * memory resource.
-   * @throws rmm::invalid_argument If the requested alignment is not a power of two
-   *
-   * @param alignment Required alignment of the allocation. The actual alignment will be
-   * at least the requested alignment.
-   */
-  explicit device_buffer(std::size_t size,
-                         std::size_t alignment,
-                         cuda_stream_view stream,
-                         device_async_resource_ref mr = mr::get_current_device_resource_ref());
+  // clang-format off
+  /// @copydoc device_buffer(std::size_t, cuda_stream_view, cuda::mr::any_resource<cuda::mr::device_accessible>)
+  // clang-format on
+  ///
+  /// @throws rmm::bad_alloc If the requested alignment cannot be satisfied by the provided
+  /// memory resource.
+  /// @throws rmm::invalid_argument If the requested alignment is not a power of two
+  ///
+  /// @param alignment Required alignment of the allocation. The actual alignment will be
+  /// at least the requested alignment.
+  explicit device_buffer(
+    std::size_t size,
+    std::size_t alignment,
+    cuda_stream_view stream,
+    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 
   /**
    * @brief Construct a new device buffer by copying from a raw pointer to an existing host or
@@ -140,26 +142,28 @@ class device_buffer {
    * resource supports streams.
    * @param mr Memory resource to use for the device memory allocation
    */
-  device_buffer(void const* source_data,
-                std::size_t size,
-                cuda_stream_view stream,
-                device_async_resource_ref mr = mr::get_current_device_resource_ref());
+  device_buffer(
+    void const* source_data,
+    std::size_t size,
+    cuda_stream_view stream,
+    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 
-  /**
-   * @copydoc device_buffer(void const *, std::size_t, cuda_stream_view, device_async_resource_ref)
-   *
-   * @throws rmm::bad_alloc If the requested alignment cannot be satisfied by the provided
-   * memory resource.
-   * @throws rmm::invalid_argument If the requested alignment is not a power of two
-   *
-   * @param alignment Required alignment of the allocation. The actual alignment will be
-   * at least the requested alignment.
-   */
-  explicit device_buffer(void const* source_data,
-                         std::size_t size,
-                         std::size_t alignment,
-                         cuda_stream_view stream,
-                         device_async_resource_ref mr = mr::get_current_device_resource_ref());
+  // clang-format off
+  /// @copydoc device_buffer(void const*, std::size_t, cuda_stream_view, cuda::mr::any_resource<cuda::mr::device_accessible>)
+  // clang-format on
+  ///
+  /// @throws rmm::bad_alloc If the requested alignment cannot be satisfied by the provided
+  /// memory resource.
+  /// @throws rmm::invalid_argument If the requested alignment is not a power of two
+  ///
+  /// @param alignment Required alignment of the allocation. The actual alignment will be
+  /// at least the requested alignment.
+  explicit device_buffer(
+    void const* source_data,
+    std::size_t size,
+    std::size_t alignment,
+    cuda_stream_view stream,
+    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
   /**
    * @brief Construct a new `device_buffer` by deep copying the contents of
    * another `device_buffer`, optionally using the specified stream and memory
@@ -171,7 +175,8 @@ class device_buffer {
    *
    * @note The new buffer has the same alignment guarantees as the copied-from buffer. If you need
    *to control the alignment of the new buffer explicitly, use `device_buffer(void const*,
-   * std::size_t, std::size_t, cuda_stream_view, device_async_resource_ref)`.
+   * std::size_t, std::size_t, cuda_stream_view,
+   *cuda::mr::any_resource<cuda::mr::device_accessible>)`.
    *
    * @note This function does not synchronize `stream`. `other` is copied on `stream`, so the
    * caller is responsible for correct synchronization to ensure that `other` is valid when
@@ -185,9 +190,10 @@ class device_buffer {
    * @param stream The stream to use for the allocation and copy
    * @param mr The resource to use for allocating the new `device_buffer`
    */
-  device_buffer(device_buffer const& other,
-                cuda_stream_view stream,
-                device_async_resource_ref mr = mr::get_current_device_resource_ref());
+  device_buffer(
+    device_buffer const& other,
+    cuda_stream_view stream,
+    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 
   /**
    * @brief Constructs a new `device_buffer` by moving the contents of another

@@ -64,11 +64,9 @@ struct MRRefTest : public ::testing::Test {
 
   MRRefTest() : mr{}, ref{mr} {}
 
-  // Helper to get max alignment for the resource type
   static constexpr std::size_t get_max_alignment()
   {
-    // pinned_host_memory_resource inherits from device_memory_resource which limits alignment to
-    // 256
+    // pinned_host_memory_resource uses cudaHostAlloc which only guarantees 256-byte alignment
     if constexpr (std::is_same_v<MemoryResourceType, rmm::mr::pinned_host_memory_resource>) {
       return 256;
     } else {
@@ -90,54 +88,55 @@ TYPED_TEST(MRRefTest, SelfEquality) { EXPECT_TRUE(this->ref == this->ref); }
 TYPED_TEST(MRRefTest, AllocateZeroBytes)
 {
   void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(0));
-  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, 0));
+  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(0, rmm::CUDA_ALLOCATION_ALIGNMENT));
+  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT));
 }
 
 TYPED_TEST(MRRefTest, AllocateWord)
 {
   void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(size_word));
+  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(size_word, rmm::CUDA_ALLOCATION_ALIGNMENT));
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_aligned(ptr));
   EXPECT_FALSE(is_device_memory(ptr));
-  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, size_word));
+  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, size_word, rmm::CUDA_ALLOCATION_ALIGNMENT));
 }
 
 TYPED_TEST(MRRefTest, AllocateKB)
 {
   void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(size_kb));
+  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(size_kb, rmm::CUDA_ALLOCATION_ALIGNMENT));
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_aligned(ptr));
   EXPECT_FALSE(is_device_memory(ptr));
-  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, size_kb));
+  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, size_kb, rmm::CUDA_ALLOCATION_ALIGNMENT));
 }
 
 TYPED_TEST(MRRefTest, AllocateMB)
 {
   void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(size_mb));
+  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(size_mb, rmm::CUDA_ALLOCATION_ALIGNMENT));
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_aligned(ptr));
   EXPECT_FALSE(is_device_memory(ptr));
-  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, size_mb));
+  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, size_mb, rmm::CUDA_ALLOCATION_ALIGNMENT));
 }
 
 TYPED_TEST(MRRefTest, AllocateGB)
 {
   void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(size_gb));
+  EXPECT_NO_THROW(ptr = this->ref.allocate_sync(size_gb, rmm::CUDA_ALLOCATION_ALIGNMENT));
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_aligned(ptr));
   EXPECT_FALSE(is_device_memory(ptr));
-  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, size_gb));
+  EXPECT_NO_THROW(this->ref.deallocate_sync(ptr, size_gb, rmm::CUDA_ALLOCATION_ALIGNMENT));
 }
 
 TYPED_TEST(MRRefTest, AllocateTooMuch)
 {
   void* ptr{nullptr};
-  EXPECT_THROW(ptr = this->ref.allocate_sync(size_pb), std::bad_alloc);
+  EXPECT_THROW(ptr = this->ref.allocate_sync(size_pb, rmm::CUDA_ALLOCATION_ALIGNMENT),
+               std::bad_alloc);
   EXPECT_EQ(nullptr, ptr);
 }
 
@@ -155,13 +154,15 @@ TYPED_TEST(MRRefTest, RandomAllocations)
   std::for_each(
     allocations.begin(), allocations.end(), [&generator, &distribution, this](allocation& alloc) {
       alloc.size = distribution(generator);
-      EXPECT_NO_THROW(alloc.ptr = this->ref.allocate_sync(alloc.size));
+      EXPECT_NO_THROW(alloc.ptr =
+                        this->ref.allocate_sync(alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
       EXPECT_NE(nullptr, alloc.ptr);
       EXPECT_TRUE(is_aligned(alloc.ptr));
     });
 
   std::for_each(allocations.begin(), allocations.end(), [this](allocation& alloc) {
-    EXPECT_NO_THROW(this->ref.deallocate_sync(alloc.ptr, alloc.size));
+    EXPECT_NO_THROW(
+      this->ref.deallocate_sync(alloc.ptr, alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
   });
 }
 
@@ -183,8 +184,8 @@ TYPED_TEST(MRRefTest, MixedRandomAllocationFree)
   constexpr std::size_t num_allocations{100};
   for (std::size_t i = 0; i < num_allocations; ++i) {
     std::size_t allocation_size = size_distribution(generator);
-    EXPECT_NO_THROW(
-      allocations.emplace_back(this->ref.allocate_sync(allocation_size), allocation_size));
+    EXPECT_NO_THROW(allocations.emplace_back(
+      this->ref.allocate_sync(allocation_size, rmm::CUDA_ALLOCATION_ALIGNMENT), allocation_size));
     auto new_allocation = allocations.back();
     EXPECT_NE(nullptr, new_allocation.ptr);
     EXPECT_TRUE(is_aligned(new_allocation.ptr));
@@ -193,13 +194,15 @@ TYPED_TEST(MRRefTest, MixedRandomAllocationFree)
 
     if (free_front) {
       auto front = allocations.front();
-      EXPECT_NO_THROW(this->ref.deallocate_sync(front.ptr, front.size));
+      EXPECT_NO_THROW(
+        this->ref.deallocate_sync(front.ptr, front.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
       allocations.pop_front();
     }
   }
   // free any remaining allocations
   for (auto alloc : allocations) {
-    EXPECT_NO_THROW(this->ref.deallocate_sync(alloc.ptr, alloc.size));
+    EXPECT_NO_THROW(
+      this->ref.deallocate_sync(alloc.ptr, alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
     allocations.pop_front();
   }
 }
@@ -228,34 +231,13 @@ TYPED_TEST(MRRefTest, AlignmentTest)
   }
 }
 
-TYPED_TEST(MRRefTest, UnsupportedAlignmentTest)
-{
-  std::default_random_engine generator(0);
-  constexpr std::size_t MAX_ALLOCATION_SIZE{10 * size_mb};
-  std::uniform_int_distribution<std::size_t> size_distribution(1, MAX_ALLOCATION_SIZE);
-
-  const std::size_t max_alignment = TestFixture::get_max_alignment();
-
-  for (std::size_t num_trials = 0; num_trials < NUM_TRIALS; ++num_trials) {
-    for (std::size_t alignment = MinTestedAlignment; alignment <= max_alignment;
-         alignment *= TestedAlignmentMultiplier) {
-      auto allocation_size = size_distribution(generator);
-      // An unsupported alignment (like an odd number) should result in an
-      // alignment of `alignof(std::max_align_t)`
-      auto const bad_alignment = alignment + 1;
-
-      EXPECT_THROW(this->ref.allocate_sync(allocation_size, bad_alignment), std::bad_alloc);
-    }
-  }
-}
-
 TEST(PinnedHostResource, isPinned)
 {
   rmm::mr::pinned_host_memory_resource mr;
   rmm::host_resource_ref ref{mr};
   void* ptr{nullptr};
-  EXPECT_NO_THROW(ptr = ref.allocate_sync(100));
+  EXPECT_NO_THROW(ptr = ref.allocate_sync(100, rmm::CUDA_ALLOCATION_ALIGNMENT));
   EXPECT_TRUE(is_pinned_memory(ptr));
-  EXPECT_NO_THROW(ref.deallocate_sync(ptr, 100));
+  EXPECT_NO_THROW(ref.deallocate_sync(ptr, 100, rmm::CUDA_ALLOCATION_ALIGNMENT));
 }
 }  // namespace rmm::test

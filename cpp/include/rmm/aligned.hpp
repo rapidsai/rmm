@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -80,8 +80,8 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return true if the pointer is aligned
  */
-[[nodiscard]] bool is_pointer_aligned(void* ptr,
-                                      std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT) noexcept;
+[[nodiscard]] bool is_pointer_aligned(
+  void* ptr, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
 
 /** @} */  // end of group
 

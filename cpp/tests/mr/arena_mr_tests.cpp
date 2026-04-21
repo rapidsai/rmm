@@ -10,9 +10,9 @@
 #include <rmm/cuda_stream.hpp>
 #include <rmm/error.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/stream_ref>
 
 #include <gmock/gmock.h>
@@ -30,29 +30,80 @@
 namespace rmm::test {
 namespace {
 
-class mock_memory_resource : public rmm::mr::device_memory_resource {
+class mock_memory_resource {
  public:
-  MOCK_METHOD(void*, do_allocate, (std::size_t, cuda_stream_view));
-  MOCK_METHOD(void, do_deallocate, (void*, std::size_t, cuda_stream_view), (noexcept));
   MOCK_METHOD(void*, allocate_sync, (std::size_t, std::size_t));
   MOCK_METHOD(void, deallocate_sync, (void*, std::size_t, std::size_t), (noexcept));
-  MOCK_METHOD(void*, allocate, (cuda_stream_view, std::size_t, std::size_t));
-  MOCK_METHOD(void, deallocate, (cuda_stream_view, void*, std::size_t, std::size_t), (noexcept));
+  MOCK_METHOD(void*, allocate, (cuda::stream_ref, std::size_t, std::size_t));
+  MOCK_METHOD(void, deallocate, (cuda::stream_ref, void*, std::size_t, std::size_t), (noexcept));
 
   bool operator==(mock_memory_resource const&) const noexcept { return true; }
   bool operator!=(mock_memory_resource const&) const { return false; }
-  friend void get_property(mock_memory_resource const&, cuda::mr::device_accessible) noexcept {}
+  constexpr friend void get_property(mock_memory_resource const&,
+                                     cuda::mr::device_accessible) noexcept
+  {
+  }
 };
 
 // static property checks
 static_assert(cuda::mr::resource_with<mock_memory_resource, cuda::mr::device_accessible>);
+
+// Copyable wrapper so the mock can be type-erased by CCCL basic_any.
+class mock_memory_resource_wrapper {
+ public:
+  explicit mock_memory_resource_wrapper(mock_memory_resource* mock) noexcept : mock_{mock} {}
+
+  void* allocate(cuda::stream_ref stream, std::size_t bytes, std::size_t alignment)
+  {
+    return mock_->allocate(stream, bytes, alignment);
+  }
+
+  void deallocate(cuda::stream_ref stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment) noexcept
+  {
+    mock_->deallocate(stream, ptr, bytes, alignment);
+  }
+
+  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+  {
+    return mock_->allocate_sync(bytes, alignment);
+  }
+
+  void deallocate_sync(void* ptr,
+                       std::size_t bytes,
+                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+  {
+    mock_->deallocate_sync(ptr, bytes, alignment);
+  }
+
+  bool operator==(mock_memory_resource_wrapper const& other) const noexcept
+  {
+    return mock_ == other.mock_;
+  }
+  bool operator!=(mock_memory_resource_wrapper const& other) const noexcept
+  {
+    return !(*this == other);
+  }
+
+  constexpr friend void get_property(mock_memory_resource_wrapper const&,
+                                     cuda::mr::device_accessible) noexcept
+  {
+  }
+
+ private:
+  mock_memory_resource* mock_;
+};
+
+static_assert(cuda::mr::resource_with<mock_memory_resource_wrapper, cuda::mr::device_accessible>);
 
 using rmm::mr::detail::arena::block;
 using rmm::mr::detail::arena::byte_span;
 using rmm::mr::detail::arena::superblock;
 using global_arena = rmm::mr::detail::arena::global_arena;
 using arena        = rmm::mr::detail::arena::arena;
-using arena_mr     = rmm::mr::arena_memory_resource<rmm::mr::device_memory_resource>;
+using arena_mr     = rmm::mr::arena_memory_resource;
 using ::testing::Return;
 
 // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
@@ -65,14 +116,17 @@ auto const fake_address4 = reinterpret_cast<void*>(superblock::minimum_size * 2)
 struct ArenaTest : public ::testing::Test {
   void SetUp() override
   {
-    EXPECT_CALL(mock_mr, do_allocate(arena_size, ::testing::_)).WillOnce(Return(fake_address3));
-    EXPECT_CALL(mock_mr, do_deallocate(fake_address3, arena_size, ::testing::_));
-    global     = std::make_unique<global_arena>(mock_mr, arena_size);
+    EXPECT_CALL(mock_mr, allocate_sync(arena_size, ::testing::_)).WillOnce(Return(fake_address3));
+    EXPECT_CALL(mock_mr, deallocate_sync(fake_address3, arena_size, ::testing::_));
+    mock_wrapper = std::make_unique<mock_memory_resource_wrapper>(&mock_mr);
+    global =
+      std::make_unique<global_arena>(rmm::device_async_resource_ref{*mock_wrapper}, arena_size);
     per_thread = std::make_unique<arena>(*global);
   }
 
   std::size_t arena_size{superblock::minimum_size * 4};
   mock_memory_resource mock_mr{};
+  std::unique_ptr<mock_memory_resource_wrapper> mock_wrapper{};
   std::unique_ptr<global_arena> global{};
   std::unique_ptr<arena> per_thread{};
 };
@@ -469,13 +523,6 @@ TEST_F(ArenaTest, ArenaDefragment)  // NOLINT
  * Test arena_memory_resource.
  */
 
-TEST_F(ArenaTest, ThrowOnNullUpstream)  // NOLINT
-{
-  auto construct_nullptr = []() { arena_mr mr{nullptr}; };
-  // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
-}
-
 TEST_F(ArenaTest, SizeSmallerThanSuperblockSize)  // NOLINT
 {
   auto construct_small = []() { arena_mr mr{rmm::mr::get_current_device_resource_ref(), 256}; };
@@ -516,8 +563,8 @@ TEST_F(ArenaTest, Defragment)  // NOLINT
     for (std::size_t i = 0; i < num_threads; ++i) {
       threads.emplace_back(std::thread([&] {
         cuda_stream stream{};
-        void* ptr = mr.allocate(stream, 32_KiB);
-        mr.deallocate(stream, ptr, 32_KiB);
+        void* ptr = mr.allocate(cuda_stream_view{stream}, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        mr.deallocate(cuda_stream_view{stream}, ptr, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
       }));
     }
     for (auto& thread : threads) {
@@ -538,26 +585,28 @@ TEST_F(ArenaTest, PerThreadToStreamDealloc)  // NOLINT
   auto const arena_size = superblock::minimum_size * 2;
   arena_mr mr(rmm::mr::get_current_device_resource_ref(), arena_size);
   // Create an allocation from a per thread arena
-  void* thread_ptr = mr.allocate(rmm::cuda_stream_per_thread, 256);
+  void* thread_ptr = mr.allocate(rmm::cuda_stream_per_thread, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
   // Create an allocation in a stream arena to force global arena
   // to be empty
   cuda_stream stream{};
-  void* ptr = mr.allocate(stream, 32_KiB);
-  mr.deallocate(stream, ptr, 32_KiB);
+  void* ptr = mr.allocate(cuda_stream_view{stream}, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(cuda_stream_view{stream}, ptr, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
   // at this point the global arena doesn't have any superblocks so
   // the next allocation causes defrag. Defrag causes all superblocks
   // from the thread and stream arena allocated above to go back to
   // global arena and it allocates one superblock to the stream arena.
-  auto* ptr1 = mr.allocate(rmm::cuda_stream_view{}, superblock::minimum_size);
+  auto* ptr1 =
+    mr.allocate(rmm::cuda_stream_view{}, superblock::minimum_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   // Allocate again to make sure all superblocks from
   // global arena are owned by a stream arena instead of a thread arena
   // or the global arena.
-  auto* ptr2 = mr.allocate(rmm::cuda_stream_view{}, 32_KiB);
+  auto* ptr2 = mr.allocate(rmm::cuda_stream_view{}, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
   // The original thread ptr is now owned by a stream arena so make
   // sure deallocation works.
-  mr.deallocate(rmm::cuda_stream_per_thread, thread_ptr, 256);
-  mr.deallocate(rmm::cuda_stream_view{}, ptr1, superblock::minimum_size);
-  mr.deallocate(rmm::cuda_stream_view{}, ptr2, 32_KiB);
+  mr.deallocate(rmm::cuda_stream_per_thread, thread_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(
+    rmm::cuda_stream_view{}, ptr1, superblock::minimum_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(rmm::cuda_stream_view{}, ptr2, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
@@ -581,7 +630,7 @@ TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
   }
 
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
-  EXPECT_THROW(mr.allocate_sync(8_MiB), rmm::out_of_memory);
+  EXPECT_THROW((void)mr.allocate_sync(8_MiB), rmm::out_of_memory);
 
   struct stat file_status{};
   EXPECT_EQ(stat("rmm_arena_memory_dump.log", &file_status), 0);

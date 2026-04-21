@@ -1,29 +1,25 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "mr_ref_test_allocation.hpp"
-#include "mr_ref_test_basic.hpp"
-#include "mr_ref_test_mt.hpp"
+#include "cccl_mr_ref_test_allocation.hpp"
+#include "cccl_mr_ref_test_basic.hpp"
+#include "cccl_mr_ref_test_mt.hpp"
+
+#include <rmm/mr/binning_memory_resource.hpp>
+#include <rmm/mr/per_device_resource.hpp>
 
 namespace rmm::test {
-namespace {
 
-INSTANTIATE_TEST_SUITE_P(BinningResourceTests,
-                         mr_ref_test,
-                         ::testing::Values("Binning"),
-                         [](auto const& info) { return info.param; });
+struct BinningMRFixture : public ::testing::Test {
+  rmm::mr::binning_memory_resource mr{rmm::mr::get_current_device_resource_ref(), 18, 22};
+  rmm::device_async_resource_ref ref{mr};
+  rmm::cuda_stream stream{};
+};
 
-INSTANTIATE_TEST_SUITE_P(BinningResourceAllocationTests,
-                         mr_ref_allocation_test,
-                         ::testing::Values("Binning"),
-                         [](auto const& info) { return info.param; });
+INSTANTIATE_TYPED_TEST_SUITE_P(BinningMR, CcclMrRefTest, BinningMRFixture);
+INSTANTIATE_TYPED_TEST_SUITE_P(BinningMR, CcclMrRefAllocationTest, BinningMRFixture);
+INSTANTIATE_TYPED_TEST_SUITE_P(BinningMR, CcclMrRefTestMT, BinningMRFixture);
 
-INSTANTIATE_TEST_SUITE_P(BinningMultiThreadResourceTests,
-                         mr_ref_test_mt,
-                         ::testing::Values("Binning"),
-                         [](auto const& info) { return info.param; });
-
-}  // namespace
 }  // namespace rmm::test

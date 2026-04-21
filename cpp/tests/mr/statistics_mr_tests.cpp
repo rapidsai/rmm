@@ -6,6 +6,7 @@
 #include "../byte_literals.hpp"
 #include "delayed_memory_resource.hpp"
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
@@ -25,7 +26,7 @@
 namespace rmm::test {
 namespace {
 
-using statistics_adaptor = rmm::mr::statistics_resource_adaptor<rmm::mr::device_memory_resource>;
+using statistics_adaptor = rmm::mr::statistics_resource_adaptor;
 
 constexpr auto num_allocations{10};
 constexpr auto num_more_allocations{5};
@@ -40,8 +41,8 @@ TEST_P(allocation_size, MultiThreaded)
   const std::size_t allocation_size = GetParam();
   auto upstream                     = rmm::mr::cuda_memory_resource{};
   auto delayed = delayed_memory_resource(upstream, std::chrono::milliseconds{300});
-  auto mr      = rmm::mr::statistics_resource_adaptor<delayed_memory_resource>(delayed);
-  auto stream  = rmm::cuda_stream{};
+  statistics_adaptor mr{rmm::device_async_resource_ref{delayed}};
+  auto stream = rmm::cuda_stream{};
   // Provoke interleaving to test that statistics counters are updated with correct ordering
   // relative to upstream deallocate. The delayed memory resource frees the pointer upstream
   // immediately then sleeps, simulating the window where the address is available for reuse
@@ -61,14 +62,14 @@ TEST_P(allocation_size, MultiThreaded)
     threads.emplace_back([&, i = i]() {
       void* ptr{nullptr};
       if (i != 0) { std::this_thread::sleep_for(std::chrono::milliseconds{100}); }
-      EXPECT_NO_THROW(ptr = mr.allocate(stream, allocation_size));
+      EXPECT_NO_THROW(ptr = mr.allocate(stream, allocation_size, rmm::CUDA_ALLOCATION_ALIGNMENT));
       if (allocation_size != 0) {
         EXPECT_NE(ptr, nullptr);
       } else {
         EXPECT_EQ(ptr, nullptr);
       }
       if (i == 0) { std::this_thread::sleep_for(std::chrono::milliseconds{100}); }
-      mr.deallocate(stream, ptr, allocation_size);
+      mr.deallocate(stream, ptr, allocation_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     });
   }
   for (auto& t : threads) {
@@ -78,12 +79,6 @@ TEST_P(allocation_size, MultiThreaded)
   EXPECT_EQ(mr.get_allocations_counter().value, 0);
   EXPECT_EQ(mr.get_allocations_counter().total, 2);
   EXPECT_EQ(mr.get_bytes_counter().total, 2 * allocation_size);
-}
-
-TEST(StatisticsTest, ThrowOnNullUpstream)
-{
-  auto construct_nullptr = []() { statistics_adaptor mr{nullptr}; };
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
 }
 
 TEST(StatisticsTest, Empty)
@@ -183,16 +178,17 @@ TEST(StatisticsTest, MultiTracking)
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
     allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, &mr));
+      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, mr));
   }
 
   EXPECT_EQ(mr.get_allocations_counter().value, 10);
 
-  statistics_adaptor inner_mr{&mr};
+  statistics_adaptor inner_mr{rmm::device_async_resource_ref{mr}};
 
+  rmm::device_async_resource_ref inner_ref{inner_mr};
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
     allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, &inner_mr));
+      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, inner_ref));
   }
 
   // Check the allocated bytes for both MRs
@@ -233,7 +229,7 @@ TEST(StatisticsTest, NegativeInnerTracking)
 
   EXPECT_EQ(mr.get_allocations_counter().value, 10);
 
-  statistics_adaptor inner_mr{&mr};
+  statistics_adaptor inner_mr{rmm::device_async_resource_ref{mr}};
 
   // Add more allocations
   for (std::size_t i = 0; i < num_more_allocations; ++i) {

@@ -19,7 +19,6 @@
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/fixed_size_memory_resource.hpp>
 #include <rmm/mr/managed_memory_resource.hpp>
-#include <rmm/mr/owning_wrapper.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
@@ -91,33 +90,25 @@ struct allocation {
 
 // Various test functions, shared between single-threaded and multithreaded tests.
 
-inline void test_get_current_device_resource()
-{
-  EXPECT_NE(nullptr, rmm::mr::get_current_device_resource());
-  void* ptr = rmm::mr::get_current_device_resource()->allocate_sync(1_MiB);
-  EXPECT_NE(nullptr, ptr);
-  EXPECT_TRUE(is_properly_aligned(ptr));
-  EXPECT_TRUE(is_device_accessible_memory(ptr));
-  rmm::mr::get_current_device_resource()->deallocate_sync(ptr, 1_MiB);
-}
-
 inline void test_get_current_device_resource_ref()
 {
-  void* ptr = rmm::mr::get_current_device_resource_ref().allocate_sync(1_MiB);
+  void* ptr =
+    rmm::mr::get_current_device_resource_ref().allocate_sync(1_MiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
   EXPECT_NE(nullptr, ptr);
   EXPECT_TRUE(is_properly_aligned(ptr));
   EXPECT_TRUE(is_device_accessible_memory(ptr));
-  rmm::mr::get_current_device_resource_ref().deallocate_sync(ptr, 1_MiB);
+  rmm::mr::get_current_device_resource_ref().deallocate_sync(
+    ptr, 1_MiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 inline void test_allocate(resource_ref ref, std::size_t bytes)
 {
   try {
-    void* ptr = ref.allocate_sync(bytes);
+    void* ptr = ref.allocate_sync(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
     EXPECT_NE(nullptr, ptr);
     EXPECT_TRUE(is_properly_aligned(ptr));
     EXPECT_TRUE(is_device_accessible_memory(ptr));
-    ref.deallocate_sync(ptr, bytes);
+    ref.deallocate_sync(ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   } catch (rmm::out_of_memory const& e) {
     EXPECT_NE(std::string{e.what()}.find("out_of_memory"), std::string::npos);
   }
@@ -128,12 +119,12 @@ inline void test_async_allocate(rmm::device_async_resource_ref ref,
                                 cuda_stream_view stream = {})
 {
   try {
-    void* ptr = ref.allocate(stream, bytes);
+    void* ptr = ref.allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
     if (not stream.is_default()) { stream.synchronize(); }
     EXPECT_NE(nullptr, ptr);
     EXPECT_TRUE(is_properly_aligned(ptr));
     EXPECT_TRUE(is_device_accessible_memory(ptr));
-    ref.deallocate(stream, ptr, bytes);
+    ref.deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
     if (not stream.is_default()) { stream.synchronize(); }
   } catch (rmm::out_of_memory const& e) {
     EXPECT_NE(std::string{e.what()}.find("out_of_memory"), std::string::npos);
@@ -144,34 +135,34 @@ inline void test_async_allocate(rmm::device_async_resource_ref ref,
 inline void concurrent_allocations_are_different(resource_ref ref)
 {
   const auto size{8_B};
-  void* ptr1 = ref.allocate_sync(size);
-  void* ptr2 = ref.allocate_sync(size);
+  void* ptr1 = ref.allocate_sync(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  void* ptr2 = ref.allocate_sync(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   EXPECT_NE(ptr1, ptr2);
 
-  ref.deallocate_sync(ptr1, size);
-  ref.deallocate_sync(ptr2, size);
+  ref.deallocate_sync(ptr1, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  ref.deallocate_sync(ptr2, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 inline void concurrent_async_allocations_are_different(rmm::device_async_resource_ref ref,
                                                        cuda_stream_view stream)
 {
   const auto size{8_B};
-  void* ptr1 = ref.allocate(stream, size);
-  void* ptr2 = ref.allocate(stream, size);
+  void* ptr1 = ref.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  void* ptr2 = ref.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   EXPECT_NE(ptr1, ptr2);
 
-  ref.deallocate(stream, ptr1, size);
-  ref.deallocate(stream, ptr2, size);
+  ref.deallocate(stream, ptr1, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  ref.deallocate(stream, ptr2, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 inline void test_various_allocations(resource_ref ref)
 {
   // test allocating zero bytes on non-default stream
   {
-    void* ptr = ref.allocate_sync(0);
-    EXPECT_NO_THROW(ref.deallocate_sync(ptr, 0));
+    void* ptr = ref.allocate_sync(0, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    EXPECT_NO_THROW(ref.deallocate_sync(ptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT));
   }
 
   test_allocate(ref, 4_B);
@@ -182,12 +173,13 @@ inline void test_various_allocations(resource_ref ref)
   // should fail to allocate too much
   {
     void* ptr{nullptr};
-    EXPECT_THROW(ptr = ref.allocate_sync(1_PiB), rmm::out_of_memory);
+    EXPECT_THROW(ptr = ref.allocate_sync(1_PiB, rmm::CUDA_ALLOCATION_ALIGNMENT),
+                 rmm::out_of_memory);
     EXPECT_EQ(nullptr, ptr);
 
     // test e.what();
     try {
-      ptr = ref.allocate_sync(1_PiB);
+      ptr = ref.allocate_sync(1_PiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
     } catch (rmm::out_of_memory const& e) {
       EXPECT_NE(std::string{e.what()}.find("out_of_memory"), std::string::npos);
     }
@@ -199,9 +191,9 @@ inline void test_various_async_allocations(rmm::device_async_resource_ref ref,
 {
   // test allocating zero bytes on non-default stream
   {
-    void* ptr = ref.allocate(stream, 0);
+    void* ptr = ref.allocate(stream, 0, rmm::CUDA_ALLOCATION_ALIGNMENT);
     stream.synchronize();
-    EXPECT_NO_THROW(ref.deallocate(stream, ptr, 0));
+    EXPECT_NO_THROW(ref.deallocate(stream, ptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT));
     stream.synchronize();
   }
 
@@ -213,12 +205,13 @@ inline void test_various_async_allocations(rmm::device_async_resource_ref ref,
   // should fail to allocate too much
   {
     void* ptr{nullptr};
-    EXPECT_THROW(ptr = ref.allocate(stream, 1_PiB), rmm::out_of_memory);
+    EXPECT_THROW(ptr = ref.allocate(stream, 1_PiB, rmm::CUDA_ALLOCATION_ALIGNMENT),
+                 rmm::out_of_memory);
     EXPECT_EQ(nullptr, ptr);
 
     // test e.what();
     try {
-      ptr = ref.allocate(stream, 1_PiB);
+      ptr = ref.allocate(stream, 1_PiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
     } catch (rmm::out_of_memory const& e) {
       EXPECT_NE(std::string{e.what()}.find("out_of_memory"), std::string::npos);
     }
@@ -238,13 +231,13 @@ inline void test_random_allocations(resource_ref ref,
   std::for_each(
     allocations.begin(), allocations.end(), [&generator, &distribution, &ref](allocation& alloc) {
       alloc.size = distribution(generator);
-      EXPECT_NO_THROW(alloc.ptr = ref.allocate_sync(alloc.size));
+      EXPECT_NO_THROW(alloc.ptr = ref.allocate_sync(alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
       EXPECT_NE(nullptr, alloc.ptr);
       EXPECT_TRUE(is_properly_aligned(alloc.ptr));
     });
 
   std::for_each(allocations.begin(), allocations.end(), [&ref](allocation& alloc) {
-    EXPECT_NO_THROW(ref.deallocate_sync(alloc.ptr, alloc.size));
+    EXPECT_NO_THROW(ref.deallocate_sync(alloc.ptr, alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
   });
 }
 
@@ -259,18 +252,19 @@ inline void test_random_async_allocations(rmm::device_async_resource_ref ref,
   std::uniform_int_distribution<std::size_t> distribution(1, max_size);
 
   // num_allocations allocations from [0,max_size)
-  std::for_each(allocations.begin(),
-                allocations.end(),
-                [&generator, &distribution, &ref, stream](allocation& alloc) {
-                  alloc.size = distribution(generator);
-                  EXPECT_NO_THROW(alloc.ptr = ref.allocate_sync(alloc.size));
-                  if (not stream.is_default()) { stream.synchronize(); }
-                  EXPECT_NE(nullptr, alloc.ptr);
-                  EXPECT_TRUE(is_properly_aligned(alloc.ptr));
-                });
+  std::for_each(
+    allocations.begin(),
+    allocations.end(),
+    [&generator, &distribution, &ref, stream](allocation& alloc) {
+      alloc.size = distribution(generator);
+      EXPECT_NO_THROW(alloc.ptr = ref.allocate_sync(alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
+      if (not stream.is_default()) { stream.synchronize(); }
+      EXPECT_NE(nullptr, alloc.ptr);
+      EXPECT_TRUE(is_properly_aligned(alloc.ptr));
+    });
 
   std::for_each(allocations.begin(), allocations.end(), [stream, &ref](allocation& alloc) {
-    EXPECT_NO_THROW(ref.deallocate_sync(alloc.ptr, alloc.size));
+    EXPECT_NO_THROW(ref.deallocate_sync(alloc.ptr, alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
     if (not stream.is_default()) { stream.synchronize(); }
   });
 }
@@ -304,7 +298,8 @@ inline void test_mixed_random_allocation_free(resource_ref ref,
       std::size_t size = size_distribution(generator);
       active_allocations++;
       allocation_count++;
-      EXPECT_NO_THROW(allocations.emplace_back(ref.allocate_sync(size), size));
+      EXPECT_NO_THROW(
+        allocations.emplace_back(ref.allocate_sync(size, rmm::CUDA_ALLOCATION_ALIGNMENT), size));
       auto new_allocation = allocations.back();
       EXPECT_NE(nullptr, new_allocation.ptr);
       EXPECT_TRUE(is_properly_aligned(new_allocation.ptr));
@@ -314,7 +309,8 @@ inline void test_mixed_random_allocation_free(resource_ref ref,
       active_allocations--;
       allocation to_free = allocations[index];
       allocations.erase(std::next(allocations.begin(), static_cast<std::ptrdiff_t>(index)));
-      EXPECT_NO_THROW(ref.deallocate_sync(to_free.ptr, to_free.size));
+      EXPECT_NO_THROW(
+        ref.deallocate_sync(to_free.ptr, to_free.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
     }
   }
 
@@ -352,7 +348,8 @@ inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_r
       std::size_t size = size_distribution(generator);
       active_allocations++;
       allocation_count++;
-      EXPECT_NO_THROW(allocations.emplace_back(ref.allocate(stream, size), size));
+      EXPECT_NO_THROW(
+        allocations.emplace_back(ref.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT), size));
       auto new_allocation = allocations.back();
       EXPECT_NE(nullptr, new_allocation.ptr);
       EXPECT_TRUE(is_properly_aligned(new_allocation.ptr));
@@ -362,7 +359,8 @@ inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_r
       active_allocations--;
       allocation to_free = allocations[index];
       allocations.erase(std::next(allocations.begin(), static_cast<std::ptrdiff_t>(index)));
-      EXPECT_NO_THROW(ref.deallocate(stream, to_free.ptr, to_free.size));
+      EXPECT_NO_THROW(
+        ref.deallocate(stream, to_free.ptr, to_free.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
     }
   }
 
@@ -399,38 +397,27 @@ inline auto make_system()
   }
 }
 
-inline auto make_pool()
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(
-    make_cuda(), rmm::percent_of_free_device_memory(50));
-}
-
-inline auto make_pinned_pool()
-{
-  return rmm::mr::make_owning_wrapper<rmm::mr::pool_memory_resource>(make_pinned(), 2_GiB, 8_GiB);
-}
-
 inline auto make_arena()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::arena_memory_resource>(make_cuda());
+  return std::make_shared<rmm::mr::arena_memory_resource>(
+    rmm::mr::get_current_device_resource_ref());
 }
 
 inline auto make_fixed_size()
 {
-  return rmm::mr::make_owning_wrapper<rmm::mr::fixed_size_memory_resource>(make_cuda());
+  return std::make_shared<rmm::mr::fixed_size_memory_resource>(
+    rmm::mr::get_current_device_resource_ref());
 }
 
 inline auto make_binning()
 {
-  auto pool = make_pool();
   // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
-  // Larger allocations will use the pool resource
+  // Larger allocations will use the current device resource
   auto const bin_range_start{18};
   auto const bin_range_end{22};
 
-  auto mr = rmm::mr::make_owning_wrapper<rmm::mr::binning_memory_resource>(
-    pool, bin_range_start, bin_range_end);
-  return mr;
+  return std::make_shared<rmm::mr::binning_memory_resource>(
+    rmm::mr::get_current_device_resource_ref(), bin_range_start, bin_range_end);
 }
 
 struct mr_factory_base {
@@ -457,16 +444,14 @@ struct mr_factory : mr_factory_base {
   std::invoke_result_t<MRFactoryFunc> owned_mr;
 };
 
-using cuda_mr        = rmm::mr::cuda_memory_resource;
-using pinned_mr      = rmm::mr::pinned_host_memory_resource;
-using cuda_async_mr  = rmm::mr::cuda_async_memory_resource;
-using managed_mr     = rmm::mr::managed_memory_resource;
-using system_mr      = rmm::mr::system_memory_resource;
-using pool_mr        = rmm::mr::pool_memory_resource<cuda_mr>;
-using pinned_pool_mr = rmm::mr::pool_memory_resource<pinned_mr>;
-using arena_mr       = rmm::mr::arena_memory_resource<cuda_mr>;
-using fixed_mr       = rmm::mr::fixed_size_memory_resource<cuda_mr>;
-using binning_mr     = rmm::mr::binning_memory_resource<pool_mr>;
+using cuda_mr       = rmm::mr::cuda_memory_resource;
+using pinned_mr     = rmm::mr::pinned_host_memory_resource;
+using cuda_async_mr = rmm::mr::cuda_async_memory_resource;
+using managed_mr    = rmm::mr::managed_memory_resource;
+using system_mr     = rmm::mr::system_memory_resource;
+using arena_mr      = rmm::mr::arena_memory_resource;
+using fixed_mr      = rmm::mr::fixed_size_memory_resource;
+using binning_mr    = rmm::mr::binning_memory_resource;
 
 inline std::shared_ptr<mr_factory_base> mr_factory_dispatch(std::string name)
 {
@@ -482,11 +467,6 @@ inline std::shared_ptr<mr_factory_base> mr_factory_dispatch(std::string name)
                                                                             make_managed);
   } else if (name == "System") {
     return std::make_shared<mr_factory<system_mr, decltype(make_system)>>("System", make_system);
-  } else if (name == "Pool") {
-    return std::make_shared<mr_factory<pool_mr, decltype(make_pool)>>("Pool", make_pool);
-  } else if (name == "PinnedPool") {
-    return std::make_shared<mr_factory<pinned_pool_mr, decltype(make_pinned_pool)>>(
-      "PinnedPool", make_pinned_pool);
   } else if (name == "Arena") {
     return std::make_shared<mr_factory<arena_mr, decltype(make_arena)>>("Arena", make_arena);
   } else if (name == "Binning") {
