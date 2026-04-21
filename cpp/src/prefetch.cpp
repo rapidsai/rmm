@@ -27,8 +27,13 @@ void prefetch(void const* ptr,
   cudaError_t result = cudaMemPrefetchAsync(ptr, size, device.value(), stream.value());
 #endif
   // cudaErrorInvalidValue is returned when non-managed memory is passed to
-  // cudaMemPrefetchAsync. We treat this as a no-op.
-  if (result != cudaErrorInvalidValue && result != cudaSuccess) { RMM_CUDA_TRY(result); }
+  // cudaMemPrefetchAsync. We treat this as a no-op but must clear the sticky
+  // error from the CUDA runtime to prevent downstream failures.
+  if (result == cudaErrorInvalidValue) {
+    (void)cudaGetLastError();
+  } else if (result != cudaSuccess) {
+    RMM_CUDA_TRY(result);
+  }
 }
 
 }  // namespace rmm
