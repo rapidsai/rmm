@@ -34,7 +34,7 @@ namespace RMM_EXPORT rmm {
  *    simply be leaked; the OS reclaims them when the process exits.
  *
  * Calling `rmm::process_is_exiting()` from a resource destructor is always safe: it performs a
- * single relaxed atomic load and never calls into CUDA.
+ * single atomic load (acquire semantics) and never calls into CUDA.
  *
  * @par Example
  * @code

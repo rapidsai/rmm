@@ -142,6 +142,12 @@ inline device_async_resource_ref get_per_device_resource_ref(cuda_device_id devi
  * resource is undefined if used while the active CUDA device is a different device from the one
  * that was active when the memory resource was created.
  *
+ * @note The resource passed in `new_resource` must be safe to destroy at process shutdown. The
+ * per-device resource map keeps the resource alive until process exit, so its destructor may run
+ * after the CUDA primary context has been destroyed -- at that point calling into the CUDA
+ * runtime is undefined behavior. Resource destructors must either not call CUDA APIs at all, or
+ * consult `rmm::process_is_exiting()` and skip CUDA calls when it returns `true`.
+ *
  * @param device_id The id of the target device
  * @param new_resource New resource to use for `device_id`
  * @return An owning `any_resource` holding the previous resource for `device_id`
@@ -181,6 +187,13 @@ inline cuda::mr::any_resource<cuda::mr::device_accessible> set_per_device_resour
  * was the current CUDA device (e.g. set using `cudaSetDevice()`). The behavior of a
  * `device_async_resource_ref` is undefined if used while the active CUDA device is a different
  * device from the one that was active when the memory resource was created.
+ *
+ * @note The underlying resource referenced by `new_resource_ref` must be safe to destroy at
+ * process shutdown. The per-device resource map keeps a reference alive until process exit, so
+ * the underlying resource's destructor may run after the CUDA primary context has been
+ * destroyed -- at that point calling into the CUDA runtime is undefined behavior. Resource
+ * destructors must either not call CUDA APIs at all, or consult `rmm::process_is_exiting()` and
+ * skip CUDA calls when it returns `true`.
  *
  * @param device_id The id of the target device
  * @param new_resource_ref new `device_async_resource_ref` to use as new resource for `device_id`
@@ -237,6 +250,12 @@ inline device_async_resource_ref get_current_device_resource_ref()
  * The behavior of a memory resource is undefined if used while the active CUDA device is a
  * different device from the one that was active when the memory resource was created.
  *
+ * @note The resource passed in `new_resource` must be safe to destroy at process shutdown. The
+ * per-device resource map keeps the resource alive until process exit, so its destructor may run
+ * after the CUDA primary context has been destroyed -- at that point calling into the CUDA
+ * runtime is undefined behavior. Resource destructors must either not call CUDA APIs at all, or
+ * consult `rmm::process_is_exiting()` and skip CUDA calls when it returns `true`.
+ *
  * @param new_resource New resource to use for the current device
  * @return An owning `any_resource` holding the previous resource for the current device
  */
@@ -266,6 +285,13 @@ inline cuda::mr::any_resource<cuda::mr::device_accessible> set_current_device_re
  * @note The resource passed in `new_resource_ref` must have been created for the current CUDA
  * device. The behavior of a `device_async_resource_ref` is undefined if used while the active CUDA
  * device is a different device from the one that was active when the memory resource was created.
+ *
+ * @note The underlying resource referenced by `new_resource_ref` must be safe to destroy at
+ * process shutdown. The per-device resource map keeps a reference alive until process exit, so
+ * the underlying resource's destructor may run after the CUDA primary context has been
+ * destroyed -- at that point calling into the CUDA runtime is undefined behavior. Resource
+ * destructors must either not call CUDA APIs at all, or consult `rmm::process_is_exiting()` and
+ * skip CUDA calls when it returns `true`.
  *
  * @param new_resource_ref New `device_async_resource_ref` to use for the current device
  * @return An owning `any_resource` holding the previous resource for the current device
