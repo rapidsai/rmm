@@ -9,6 +9,7 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/mr/detail/cuda_async_memory_resource_impl.hpp>
+#include <rmm/process_is_exiting.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -66,7 +67,12 @@ cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
 
 cuda_async_memory_resource_impl::~cuda_async_memory_resource_impl()
 {
-  RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaMemPoolDestroy(pool_handle()));
+  // During process exit, calling into CUDA is undefined behavior once the primary context has
+  // been destroyed. Leak the memory pool in that case; the OS reclaims it when the process
+  // exits. See rmm/process_is_exiting.hpp.
+  if (!rmm::process_is_exiting()) {
+    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaMemPoolDestroy(pool_handle()));
+  }
 }
 
 cudaMemPool_t cuda_async_memory_resource_impl::pool_handle() const noexcept

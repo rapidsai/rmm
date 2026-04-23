@@ -120,7 +120,8 @@ add_library(
   src/mr/statistics_resource_adaptor.cpp
   src/mr/thread_safe_resource_adaptor.cpp
   src/mr/tracking_resource_adaptor.cpp
-  src/prefetch.cpp)
+  src/prefetch.cpp
+  src/runtime_shutdown.cpp)
 add_library(rmm::rmm ALIAS rmm)
 
 target_include_directories(

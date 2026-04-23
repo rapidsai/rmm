@@ -6,6 +6,7 @@
 #include <rmm/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
+#include <rmm/process_is_exiting.hpp>
 
 #include <cuda_runtime_api.h>
 
@@ -22,7 +23,12 @@ cuda_stream::cuda_stream(cuda_stream::flags flags)
               return stream;
             }(),
             [](cudaStream_t* stream) {
-              RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamDestroy(*stream));
+              // During process exit, calling into CUDA is undefined behavior once the primary
+              // context has been destroyed. Leak the stream in that case; the OS reclaims it
+              // when the process exits. See rmm/process_is_exiting.hpp.
+              if (!rmm::process_is_exiting()) {
+                RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamDestroy(*stream));
+              }
               delete stream;  // NOLINT(cppcoreguidelines-owning-memory)
             }}
 {
