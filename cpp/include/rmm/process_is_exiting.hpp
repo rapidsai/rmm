@@ -22,7 +22,6 @@ namespace RMM_EXPORT rmm {
  * undefined behavior: the primary context may already be destroyed, and CUDA API calls may
  * dereference released state and crash inside libcuda rather than returning an error.
  *
- * @par Memory resource author contract
  * All RMM memory resources must be safe to destroy at process shutdown. An MR destructor may
  * run during normal program flow (when calling CUDA APIs is safe) or after `exit()` has been
  * called (when it is not). Authors must satisfy this by either:
@@ -36,8 +35,8 @@ namespace RMM_EXPORT rmm {
  * Calling `rmm::process_is_exiting()` from a resource destructor is always safe: it performs a
  * single atomic load (acquire semantics) and never calls into CUDA.
  *
- * @par Example
- * @code
+ * Example:
+ * @code{.cpp}
  * class my_resource final : public ... {
  *   ~my_resource() override
  *   {
