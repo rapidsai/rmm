@@ -145,6 +145,7 @@ ConfigureTest(SYSTEM_MR_REF_TEST mr/mr_ref_system_tests.cpp)
 ConfigureTest(PINNED_MR_REF_TEST mr/mr_ref_pinned_tests.cpp)
 ConfigureTest(LOGGING_MR_REF_TEST mr/mr_ref_logging_tests.cpp)
 ConfigureTest(FIXED_SIZE_MR_REF_TEST mr/mr_ref_fixed_size_tests.cpp)
+ConfigureTest(FIXED_SIZE_MR_TEST mr/fixed_size_mr_test.cpp)
 ConfigureTest(DEFAULT_MR_REF_TEST mr/mr_ref_default_tests.cpp)
 
 # general adaptor tests
