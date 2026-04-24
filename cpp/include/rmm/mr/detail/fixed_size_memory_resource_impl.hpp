@@ -12,12 +12,18 @@
 #include <cuda/memory_resource>
 
 #include <cstddef>
+#include <memory>
 #include <mutex>
 #include <utility>
 #include <vector>
 
 namespace RMM_NAMESPACE {
 namespace mr {
+
+// Forward declarations for friend access from detail::fixed_size_memory_resource_impl
+class fixed_size_memory_resource;
+class multiple_blocks_allocation;
+
 namespace detail {
 
 /**
@@ -79,6 +85,11 @@ class fixed_size_memory_resource_impl final
   std::pair<std::size_t, std::size_t> free_list_summary(free_list const& blocks);
 
  private:
+  friend class RMM_NAMESPACE::mr::multiple_blocks_allocation;
+
+  // Caller must hold get_mutex().
+  void deallocate_blocks_async_unsafe(std::vector<std::byte*>&& blocks, cuda_stream_view stream);
+
   free_list blocks_from_upstream(cuda_stream_view stream);
 
   void release();
