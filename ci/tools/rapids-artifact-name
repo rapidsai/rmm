@@ -1,0 +1,168 @@
+#!/bin/bash
+# Generates a standardized artifact name following the template:
+#   python: {repo}_{pkg_type}_{pkg_lang}_{pkg_name}_{arch}_{cpython_version}[_{cuda_version}]
+#   cpp:    {repo}_{pkg_type}_{pkg_lang}_{pkg_name}_{arch}[_{cuda_version}]
+# Positional Arguments:
+#   1) package type (conda_cpp, conda_python, wheel_cpp, wheel_python)
+#   2) package name (e.g. librmm, rmm)
+#   3) repo_name (optional): overrides repo name derived from RAPIDS_REPOSITORY
+# Flags:
+#   --cuda [version]: CUDA version as cu<N> (bare: uses RAPIDS_CUDA_VERSION)
+#   --py [version]: Python version as cp<NNN> (bare: uses RAPIDS_PY_VERSION)
+#                   (python packages only; mutually exclusive with --stable and --pure)
+#   --stable: use abi3 for cpython_version (python packages only)
+#   --pure: use pure for cpython_version (python packages only)
+set -euo pipefail
+export RAPIDS_SCRIPT_NAME="rapids-artifact-name"
+
+cuda_flag=0
+py_flag=0
+stable_flag=0
+pure_flag=0
+cuda_version=""
+py_version=""
+pkg_type=""
+pkg_name=""
+repo_name=""
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --cuda)
+      cuda_flag=1
+      shift
+      if [[ $# -gt 0 && "$1" != -* ]]; then
+        cuda_version="$1"
+        shift
+      fi
+      ;;
+    --py)
+      py_flag=1
+      shift
+      if [[ $# -gt 0 && "$1" != -* ]]; then
+        py_version="$1"
+        shift
+      fi
+      ;;
+    --stable)
+      stable_flag=1
+      shift
+      ;;
+    --pure)
+      pure_flag=1
+      shift
+      ;;
+    -*)
+      rapids-echo-stderr "Unknown flag: $1. Supported flags: --cuda, --py, --stable, --pure"
+      exit 1
+      ;;
+    *)
+      if [[ -z "${pkg_type}" ]]; then
+        pkg_type="$1"
+        shift
+      elif [[ -z "${pkg_name}" ]]; then
+        pkg_name="$1"
+        shift
+      elif [[ -z "${repo_name}" ]]; then
+        repo_name="$1"
+        shift
+      else
+        rapids-echo-stderr "Too many positional arguments: $1"
+        exit 1
+      fi
+      ;;
+  esac
+done
+
+if [[ -z "${pkg_type}" || -z "${pkg_name}" ]]; then
+  rapids-echo-stderr "Usage: rapids-artifact-name PKG_TYPE PKG_NAME [REPO_NAME] --cuda [version] [--py [version] | --stable | --pure]"
+  exit 1
+fi
+
+case "${pkg_type}" in
+  conda_cpp|conda_python|wheel_cpp|wheel_python) ;;
+  *)
+    rapids-echo-stderr "Invalid package type '${pkg_type}'. Must be one of: conda_cpp, conda_python, wheel_cpp, wheel_python"
+    exit 1
+    ;;
+esac
+
+pkg_type_part="${pkg_type%%_*}"
+pkg_lang="${pkg_type##*_}"
+
+if (( stable_flag == 1 && pure_flag == 1 )); then
+  rapids-echo-stderr "Cannot use '--stable' with '--pure'"
+  exit 1
+fi
+
+if (( stable_flag == 1 && py_flag == 1 )); then
+  rapids-echo-stderr "Cannot use '--stable' with '--py'"
+  exit 1
+fi
+
+if (( pure_flag == 1 && py_flag == 1 )); then
+  rapids-echo-stderr "Cannot use '--pure' with '--py'"
+  exit 1
+fi
+
+if [[ "${pkg_lang}" == "cpp" ]] && (( stable_flag == 1 || pure_flag == 1 )); then
+  rapids-echo-stderr "'--stable' and '--pure' are only valid for Python package types"
+  exit 1
+fi
+
+if [[ "${pkg_lang}" == "python" ]] && (( stable_flag == 0 && pure_flag == 0 && py_flag == 0 )); then
+  rapids-echo-stderr "Python packages require one of: --py [version], --stable, --pure"
+  exit 1
+fi
+
+if [[ -z "${repo_name}" ]]; then
+  repo_name="${RAPIDS_REPOSITORY##*/}"
+fi
+
+# Resolve CUDA version (only when --cuda flag was passed)
+cuda_field=""
+if (( cuda_flag == 1 )); then
+  if [[ -z "${cuda_version}" ]]; then
+    if [[ -z "${RAPIDS_CUDA_VERSION:-}" ]]; then
+      rapids-echo-stderr "RAPIDS_CUDA_VERSION must be set when using --cuda without a version argument"
+      exit 1
+    fi
+    cuda_version="${RAPIDS_CUDA_VERSION}"
+  fi
+  cuda_field="cu${cuda_version%%.*}"
+fi
+
+# Resolve cpython_version field
+if [[ "${pkg_lang}" == "cpp" ]]; then
+  cpython_version=""
+elif (( stable_flag == 1 )); then
+  cpython_version="abi3"
+elif (( pure_flag == 1 )); then
+  cpython_version="pure"
+else
+  if [[ -z "${py_version}" ]]; then
+    if [[ -z "${RAPIDS_PY_VERSION:-}" ]]; then
+      rapids-echo-stderr "RAPIDS_PY_VERSION must be set when using --py without a version argument"
+      exit 1
+    fi
+    py_version="${RAPIDS_PY_VERSION}"
+  fi
+  cpython_version="cp${py_version//./}"
+fi
+
+# Resolve arch field
+raw_arch="$(arch)"
+case "${raw_arch}" in
+  x86_64)  arch_field="amd64" ;;
+  aarch64) arch_field="arm64" ;;
+  *)       arch_field="${raw_arch}" ;;
+esac
+
+artifact_name="${repo_name}_${pkg_type_part}_${pkg_lang}_${pkg_name}_${arch_field}"
+if [[ -n "${cpython_version}" ]]; then
+  artifact_name+="_${cpython_version}"
+fi
+if [[ -n "${cuda_field}" ]]; then
+  artifact_name+="_${cuda_field}"
+fi
+
+echo -n "${artifact_name}"

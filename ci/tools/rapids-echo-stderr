@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Echo to stderr helper function
+STR=""
+if [[ -n "${RAPIDS_SCRIPT_NAME}" ]]; then
+  STR+="[${RAPIDS_SCRIPT_NAME}] "
+fi
+STR+="$*"
+
+echo "${STR}" >&2
