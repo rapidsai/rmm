@@ -4,13 +4,13 @@
  */
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/fixed_size_memory_resource_impl.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/std/span>
+#include <cuda/stream_ref>
 
 #include <cstddef>
 #include <memory>
@@ -121,7 +121,7 @@ class RMM_EXPORT multiple_blocks_allocation {
    *        deallocation).
    */
   [[nodiscard]] static std::unique_ptr<multiple_blocks_allocation> make_async(
-    fixed_size_memory_resource mr, std::size_t size, cuda_stream_view stream);
+    fixed_size_memory_resource mr, std::size_t size, cuda::stream_ref stream);
 
   /**
    * @brief Destroy this handle and return any held blocks to the pool.
@@ -208,7 +208,7 @@ class RMM_EXPORT multiple_blocks_allocation {
    *
    * @return The stream passed to make_async.
    */
-  [[nodiscard]] constexpr cuda_stream_view stream() const noexcept { return stream_; }
+  [[nodiscard]] constexpr cuda::stream_ref stream() const noexcept { return stream_; }
 
   /**
    * @brief Return all blocks to the pool on `stream()`, then leave this handle empty.
@@ -223,12 +223,12 @@ class RMM_EXPORT multiple_blocks_allocation {
  private:
   multiple_blocks_allocation(std::size_t size,
                              std::vector<std::byte*> buffers,
-                             cuda_stream_view stream,
+                             cuda::stream_ref stream,
                              fixed_size_memory_resource mr) noexcept;
 
   std::vector<std::byte*> blocks_;
   std::size_t size_;
-  cuda_stream_view stream_;
+  cuda::stream_ref stream_;
   fixed_size_memory_resource mr_;
 };
 

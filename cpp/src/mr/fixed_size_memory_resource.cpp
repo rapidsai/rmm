@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
@@ -40,7 +41,7 @@ std::size_t fixed_size_memory_resource::get_block_size() const noexcept
 
 multiple_blocks_allocation::multiple_blocks_allocation(std::size_t size,
                                                        std::vector<std::byte*> buffers,
-                                                       cuda_stream_view stream,
+                                                       cuda::stream_ref stream,
                                                        fixed_size_memory_resource mr) noexcept
   : blocks_(std::move(buffers)), size_(size), stream_(stream), mr_(std::move(mr))
 {
@@ -89,9 +90,9 @@ multiple_blocks_allocation::~multiple_blocks_allocation() noexcept
 }
 
 std::unique_ptr<multiple_blocks_allocation> multiple_blocks_allocation::make_async(
-  fixed_size_memory_resource mr, std::size_t size, cuda_stream_view stream)
+  fixed_size_memory_resource mr, std::size_t size, cuda::stream_ref stream)
 {
-  RMM_EXPECTS(!stream.is_per_thread_default(),
+  RMM_EXPECTS(!cuda_stream_view{stream}.is_per_thread_default(),
               "stream must not be a per-thread default stream",
               rmm::invalid_argument);
 

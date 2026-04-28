@@ -25,6 +25,8 @@
 #include <string>
 #include <vector>
 
+using namespace rmm::test;
+
 namespace {
 
 struct FixedSizeMRTestParam {
@@ -86,7 +88,7 @@ TEST_P(FixedSizeMRTest, AllocAndDeallocBlocksAsync)
   {
     auto fixed_mr = fixed_size_mr(counting, param.block_size, blocks_to_preallocate);
 
-    rmm::cuda_stream_pool stream_pool{param.n_streams, cuda_stream::flags::non_blocking};
+    rmm::cuda_stream_pool stream_pool{param.n_streams, rmm::cuda_stream::flags::non_blocking};
 
     std::size_t const alloc_size = param.size;
     std::size_t const n_threads  = param.n_threads;
