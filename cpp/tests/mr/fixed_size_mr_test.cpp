@@ -25,7 +25,6 @@
 #include <string>
 #include <vector>
 
-namespace rmm::test {
 namespace {
 
 struct FixedSizeMRTestParam {
@@ -175,4 +174,3 @@ INSTANTIATE_TEST_SUITE_P(FixedSizeMRTests,
                                   std::to_string(info.param.n_threads) + "_ns" +
                                   std::to_string(info.param.n_streams);
                          });
-}  // namespace rmm::test
