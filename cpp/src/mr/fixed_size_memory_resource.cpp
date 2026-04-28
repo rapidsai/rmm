@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/mr/fixed_size_memory_resource.hpp>
 
@@ -58,6 +59,10 @@ multiple_blocks_allocation::~multiple_blocks_allocation()
 std::unique_ptr<multiple_blocks_allocation> multiple_blocks_allocation::make_async(
   fixed_size_memory_resource mr, std::size_t size, cuda_stream_view stream)
 {
+  RMM_EXPECTS(!stream.is_per_thread_default(),
+              "stream must not be a per-thread default stream",
+              rmm::invalid_argument);
+
   if (size == 0) {
     return std::unique_ptr<multiple_blocks_allocation>(
       new multiple_blocks_allocation(0, {}, stream, std::move(mr)));
@@ -75,13 +80,14 @@ std::unique_ptr<multiple_blocks_allocation> multiple_blocks_allocation::make_asy
       blocks.push_back(
         static_cast<std::byte*>(self.get_block(self.get_block_size(), stream_event).pointer()));
     }
+    return std::unique_ptr<multiple_blocks_allocation>(
+      new multiple_blocks_allocation(size, std::move(blocks), stream, std::move(mr)));
   } catch (...) {
     self.deallocate_blocks_async_unsafe(std::move(blocks), stream);
     throw;
   }
 
-  return std::unique_ptr<multiple_blocks_allocation>(
-    new multiple_blocks_allocation(size, std::move(blocks), stream, std::move(mr)));
+  return nullptr;  // unreachable
 }
 
 }  // namespace mr

@@ -100,7 +100,8 @@ static_assert(cuda::mr::resource_with<fixed_size_memory_resource, cuda::mr::devi
 class RMM_EXPORT multiple_blocks_allocation {
  public:
   /**
-   * @brief Allocate device memory spanning one or more fixed-size blocks, stream-ordered.
+   * @brief Allocate device memory spanning one or more fixed-size blocks, stream-ordered on a
+   * non-PTDS stream.
    *
    * Use this for allocations larger than a single block. The allocation is ordered on
    * `stream`; deallocation (when the returned handle is destroyed) is also ordered on
@@ -111,9 +112,10 @@ class RMM_EXPORT multiple_blocks_allocation {
    *        `fixed_size_memory_resource` has refcounted shared ownership.
    * @param size Minimum number of bytes to allocate. Will be rounded up to a multiple of
    *        block size (see `get_block_size()` on `*mr`).
-   * @param stream CUDA stream on which the allocation is ordered.
+   * @param stream A non-PTDS CUDA stream on which the allocation is ordered.
    * @return Unique handle to the allocation; destroys to deallocate. Empty (zero-size)
    *         allocation returns a valid handle with size 0 and no blocks.
+   * @throw rmm::invalid_argument if `stream` is a per-thread default stream.
    * @throw Any exception from allocating blocks. Blocks successfully taken from the pool
    *        before the failure are returned to the pool on `stream` (same ordering as normal
    *        deallocation).
