@@ -92,10 +92,10 @@ static_assert(cuda::mr::resource_with<fixed_size_memory_resource, cuda::mr::devi
  * @brief RAII handle for an allocation that may span multiple fixed-size blocks from a
  *        `fixed_size_memory_resource`.
  *
- * Returned by `allocate_blocks_async`. When destroyed, all blocks are returned to the
- * memory resource on the same stream used for allocation. Move and copy are disabled to
- * prevent double deallocation. Holds a `fixed_size_memory_resource` (which has shared,
- * refcounted ownership of the underlying pool) so the pool outlives the handle.
+ * When destroyed, all blocks are returned to the memory resource on the same stream used for
+ * allocation. Copy is disabled to prevent double deallocation; move transfers ownership of the
+ * blocks. Holds a `fixed_size_memory_resource` (which has shared, refcounted ownership of the
+ * underlying pool) so the pool outlives the handle.
  */
 class RMM_EXPORT multiple_blocks_allocation {
  public:
@@ -123,33 +123,52 @@ class RMM_EXPORT multiple_blocks_allocation {
   [[nodiscard]] static std::unique_ptr<multiple_blocks_allocation> make_async(
     fixed_size_memory_resource mr, std::size_t size, cuda_stream_view stream);
 
-  ~multiple_blocks_allocation();
+  /**
+   * @brief Destroy this handle and return any held blocks to the pool.
+   *
+   * `noexcept`. Uses `deallocate_blocks_async_unsafe` under the pool mutex; CUDA errors are
+   * logged with `RMM_LOG_ERROR` and other exceptions during teardown are caught and logged.
+   */
+  ~multiple_blocks_allocation() noexcept;
 
   multiple_blocks_allocation(multiple_blocks_allocation const&)            = delete;
   multiple_blocks_allocation& operator=(multiple_blocks_allocation const&) = delete;
-  multiple_blocks_allocation(multiple_blocks_allocation&&)                 = delete;
-  multiple_blocks_allocation& operator=(multiple_blocks_allocation&&)      = delete;
+
+  /**
+   * @brief Move-constructor
+   *
+   * @param other Source handle to move from.
+   */
+  multiple_blocks_allocation(multiple_blocks_allocation&& other) noexcept;
+
+  /**
+   * @brief Move-assignment
+   * @param other Source handle to move from.
+   * @return Reference to `*this`.
+   * @throw rmm::cuda_error if returning the current blocks to the pool fails during `clear()`.
+   */
+  multiple_blocks_allocation& operator=(multiple_blocks_allocation&& other);
 
   /**
    * @brief Number of bytes requested for this allocation.
    *
    * @return Requested size in bytes.
    */
-  constexpr std::size_t size() const noexcept { return size_; }
+  [[nodiscard]] constexpr std::size_t size() const noexcept { return size_; }
 
   /**
    * @brief Total capacity in bytes (number of blocks × block size).
    *
    * @return Capacity in bytes; always >= size().
    */
-  std::size_t capacity() const noexcept { return block_size() * blocks_.size(); }
+  [[nodiscard]] std::size_t capacity() const noexcept { return block_size() * blocks_.size(); }
 
   /**
    * @brief Size in bytes of each block in this allocation.
    *
    * @return Block size (same as the memory resource's get_block_size()).
    */
-  std::size_t block_size() const noexcept { return mr_->get_block_size(); }
+  [[nodiscard]] std::size_t block_size() const noexcept { return mr_->get_block_size(); }
 
   /**
    * @brief Non-owning view of the underlying block pointers.
@@ -167,7 +186,7 @@ class RMM_EXPORT multiple_blocks_allocation {
    * @param i Block index in [0, get_blocks().size()).
    * @return Span of std::byte over the i-th block.
    */
-  cuda::std::span<std::byte> operator[](std::size_t i) const
+  [[nodiscard]] cuda::std::span<std::byte> operator[](std::size_t i) const
   {
     return {blocks_[i], mr_->get_block_size()};
   }
@@ -179,7 +198,7 @@ class RMM_EXPORT multiple_blocks_allocation {
    * @return Span of std::byte over the i-th block.
    * @throws std::out_of_range if i >= number of blocks.
    */
-  cuda::std::span<std::byte> at(std::size_t i) const
+  [[nodiscard]] cuda::std::span<std::byte> at(std::size_t i) const
   {
     return {blocks_.at(i), mr_->get_block_size()};
   }
@@ -189,16 +208,26 @@ class RMM_EXPORT multiple_blocks_allocation {
    *
    * @return The stream passed to make_async.
    */
-  constexpr cuda_stream_view stream() const noexcept { return stream_; }
+  [[nodiscard]] constexpr cuda_stream_view stream() const noexcept { return stream_; }
+
+  /**
+   * @brief Return all blocks to the pool on `stream()`, then leave this handle empty.
+   *
+   * Same ordering as destruction: stream-ordered deallocation on the stream passed to
+   * `make_async`. After `clear()`, `size()` is 0 and `get_blocks()` is empty.
+   *
+   * @throw rmm::cuda_error if the event recording fails.
+   */
+  void clear();
 
  private:
   multiple_blocks_allocation(std::size_t size,
                              std::vector<std::byte*> buffers,
                              cuda_stream_view stream,
-                             fixed_size_memory_resource mr);
+                             fixed_size_memory_resource mr) noexcept;
 
   std::vector<std::byte*> blocks_;
-  std::size_t const size_;
+  std::size_t size_;
   cuda_stream_view stream_;
   fixed_size_memory_resource mr_;
 };

@@ -5,6 +5,7 @@
 
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
+#include <rmm/logger.hpp>
 #include <rmm/mr/fixed_size_memory_resource.hpp>
 
 #include <cuda/cmath>
@@ -40,19 +41,50 @@ std::size_t fixed_size_memory_resource::get_block_size() const noexcept
 multiple_blocks_allocation::multiple_blocks_allocation(std::size_t size,
                                                        std::vector<std::byte*> buffers,
                                                        cuda_stream_view stream,
-                                                       fixed_size_memory_resource mr)
+                                                       fixed_size_memory_resource mr) noexcept
   : blocks_(std::move(buffers)), size_(size), stream_(stream), mr_(std::move(mr))
 {
-  RMM_LOGGING_ASSERT(size_ <= mr_->get_block_size() * blocks_.size());
-  RMM_LOGGING_ASSERT(blocks_.empty() ||
-                     blocks_.size() == cuda::ceil_div(size_, mr_->get_block_size()));
 }
 
-multiple_blocks_allocation::~multiple_blocks_allocation()
+multiple_blocks_allocation::multiple_blocks_allocation(multiple_blocks_allocation&& other) noexcept
+  : blocks_(std::move(other.blocks_)),
+    size_(other.size_),
+    stream_(other.stream_),
+    mr_(std::move(other.mr_))
+{
+  other.size_ = 0;
+}
+
+void multiple_blocks_allocation::clear()
 {
   if (!blocks_.empty()) {
     std::lock_guard<std::mutex> lock(mr_->get_mutex());
-    mr_->deallocate_blocks_async_unsafe(std::move(blocks_), stream_);
+    RMM_CUDA_TRY(mr_->deallocate_blocks_async_unsafe(std::move(blocks_), stream_));
+  }
+  size_ = 0;
+}
+
+multiple_blocks_allocation& multiple_blocks_allocation::operator=(
+  multiple_blocks_allocation&& other)
+{
+  if (this != &other) {
+    clear();
+    blocks_     = std::move(other.blocks_);
+    size_       = other.size_;
+    stream_     = other.stream_;
+    mr_         = std::move(other.mr_);
+    other.size_ = 0;
+  }
+  return *this;
+}
+
+multiple_blocks_allocation::~multiple_blocks_allocation() noexcept
+{
+  try {
+    clear();
+  } catch (...) {
+    RMM_LOG_ERROR(
+      "multiple_blocks_allocation: exception while releasing device blocks in destructor");
   }
 }
 
@@ -80,14 +112,13 @@ std::unique_ptr<multiple_blocks_allocation> multiple_blocks_allocation::make_asy
       blocks.push_back(
         static_cast<std::byte*>(self.get_block(self.get_block_size(), stream_event).pointer()));
     }
-    return std::unique_ptr<multiple_blocks_allocation>(
-      new multiple_blocks_allocation(size, std::move(blocks), stream, std::move(mr)));
   } catch (...) {
-    self.deallocate_blocks_async_unsafe(std::move(blocks), stream);
+    RMM_CUDA_TRY(self.deallocate_blocks_async_unsafe(std::move(blocks), stream));
     throw;
   }
 
-  return nullptr;  // unreachable
+  return std::unique_ptr<multiple_blocks_allocation>(
+    new multiple_blocks_allocation(size, std::move(blocks), stream, std::move(mr)));
 }
 
 }  // namespace mr

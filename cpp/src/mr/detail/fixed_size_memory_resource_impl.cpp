@@ -5,7 +5,6 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/error.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/mr/detail/fixed_size_memory_resource_impl.hpp>
 #include <rmm/mr/detail/stream_ordered_memory_resource.hpp>
@@ -111,19 +110,21 @@ std::pair<std::size_t, std::size_t> fixed_size_memory_resource_impl::free_list_s
                            : std::make_pair(block_size_, blocks.size() * block_size_);
 }
 
-void fixed_size_memory_resource_impl::deallocate_blocks_async_unsafe(
+cudaError_t fixed_size_memory_resource_impl::deallocate_blocks_async_unsafe(
   std::vector<std::byte*>&& blocks, cuda_stream_view stream)
 {
-  if (blocks.empty()) { return; }
+  if (blocks.empty()) { return cudaSuccess; }
 
   free_list blocks_free_list;
   cuda::std::ranges::for_each(blocks, [this, &blocks_free_list](std::byte* ptr) {
     blocks_free_list.insert(this->free_block(ptr, get_block_size()));
   });
 
-  auto stream_event = get_event(stream);
-  RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, stream.value()));
+  auto stream_event       = get_event(stream);
+  cudaError_t const error = cudaEventRecord(stream_event.event, stream.value());
+  if (cudaSuccess != error) { return error; }
   this->insert_blocks(std::move(blocks_free_list), stream);
+  return cudaSuccess;
 }
 
 #ifdef RMM_DEBUG_PRINT

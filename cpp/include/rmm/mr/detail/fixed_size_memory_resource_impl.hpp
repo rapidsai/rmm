@@ -88,7 +88,8 @@ class fixed_size_memory_resource_impl final
   friend class RMM_NAMESPACE::mr::multiple_blocks_allocation;
 
   // Caller must hold get_mutex().
-  void deallocate_blocks_async_unsafe(std::vector<std::byte*>&& blocks, cuda_stream_view stream);
+  [[nodiscard]] cudaError_t deallocate_blocks_async_unsafe(std::vector<std::byte*>&& blocks,
+                                                           cuda_stream_view stream);
 
   free_list blocks_from_upstream(cuda_stream_view stream);
 
