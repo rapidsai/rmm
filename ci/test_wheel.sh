@@ -4,9 +4,6 @@
 
 set -eou pipefail
 
-# shellcheck disable=SC2155
-export PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/tools:${PATH}"
-
 source rapids-init-pip
 
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen "${RAPIDS_CUDA_VERSION}")"

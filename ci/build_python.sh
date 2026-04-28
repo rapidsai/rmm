@@ -4,9 +4,6 @@
 
 set -euo pipefail
 
-# shellcheck disable=SC2155
-export PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/tools:${PATH}"
-
 source rapids-configure-sccache
 source rapids-date-string
 

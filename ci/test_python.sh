@@ -4,9 +4,6 @@
 
 set -euo pipefail
 
-# shellcheck disable=SC2155
-export PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/tools:${PATH}"
-
 # Support invoking test_python.sh outside the script directory
 cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
 

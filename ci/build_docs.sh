@@ -4,9 +4,6 @@
 
 set -euo pipefail
 
-# shellcheck disable=SC2155
-export PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/tools:${PATH}"
-
 rapids-logger "Downloading artifacts from previous jobs"
 CPP_CHANNEL=$(rapids-download-from-github "$(rapids-artifact-name conda_cpp librmm rmm --cuda "$RAPIDS_CUDA_VERSION")")
 PYTHON_CHANNEL=$(rapids-download-from-github "$(rapids-artifact-name conda_python rmm rmm --stable --cuda "$RAPIDS_CUDA_VERSION")")
