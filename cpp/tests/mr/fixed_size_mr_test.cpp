@@ -144,9 +144,14 @@ TEST_P(FixedSizeMRTest, AllocAndDeallocBlocksAsync)
     for (std::size_t i = 0; i < n_threads; ++i) {
       dealloc_futs.emplace_back(std::async(std::launch::async, [&] {
         while (true) {
-          std::lock_guard lock(handles_mutex);
-          if (handles.empty()) { break; }
-          handles.pop_back();
+          std::unique_ptr<multi_block_alloc> handle;
+          {
+            std::lock_guard lock(handles_mutex);
+            if (handles.empty()) { break; }
+            handle = std::move(handles.back());
+            handles.pop_back();
+          }
+          handle.reset();
         }
       }));
     }
