@@ -9,8 +9,12 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/std/span>
+#include <cuda/stream_ref>
 
 #include <cstddef>
+#include <memory>
+#include <vector>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -83,6 +87,150 @@ class RMM_EXPORT fixed_size_memory_resource
 
 static_assert(cuda::mr::resource_with<fixed_size_memory_resource, cuda::mr::device_accessible>,
               "fixed_size_memory_resource does not satisfy the cuda::mr::resource concept");
+
+/**
+ * @brief RAII handle for an allocation that may span multiple fixed-size blocks from a
+ *        `fixed_size_memory_resource`.
+ *
+ * When destroyed, all blocks are returned to the memory resource on the same stream used for
+ * allocation. Copy is disabled to prevent double deallocation; move transfers ownership of the
+ * blocks. Holds a `fixed_size_memory_resource` (which has shared, refcounted ownership of the
+ * underlying pool) so the pool outlives the handle.
+ */
+class RMM_EXPORT multiple_blocks_allocation {
+ public:
+  /**
+   * @brief Allocate device memory spanning one or more fixed-size blocks, stream-ordered on a
+   * non-PTDS stream.
+   *
+   * Use this for allocations larger than a single block. The allocation is ordered on
+   * `stream`; deallocation (when the returned handle is destroyed) is also ordered on
+   * the same stream. A single event is recorded for the whole allocation, so there is no
+   * per-block event overhead.
+   *
+   * @param mr The `fixed_size_memory_resource` that supplies blocks. Copied by value since
+   *        `fixed_size_memory_resource` has refcounted shared ownership.
+   * @param size Minimum number of bytes to allocate. Will be rounded up to a multiple of
+   *        block size (see `get_block_size()` on `*mr`).
+   * @param stream A non-PTDS CUDA stream on which the allocation is ordered.
+   * @return Unique handle to the allocation; destroys to deallocate. Empty (zero-size)
+   *         allocation returns a valid handle with size 0 and no blocks.
+   * @throw rmm::invalid_argument if `stream` is a per-thread default stream.
+   * @throw Any exception from allocating blocks. Blocks successfully taken from the pool
+   *        before the failure are returned to the pool on `stream` (same ordering as normal
+   *        deallocation).
+   */
+  [[nodiscard]] static std::unique_ptr<multiple_blocks_allocation> make_async(
+    fixed_size_memory_resource mr, std::size_t size, cuda::stream_ref stream);
+
+  /**
+   * @brief Destroy this handle and return any held blocks to the pool.
+   *
+   * `noexcept`. Uses `deallocate_blocks_async_unsafe` under the pool mutex; CUDA errors are
+   * logged with `RMM_LOG_ERROR` and other exceptions during teardown are caught and logged.
+   */
+  ~multiple_blocks_allocation() noexcept;
+
+  multiple_blocks_allocation(multiple_blocks_allocation const&)            = delete;
+  multiple_blocks_allocation& operator=(multiple_blocks_allocation const&) = delete;
+
+  /**
+   * @brief Move-constructor
+   *
+   * @param other Source handle to move from.
+   */
+  multiple_blocks_allocation(multiple_blocks_allocation&& other) noexcept;
+
+  /**
+   * @brief Move-assignment
+   * @param other Source handle to move from.
+   * @return Reference to `*this`.
+   * @throw rmm::cuda_error if returning the current blocks to the pool fails during `clear()`.
+   */
+  multiple_blocks_allocation& operator=(multiple_blocks_allocation&& other);
+
+  /**
+   * @brief Number of bytes requested for this allocation.
+   *
+   * @return Requested size in bytes.
+   */
+  [[nodiscard]] constexpr std::size_t size() const noexcept { return size_; }
+
+  /**
+   * @brief Total capacity in bytes (number of blocks × block size).
+   *
+   * @return Capacity in bytes; always >= size().
+   */
+  [[nodiscard]] std::size_t capacity() const noexcept { return block_size() * blocks_.size(); }
+
+  /**
+   * @brief Size in bytes of each block in this allocation.
+   *
+   * @return Block size (same as the memory resource's get_block_size()).
+   */
+  [[nodiscard]] std::size_t block_size() const noexcept { return mr_->get_block_size(); }
+
+  /**
+   * @brief Non-owning view of the underlying block pointers.
+   *
+   * @return Span of device pointers, one per block; each block has size block_size().
+   */
+  [[nodiscard]] cuda::std::span<std::byte* const> get_blocks() const noexcept
+  {
+    return {blocks_.data(), blocks_.size()};
+  }
+
+  /**
+   * @brief Span over the i-th block's bytes.
+   *
+   * @param i Block index in [0, get_blocks().size()).
+   * @return Span of std::byte over the i-th block.
+   */
+  [[nodiscard]] cuda::std::span<std::byte> operator[](std::size_t i) const
+  {
+    return {blocks_[i], mr_->get_block_size()};
+  }
+
+  /**
+   * @brief Span over the i-th block's bytes with bounds checking.
+   *
+   * @param i Block index.
+   * @return Span of std::byte over the i-th block.
+   * @throws std::out_of_range if i >= number of blocks.
+   */
+  [[nodiscard]] cuda::std::span<std::byte> at(std::size_t i) const
+  {
+    return {blocks_.at(i), mr_->get_block_size()};
+  }
+
+  /**
+   * @brief Stream on which this allocation is ordered.
+   *
+   * @return The stream passed to make_async.
+   */
+  [[nodiscard]] constexpr cuda::stream_ref stream() const noexcept { return stream_; }
+
+  /**
+   * @brief Return all blocks to the pool on `stream()`, then leave this handle empty.
+   *
+   * Same ordering as destruction: stream-ordered deallocation on the stream passed to
+   * `make_async`. After `clear()`, `size()` is 0 and `get_blocks()` is empty.
+   *
+   * @throw rmm::cuda_error if the event recording fails.
+   */
+  void clear();
+
+ private:
+  multiple_blocks_allocation(std::size_t size,
+                             std::vector<std::byte*> buffers,
+                             cuda::stream_ref stream,
+                             fixed_size_memory_resource mr) noexcept;
+
+  std::vector<std::byte*> blocks_;
+  std::size_t size_;
+  cuda::stream_ref stream_;
+  fixed_size_memory_resource mr_;
+};
 
 /** @} */  // end of group
 }  // namespace mr
