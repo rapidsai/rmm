@@ -6,7 +6,7 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/detail/thread_safe_resource_adaptor_impl.hpp>
 
-#include <cuda/stream>
+#include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
 RMM_NAMESPACE_BEGIN

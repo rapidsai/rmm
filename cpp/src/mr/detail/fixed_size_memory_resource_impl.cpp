@@ -4,12 +4,13 @@
  */
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/mr/detail/fixed_size_memory_resource_impl.hpp>
 #include <rmm/process_is_exiting.hpp>
 
 #include <cuda/iterator>
+#include <cuda/stream_ref>
+#include <cuda_runtime_api.h>
 
 #include <cstddef>
 #include <mutex>
@@ -34,7 +35,8 @@ fixed_size_memory_resource_impl::fixed_size_memory_resource_impl(
     block_size_{align_up(block_size, rmm::CUDA_ALLOCATION_ALIGNMENT)},
     upstream_chunk_size_{block_size_ * blocks_to_preallocate}
 {
-  this->insert_blocks(std::move(blocks_from_upstream(cuda_stream_legacy)), cuda_stream_legacy);
+  this->insert_blocks(std::move(blocks_from_upstream(cuda::stream_ref{cudaStreamLegacy})),
+                      cuda::stream_ref{cudaStreamLegacy});
 }
 
 fixed_size_memory_resource_impl::~fixed_size_memory_resource_impl() { release(); }
@@ -53,14 +55,14 @@ std::size_t fixed_size_memory_resource_impl::get_maximum_allocation_size() const
 }
 
 fixed_size_memory_resource_impl::block_type fixed_size_memory_resource_impl::expand_pool(
-  std::size_t size, free_list& blocks, cuda_stream_view stream)
+  std::size_t size, free_list& blocks, cuda::stream_ref stream)
 {
   blocks.insert(std::move(blocks_from_upstream(stream)));
   return blocks.get_block(size);
 }
 
 fixed_size_memory_resource_impl::free_list fixed_size_memory_resource_impl::blocks_from_upstream(
-  cuda_stream_view stream)
+  cuda::stream_ref stream)
 {
   void* ptr = upstream_mr_.allocate(stream, upstream_chunk_size_, rmm::CUDA_ALLOCATION_ALIGNMENT);
   block_type block{ptr};

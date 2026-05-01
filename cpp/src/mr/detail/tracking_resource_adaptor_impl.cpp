@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/detail/tracking_resource_adaptor_impl.hpp>
 
-#include <cuda/stream>
+#include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
 #include <sstream>

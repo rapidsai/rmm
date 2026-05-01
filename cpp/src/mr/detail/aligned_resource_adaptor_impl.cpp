@@ -4,11 +4,10 @@
  */
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/detail/aligned_resource_adaptor_impl.hpp>
 
-#include <cuda/stream>
+#include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
 #include <algorithm>

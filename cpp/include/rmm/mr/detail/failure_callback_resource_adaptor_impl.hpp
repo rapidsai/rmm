@@ -5,14 +5,13 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/failure_callback_t.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
-#include <cuda/stream>
+#include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
