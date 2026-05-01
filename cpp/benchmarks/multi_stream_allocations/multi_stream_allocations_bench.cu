@@ -15,6 +15,7 @@
 #include <rmm/mr/pool_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
 #include <benchmark/benchmark.h>
@@ -54,9 +55,9 @@ static void run_test(std::size_t num_kernels,
                      rmm::device_async_resource_ref mr)
 {
   for (std::size_t i = 0; i < num_kernels; i++) {
-    auto stream = stream_pool.get_stream(i);
+    auto stream = cuda::stream_ref{stream_pool.get_stream(i)};
     auto buffer = rmm::device_uvector<int64_t>(1, stream, mr);
-    compute_bound_kernel<<<1, 1, 0, stream.value()>>>(buffer.data());
+    compute_bound_kernel<<<1, 1, 0, stream.get()>>>(buffer.data());
   }
 }
 
