@@ -178,7 +178,7 @@ TEST(StatisticsTest, MultiTracking)
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
     allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, mr));
+      std::make_shared<rmm::device_buffer>(ten_MiB, cuda::stream_ref{cudaStream_t{nullptr}}, mr));
   }
 
   EXPECT_EQ(mr.get_allocations_counter().value, 10);
@@ -187,8 +187,8 @@ TEST(StatisticsTest, MultiTracking)
 
   rmm::device_async_resource_ref inner_ref{inner_mr};
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
-    allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, inner_ref));
+    allocations.emplace_back(std::make_shared<rmm::device_buffer>(
+      ten_MiB, cuda::stream_ref{cudaStream_t{nullptr}}, inner_ref));
   }
 
   // Check the allocated bytes for both MRs
