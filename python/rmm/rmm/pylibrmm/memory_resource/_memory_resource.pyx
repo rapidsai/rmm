@@ -176,8 +176,9 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     Parameters
     ----------
     initial_pool_size : int | str, optional
-        Initial pool size in bytes. By default, half the available memory
-        on the device is used. A string argument is parsed using `parse_bytes`.
+        Initial pool size in bytes. If provided, the pool will be primed by
+        allocating and immediately deallocating this amount of memory on the
+        default CUDA stream.
     release_threshold: int, optional
         Release threshold in bytes. If the pool size grows beyond this
         value, unused memory held by the pool will be released at the
