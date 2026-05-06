@@ -129,10 +129,7 @@ target_include_directories(
 
 target_link_libraries(
   rmm
-  PUBLIC CCCL::CCCL ${CMAKE_DL_LIBS} nvtx3::nvtx3-cpp rapids_logger::rapids_logger
-  PRIVATE CUDA::cudart_static
-  INTERFACE
-    "$<IF:$<BOOL:$<TARGET_PROPERTY:NO_CUDART_DEP>>,$<COMPILE_ONLY:CUDA::cudart_static>,cudart_static>"
+  PUBLIC CCCL::CCCL ${CMAKE_DL_LIBS} nvtx3::nvtx3-cpp rapids_logger::rapids_logger CUDA::cudart_static
 )
 
 set_target_properties(
