@@ -49,7 +49,7 @@ message(VERBOSE "RMM: Build with NVTX support: ${RMM_NVTX}")
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
 # cudart can be linked statically or dynamically
-option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
+option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" ON)
 
 # ##################################################################################################
 # * compiler options -------------------------------------------------------------------------------
