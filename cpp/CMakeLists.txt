@@ -127,10 +127,8 @@ target_include_directories(
          "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
   INTERFACE "$<INSTALL_INTERFACE:include>")
 
-target_link_libraries(
-  rmm
-  PUBLIC CCCL::CCCL ${CMAKE_DL_LIBS} nvtx3::nvtx3-cpp rapids_logger::rapids_logger CUDA::cudart_static
-)
+target_link_libraries(rmm PUBLIC CCCL::CCCL ${CMAKE_DL_LIBS} nvtx3::nvtx3-cpp
+                                 rapids_logger::rapids_logger CUDA::cudart_static)
 
 set_target_properties(
   rmm
