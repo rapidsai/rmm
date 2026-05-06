@@ -104,6 +104,8 @@ outputs:
       run_exports:
         - ${{ pin_subpackage("librmm", upper_bound="x.x") }}
       ignore_run_exports:
+        from_package:
+          - cuda-cudart-dev
         by_name:
           - cuda-version
     tests:
@@ -202,6 +204,7 @@ outputs:
         - ${{ pin_subpackage("librmm", exact=True) }}
       ignore_run_exports:
         from_package:
+          - cuda-cudart-dev
         by_name:
           - cuda-version
           - librmm

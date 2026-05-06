@@ -89,6 +89,7 @@ requirements:
   ignore_run_exports:
     from_package:
       - cuda-python
+      - cuda-cudart-dev
     by_name:
       - cuda-version
 
