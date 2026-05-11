@@ -50,9 +50,6 @@ cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
   RMM_CUDA_TRY(cudaMemPoolCreate(&cuda_pool_handle, &pool_props));
   pool_ = cuda_async_view_memory_resource{cuda_pool_handle};
 
-  // Default to the maximum representable value so the pool retains memory across
-  // synchronization events unless the caller specifies otherwise. Matches the
-  // default chosen by CCCL's memory pool wrappers in <cuda/memory_resource>.
   // Need an l-value to take address to pass to cudaMemPoolSetAttribute
   std::size_t threshold = release_threshold.value_or(std::numeric_limits<std::size_t>::max());
   RMM_CUDA_TRY(cudaMemPoolSetAttribute(pool_handle(), cudaMemPoolAttrReleaseThreshold, &threshold));
