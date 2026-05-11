@@ -10,7 +10,6 @@
 
 #include <gtest/gtest.h>
 
-#include <cstddef>
 #include <cstdint>
 #include <limits>
 
@@ -53,18 +52,18 @@ TEST_F(AsyncMRTest, ExplicitReleaseThreshold)
   RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
-TEST_F(AsyncMRTest, DefaultReleaseThresholdIsSizeMax)
+TEST_F(AsyncMRTest, DefaultReleaseThresholdIsUint64Max)
 {
   cuda_async_mr mr{};
   std::uint64_t threshold{0};
   RMM_CUDA_TRY(
     cudaMemPoolGetAttribute(mr.pool_handle(), cudaMemPoolAttrReleaseThreshold, &threshold));
-  EXPECT_EQ(threshold, std::numeric_limits<std::size_t>::max());
+  EXPECT_EQ(threshold, std::numeric_limits<std::uint64_t>::max());
 }
 
 TEST_F(AsyncMRTest, ExplicitReleaseThresholdIsApplied)
 {
-  const std::size_t pool_release_threshold{1000};
+  const std::uint64_t pool_release_threshold{1000};
   cuda_async_mr mr{{}, pool_release_threshold};
   std::uint64_t threshold{0};
   RMM_CUDA_TRY(

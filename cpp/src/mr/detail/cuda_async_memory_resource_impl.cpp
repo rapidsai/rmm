@@ -51,7 +51,7 @@ cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
   pool_ = cuda_async_view_memory_resource{cuda_pool_handle};
 
   // Need an l-value to take address to pass to cudaMemPoolSetAttribute
-  std::size_t threshold = release_threshold.value_or(std::numeric_limits<std::size_t>::max());
+  std::uint64_t threshold = release_threshold.value_or(std::numeric_limits<std::uint64_t>::max());
   RMM_CUDA_TRY(cudaMemPoolSetAttribute(pool_handle(), cudaMemPoolAttrReleaseThreshold, &threshold));
 
   // Allocate and immediately deallocate the initial_pool_size to prime the pool with the

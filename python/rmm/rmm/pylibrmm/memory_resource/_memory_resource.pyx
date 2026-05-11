@@ -183,9 +183,9 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
         Release threshold in bytes. If the pool size grows beyond this
         value, unused memory held by the pool will be released at the
         next synchronization point. If not provided, the release threshold
-        is set to the maximum representable ``size_t`` value, so that the
-        pool retains memory across synchronization events unless the caller
-        specifies otherwise.
+        is set to the maximum representable ``uint64_t`` value, so that
+        the pool retains memory across synchronization events unless the
+        caller specifies otherwise.
     enable_ipc: bool, optional
         If True, enables export of POSIX file descriptor handles for the memory
         allocated by this resource so that it can be used with CUDA IPC.
