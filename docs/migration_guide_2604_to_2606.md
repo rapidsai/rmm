@@ -329,17 +329,19 @@ class my_resource {
   // Async (stream-ordered) interface
   void* allocate(cuda::stream_ref stream, std::size_t bytes,
                  std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) {
-    return upstream_.allocate(stream, bytes);
+    return upstream_.allocate(stream, bytes, alignment);
   }
   void deallocate(cuda::stream_ref stream, void* p, std::size_t bytes,
                   std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {
-    upstream_.deallocate(stream, p, bytes);
+    upstream_.deallocate(stream, p, bytes, alignment);
   }
 
   // Synchronous interface — required by the CCCL resource concept
   void* allocate_sync(std::size_t bytes,
                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) {
-    return allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
+    auto* ptr = allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
+    RMM_CUDA_TRY(cudaStreamSynchronize(cudaStream_t{nullptr}));
+    return ptr;
   }
   void deallocate_sync(void* p, std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {
@@ -361,8 +363,9 @@ static_assert(cuda::mr::resource_with<my_resource, cuda::mr::device_accessible>)
 > **Note:** The CCCL `resource` concept requires both the async interface
 > (`allocate`/`deallocate` with `stream_ref`) and the synchronous interface
 > (`allocate_sync`/`deallocate_sync` without a stream). If you omit the
-> synchronous methods, `static_assert` will fail. A simple implementation
-> delegates to the async methods with a null stream as shown above.
+> synchronous methods, `static_assert` will fail. A simple implementation can
+> delegate to the async methods with a null stream as shown above, synchronizing
+> before returning from allocation.
 
 ### 14a. Custom Resources Must Be Copyable for `any_resource`
 
@@ -517,26 +520,7 @@ This is easy to miss because `const` members don't prevent *construction*
 or *copy construction* — only assignment. The error messages from the concept
 check can be cryptic (e.g., "type must be movable").
 
-### 14f. Brace Initialization Fails for `shared_resource`-Derived Types
-
-Types inheriting from `cuda::mr::shared_resource<Impl>` cannot be
-brace-initialized (`MyResource{args...}`). The `shared_resource` base class
-has constructors that prevent aggregate initialization, so brace-init is
-ambiguous or fails. Use parenthesized initialization instead:
-
-```cpp
-// Won't compile
-rmm::mr::pool_memory_resource pool{cuda_mr, initial_size};  // ERROR
-
-// Fix: use parentheses
-rmm::mr::pool_memory_resource pool(cuda_mr, initial_size);  // OK
-```
-
-This applies to all RMM resource types that use `shared_resource` internally
-(which is most of them in 26.06), and to any downstream custom resources
-built on `shared_resource`.
-
-### 14g. `cuda::stream_ref{}` Default Constructor Is Deprecated
+### 14f. `cuda::stream_ref{}` Default Constructor Is Deprecated
 
 The default constructor `cuda::stream_ref{}` is deprecated in CCCL. Use
 `cuda::stream_ref{cudaStream_t{nullptr}}` when you need a null/default
@@ -555,7 +539,7 @@ void* allocate_sync(std::size_t bytes, std::size_t alignment) {
 }
 ```
 
-### 14h. `any_resource` Is Fully Type-Erased (No `get<T>()`)
+### 14g. `any_resource` Is Fully Type-Erased (No `get<T>()`)
 
 `cuda::mr::any_resource<cuda::mr::device_accessible>` does not provide a
 `get<T>()` method to recover the concrete resource type. Once a resource is
@@ -779,11 +763,9 @@ non-default-constructible nature during Cython assignment.
     that custom resources satisfy the CCCL concept.
 18. **Remove `const` from data members** in custom resources if the type must be assignable
     (required by `resource_ref` and `any_resource`).
-19. **Use parenthesized initialization** for `shared_resource`-derived types (`Resource(args...)`,
-    not `Resource{args...}`).
-20. **Replace `cuda::stream_ref{}`** with `cuda::stream_ref{cudaStream_t{nullptr}}` to avoid
+19. **Replace `cuda::stream_ref{}`** with `cuda::stream_ref{cudaStream_t{nullptr}}` to avoid
     deprecation warnings.
-21. **Capture concrete type info before type-erasing** into `any_resource` — there is no
+20. **Capture concrete type info before type-erasing** into `any_resource` — there is no
     `get<T>()` to recover the concrete type.
-22. **Add `make_*_resource_ref` inline C++ helpers** in downstream Cython `.pxd` files for
+21. **Add `make_*_resource_ref` inline C++ helpers** in downstream Cython `.pxd` files for
     custom resource types that need `c_ref` assignment.
