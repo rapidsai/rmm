@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
@@ -15,6 +14,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -50,10 +50,8 @@ cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
   RMM_CUDA_TRY(cudaMemPoolCreate(&cuda_pool_handle, &pool_props));
   pool_ = cuda_async_view_memory_resource{cuda_pool_handle};
 
-  auto const [free, total] = rmm::available_device_memory();
-
   // Need an l-value to take address to pass to cudaMemPoolSetAttribute
-  uint64_t threshold = release_threshold.value_or(total);
+  std::uint64_t threshold = release_threshold.value_or(std::numeric_limits<std::uint64_t>::max());
   RMM_CUDA_TRY(cudaMemPoolSetAttribute(pool_handle(), cudaMemPoolAttrReleaseThreshold, &threshold));
 
   // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
