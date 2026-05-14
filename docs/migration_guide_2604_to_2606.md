@@ -12,10 +12,10 @@ change and shows how to update consuming code.
 |------|-------|-------|
 | Base class | `device_memory_resource` (virtual) | Removed; resources satisfy `cuda::mr::resource` concept |
 | Resource templates | `pool_memory_resource<Upstream>` | `pool_memory_resource` (no template parameter) |
-| Upstream parameter | `Upstream*` raw pointer | `device_async_resource_ref` |
+| Upstream parameter | `Upstream*` raw pointer | `cuda::mr::any_resource<cuda::mr::device_accessible>` |
 | Ownership model | `std::unique_ptr` / raw pointer | `cuda::mr::shared_resource<Impl>` (reference-counted) |
 | `allocate` / `deallocate` | `allocate(size, stream)` / `do_allocate` virtual | `allocate(stream, size, alignment)` (CCCL concept) |
-| Per-device resource | `set_current_device_resource(device_memory_resource*)` | `set_current_device_resource_ref(device_async_resource_ref)` |
+| Per-device resource | `set_current_device_resource(device_memory_resource*)` | `set_current_device_resource(cuda::mr::any_resource<cuda::mr::device_accessible>)` |
 | `owning_wrapper` | Available | Removed |
 | `device_memory_resource_view` | Available | Removed |
 | Build model | Resources are header-only | Resource implementations compiled into `librmm` |
@@ -79,7 +79,7 @@ static_assert(cuda::mr::resource_with<my_resource, cuda::mr::device_accessible>)
 
 Every resource and adaptor that previously took an `Upstream` template parameter
 is now a non-template class. The upstream is accepted as a
-`device_async_resource_ref` instead of a typed pointer.
+`cuda::mr::any_resource<cuda::mr::device_accessible>` instead of a typed pointer.
 
 | 26.04 | 26.06 |
 |-------|-------|
@@ -99,7 +99,7 @@ is now a non-template class. The upstream is accepted as a
 
 Note: `failure_callback_resource_adaptor` retains a template parameter, but it
 is now `ExceptionType` (defaulting to `rmm::out_of_memory`), not `Upstream`.
-The upstream is passed as a `device_async_resource_ref`.
+The upstream is passed as a `cuda::mr::any_resource<cuda::mr::device_accessible>`.
 
 ```cpp
 // 26.04
@@ -113,22 +113,22 @@ rmm::mr::pool_memory_resource pool{cuda_mr, initial_size};
 rmm::mr::logging_resource_adaptor logged{pool, "log.csv"};
 ```
 
-### 3. Upstream Resources Are Passed by `device_async_resource_ref`, Not Pointer
+### 3. Upstream Resources Are Passed by `any_resource`, Not Pointer
 
 Constructors for adaptors and pool-based resources now take
-`rmm::device_async_resource_ref` (a type-erased non-owning reference) instead
-of a raw pointer to the upstream.
+`cuda::mr::any_resource<cuda::mr::device_accessible>` (an owning type-erased
+resource) instead of a raw pointer to the upstream.
 
-A `device_async_resource_ref` is implicitly constructible from any object that
-satisfies `cuda::mr::resource_with<T, cuda::mr::device_accessible>`, so you
-can pass a resource object directly.
+A `cuda::mr::any_resource<cuda::mr::device_accessible>` is constructible from
+any object that satisfies `cuda::mr::resource_with<T, cuda::mr::device_accessible>`,
+so you can pass a resource object directly.
 
 ```cpp
 // 26.04
 rmm::mr::cuda_memory_resource cuda_mr;
 rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> pool{&cuda_mr, pool_size};
 
-// 26.06 — pass the resource directly (implicit conversion to device_async_resource_ref)
+// 26.06 — pass the resource directly
 rmm::mr::cuda_memory_resource cuda_mr;
 rmm::mr::pool_memory_resource pool{cuda_mr, pool_size};
 ```
@@ -205,17 +205,19 @@ rmm::mr::pool_memory_resource pool{cuda_mr, pool_size};
 
 ### 7. Per-Device Resource API Changes
 
-The pointer-based per-device resource functions are removed. Use the `_ref`
-variants exclusively:
+The pointer-based per-device resource setter functions are removed. Use the
+owning `any_resource` setters instead. The `_ref` setters and reset functions
+still exist in 26.06 as deprecated compatibility APIs, but will be removed in
+26.08:
 
 | Removed (26.04) | Replacement (26.06) |
 |-----------------|---------------------|
 | `get_current_device_resource()` → `device_memory_resource*` | `get_current_device_resource_ref()` → `device_async_resource_ref` |
-| `set_current_device_resource(device_memory_resource*)` | `set_current_device_resource_ref(device_async_resource_ref)` |
+| `set_current_device_resource(device_memory_resource*)` | `set_current_device_resource(cuda::mr::any_resource<cuda::mr::device_accessible>)` |
 | `get_per_device_resource(id)` → `device_memory_resource*` | `get_per_device_resource_ref(id)` → `device_async_resource_ref` |
-| `set_per_device_resource(id, device_memory_resource*)` | `set_per_device_resource_ref(id, device_async_resource_ref)` |
-| — | `reset_per_device_resource_ref(id)` (new) |
-| — | `reset_current_device_resource_ref()` (new) |
+| `set_per_device_resource(id, device_memory_resource*)` | `set_per_device_resource(id, cuda::mr::any_resource<cuda::mr::device_accessible>)` |
+| `reset_per_device_resource_ref(id)` | `reset_per_device_resource(id)` |
+| `reset_current_device_resource_ref()` | `reset_current_device_resource()` |
 
 The `set_*` functions now return `cuda::mr::any_resource<cuda::mr::device_accessible>`,
 an owning type-erased resource that holds the previously set resource. This can
@@ -229,10 +231,10 @@ auto* mr = rmm::mr::get_current_device_resource();
 
 // 26.06
 rmm::mr::pool_memory_resource pool{cuda_mr, size};
-auto prev = rmm::mr::set_current_device_resource_ref(pool);
+auto prev = rmm::mr::set_current_device_resource(pool);
 auto ref = rmm::mr::get_current_device_resource_ref();
-// When done, restore: rmm::mr::set_current_device_resource_ref(prev);
-// Or reset to default: rmm::mr::reset_current_device_resource_ref();
+// When done, restore: rmm::mr::set_current_device_resource(std::move(prev));
+// Or reset to default: rmm::mr::reset_current_device_resource();
 ```
 
 ### 8. `device_buffer` Internal Changes
@@ -241,7 +243,7 @@ auto ref = rmm::mr::get_current_device_resource_ref();
 internally instead of a raw `device_memory_resource*`. The public API is largely
 the same, but:
 
-- Constructors accept `device_async_resource_ref` (as before).
+- Constructors accept `cuda::mr::any_resource<cuda::mr::device_accessible>`.
 - `memory_resource()` returns `rmm::device_async_resource_ref` (was
   `device_memory_resource*` in older releases).
 
@@ -448,17 +450,18 @@ pointer when passing it to APIs that accept `device_async_resource_ref`:
 ```cpp
 // 26.04 — implicit conversion from pointer
 rmm::mr::limiting_resource_adaptor<rmm::mr::device_memory_resource>* mr = get_some_resource();
-rmm::device_buffer buf(size, stream, mr);   // OK: device_memory_resource* -> resource_ref
+downstream_function(stream, mr);   // OK: device_memory_resource* -> resource_ref
 
 // 26.06 — dereference the pointer
 rmm::mr::limiting_resource_adaptor* mr = get_some_resource();
-rmm::device_buffer buf(size, stream, *mr);  // OK: limiting_resource_adaptor& -> resource_ref
-//                                    ^ dereference
+downstream_function(stream, *mr);  // OK: limiting_resource_adaptor& -> resource_ref
+//                          ^ dereference
 ```
 
-This applies to all APIs accepting `device_async_resource_ref`, including
-`device_buffer`, `device_uvector`, `make_device_mdarray`, and any downstream
-functions with `device_async_resource_ref` parameters.
+This applies to any downstream functions with `device_async_resource_ref`
+parameters. APIs that take
+`cuda::mr::any_resource<cuda::mr::device_accessible>` can also receive concrete
+resource objects directly.
 
 > **Tip:** If you see confusing compilation errors about `cuda_stream_view`
 > not converting to `std::size_t`, it likely means the compiler skipped a
@@ -573,8 +576,8 @@ The base `DeviceMemoryResource` class in Python no longer holds a
 
 **Cython bindings authors:**
 - Replace `self.c_obj.get()` (which returned `device_memory_resource*`) with
-  `self.c_ref.value()` (which returns `device_async_resource_ref`).
-- The `get_mr()` method is removed.
+  `self.get_mr()` (which returns `device_async_resource_ref`).
+- Keep using `get_mr()` in `.pyx` code when passing a resource ref to C++.
 - Constructing a resource now requires two steps: create the `unique_ptr`
   object, then create the `device_async_resource_ref` from it:
 
@@ -585,7 +588,9 @@ self.c_obj.reset(new pool_memory_resource[device_memory_resource](
 
 # 26.06
 self.c_obj.reset(new pool_memory_resource(
-    upstream_mr.c_ref.value(), initial_pool_size, maximum_pool_size))
+    make_any_device_resource(upstream_mr.get_mr()),
+    initial_pool_size,
+    maximum_pool_size))
 self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 ```
 
@@ -602,7 +607,7 @@ cdef cppclass pool_memory_resource[Upstream](device_memory_resource):
 
 # 26.06
 cdef cppclass pool_memory_resource:
-    pool_memory_resource(device_async_resource_ref upstream_mr,
+    pool_memory_resource(any_resource[device_accessible] upstream_mr,
                          size_t initial_pool_size,
                          optional[size_t] maximum_pool_size) except +
 ```
@@ -610,9 +615,9 @@ cdef cppclass pool_memory_resource:
 ### 17. Per-Device Resource Python API
 
 The Python `set_per_device_resource` and `set_current_device_resource`
-functions now call `set_per_device_resource_ref` / `set_current_device_resource_ref`
-under the hood, passing `device_async_resource_ref` instead of
-`device_memory_resource*`. The Python-level API is unchanged for users.
+functions now call the `any_resource`-based C++ setters under the hood, passing
+`make_any_device_resource(mr.get_mr())` instead of `device_memory_resource*`.
+The Python-level API is unchanged for users.
 
 ### 18. `failure_callback_resource_adaptor` Cython Template Change
 
@@ -625,7 +630,7 @@ cdef cppclass failure_callback_resource_adaptor[Upstream](device_memory_resource
 
 # 26.06
 cdef cppclass failure_callback_resource_adaptor[ExceptionType]:
-    failure_callback_resource_adaptor(device_async_resource_ref upstream_mr, ...) except +
+    failure_callback_resource_adaptor(any_resource[device_accessible] upstream_mr, ...) except +
 
 ctypedef failure_callback_resource_adaptor[out_of_memory] failure_callback_resource_adaptor_oom
 ```
@@ -633,8 +638,8 @@ ctypedef failure_callback_resource_adaptor[out_of_memory] failure_callback_resou
 ### 19. Downstream Cython `.pxd` Declarations: Pointer to Value Type
 
 Downstream libraries (e.g., cudf) that declare C++ function signatures in
-`.pxd` files must change the memory resource parameter from a pointer to a
-value type:
+`.pxd` files must change the memory resource parameter from a pointer to the
+value type used by the C++ API:
 
 ```cython
 # 26.04
@@ -647,7 +652,12 @@ cdef extern from "mylib/api.hpp" namespace "mylib" nogil:
     ) except +
 
 # 26.06
-from rmm.librmm.memory_resource cimport device_async_resource_ref
+from rmm.librmm.memory_resource cimport (
+    any_resource,
+    device_accessible,
+    device_async_resource_ref,
+    make_any_device_resource,
+)
 
 cdef extern from "mylib/api.hpp" namespace "mylib" nogil:
     unique_ptr[column] my_function(
@@ -657,14 +667,15 @@ cdef extern from "mylib/api.hpp" namespace "mylib" nogil:
 ```
 
 `device_async_resource_ref` is a lightweight value type (like a pointer),
-so it is passed by value rather than by pointer.
+so it is passed by value rather than by pointer. If the target C++ API takes
+an owning `cuda::mr::any_resource<cuda::mr::device_accessible>`, declare the
+parameter as `any_resource[device_accessible]` instead.
 
-### 20. Downstream Cython `.pyx` Files: `mr.get_mr()` to `mr.c_ref.value()`
+### 20. Downstream Cython `.pyx` Files: Passing Resource References
 
-In `.pyx` files that call C++ functions, replace `mr.get_mr()` with
-`mr.c_ref.value()`. The `c_ref` attribute is a `cdef` (C-level) attribute
-on `DeviceMemoryResource`, so accessing `mr.c_ref.value()` does **not**
-require the GIL and can be used directly inside `with nogil:` blocks:
+In `.pyx` files that call C++ functions, keep using `mr.get_mr()` when the
+target C++ function takes `device_async_resource_ref`. `get_mr()` returns a
+`device_async_resource_ref` and can be used directly inside `with nogil:` blocks:
 
 ```cython
 # 26.04
@@ -675,11 +686,17 @@ with nogil:
 # 26.06
 cdef DeviceMemoryResource mr = ...
 with nogil:
-    result = cpp_my_function(input.view(), mr.c_ref.value())
+    result = cpp_my_function(input.view(), mr.get_mr())
 ```
 
-This is a mechanical replacement. Search for `\.get_mr()` across all `.pyx`
-files and replace with `.c_ref.value()`.
+When the target C++ function takes `cuda::mr::any_resource<cuda::mr::device_accessible>`,
+wrap the returned ref with `make_any_device_resource`:
+
+```cython
+cdef DeviceMemoryResource mr = ...
+with nogil:
+    result = cpp_my_function(input.view(), make_any_device_resource(mr.get_mr()))
+```
 
 ### 21. Downstream Cython Wrappers Need `make_*_resource_ref` Helpers
 
@@ -696,11 +713,16 @@ Cython must define similar helpers. Define an inline C++ function in a
 ```cython
 # my_project/my_resource.pxd
 from libcpp.optional cimport optional
-from rmm.librmm.memory_resource cimport device_async_resource_ref
+from rmm.librmm.memory_resource cimport (
+    any_resource,
+    device_accessible,
+    device_async_resource_ref,
+    make_any_device_resource,
+)
 
 cdef extern from "<my_project/my_resource.hpp>" nogil:
     cdef cppclass cpp_MyResource "my_project::MyResource":
-        cpp_MyResource(device_async_resource_ref upstream) except +
+        cpp_MyResource(any_resource[device_accessible] upstream) except +
         # ...
 
 cdef extern from *:
@@ -722,7 +744,7 @@ Then in your `.pyx`, after constructing the C++ object, set `c_ref`:
 
 ```cython
 # my_project/my_resource.pyx
-self.c_obj.reset(new cpp_MyResource(upstream_mr.c_ref.value()))
+self.c_obj.reset(new cpp_MyResource(make_any_device_resource(upstream_mr.get_mr())))
 self.c_ref = make_my_resource_ref(deref(self.c_obj))
 ```
 
@@ -742,20 +764,21 @@ non-default-constructible nature during Cython assignment.
 
 1. **Remove `device_memory_resource` includes and inheritance** from custom resources.
 2. **Remove `Upstream` template parameters** from all RMM resource type names.
-3. **Pass upstream resources by value** (or as `device_async_resource_ref`) instead of pointer.
+3. **Pass upstream resources by value** (or as `cuda::mr::any_resource<cuda::mr::device_accessible>`) instead of pointer.
 4. **Update `allocate`/`deallocate` calls** to the new argument order: `(stream, bytes[, alignment])`.
 5. **Replace `do_allocate`/`do_deallocate` overrides** with public `allocate`/`deallocate` methods
    matching the CCCL resource concept.
 6. **Add `allocate_sync`/`deallocate_sync`** to custom resources (required by CCCL concept).
-7. **Replace pointer-based per-device resource functions** with `_ref` variants.
+7. **Replace pointer-based per-device resource setters** with the `any_resource` setters.
 8. **Remove `owning_wrapper` usage**; resources are copyable and share ownership.
 9. **Ensure custom resources are copyable** if stored in `any_resource`; wrap non-copyable
    members (mutexes, unique_ptrs) in `std::shared_ptr`.
 10. **Move resource structs with `get_property` friends out of function scope** to namespace scope.
 11. **Dereference resource pointers** when passing to APIs expecting `device_async_resource_ref`.
 12. **Remove `dynamic_cast` on resource pointers**; there is no common base class.
-13. **Update Cython `.pxd` files**: `device_memory_resource *mr` → `device_async_resource_ref mr`.
-14. **Update Cython `.pyx` files**: `mr.get_mr()` → `mr.c_ref.value()`.
+13. **Update Cython `.pxd` files** from `device_memory_resource *mr` to the value type used by the C++ API.
+14. **Update Cython `.pyx` files** to pass `mr.get_mr()` for `device_async_resource_ref`
+    parameters or `make_any_device_resource(mr.get_mr())` for `any_resource` parameters.
 15. **Update `#include` directives** for removed headers.
 16. **Link against `librmm`** if your project previously used RMM resources
     as header-only; resource implementations are now compiled.
