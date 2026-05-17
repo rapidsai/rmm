@@ -221,6 +221,20 @@ TEST(TrackingTest, NegativeInnerTracking)
   EXPECT_EQ(inner_mr.get_outstanding_allocations().size(), 0);
 }
 
+TEST(TrackingTest, UntrackedDeallocationDoesNotUnderflowAllocatedBytes)
+{
+  tracking_adaptor mr{rmm::mr::get_current_device_resource_ref()};
+  auto* ptr = mr.allocate_sync(ten_MiB);
+
+  tracking_adaptor inner_mr{rmm::device_async_resource_ref{mr}};
+  inner_mr.deallocate_sync(ptr, ten_MiB);
+
+  EXPECT_EQ(inner_mr.get_allocated_bytes(), 0);
+  EXPECT_EQ(inner_mr.get_outstanding_allocations().size(), 0);
+  EXPECT_EQ(mr.get_allocated_bytes(), 0);
+  EXPECT_EQ(mr.get_outstanding_allocations().size(), 0);
+}
+
 TEST(TrackingTest, DeallocWrongBytes)
 {
   tracking_adaptor mr{rmm::mr::get_current_device_resource_ref()};
