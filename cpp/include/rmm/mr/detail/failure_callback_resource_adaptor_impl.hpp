@@ -62,12 +62,12 @@ class failure_callback_resource_adaptor_impl {
 
   void* allocate(cuda::stream_ref stream,
                  std::size_t bytes,
-                 std::size_t /*alignment*/ = alignof(std::max_align_t))
+                 std::size_t alignment = alignof(std::max_align_t))
   {
     void* ret{};
     while (true) {
       try {
-        ret = upstream_mr_.allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        ret = upstream_mr_.allocate(stream, bytes, alignment);
         break;
       } catch (ExceptionType const&) {
         if (!callback_(bytes, callback_arg_)) { throw; }
@@ -79,9 +79,9 @@ class failure_callback_resource_adaptor_impl {
   void deallocate(cuda::stream_ref stream,
                   void* ptr,
                   std::size_t bytes,
-                  std::size_t /*alignment*/ = alignof(std::max_align_t)) noexcept
+                  std::size_t alignment = alignof(std::max_align_t)) noexcept
   {
-    upstream_mr_.deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    upstream_mr_.deallocate(stream, ptr, bytes, alignment);
   }
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t))
