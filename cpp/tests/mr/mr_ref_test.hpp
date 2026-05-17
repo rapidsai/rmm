@@ -257,14 +257,14 @@ inline void test_random_async_allocations(rmm::device_async_resource_ref ref,
     allocations.end(),
     [&generator, &distribution, &ref, stream](allocation& alloc) {
       alloc.size = distribution(generator);
-      EXPECT_NO_THROW(alloc.ptr = ref.allocate_sync(alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
+      EXPECT_NO_THROW(alloc.ptr = ref.allocate(stream, alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
       if (not stream.is_default()) { stream.synchronize(); }
       EXPECT_NE(nullptr, alloc.ptr);
       EXPECT_TRUE(is_properly_aligned(alloc.ptr));
     });
 
   std::for_each(allocations.begin(), allocations.end(), [stream, &ref](allocation& alloc) {
-    EXPECT_NO_THROW(ref.deallocate_sync(alloc.ptr, alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
+    EXPECT_NO_THROW(ref.deallocate(stream, alloc.ptr, alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
     if (not stream.is_default()) { stream.synchronize(); }
   });
 }
