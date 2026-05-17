@@ -74,6 +74,7 @@ void binning_memory_resource_impl::deallocate(cuda::stream_ref stream,
                                               std::size_t bytes,
                                               std::size_t alignment) noexcept
 {
+  if (bytes == 0) { return; }
   get_resource_ref(bytes).deallocate(stream, ptr, bytes, alignment);
 }
 
@@ -87,6 +88,7 @@ void binning_memory_resource_impl::deallocate_sync(void* ptr,
                                                    std::size_t bytes,
                                                    std::size_t alignment) noexcept
 {
+  if (bytes == 0) { return; }
   get_resource_ref(bytes).deallocate(cuda_stream_view{}, ptr, bytes, alignment);
 }
 
