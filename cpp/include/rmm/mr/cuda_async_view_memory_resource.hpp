@@ -131,7 +131,9 @@ class cuda_async_view_memory_resource final {
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
+    auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+    deallocate(stream, ptr, bytes, alignment);
+    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
   }
 
   /**
