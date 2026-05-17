@@ -4,6 +4,7 @@
  */
 
 #include <rmm/cuda_device.hpp>
+#include <rmm/cuda_stream.hpp>
 #include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/mr/detail/prefetch_resource_adaptor_impl.hpp>
 #include <rmm/prefetch.hpp>
@@ -21,26 +22,23 @@ bool is_prefetch_supported(
   if (!rmm::detail::concurrent_managed_access::is_supported()) { return false; }
 
   auto constexpr size = rmm::CUDA_ALLOCATION_ALIGNMENT;
+  rmm::cuda_stream stream{};
   void* ptr{};
-  bool enabled{};
+  cudaError_t result{};
   try {
-    ptr = upstream_mr.allocate_sync(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
-    if (ptr == nullptr) { return false; }
-
-#if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
-    cudaMemLocation location{cudaMemLocationTypeDevice, rmm::get_current_cuda_device().value()};
-    cudaError_t result = cudaMemPrefetchAsync(ptr, size, location, 0, cudaStream_t{nullptr});
-#else
-    cudaError_t result = cudaMemPrefetchAsync(
-      ptr, size, rmm::get_current_cuda_device().value(), cudaStream_t{nullptr});
-#endif
-    auto const sync_result = cudaStreamSynchronize(cudaStream_t{nullptr});
-    enabled                = result == cudaSuccess && sync_result == cudaSuccess;
+    ptr = upstream_mr.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   } catch (...) {
-    enabled = false;
+    return false;
   }
-  if (ptr != nullptr) { upstream_mr.deallocate_sync(ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT); }
-  return enabled;
+#if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
+  cudaMemLocation location{cudaMemLocationTypeDevice, rmm::get_current_cuda_device().value()};
+  result = cudaMemPrefetchAsync(ptr, size, location, 0, stream.value());
+#else
+  result = cudaMemPrefetchAsync(ptr, size, rmm::get_current_cuda_device().value(), stream.value());
+#endif
+  upstream_mr.deallocate(stream, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  auto const sync_result = cudaStreamSynchronize(stream.value());
+  return result == cudaSuccess && sync_result == cudaSuccess;
 }
 
 }  // namespace
