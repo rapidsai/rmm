@@ -4,16 +4,50 @@
  */
 
 #include <rmm/cuda_device.hpp>
+#include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/mr/detail/prefetch_resource_adaptor_impl.hpp>
 #include <rmm/prefetch.hpp>
+
+#include <cuda_runtime_api.h>
 
 namespace RMM_NAMESPACE {
 namespace mr {
 namespace detail {
+namespace {
+
+bool is_prefetch_supported(
+  cuda::mr::any_resource<cuda::mr::device_accessible>& upstream_mr) noexcept
+{
+  if (!rmm::detail::concurrent_managed_access::is_supported()) { return false; }
+
+  auto constexpr size = rmm::CUDA_ALLOCATION_ALIGNMENT;
+  void* ptr{};
+  bool enabled{};
+  try {
+    ptr = upstream_mr.allocate_sync(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    if (ptr == nullptr) { return false; }
+
+#if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
+    cudaMemLocation location{cudaMemLocationTypeDevice, rmm::get_current_cuda_device().value()};
+    cudaError_t result = cudaMemPrefetchAsync(ptr, size, location, 0, cudaStream_t{nullptr});
+#else
+    cudaError_t result = cudaMemPrefetchAsync(
+      ptr, size, rmm::get_current_cuda_device().value(), cudaStream_t{nullptr});
+#endif
+    auto const sync_result = cudaStreamSynchronize(cudaStream_t{nullptr});
+    enabled                = result == cudaSuccess && sync_result == cudaSuccess;
+  } catch (...) {
+    enabled = false;
+  }
+  if (ptr != nullptr) { upstream_mr.deallocate_sync(ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT); }
+  return enabled;
+}
+
+}  // namespace
 
 prefetch_resource_adaptor_impl::prefetch_resource_adaptor_impl(
   cuda::mr::any_resource<cuda::mr::device_accessible> upstream)
-  : upstream_mr_{std::move(upstream)}
+  : upstream_mr_{std::move(upstream)}, prefetch_enabled_{is_prefetch_supported(upstream_mr_)}
 {
 }
 
@@ -28,7 +62,12 @@ void* prefetch_resource_adaptor_impl::allocate(cuda::stream_ref stream,
                                                std::size_t alignment)
 {
   void* ptr = upstream_mr_.allocate(stream, bytes, alignment);
-  rmm::prefetch(ptr, bytes, rmm::get_current_cuda_device(), cuda_stream_view{stream.get()});
+  if (prefetch_enabled_) {
+    try {
+      rmm::prefetch(ptr, bytes, rmm::get_current_cuda_device(), cuda_stream_view{stream.get()});
+    } catch (...) {
+    }
+  }
   return ptr;
 }
 

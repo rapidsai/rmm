@@ -990,6 +990,12 @@ cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
         """
         Memory resource that prefetches all allocations.
 
+        On construction, this adaptor performs a test allocation from the
+        upstream resource. Prefetching is enabled only if that test allocation
+        can be prefetched to the current device. Otherwise, this adaptor only
+        forwards allocation and deallocation requests. Therefore, this adaptor
+        is only recommended for managed memory resources on supported systems.
+
         Parameters
         ----------
         upstream : DeviceMemoryResource

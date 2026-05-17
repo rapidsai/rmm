@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -15,6 +15,7 @@ void prefetch(void const* ptr,
               rmm::cuda_device_id device,
               rmm::cuda_stream_view stream)
 {
+  if (ptr == nullptr || size == 0) { return; }
   if (!rmm::detail::concurrent_managed_access::is_supported()) { return; }
 
 #if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
@@ -27,8 +28,12 @@ void prefetch(void const* ptr,
   cudaError_t result = cudaMemPrefetchAsync(ptr, size, device.value(), stream.value());
 #endif
   // cudaErrorInvalidValue is returned when non-managed memory is passed to
-  // cudaMemPrefetchAsync. We treat this as a no-op.
-  if (result != cudaErrorInvalidValue && result != cudaSuccess) { RMM_CUDA_TRY(result); }
+  // cudaMemPrefetchAsync. cudaErrorInvalidDevice is returned when the device does not support
+  // managed memory. We treat both cases as a no-op.
+  if (result != cudaErrorInvalidValue && result != cudaErrorInvalidDevice &&
+      result != cudaSuccess) {
+    RMM_CUDA_TRY(result);
+  }
 }
 
 }  // namespace rmm

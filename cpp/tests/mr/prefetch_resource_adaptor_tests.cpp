@@ -82,6 +82,15 @@ TYPED_TEST(PrefetchAdaptorTest, PointerAndSize)
   this->expect_prefetched(buff.data(), buff.size(), rmm::get_current_cuda_device());
 }
 
+TYPED_TEST(PrefetchAdaptorTest, AdaptorAllocates)
+{
+  prefetch_adaptor prefetch_mr{this->mr};
+  auto* ptr = prefetch_mr.allocate(this->stream, this->size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  EXPECT_NE(ptr, nullptr);
+  this->expect_prefetched(ptr, this->size, rmm::get_current_cuda_device());
+  prefetch_mr.deallocate(this->stream, ptr, this->size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+}
+
 TYPED_TEST(PrefetchAdaptorTest, NotPrefetchedWithoutAdaptor)
 {
   // verify not prefetched without adaptor
