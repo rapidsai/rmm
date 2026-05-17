@@ -13,6 +13,7 @@
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
+#include <memory>
 
 namespace rmm::mr {
 
@@ -32,8 +33,7 @@ class simulated_memory_resource final {
    * @param memory_size_bytes The size of the memory to simulate.
    */
   explicit simulated_memory_resource(std::size_t memory_size_bytes)
-    : begin_{reinterpret_cast<char*>(0x100)},                    // NOLINT
-      end_{reinterpret_cast<char*>(begin_ + memory_size_bytes)}  // NOLINT
+    : state_{std::make_shared<state>(reinterpret_cast<char*>(0x100), memory_size_bytes)}  // NOLINT
   {
   }
 
@@ -59,12 +59,12 @@ class simulated_memory_resource final {
                  [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    RMM_EXPECTS(begin_ + bytes <= end_,
+    RMM_EXPECTS(state_->begin + bytes <= state_->end,
                 "Simulated memory size exceeded (failed to allocate " +
                   rmm::detail::format_bytes(bytes) + ")",
                 rmm::bad_alloc);
-    auto* ptr = static_cast<void*>(begin_);
-    begin_ += bytes;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    auto* ptr = static_cast<void*>(state_->begin);
+    state_->begin += bytes;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return ptr;
   }
 
@@ -117,8 +117,18 @@ class simulated_memory_resource final {
   }
 
  private:
-  char* begin_{};
-  char* end_{};
+  struct state {
+    state(char* begin, std::size_t memory_size_bytes)
+      : begin{begin},
+        end{begin + memory_size_bytes}  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    {
+    }
+
+    char* begin{};
+    char* end{};
+  };
+
+  std::shared_ptr<state> state_{};
 };
 
 static_assert(cuda::mr::synchronous_resource<simulated_memory_resource>);
