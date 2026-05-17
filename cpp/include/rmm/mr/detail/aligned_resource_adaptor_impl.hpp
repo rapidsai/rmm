@@ -77,8 +77,6 @@ class aligned_resource_adaptor_impl {
   }
 
  private:
-  [[nodiscard]] std::size_t upstream_allocation_size(std::size_t bytes) const;
-
   cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
   std::unordered_map<void*, void*> pointers_;
   std::size_t alignment_;
