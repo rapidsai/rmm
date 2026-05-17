@@ -29,7 +29,7 @@
  * that was active when the memory resource was created.
  */
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup memory_resources
@@ -381,4 +381,4 @@ reset_current_device_resource_ref()
 }
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT_NAMESPACE

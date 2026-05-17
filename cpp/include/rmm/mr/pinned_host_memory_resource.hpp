@@ -15,7 +15,7 @@
 
 #include <cstddef>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT_NAMESPACE {
 namespace mr {
 
 /**
@@ -172,4 +172,4 @@ static_assert(cuda::mr::resource_with<pinned_host_memory_resource, cuda::mr::hos
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT_NAMESPACE

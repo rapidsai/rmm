@@ -16,7 +16,7 @@
 #include <cstddef>
 #include <memory>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup memory_resources
@@ -291,4 +291,4 @@ bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT_NAMESPACE
