@@ -7,13 +7,14 @@
 #include "cccl_mr_ref_test_basic.hpp"
 #include "cccl_mr_ref_test_mt.hpp"
 
-#include <rmm/mr/per_device_resource.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 
 namespace rmm::test {
 
 struct PoolMRFixture : public ::testing::Test {
-  rmm::mr::pool_memory_resource mr{rmm::mr::get_current_device_resource_ref(), 0};
+  rmm::mr::cuda_memory_resource upstream{};
+  rmm::mr::pool_memory_resource mr{upstream, 0};
   rmm::device_async_resource_ref ref{mr};
   rmm::cuda_stream stream{};
 };

@@ -399,30 +399,29 @@ inline auto make_system()
 
 inline auto make_arena()
 {
-  return std::make_shared<rmm::mr::arena_memory_resource>(
-    rmm::mr::get_current_device_resource_ref());
+  return std::make_shared<rmm::mr::arena_memory_resource>(rmm::mr::cuda_memory_resource{});
 }
 
 inline auto make_fixed_size()
 {
-  return std::make_shared<rmm::mr::fixed_size_memory_resource>(
-    rmm::mr::get_current_device_resource_ref());
+  return std::make_shared<rmm::mr::fixed_size_memory_resource>(rmm::mr::cuda_memory_resource{});
 }
 
 inline auto make_binning()
 {
   // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
-  // Larger allocations will use the current device resource
+  // Larger allocations will use the CUDA resource
   auto const bin_range_start{18};
   auto const bin_range_end{22};
 
   return std::make_shared<rmm::mr::binning_memory_resource>(
-    rmm::mr::get_current_device_resource_ref(), bin_range_start, bin_range_end);
+    rmm::mr::cuda_memory_resource{}, bin_range_start, bin_range_end);
 }
 
 struct mr_factory_base {
   std::string name{};  ///< Name to associate with tests that use this factory
-  resource_ref mr{rmm::mr::get_current_device_resource_ref()};
+  rmm::mr::cuda_memory_resource default_mr{};
+  resource_ref mr{default_mr};
   bool skip_test{false};
 };
 
@@ -493,7 +492,8 @@ struct mr_ref_test : public ::testing::TestWithParam<std::string> {
   }
 
   std::shared_ptr<mr_factory_base> factory_obj{};
-  resource_ref ref{rmm::mr::get_current_device_resource_ref()};
+  rmm::mr::cuda_memory_resource default_mr{};
+  resource_ref ref{default_mr};
   rmm::cuda_stream stream{};
 };
 
