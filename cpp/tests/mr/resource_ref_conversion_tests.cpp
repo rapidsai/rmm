@@ -9,6 +9,7 @@
 #include <rmm/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/limiting_resource_adaptor.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -216,6 +217,32 @@ TEST(ResourceRefConversionAllocator, VectorFromFunction)
   auto vec = make_pinned_vector<int>(1, stream);
   vec[0]   = 42;
   ASSERT_EQ(vec[0], 42);
+}
+
+TEST(ResourceCast, FindsConcreteResourceInAnyResource)
+{
+  constexpr std::size_t limit{1024};
+  rmm::mr::cuda_memory_resource cuda_mr{};
+  rmm::mr::limiting_resource_adaptor limiter{cuda_mr, limit};
+  cuda::mr::any_resource<cuda::mr::device_accessible> resource{limiter};
+
+  auto* const casted = cuda::mr::resource_cast<rmm::mr::limiting_resource_adaptor>(&resource);
+  ASSERT_NE(casted, nullptr);
+  EXPECT_EQ(casted->get_allocation_limit(), limit);
+  EXPECT_EQ(cuda::mr::resource_cast<rmm::mr::cuda_memory_resource>(&resource), nullptr);
+}
+
+TEST(ResourceCast, FindsConcreteResourceInDeviceAsyncResourceRef)
+{
+  constexpr std::size_t limit{1024};
+  rmm::mr::cuda_memory_resource cuda_mr{};
+  rmm::mr::limiting_resource_adaptor limiter{cuda_mr, limit};
+  rmm::device_async_resource_ref ref{limiter};
+
+  auto* const casted = cuda::mr::resource_cast<rmm::mr::limiting_resource_adaptor>(&ref);
+  ASSERT_NE(casted, nullptr);
+  EXPECT_EQ(casted->get_allocation_limit(), limit);
+  EXPECT_EQ(cuda::mr::resource_cast<rmm::mr::cuda_memory_resource>(&ref), nullptr);
 }
 
 // Test vector move (exercises allocator move semantics)
