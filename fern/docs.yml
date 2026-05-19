@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://schema.buildwithfern.dev/docs-yml.json
+
+title: "RMM"
+instances:
+  - url: "nvidia-rmm.docs.buildwithfern.com/rmm"
+    custom-domain: docs.nvidia.com/rmm
+colors:
+  accentPrimary:
+    light: "#2F4B00"
+    dark: "#76B900"
+  background:
+    light: "#FFFFFF"
+    dark: "#000000"
+check:
+  rules:
+    broken-links: "error"
+layout:
+  searchbar-placement: "header"
+  page-width: "1376px"
+  sidebar-width: "248px"
+  content-width: "812px"
+  tabs-placement: "header"
+  hide-feedback: true
+theme:
+  page-actions: "toolbar"
+  footer-nav: "minimal"
+experimental:
+  basepath-aware: true
+navbar-links:
+  - type: "secondary"
+    text: "GitHub"
+    url: "https://github.com/rapidsai/rmm"
+  - type: "secondary"
+    text: "CUDA-X"
+    url: "https://www.nvidia.com/en-us/technologies/cuda-x/"
+navigation:
+  - page: "Home"
+    path: "./pages/index.md"
+  - page: "User Guide"
+    path: "./pages/user_guide/guide.md"
+  - section: "API Reference"
+    contents:
+      - section: "C++ API"
+        path: "./pages/cpp_api/index.md"
+        contents:
+          - page: "Memory Resources"
+            path: "./pages/cpp_api/cpp-api-memory-resources.md"
+          - page: "Memory Resource Adaptors"
+            path: "./pages/cpp_api/cpp-api-memory-resource-adaptors.md"
+          - page: "Data Containers"
+            path: "./pages/cpp_api/cpp-api-data-containers.md"
+          - page: "Thrust Integrations"
+            path: "./pages/cpp_api/cpp-api-thrust-integrations.md"
+          - page: "CUDA Device Management"
+            path: "./pages/cpp_api/cpp-api-cuda-device-management.md"
+          - page: "CUDA Streams"
+            path: "./pages/cpp_api/cpp-api-cuda-streams.md"
+          - page: "Errors"
+            path: "./pages/cpp_api/cpp-api-errors.md"
+          - page: "Utilities"
+            path: "./pages/cpp_api/cpp-api-utilities.md"
+          - page: "Namespaces"
+            path: "./pages/cpp_api/cpp-api-namespaces.md"
+      - section: "Python API"
+        path: "./pages/python_api/index.md"
+        contents:
+          - page: "rmm"
+            path: "./pages/python_api/python-api-rmm.md"
+          - page: "rmm.mr"
+            path: "./pages/python_api/python-api-rmm-mr.md"
+          - page: "rmm.allocators"
+            path: "./pages/python_api/python-api-rmm-allocators.md"
+          - page: "rmm.statistics"
+            path: "./pages/python_api/python-api-rmm-statistics.md"
+          - page: "rmm.pylibrmm"
+            path: "./pages/python_api/python-api-rmm-pylibrmm.md"
+          - page: "rmm.librmm"
+            path: "./pages/python_api/python-api-rmm-librmm.md"

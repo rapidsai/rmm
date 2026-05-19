@@ -66,11 +66,8 @@ files:
   docs:
     output: none
     includes:
-      - cuda_version
       - docs
       - py_version
-      - depends_on_rmm
-      - depends_on_librmm
   py_cpp_build:
     output: pyproject
     pyproject_dir: python/librmm
@@ -333,21 +330,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - breathe>=4.35.0
-          - *doxygen
-          - graphviz
-          - ipython
-          - make
-          - myst-parser
-          - nbsphinx
-          - &numba numba>=0.60.0,<0.65.0
-          - &numba_cuda numba-cuda>=0.22.1,<0.29.0
-          - numpydoc
-          - pydata-sphinx-theme>=0.15.4
-          - sphinx
-          - sphinx-copybutton
-          - sphinx-markdown-tables
-          - sphinxcontrib-jquery
+          - nodejs>=18
   py_version:
     specific:
       - output_types: conda
@@ -395,6 +378,8 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
+          - &numba numba>=0.60.0,<0.65.0
+          - &numba_cuda numba-cuda>=0.22.1,<0.29.0
           - packaging
           - pytest
           - pytest-cov
