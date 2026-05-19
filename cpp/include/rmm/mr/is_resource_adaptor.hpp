@@ -21,11 +21,15 @@ namespace mr {
 /**
  * @brief Concept to check whether a resource is a resource adaptor by checking for
  * `get_upstream_resource`.
+ *
+ * @deprecated This trait will be removed in a future release.
  */
 template <class Resource, class = void>
+[[deprecated("is_resource_adaptor is deprecated and will be removed in a future release.")]]  //
 inline constexpr bool is_resource_adaptor = false;
 
 template <class Resource>
+[[deprecated("is_resource_adaptor is deprecated and will be removed in a future release.")]]  //
 inline constexpr bool is_resource_adaptor<
   Resource,
   cuda::std::void_t<decltype(cuda::std::declval<Resource>().get_upstream_resource())>> =
