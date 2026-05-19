@@ -48,7 +48,7 @@ if [[ -n "${FERN_CLI:-}" ]]; then
 elif command -v fern >/dev/null 2>&1; then
   FERN_CMD=("fern")
 else
-  FERN_CMD=("npx" "--yes" "fern-api")
+  FERN_CMD=("npx" "--yes" "fern-api@5.30.4")
 fi
 
 run_fern() {

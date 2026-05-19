@@ -8,7 +8,7 @@ Generated from RMM C++ headers.
 
 ## `cpp/include/rmm/cuda_stream.hpp`
 
-### CUDA Stream
+### CUDA Stream Class
 
 Owning wrapper for a CUDA stream.
 
@@ -18,7 +18,7 @@ class cuda_stream {
 
 _Source: `cpp/include/rmm/cuda_stream.hpp:29`_
 
-### Flags
+### Flags Enum
 
 stream creation flags.
 
@@ -28,7 +28,7 @@ enum class flags : unsigned int {
 
 _Source: `cpp/include/rmm/cuda_stream.hpp:34`_
 
-### CUDA Stream
+### CUDA Stream Constructor (cuda_stream.hpp:45)
 
 Move constructor (default)
 
@@ -38,7 +38,7 @@ cuda_stream(cuda_stream&&) = default;
 
 _Source: `cpp/include/rmm/cuda_stream.hpp:45`_
 
-### CUDA Stream
+### CUDA Stream Constructor (cuda_stream.hpp:66)
 
 Construct a new CUDA stream object
 
@@ -48,7 +48,7 @@ cuda_stream(cuda_stream::flags flags = cuda_stream::flags::sync_default);
 
 _Source: `cpp/include/rmm/cuda_stream.hpp:66`_
 
-### Cudastream T
+### Cudastream T (cuda_stream.hpp:86)
 
 Explicit conversion to cudaStream_t.
 
@@ -68,7 +68,7 @@ operator cuda_stream_view() const;
 
 _Source: `cpp/include/rmm/cuda_stream.hpp:100`_
 
-### Synchronize
+### Synchronize (cuda_stream.hpp:116)
 
 Synchronize the owned CUDA stream.
 
@@ -78,7 +78,7 @@ void synchronize() const;
 
 _Source: `cpp/include/rmm/cuda_stream.hpp:116`_
 
-### Synchronize No Throw
+### Synchronize No Throw (cuda_stream.hpp:123)
 
 Synchronize the owned CUDA stream. Does not throw if there is an error.
 
@@ -90,7 +90,7 @@ _Source: `cpp/include/rmm/cuda_stream.hpp:123`_
 
 ## `cpp/include/rmm/cuda_stream_pool.hpp`
 
-### CUDA Stream Pool
+### CUDA Stream Pool Class
 
 A pool of CUDA streams.
 
@@ -100,7 +100,7 @@ class cuda_stream_pool {
 
 _Source: `cpp/include/rmm/cuda_stream_pool.hpp:31`_
 
-### CUDA Stream Pool
+### CUDA Stream Pool Constructor
 
 Construct a new CUDA stream pool object of the given non-zero size
 
@@ -110,7 +110,7 @@ explicit cuda_stream_pool(std::size_t pool_size = default_size, cuda_stream::fla
 
 _Source: `cpp/include/rmm/cuda_stream_pool.hpp:42`_
 
-### Get Stream
+### Get Stream (cuda_stream_pool.hpp:58)
 
 Get a `cuda_stream_view` of a stream in the pool.
 
@@ -120,9 +120,9 @@ rmm::cuda_stream_view get_stream() const noexcept;
 
 _Source: `cpp/include/rmm/cuda_stream_pool.hpp:58`_
 
-### Get Stream
+### Get Stream (cuda_stream_pool.hpp:73)
 
-Get a `cuda_stream_view` of the stream associated with `stream_id`.
+Get a `cuda_stream_view` of the stream associated with `stream_id`. Equivalent values of `stream_id` return a stream_view to the same underlying stream.
 
 ```cpp
 rmm::cuda_stream_view get_stream(std::size_t stream_id) const;
@@ -142,7 +142,7 @@ _Source: `cpp/include/rmm/cuda_stream_pool.hpp:82`_
 
 ## `cpp/include/rmm/cuda_stream_view.hpp`
 
-### CUDA Stream View
+### CUDA Stream View Class
 
 Strongly-typed non-owning wrapper for CUDA streams with default constructor.
 
@@ -152,7 +152,7 @@ class cuda_stream_view {
 
 _Source: `cpp/include/rmm/cuda_stream_view.hpp:28`_
 
-### CUDA Stream View
+### CUDA Stream View Constructor (cuda_stream_view.hpp:48)
 
 Constructor from a cudaStream_t
 
@@ -162,7 +162,7 @@ cuda_stream_view(cudaStream_t stream) noexcept;
 
 _Source: `cpp/include/rmm/cuda_stream_view.hpp:48`_
 
-### CUDA Stream View
+### CUDA Stream View Constructor (cuda_stream_view.hpp:55)
 
 Implicit conversion from stream_ref.
 
@@ -172,7 +172,7 @@ cuda_stream_view(cuda::stream_ref stream) noexcept;
 
 _Source: `cpp/include/rmm/cuda_stream_view.hpp:55`_
 
-### Cudastream T
+### Cudastream T (cuda_stream_view.hpp:69)
 
 Implicit conversion to cudaStream_t.
 
@@ -182,7 +182,7 @@ operator cudaStream_t() const noexcept;
 
 _Source: `cpp/include/rmm/cuda_stream_view.hpp:69`_
 
-### Synchronize
+### Synchronize (cuda_stream_view.hpp:95)
 
 Synchronize the viewed CUDA stream.
 
@@ -192,7 +192,7 @@ void synchronize() const;
 
 _Source: `cpp/include/rmm/cuda_stream_view.hpp:95`_
 
-### Synchronize No Throw
+### Synchronize No Throw (cuda_stream_view.hpp:102)
 
 Synchronize the viewed CUDA stream. Does not throw if there is an error.
 

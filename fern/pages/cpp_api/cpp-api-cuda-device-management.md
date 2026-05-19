@@ -8,7 +8,7 @@ Generated from RMM C++ headers.
 
 ## `cpp/include/rmm/cuda_device.hpp`
 
-### CUDA Device Id
+### CUDA Device Id Struct
 
 Strong type for a CUDA device identifier.
 
@@ -18,25 +18,25 @@ struct cuda_device_id {
 
 _Source: `cpp/include/rmm/cuda_device.hpp:27`_
 
-### CUDA Device Id
+### CUDA Device Id Constructor (cuda_device.hpp:33)
 
 Construct a `cuda_device_id` from the current device
 
 ```cpp
-cuda_device_id() noexcept : id_{get_current_cuda_device().value()} {} * @brief Construct a `cuda_device_id` from the specified integer value. * * @param dev_id The device's integer identifier */ explicit constexpr cuda_device_id(value_type dev_id) noexcept : id_{dev_id} {} [[nodiscard]] constexpr value_type value() const noexcept { return id_; } * @brief Compare two `cuda_device_id`s for equality.
+cuda_device_id() noexcept : id_{get_current_cuda_device().value()} {}
 ```
 
-_Source: `cpp/include/rmm/cuda_device.hpp:42`_
+_Source: `cpp/include/rmm/cuda_device.hpp:33`_
 
-### CUDA Device Id
+### CUDA Device Id Constructor (cuda_device.hpp:40)
 
 Construct a `cuda_device_id` from the specified integer value.
 
 ```cpp
-explicit constexpr cuda_device_id(value_type dev_id) noexcept : id_{dev_id} {} [[nodiscard]] constexpr value_type value() const noexcept { return id_; } * @brief Compare two `cuda_device_id`s for equality. * * @param lhs The first `cuda_device_id` to compare. * @param rhs The second `cuda_device_id` to compare. * @return true if the two `cuda_device_id`s wrap the same integer value, false otherwise. */
+explicit constexpr cuda_device_id(value_type dev_id) noexcept : id_{dev_id} {}
 ```
 
-_Source: `cpp/include/rmm/cuda_device.hpp:47`_
+_Source: `cpp/include/rmm/cuda_device.hpp:40`_
 
 ### Get Current CUDA Device
 
@@ -60,7 +60,7 @@ _Source: `cpp/include/rmm/cuda_device.hpp:92`_
 
 ### Percent Of Free Device Memory
 
-Returns the approximate specified percent of available device memory on the current CUDA
+Returns the approximate specified percent of available device memory on the current CUDA device, aligned (down) to the nearest CUDA allocation size.
 
 ```cpp
 std::size_t percent_of_free_device_memory(int percent);
@@ -68,9 +68,9 @@ std::size_t percent_of_free_device_memory(int percent);
 
 _Source: `cpp/include/rmm/cuda_device.hpp:109`_
 
-### CUDA Set Device Raii
+### CUDA Set Device Raii Struct
 
-RAII class that sets the current CUDA device to the specified device on construction
+RAII class that sets the current CUDA device to the specified device on construction and restores the previous device on destruction.
 
 ```cpp
 struct cuda_set_device_raii {
@@ -78,7 +78,7 @@ struct cuda_set_device_raii {
 
 _Source: `cpp/include/rmm/cuda_device.hpp:115`_
 
-### CUDA Set Device Raii
+### CUDA Set Device Raii Constructor
 
 Construct a new cuda_set_device_raii object and sets the current CUDA device to `dev_id`
 
@@ -90,7 +90,7 @@ _Source: `cpp/include/rmm/cuda_device.hpp:121`_
 
 ## `cpp/include/rmm/prefetch.hpp`
 
-### Prefetch
+### Prefetch (prefetch.hpp:37)
 
 Prefetch memory to the specified device on the specified stream.
 
@@ -100,7 +100,7 @@ void prefetch(void const* ptr, std::size_t size, rmm::cuda_device_id device, rmm
 
 _Source: `cpp/include/rmm/prefetch.hpp:37`_
 
-### Prefetch
+### Prefetch (prefetch.hpp:53)
 
 Prefetch a span of memory to the specified device on the specified stream.
 

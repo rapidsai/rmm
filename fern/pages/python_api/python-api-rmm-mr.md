@@ -16,7 +16,7 @@ class DeviceMemoryResource
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:12`_
 
-### `allocate`
+### `allocate` (DeviceMemoryResource)
 
 ```python
 def allocate(self, nbytes: int, stream: Stream = ...) -> int:
@@ -24,7 +24,7 @@ def allocate(self, nbytes: int, stream: Stream = ...) -> int:
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:13`_
 
-### `deallocate`
+### `deallocate` (DeviceMemoryResource)
 
 ```python
 def deallocate(self, ptr: int, nbytes: int, stream: Stream = ...) -> None:
@@ -40,7 +40,7 @@ class UpstreamResourceAdaptor(DeviceMemoryResource)
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:18`_
 
-### `get_upstream`
+### `get_upstream` (UpstreamResourceAdaptor)
 
 ```python
 def get_upstream(self) -> DeviceMemoryResource:
@@ -72,7 +72,7 @@ class CudaAsyncViewMemoryResource(DeviceMemoryResource)
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:37`_
 
-### `pool_handle`
+### `pool_handle` (CudaAsyncViewMemoryResource)
 
 ```python
 def pool_handle(self) -> int:
@@ -120,7 +120,7 @@ class PoolMemoryResource(UpstreamResourceAdaptor)
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:55`_
 
-### `pool_size`
+### `pool_size` (PoolMemoryResource)
 
 ```python
 def pool_size(self) -> int:
@@ -152,7 +152,7 @@ class BinningMemoryResource(UpstreamResourceAdaptor)
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:80`_
 
-### `add_bin`
+### `add_bin` (BinningMemoryResource)
 
 ```python
 def add_bin(self, allocation_size: int, bin_resource: DeviceMemoryResource | None = None,) -> None:
@@ -160,7 +160,7 @@ def add_bin(self, allocation_size: int, bin_resource: DeviceMemoryResource | Non
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:87`_
 
-### `bin_mrs`
+### `bin_mrs` (BinningMemoryResource)
 
 ```python
 def bin_mrs(self) -> list[DeviceMemoryResource]:
@@ -184,7 +184,7 @@ class LimitingResourceAdaptor(UpstreamResourceAdaptor)
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:102`_
 
-### `get_allocated_bytes`
+### `get_allocated_bytes` (LimitingResourceAdaptor)
 
 ```python
 def get_allocated_bytes(self) -> int:
@@ -192,7 +192,7 @@ def get_allocated_bytes(self) -> int:
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:106`_
 
-### `get_allocation_limit`
+### `get_allocation_limit` (LimitingResourceAdaptor)
 
 ```python
 def get_allocation_limit(self) -> int:
@@ -208,7 +208,7 @@ class LoggingResourceAdaptor(UpstreamResourceAdaptor)
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:109`_
 
-### `flush`
+### `flush` (LoggingResourceAdaptor)
 
 ```python
 def flush(self) -> None:
@@ -216,7 +216,7 @@ def flush(self) -> None:
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:115`_
 
-### `get_file_name`
+### `get_file_name` (LoggingResourceAdaptor)
 
 ```python
 def get_file_name(self) -> str:
@@ -232,7 +232,7 @@ class StatisticsResourceAdaptor(UpstreamResourceAdaptor)
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:118`_
 
-### `allocation_counts`
+### `allocation_counts` (StatisticsResourceAdaptor)
 
 ```python
 def allocation_counts(self) -> Statistics:
@@ -240,7 +240,7 @@ def allocation_counts(self) -> Statistics:
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:121`_
 
-### `pop_counters`
+### `pop_counters` (StatisticsResourceAdaptor)
 
 ```python
 def pop_counters(self) -> Statistics:
@@ -248,7 +248,7 @@ def pop_counters(self) -> Statistics:
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:122`_
 
-### `push_counters`
+### `push_counters` (StatisticsResourceAdaptor)
 
 ```python
 def push_counters(self) -> Statistics:
@@ -264,7 +264,7 @@ class TrackingResourceAdaptor(UpstreamResourceAdaptor)
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:125`_
 
-### `get_allocated_bytes`
+### `get_allocated_bytes` (TrackingResourceAdaptor)
 
 ```python
 def get_allocated_bytes(self) -> int:
@@ -272,7 +272,7 @@ def get_allocated_bytes(self) -> int:
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:129`_
 
-### `get_outstanding_allocations_str`
+### `get_outstanding_allocations_str` (TrackingResourceAdaptor)
 
 ```python
 def get_outstanding_allocations_str(self) -> str:
@@ -280,7 +280,7 @@ def get_outstanding_allocations_str(self) -> str:
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/_memory_resource.pyi:130`_
 
-### `log_outstanding_allocations`
+### `log_outstanding_allocations` (TrackingResourceAdaptor)
 
 ```python
 def log_outstanding_allocations(self) -> None:
@@ -386,7 +386,7 @@ class CudaAsyncManagedMemoryResource(DeviceMemoryResource)
 
 _Source: `python/rmm/rmm/pylibrmm/memory_resource/experimental.pyi:6`_
 
-### `pool_handle`
+### `pool_handle` (CudaAsyncManagedMemoryResource)
 
 ```python
 def pool_handle(self) -> int:

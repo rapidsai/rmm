@@ -115,7 +115,7 @@ Context to enable allocation statistics.
 If statistics have been enabled already (the current memory resource is an
 instance of StatisticsResourceAdaptor), new counters are pushed on the
 current allocation statistics stack when entering the context and popped
-again when exiting using `push_statistics()` and `push_statistics()`.
+again when exiting using `push_statistics()` and `pop_statistics()`.
 
 If statistics have not been enabled, a new StatisticsResourceAdaptor is set
 as the current RMM memory resource when entering the context and removed
