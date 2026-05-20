@@ -38,9 +38,3 @@ navigation:
     path: "./pages/index.md"
   - page: "User Guide"
     path: "./pages/user_guide/guide.md"
-  - section: "API Reference"
-    contents:
-      - page: "C++ API"
-        path: "./pages/api_reference/cpp.md"
-      - page: "Python API"
-        path: "./pages/api_reference/python.md"
