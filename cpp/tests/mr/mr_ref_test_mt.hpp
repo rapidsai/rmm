@@ -82,12 +82,12 @@ TEST_P(mr_ref_test_mt, Allocate)
 
 TEST_P(mr_ref_test_mt, AllocateDefaultStream)
 {
-  spawn(test_various_async_allocations, this->ref, rmm::cuda_stream_view{});
+  spawn(test_various_async_allocations, this->ref, cuda::stream_ref{cudaStream_t{nullptr}});
 }
 
 TEST_P(mr_ref_test_mt, AllocateOnStream)
 {
-  spawn(test_various_async_allocations, this->ref, this->stream.view());
+  spawn(test_various_async_allocations, this->ref, cuda::stream_ref{this->stream});
 }
 
 TEST_P(mr_ref_test_mt, RandomAllocations)
@@ -101,7 +101,7 @@ TEST_P(mr_ref_test_mt, RandomAllocationsDefaultStream)
         this->ref,
         default_num_allocations,
         default_max_size,
-        rmm::cuda_stream_view{});
+        cuda::stream_ref{cudaStream_t{nullptr}});
 }
 
 TEST_P(mr_ref_test_mt, RandomAllocationsStream)
@@ -110,7 +110,7 @@ TEST_P(mr_ref_test_mt, RandomAllocationsStream)
         this->ref,
         default_num_allocations,
         default_max_size,
-        this->stream.view());
+        cuda::stream_ref{this->stream});
 }
 
 TEST_P(mr_ref_test_mt, MixedRandomAllocationFree)
@@ -120,36 +120,43 @@ TEST_P(mr_ref_test_mt, MixedRandomAllocationFree)
 
 TEST_P(mr_ref_test_mt, MixedRandomAllocationFreeDefaultStream)
 {
-  spawn(
-    test_mixed_random_async_allocation_free, this->ref, default_max_size, rmm::cuda_stream_view{});
+  spawn(test_mixed_random_async_allocation_free,
+        this->ref,
+        default_max_size,
+        cuda::stream_ref{cudaStream_t{nullptr}});
 }
 
 TEST_P(mr_ref_test_mt, MixedRandomAllocationFreeStream)
 {
-  spawn(test_mixed_random_async_allocation_free, this->ref, default_max_size, this->stream.view());
+  spawn(test_mixed_random_async_allocation_free,
+        this->ref,
+        default_max_size,
+        cuda::stream_ref{this->stream});
 }
 
 TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsDefaultStream)
 {
   test_async_allocate_free_different_threads(
-    this->ref, rmm::cuda_stream_default, rmm::cuda_stream_default);
+    this->ref, cuda::stream_ref{cudaStream_t{nullptr}}, cuda::stream_ref{cudaStream_t{nullptr}});
 }
 
 TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsPerThreadDefaultStream)
 {
   test_async_allocate_free_different_threads(
-    this->ref, rmm::cuda_stream_per_thread, rmm::cuda_stream_per_thread);
+    this->ref, cuda::stream_ref{cudaStreamPerThread}, cuda::stream_ref{cudaStreamPerThread});
 }
 
 TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsSameStream)
 {
-  test_async_allocate_free_different_threads(this->ref, this->stream, this->stream);
+  test_async_allocate_free_different_threads(
+    this->ref, cuda::stream_ref{this->stream}, cuda::stream_ref{this->stream});
 }
 
 TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsDifferentStream)
 {
   rmm::cuda_stream streamB;
-  test_async_allocate_free_different_threads(this->ref, this->stream, streamB);
+  test_async_allocate_free_different_threads(
+    this->ref, cuda::stream_ref{this->stream}, cuda::stream_ref{streamB});
   streamB.synchronize();
 }
 

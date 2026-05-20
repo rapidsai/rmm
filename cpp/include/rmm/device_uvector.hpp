@@ -15,6 +15,7 @@
 
 #include <cuda/std/iterator>
 #include <cuda/std/span>
+#include <cuda/stream_ref>
 
 #include <cstddef>
 #include <type_traits>
@@ -126,7 +127,7 @@ class device_uvector {
    */
   explicit device_uvector(
     size_type size,
-    cuda_stream_view stream,
+    cuda::stream_ref stream,
     cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref())
     : _storage{elements_to_bytes(size), std::alignment_of_v<T>, stream, std::move(mr)}
   {
@@ -143,7 +144,7 @@ class device_uvector {
    */
   explicit device_uvector(
     device_uvector const& other,
-    cuda_stream_view stream,
+    cuda::stream_ref stream,
     cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref())
     : _storage{other._storage, stream, std::move(mr)}
   {
@@ -210,17 +211,17 @@ class device_uvector {
    * @param value The value to copy to the specified element
    * @param stream The stream on which to perform the copy
    */
-  void set_element_async(size_type element_index, value_type const& value, cuda_stream_view stream)
+  void set_element_async(size_type element_index, value_type const& value, cuda::stream_ref stream)
   {
     RMM_EXPECTS(
       element_index < size(), "Attempt to access out of bounds element.", rmm::out_of_range);
     RMM_CUDA_TRY(cudaMemcpyAsync(
-      element_ptr(element_index), &value, sizeof(value), cudaMemcpyDefault, stream.value()));
+      element_ptr(element_index), &value, sizeof(value), cudaMemcpyDefault, stream.get()));
   }
 
   // We delete the r-value reference overload to prevent asynchronously copying from a literal or
   // implicit temporary value after it is deleted or goes out of scope.
-  void set_element_async(size_type, value_type const&&, cuda_stream_view) = delete;
+  void set_element_async(size_type, value_type const&&, cuda::stream_ref) = delete;
 
   /**
    * @brief Asynchronously sets the specified element to zero in device memory.
@@ -244,12 +245,11 @@ class device_uvector {
    * @param element_index Index of the target element
    * @param stream The stream on which to perform the copy
    */
-  void set_element_to_zero_async(size_type element_index, cuda_stream_view stream)
+  void set_element_to_zero_async(size_type element_index, cuda::stream_ref stream)
   {
     RMM_EXPECTS(
       element_index < size(), "Attempt to access out of bounds element.", rmm::out_of_range);
-    RMM_CUDA_TRY(
-      cudaMemsetAsync(element_ptr(element_index), 0, sizeof(value_type), stream.value()));
+    RMM_CUDA_TRY(cudaMemsetAsync(element_ptr(element_index), 0, sizeof(value_type), stream.get()));
   }
 
   /**
@@ -281,10 +281,10 @@ class device_uvector {
    * @param value The value to copy to the specified element
    * @param stream The stream on which to perform the copy
    */
-  void set_element(size_type element_index, T const& value, cuda_stream_view stream)
+  void set_element(size_type element_index, T const& value, cuda::stream_ref stream)
   {
     set_element_async(element_index, value, stream);
-    stream.synchronize_no_throw();
+    RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream.get()));
   }
 
   /**
@@ -299,14 +299,14 @@ class device_uvector {
    * @param stream The stream on which to perform the copy
    * @return The value of the specified element
    */
-  [[nodiscard]] value_type element(size_type element_index, cuda_stream_view stream) const
+  [[nodiscard]] value_type element(size_type element_index, cuda::stream_ref stream) const
   {
     RMM_EXPECTS(
       element_index < size(), "Attempt to access out of bounds element.", rmm::out_of_range);
     value_type value;
     RMM_CUDA_TRY(cudaMemcpyAsync(
-      &value, element_ptr(element_index), sizeof(value), cudaMemcpyDefault, stream.value()));
-    stream.synchronize();
+      &value, element_ptr(element_index), sizeof(value), cudaMemcpyDefault, stream.get()));
+    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
     return value;
   }
 
@@ -321,7 +321,7 @@ class device_uvector {
    * @param stream The stream on which to perform the copy
    * @return The value of the first element
    */
-  [[nodiscard]] value_type front_element(cuda_stream_view stream) const
+  [[nodiscard]] value_type front_element(cuda::stream_ref stream) const
   {
     return element(0, stream);
   }
@@ -337,7 +337,7 @@ class device_uvector {
    * @param stream The stream on which to perform the copy
    * @return The value of the last element
    */
-  [[nodiscard]] value_type back_element(cuda_stream_view stream) const
+  [[nodiscard]] value_type back_element(cuda::stream_ref stream) const
   {
     return element(size() - 1, stream);
   }
@@ -354,7 +354,7 @@ class device_uvector {
    * @param new_capacity The desired capacity (number of elements)
    * @param stream The stream on which to perform the allocation/copy (if any)
    */
-  void reserve(size_type new_capacity, cuda_stream_view stream)
+  void reserve(size_type new_capacity, cuda::stream_ref stream)
   {
     _storage.reserve(elements_to_bytes(new_capacity), stream);
   }
@@ -375,7 +375,7 @@ class device_uvector {
    * @param new_size The desired number of elements
    * @param stream The stream on which to perform the allocation/copy (if any)
    */
-  void resize(size_type new_size, cuda_stream_view stream)
+  void resize(size_type new_size, cuda::stream_ref stream)
   {
     _storage.resize(elements_to_bytes(new_size), stream);
   }
@@ -387,7 +387,7 @@ class device_uvector {
    *
    * @param stream Stream on which to perform allocation and copy
    */
-  void shrink_to_fit(cuda_stream_view stream) { _storage.shrink_to_fit(stream); }
+  void shrink_to_fit(cuda::stream_ref stream) { _storage.shrink_to_fit(stream); }
 
   /**
    * @brief Release ownership of device memory storage.
@@ -612,7 +612,7 @@ class device_uvector {
    *
    * @param stream The stream to use for deallocation
    */
-  void set_stream(cuda_stream_view stream) noexcept { _storage.set_stream(stream); }
+  void set_stream(cuda::stream_ref stream) noexcept { _storage.set_stream(stream); }
 
  private:
   device_buffer _storage{};  ///< Device memory storage for vector elements

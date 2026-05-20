@@ -4,9 +4,11 @@
  */
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/format.hpp>
 #include <rmm/mr/detail/logging_resource_adaptor_impl.hpp>
+
+#include <cuda/stream_ref>
+#include <cuda_runtime_api.h>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -26,7 +28,7 @@ logging_resource_adaptor_impl::logging_resource_adaptor_impl(
 
 void* logging_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  auto const stream = cuda_stream_view{};
+  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
   try {
     auto const ptr = upstream_mr_.allocate(stream, bytes, alignment);
     logger_->info("allocate,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream));
@@ -41,7 +43,7 @@ void logging_resource_adaptor_impl::deallocate_sync(void* ptr,
                                                     std::size_t bytes,
                                                     std::size_t alignment) noexcept
 {
-  auto const stream = cuda_stream_view{};
+  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
   logger_->info("free,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream));
   upstream_mr_.deallocate(stream, ptr, bytes, alignment);
 }

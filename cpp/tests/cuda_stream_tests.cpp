@@ -82,7 +82,7 @@ TEST_F(CudaStreamTest, TestStreamViewOstream)
 // Without this we don't get test coverage of ~stream_view, presumably because it is elided
 TEST_F(CudaStreamTest, TestStreamViewDestructor)
 {
-  auto view = std::make_shared<rmm::cuda_stream_view>(rmm::cuda_stream_per_thread);
+  auto view = std::make_shared<rmm::cuda_stream_view>(cuda::stream_ref{cudaStreamPerThread});
   view->synchronize();
 }
 

@@ -6,7 +6,6 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -57,9 +56,9 @@ class device_check_resource_adaptor final {
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    rmm::cuda_stream_view stream{};
-    auto* ptr = allocate(stream, bytes, alignment);
-    stream.synchronize();
+    auto stream = cuda::stream_ref{cudaStream_t{nullptr}};
+    auto* ptr   = allocate(stream, bytes, alignment);
+    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
     return ptr;
   }
 
@@ -67,7 +66,7 @@ class device_check_resource_adaptor final {
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    deallocate(rmm::cuda_stream_view{}, ptr, bytes, alignment);
+    deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
   }
 
   bool operator==(device_check_resource_adaptor const& other) const noexcept

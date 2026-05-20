@@ -4,13 +4,15 @@
  */
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/format.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/detail/pool_memory_resource_impl.hpp>
 #include <rmm/process_is_exiting.hpp>
+
+#include <cuda/stream_ref>
+#include <cuda_runtime_api.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -59,7 +61,7 @@ std::size_t pool_memory_resource_impl::get_maximum_allocation_size() const
 }
 
 pool_memory_resource_impl::block_type pool_memory_resource_impl::try_to_expand(
-  std::size_t try_size, std::size_t min_size, cuda_stream_view stream)
+  std::size_t try_size, std::size_t min_size, cuda::stream_ref stream)
 {
   auto report_error = [&](const char* reason) {
     RMM_LOG_ERROR("[A][Stream %s][Upstream %zuB][FAILURE maximum pool size exceeded: %s]",
@@ -100,13 +102,14 @@ void pool_memory_resource_impl::initialize_pool(std::size_t initial_size,
               "Initial pool size exceeds the maximum pool size!");
 
   if (initial_size > 0) {
-    auto const block = try_to_expand(initial_size, initial_size, cuda_stream_legacy);
-    this->insert_block(block, cuda_stream_legacy);
+    auto const stream = cuda::stream_ref{cudaStreamLegacy};
+    auto const block  = try_to_expand(initial_size, initial_size, stream);
+    this->insert_block(block, stream);
   }
 }
 
 pool_memory_resource_impl::block_type pool_memory_resource_impl::expand_pool(
-  std::size_t size, [[maybe_unused]] free_list& blocks, cuda_stream_view stream)
+  std::size_t size, [[maybe_unused]] free_list& blocks, cuda::stream_ref stream)
 {
   return try_to_expand(size_to_grow(size), size, stream);
 }
@@ -123,7 +126,7 @@ std::size_t pool_memory_resource_impl::size_to_grow(std::size_t size) const
 }
 
 pool_memory_resource_impl::block_type pool_memory_resource_impl::block_from_upstream(
-  std::size_t size, cuda_stream_view stream)
+  std::size_t size, cuda::stream_ref stream)
 {
   RMM_LOG_DEBUG("[A][Stream %s][Upstream %zuB]", rmm::detail::format_stream(stream), size);
 

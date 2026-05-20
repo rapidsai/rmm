@@ -51,13 +51,13 @@ class always_throw_memory_resource final {
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    return allocate(rmm::cuda_stream_view{}, bytes, alignment);
+    return allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
   }
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    deallocate(rmm::cuda_stream_view{}, ptr, bytes, alignment);
+    deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
   }
 
   bool operator==(always_throw_memory_resource const&) const noexcept { return true; }

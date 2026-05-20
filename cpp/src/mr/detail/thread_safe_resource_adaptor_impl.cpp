@@ -5,6 +5,9 @@
 
 #include <rmm/mr/detail/thread_safe_resource_adaptor_impl.hpp>
 
+#include <cuda/stream_ref>
+#include <cuda_runtime_api.h>
+
 namespace RMM_NAMESPACE {
 namespace mr {
 namespace detail {
@@ -40,14 +43,14 @@ void thread_safe_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
 
 void* thread_safe_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  return allocate(cuda_stream_view{}, bytes, alignment);
+  return allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
 }
 
 void thread_safe_resource_adaptor_impl::deallocate_sync(void* ptr,
                                                         std::size_t bytes,
                                                         std::size_t alignment) noexcept
 {
-  deallocate(cuda_stream_view{}, ptr, bytes, alignment);
+  deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
 }
 
 }  // namespace detail

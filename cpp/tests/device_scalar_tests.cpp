@@ -137,15 +137,15 @@ TYPED_TEST(DeviceScalarTest, SetGetStream)
 
   EXPECT_EQ(scalar.stream(), this->stream);
 
-  rmm::cuda_stream_view const otherstream{cudaStreamPerThread};
+  auto const otherstream = cuda::stream_ref{cudaStreamPerThread};
   scalar.set_stream(otherstream);
 
-  EXPECT_EQ(scalar.stream(), otherstream);
+  EXPECT_EQ(scalar.stream(), rmm::cuda_stream_view{otherstream});
 }
 
 TEST(DeviceScalarAlignmentTest, SmallAlignment)
 {
-  auto s = rmm::device_scalar<int>(rmm::cuda_stream_view{});
+  auto s = rmm::device_scalar<int>(cuda::stream_ref{cudaStream_t{nullptr}});
   EXPECT_TRUE(rmm::is_pointer_aligned(s.data(), std::alignment_of_v<decltype(s)::value_type>));
 }
 
@@ -157,6 +157,7 @@ TEST(DeviceScalarAlignmentTest, DISABLED_LargeAlignment)
     int value;
   };
 
-  EXPECT_THROW(std::ignore = rmm::device_scalar<OverAligned>(rmm::cuda_stream_view{}),
-               rmm::bad_alloc);
+  EXPECT_THROW(
+    std::ignore = rmm::device_scalar<OverAligned>(cuda::stream_ref{cudaStream_t{nullptr}}),
+    rmm::bad_alloc);
 }

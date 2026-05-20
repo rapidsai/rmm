@@ -15,6 +15,7 @@
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 
+#include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 #include <thrust/device_vector.h>
 #include <thrust/memory.h>
@@ -31,7 +32,7 @@ void BM_UvectorSizeConstruction(benchmark::State& state)
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     rmm::device_uvector<std::int32_t> vec(static_cast<std::size_t>(state.range(0)),
-                                          rmm::cuda_stream_view{});
+                                          cuda::stream_ref{cudaStream_t{nullptr}});
     cudaDeviceSynchronize();
   }
 
@@ -78,7 +79,7 @@ using rmm_vector    = rmm::device_vector<int32_t>;
 using rmm_uvector   = rmm::device_uvector<int32_t>;
 
 template <typename Vector>
-Vector make_vector(std::size_t num_elements, rmm::cuda_stream_view stream, bool zero_init = false)
+Vector make_vector(std::size_t num_elements, cuda::stream_ref stream, bool zero_init = false)
 {
   static_assert(std::is_same_v<Vector, thrust_vector> or std::is_same_v<Vector, rmm_vector> or
                   std::is_same_v<Vector, rmm_uvector>,
@@ -90,7 +91,7 @@ Vector make_vector(std::size_t num_elements, rmm::cuda_stream_view stream, bool 
   } else if constexpr (std::is_same_v<Vector, rmm_uvector>) {
     auto vec = Vector(num_elements, stream);
     if (zero_init) {
-      cudaMemsetAsync(vec.data(), 0, num_elements * sizeof(std::int32_t), stream.value());
+      cudaMemsetAsync(vec.data(), 0, num_elements * sizeof(std::int32_t), stream.get());
     }
     return vec;
   }
@@ -111,14 +112,14 @@ void vector_workflow(std::size_t num_elements,
 {
   auto input = make_vector<Vector>(num_elements, input_stream, true);
   input_stream.synchronize();
-  for (rmm::cuda_stream_view stream : streams) {
+  for (cuda::stream_ref stream : streams) {
     auto output = make_vector<Vector>(num_elements, stream);
-    kernel<<<num_blocks, block_size, 0, stream.value()>>>(
+    kernel<<<num_blocks, block_size, 0, stream.get()>>>(
       vector_data(input), vector_data(output), num_elements);
   }
 
-  for (rmm::cuda_stream_view stream : streams) {
-    stream.synchronize();
+  for (cuda::stream_ref stream : streams) {
+    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
   }
 }
 

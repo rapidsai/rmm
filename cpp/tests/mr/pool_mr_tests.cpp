@@ -89,7 +89,7 @@ TEST(PoolTest, DeletedStream)
   cudaStream_t stream{};  // we don't use rmm::cuda_stream here to make destruction more explicit
   const int size = 10000;
   EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream));
-  EXPECT_NO_THROW(rmm::device_buffer buff(size, cuda_stream_view{stream}, mr));
+  EXPECT_NO_THROW(rmm::device_buffer buff(size, cuda::stream_ref{stream}, mr));
   EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream));
   EXPECT_NO_THROW((void)mr.allocate_sync(size));
 }
@@ -151,11 +151,11 @@ TEST(PoolTest, MultidevicePool)
 
     {
       RMM_CUDA_TRY(cudaSetDevice(0));
-      rmm::device_buffer buf_a(16, rmm::cuda_stream_per_thread, mrs[0]);
+      rmm::device_buffer buf_a(16, cuda::stream_ref{cudaStreamPerThread}, mrs[0]);
 
       {
         RMM_CUDA_TRY(cudaSetDevice(1));
-        rmm::device_buffer buf_b(16, rmm::cuda_stream_per_thread, mrs[1]);
+        rmm::device_buffer buf_b(16, cuda::stream_ref{cudaStreamPerThread}, mrs[1]);
       }
 
       RMM_CUDA_TRY(cudaSetDevice(0));

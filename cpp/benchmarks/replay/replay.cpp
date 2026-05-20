@@ -4,7 +4,6 @@
  */
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
@@ -16,6 +15,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/iterator>
+#include <cuda/stream_ref>
 #include <thrust/execution_policy.h>
 #include <thrust/reduce.h>
 
@@ -253,8 +253,14 @@ std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string
                           [](auto const& event) {
                             cudaStream_t custream;
                             memcpy(&custream, &event.stream, sizeof(cudaStream_t));
-                            auto stream = rmm::cuda_stream_view{custream};
-                            return stream.is_default() or stream.is_per_thread_default();
+                            auto stream = cuda::stream_ref{custream};
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+                            return stream.get() == cudaStreamLegacy or
+                                   stream.get() == cudaStreamPerThread or stream.get() == nullptr;
+#else
+                            return stream.get() == cudaStreamLegacy or stream.get() == nullptr or
+                                   stream.get() == cudaStreamPerThread;
+#endif
                           }),
               "Non-default streams not currently supported.");
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2021, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -47,9 +47,7 @@
 
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
-
-// Google Benchmark library
+#include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
 #include <benchmark/benchmark.h>
@@ -68,7 +66,7 @@ class cuda_event_timer {
    */
   cuda_event_timer(benchmark::State& state,
                    bool flush_l2_cache,
-                   rmm::cuda_stream_view stream = rmm::cuda_stream_default);
+                   cuda::stream_ref stream = cuda::stream_ref{cudaStream_t{nullptr}});
 
   // The user will HAVE to provide a benchmark::State object to set
   // the timer so we disable the default c'tor.
@@ -88,6 +86,6 @@ class cuda_event_timer {
  private:
   cudaEvent_t start{};
   cudaEvent_t stop{};
-  rmm::cuda_stream_view stream{};
+  cuda::stream_ref stream{cudaStream_t{nullptr}};
   benchmark::State* p_state{};
 };

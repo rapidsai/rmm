@@ -13,6 +13,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
 #include <cassert>
@@ -379,8 +380,9 @@ class device_buffer {
   void* _data{nullptr};  ///< Pointer to device memory allocation
   std::size_t _size{};   ///< Requested size of the device memory allocation
   std::size_t _alignment{rmm::CUDA_ALLOCATION_ALIGNMENT};  ///< The alignment of the allocation
-  std::size_t _capacity{};     ///< The actual size of the device memory allocation
-  cuda_stream_view _stream{};  ///< Stream to use for device memory deallocation
+  std::size_t _capacity{};  ///< The actual size of the device memory allocation
+  cuda::stream_ref _stream{
+    cudaStream_t{nullptr}};  ///< Stream to use for device memory deallocation
 
   cuda::mr::any_resource<cuda::mr::device_accessible> _mr;  ///< The memory resource used to
                                                             ///< allocate/deallocate device memory

@@ -7,7 +7,6 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/format.hpp>
@@ -16,6 +15,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
@@ -595,10 +595,10 @@ class global_arena final {
    * that was passed to the `allocate` call that returned `ptr`.
    * @return bool true if the allocation is found, false otherwise.
    */
-  bool deallocate(cuda_stream_view stream, void* ptr, std::size_t size)
+  bool deallocate(cuda::stream_ref stream, void* ptr, std::size_t size)
   {
     RMM_LOGGING_ASSERT(handles(size));
-    stream.synchronize_no_throw();
+    RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream.get()));
     return deallocate_sync(ptr, size);
   }
 
@@ -818,7 +818,7 @@ class arena {
    * that was passed to the `allocate` call that returned `ptr`.
    * @return bool true if the allocation is found, false otherwise.
    */
-  bool deallocate(cuda_stream_view stream, void* ptr, std::size_t size)
+  bool deallocate(cuda::stream_ref stream, void* ptr, std::size_t size)
   {
     if (global_arena::handles(size) && global_arena_.deallocate(stream, ptr, size)) { return true; }
     return deallocate_sync(ptr, size);

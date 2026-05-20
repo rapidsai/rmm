@@ -14,6 +14,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/stream_ref>
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/device_ptr.h>
 #include <thrust/memory.h>
@@ -179,7 +180,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   }
 
  private:
-  cuda_stream_view _stream{};
+  cuda::stream_ref _stream{cudaStream_t{nullptr}};
   mutable cuda::mr::any_resource<cuda::mr::device_accessible> _mr{
     rmm::mr::get_current_device_resource_ref()};
   cuda_device_id _device{get_current_cuda_device()};

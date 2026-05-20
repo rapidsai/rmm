@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
+#include <cuda/stream_ref>
 
 #include <array>
 #include <cstdio>
@@ -31,10 +31,10 @@ inline std::string format_bytes(std::size_t value)
 }
 
 // Stringify a stream ID
-inline std::string format_stream(rmm::cuda_stream_view stream)
+inline std::string format_stream(cuda::stream_ref stream)
 {
   std::stringstream sstr{};
-  sstr << std::hex << stream.value();
+  sstr << std::hex << stream.get();
   return sstr.str();
 }
 

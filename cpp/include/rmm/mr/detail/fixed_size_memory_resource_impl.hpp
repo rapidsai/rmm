@@ -4,12 +4,12 @@
  */
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/detail/fixed_size_free_list.hpp>
 #include <rmm/mr/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/stream_ref>
 
 #include <cstddef>
 #include <mutex>
@@ -70,7 +70,7 @@ class fixed_size_memory_resource_impl final
 
   [[nodiscard]] std::size_t get_maximum_allocation_size() const;
 
-  block_type expand_pool(std::size_t size, free_list& blocks, cuda_stream_view stream);
+  block_type expand_pool(std::size_t size, free_list& blocks, cuda::stream_ref stream);
 
   split_block allocate_from_block(block_type const& block, std::size_t size);
 
@@ -79,7 +79,7 @@ class fixed_size_memory_resource_impl final
   std::pair<std::size_t, std::size_t> free_list_summary(free_list const& blocks);
 
  private:
-  free_list blocks_from_upstream(cuda_stream_view stream);
+  free_list blocks_from_upstream(cuda::stream_ref stream);
 
   void release();
 

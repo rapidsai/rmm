@@ -5,12 +5,13 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/failure_callback_t.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/stream_ref>
+#include <cuda_runtime_api.h>
 
 #include <cstddef>
 #include <utility>
@@ -86,14 +87,14 @@ class failure_callback_resource_adaptor_impl {
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t))
   {
-    return allocate(cuda_stream_view{}, bytes, alignment);
+    return allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
   }
 
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
                        std::size_t alignment = alignof(std::max_align_t)) noexcept
   {
-    deallocate(cuda_stream_view{}, ptr, bytes, alignment);
+    deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
   }
 
   RMM_CONSTEXPR_FRIEND void get_property(failure_callback_resource_adaptor_impl const&,

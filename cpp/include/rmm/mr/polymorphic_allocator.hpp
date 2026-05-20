@@ -12,6 +12,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/stream_ref>
 
 #include <cstddef>
 #include <memory>
@@ -251,8 +252,9 @@ class stream_allocator_adaptor {
   [[nodiscard]] Allocator underlying_allocator() const noexcept { return alloc_; }
 
  private:
-  Allocator alloc_;          ///< Underlying allocator used for (de)allocation
-  cuda_stream_view stream_;  ///< Stream on which (de)allocations are performed
+  Allocator alloc_;  ///< Underlying allocator used for (de)allocation
+  cuda::stream_ref stream_{
+    cudaStream_t{nullptr}};  ///< Stream on which (de)allocations are performed
 };
 
 /**
