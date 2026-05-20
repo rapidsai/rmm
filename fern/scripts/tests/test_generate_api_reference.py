@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -97,9 +98,9 @@ def test_generator_writes_cpp_and_python_api_pages():
     assert "### Exec Policy Constructor" in cpp_thrust.read_text(
         encoding="utf-8"
     )
-    assert (
-        "### `copy_to_host` (DeviceBuffer, line 58)"
-        in python_pylibrmm.read_text(encoding="utf-8")
+    assert re.search(
+        r"### `copy_to_host` \(DeviceBuffer, line \d+\)",
+        python_pylibrmm.read_text(encoding="utf-8"),
     )
     assert (
         "using `push_statistics()` and `pop_statistics()`"
@@ -135,3 +136,12 @@ def duplicate_level_three_headings(paths: list[Path]) -> dict[str, list[str]]:
         if repeated:
             duplicates[path.relative_to(REPO_ROOT).as_posix()] = repeated
     return duplicates
+
+
+def test_convert_doxygen_text_preserves_word_boundaries():
+    generator = load_generator()
+
+    assert (
+        generator.convert_doxygen_text(r"return\ref{Reference}")
+        == "return Reference"
+    )

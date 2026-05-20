@@ -642,8 +642,9 @@ def is_doxygen_command(line: str) -> bool:
 def convert_doxygen_text(value: str) -> str:
     value = re.sub(r"[@\\]briefreturn\{([^}]+)\}", r"Returns \1.", value)
     value = re.sub(r"[@\\](?:p|c)\s+([A-Za-z_]\w*)", r"`\1`", value)
-    value = re.sub(r"[@\\]\w+\b", "", value)
-    return value.replace("{", "").replace("}", "").strip()
+    value = re.sub(r"[@\\]\w+\b", " ", value)
+    value = value.replace("{", "").replace("}", "")
+    return re.sub(r"\s+", " ", value).strip()
 
 
 def normalize_cpp_signature(signature: str) -> str:
