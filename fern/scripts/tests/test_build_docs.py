@@ -12,3 +12,11 @@ def test_build_docs_pins_npx_fern_api_fallback():
 
     assert '"fern-api@5.30.4"' in text
     assert 'FERN_CMD=("npx" "--yes" "fern-api")' not in text
+
+
+def test_build_docs_does_not_run_handwritten_api_generator():
+    script = REPO_ROOT / "fern" / "build_docs.sh"
+    text = script.read_text(encoding="utf-8")
+
+    assert "generate_api_reference.py" not in text
+    assert "generate_api_reference" not in text

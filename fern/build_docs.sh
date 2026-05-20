@@ -55,10 +55,6 @@ run_fern() {
   "${FERN_CMD[@]}" "$@"
 }
 
-generate_api_reference() {
-  python3 "${SCRIPT_DIR}/scripts/generate_api_reference.py"
-}
-
 run_checks() {
   pushd "${REPO_DIR}" >/dev/null
   run_fern check --warnings
@@ -68,25 +64,21 @@ run_checks() {
 
 case "${MODE}" in
   check)
-    generate_api_reference
     run_checks
     ;;
   preview)
-    generate_api_reference
     run_checks
     pushd "${REPO_DIR}" >/dev/null
     run_fern generate --docs --preview "$@"
     popd >/dev/null
     ;;
   publish)
-    generate_api_reference
     run_checks
     pushd "${REPO_DIR}" >/dev/null
     run_fern generate --docs "$@"
     popd >/dev/null
     ;;
   dev)
-    generate_api_reference
     pushd "${REPO_DIR}" >/dev/null
     run_fern docs dev "$@"
     popd >/dev/null
