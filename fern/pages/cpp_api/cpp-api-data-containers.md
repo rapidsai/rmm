@@ -13,7 +13,7 @@ Generated from RMM C++ headers.
 RAII construct for device memory allocation
 
 ```cpp
-class device_buffer {
+class device_buffer
 ```
 
 _Source: `cpp/include/rmm/device_buffer.hpp:72`_
@@ -103,7 +103,7 @@ _Source: `cpp/include/rmm/device_buffer.hpp:308`_
 returnPointer to the device memory allocation
 
 ```cpp
-void* data() noexcept { return _data; }
+void* data() noexcept
 ```
 
 _Source: `cpp/include/rmm/device_buffer.hpp:318`_
@@ -113,7 +113,7 @@ _Source: `cpp/include/rmm/device_buffer.hpp:318`_
 Sets the stream to be used for deallocation
 
 ```cpp
-void set_stream(cuda_stream_view stream) noexcept { _stream = stream; }
+void set_stream(cuda_stream_view stream) noexcept
 ```
 
 _Source: `cpp/include/rmm/device_buffer.hpp:371`_
@@ -175,7 +175,7 @@ _Source: `cpp/include/rmm/device_scalar.hpp:70`_
 Construct a new uninitialized `device_scalar`.
 
 ```cpp
-explicit device_scalar( cuda_stream_view stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref()) : _storage{1, stream, std::move(mr)}
+explicit device_scalar( cuda_stream_view stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref()) : _storage
 ```
 
 _Source: `cpp/include/rmm/device_scalar.hpp:86`_
@@ -185,7 +185,7 @@ _Source: `cpp/include/rmm/device_scalar.hpp:86`_
 Construct a new `device_scalar` with an initial value.
 
 ```cpp
-explicit device_scalar( value_type const& initial_value, cuda_stream_view stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref()) : _storage{1, stream, std::move(mr)}
+explicit device_scalar( value_type const& initial_value, cuda_stream_view stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref()) : _storage
 ```
 
 _Source: `cpp/include/rmm/device_scalar.hpp:111`_
@@ -195,7 +195,7 @@ _Source: `cpp/include/rmm/device_scalar.hpp:111`_
 Construct a new `device_scalar` by deep copying the contents of another `device_scalar`, using the specified stream and memory resource.
 
 ```cpp
-device_scalar( device_scalar const& other, cuda_stream_view stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref()) : _storage{other._storage, stream, std::move(mr)}
+device_scalar( device_scalar const& other, cuda_stream_view stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref()) : _storage
 ```
 
 _Source: `cpp/include/rmm/device_scalar.hpp:132`_
@@ -205,7 +205,7 @@ _Source: `cpp/include/rmm/device_scalar.hpp:132`_
 Sets the value of the `device_scalar` to the value of `v`.
 
 ```cpp
-void set_value_async(value_type const& value, cuda_stream_view stream) {
+void set_value_async(value_type const& value, cuda_stream_view stream)
 ```
 
 _Source: `cpp/include/rmm/device_scalar.hpp:194`_
@@ -215,7 +215,7 @@ _Source: `cpp/include/rmm/device_scalar.hpp:194`_
 Sets the value of the `device_scalar` to zero on the specified stream.
 
 ```cpp
-void set_value_to_zero_async(cuda_stream_view stream) {
+void set_value_to_zero_async(cuda_stream_view stream)
 ```
 
 _Source: `cpp/include/rmm/device_scalar.hpp:217`_
@@ -225,7 +225,7 @@ _Source: `cpp/include/rmm/device_scalar.hpp:217`_
 Sets the stream to be used for deallocation
 
 ```cpp
-void set_stream(cuda_stream_view stream) noexcept { _storage.set_stream(stream); }
+void set_stream(cuda_stream_view stream) noexcept
 ```
 
 _Source: `cpp/include/rmm/device_scalar.hpp:264`_
@@ -257,7 +257,7 @@ _Source: `cpp/include/rmm/device_uvector.hpp:111`_
 Construct a new `device_uvector` with sufficient uninitialized storage for `size` elements.
 
 ```cpp
-explicit device_uvector( size_type size, cuda_stream_view stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref()) : _storage{elements_to_bytes(size), std::alignment_of_v<T>, stream, std::move(mr)}
+explicit device_uvector( size_type size, cuda_stream_view stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref()) : _storage
 ```
 
 _Source: `cpp/include/rmm/device_uvector.hpp:127`_
@@ -267,7 +267,7 @@ _Source: `cpp/include/rmm/device_uvector.hpp:127`_
 Construct a new device_uvector by deep copying the contents of another `device_uvector`.
 
 ```cpp
-explicit device_uvector( device_uvector const& other, cuda_stream_view stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref()) : _storage{other._storage, stream, std::move(mr)}
+explicit device_uvector( device_uvector const& other, cuda_stream_view stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref()) : _storage
 ```
 
 _Source: `cpp/include/rmm/device_uvector.hpp:144`_
@@ -277,7 +277,7 @@ _Source: `cpp/include/rmm/device_uvector.hpp:144`_
 Performs an asynchronous copy of `v` to the specified element in device memory.
 
 ```cpp
-void set_element_async(size_type element_index, value_type const& value, cuda_stream_view stream) {
+void set_element_async(size_type element_index, value_type const& value, cuda_stream_view stream)
 ```
 
 _Source: `cpp/include/rmm/device_uvector.hpp:213`_
@@ -287,7 +287,7 @@ _Source: `cpp/include/rmm/device_uvector.hpp:213`_
 Asynchronously sets the specified element to zero in device memory.
 
 ```cpp
-void set_element_to_zero_async(size_type element_index, cuda_stream_view stream) {
+void set_element_to_zero_async(size_type element_index, cuda_stream_view stream)
 ```
 
 _Source: `cpp/include/rmm/device_uvector.hpp:247`_
@@ -297,7 +297,7 @@ _Source: `cpp/include/rmm/device_uvector.hpp:247`_
 Performs a synchronous copy of `v` to the specified element in device memory.
 
 ```cpp
-void set_element(size_type element_index, T const& value, cuda_stream_view stream) {
+void set_element(size_type element_index, T const& value, cuda_stream_view stream)
 ```
 
 _Source: `cpp/include/rmm/device_uvector.hpp:284`_
@@ -307,7 +307,7 @@ _Source: `cpp/include/rmm/device_uvector.hpp:284`_
 Increases the capacity of the vector to `new_capacity` elements.
 
 ```cpp
-void reserve(size_type new_capacity, cuda_stream_view stream) {
+void reserve(size_type new_capacity, cuda_stream_view stream)
 ```
 
 _Source: `cpp/include/rmm/device_uvector.hpp:357`_
@@ -317,7 +317,7 @@ _Source: `cpp/include/rmm/device_uvector.hpp:357`_
 Resizes the vector to contain `new_size` elements.
 
 ```cpp
-void resize(size_type new_size, cuda_stream_view stream) {
+void resize(size_type new_size, cuda_stream_view stream)
 ```
 
 _Source: `cpp/include/rmm/device_uvector.hpp:378`_
@@ -327,7 +327,7 @@ _Source: `cpp/include/rmm/device_uvector.hpp:378`_
 Forces deallocation of unused device memory.
 
 ```cpp
-void shrink_to_fit(cuda_stream_view stream) { _storage.shrink_to_fit(stream); }
+void shrink_to_fit(cuda_stream_view stream)
 ```
 
 _Source: `cpp/include/rmm/device_uvector.hpp:390`_
@@ -337,7 +337,7 @@ _Source: `cpp/include/rmm/device_uvector.hpp:390`_
 Release ownership of device memory storage.
 
 ```cpp
-device_buffer release() noexcept { return std::move(_storage); }
+device_buffer release() noexcept
 ```
 
 _Source: `cpp/include/rmm/device_uvector.hpp:397`_
@@ -347,7 +347,7 @@ _Source: `cpp/include/rmm/device_uvector.hpp:397`_
 Sets the stream to be used for deallocation
 
 ```cpp
-void set_stream(cuda_stream_view stream) noexcept { _storage.set_stream(stream); }
+void set_stream(cuda_stream_view stream) noexcept
 ```
 
 _Source: `cpp/include/rmm/device_uvector.hpp:615`_
@@ -423,7 +423,7 @@ _Source: `cpp/include/rmm/resource_ref.hpp:55`_
 Convert pointer to memory resource into `device_async_resource_ref`, checking for `nullptr`
 
 ```cpp
-template <class Resource> device_async_resource_ref to_device_async_resource_ref_checked(Resource* res) {
+template <class Resource> device_async_resource_ref to_device_async_resource_ref_checked(Resource* res)
 ```
 
 _Source: `cpp/include/rmm/resource_ref.hpp:67`_

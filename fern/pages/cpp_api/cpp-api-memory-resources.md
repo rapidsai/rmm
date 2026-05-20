@@ -13,7 +13,7 @@ Generated from RMM C++ headers.
 A suballocator that emphasizes fragmentation avoidance and scalable concurrency support.
 
 ```cpp
-class RMM_EXPORT arena_memory_resource : public cuda::mr::shared_resource<detail::arena_memory_resource_impl> {
+class RMM_EXPORT arena_memory_resource : public cuda::mr::shared_resource<detail::arena_memory_resource_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/arena_memory_resource.hpp:63`_
@@ -23,7 +23,7 @@ _Source: `cpp/include/rmm/mr/arena_memory_resource.hpp:63`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(arena_memory_resource const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(arena_memory_resource const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/arena_memory_resource.hpp:71`_
@@ -45,7 +45,7 @@ _Source: `cpp/include/rmm/mr/arena_memory_resource.hpp:84`_
 Allocates memory from upstream resources associated with bin sizes.
 
 ```cpp
-class RMM_EXPORT binning_memory_resource : public cuda::mr::shared_resource<detail::binning_memory_resource_impl> {
+class RMM_EXPORT binning_memory_resource : public cuda::mr::shared_resource<detail::binning_memory_resource_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/binning_memory_resource.hpp:30`_
@@ -55,7 +55,7 @@ _Source: `cpp/include/rmm/mr/binning_memory_resource.hpp:30`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(binning_memory_resource const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(binning_memory_resource const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/binning_memory_resource.hpp:40`_
@@ -75,7 +75,7 @@ _Source: `cpp/include/rmm/mr/binning_memory_resource.hpp:53`_
 Construct a new binning memory resource object with a range of initial bins.
 
 ```cpp
-binning_memory_resource(cuda::mr::any_resource<cuda::mr::device_accessible> upstream, int8_t min_size_exponent, // NOLINT(bugprone-easily-swappable-parameters) int8_t max_size_exponent);
+binning_memory_resource(cuda::mr::any_resource<cuda::mr::device_accessible> upstream, int8_t min_size_exponent, int8_t max_size_exponent);
 ```
 
 _Source: `cpp/include/rmm/mr/binning_memory_resource.hpp:67`_
@@ -117,7 +117,7 @@ _Source: `cpp/include/rmm/mr/callback_memory_resource.hpp:52`_
 A device memory resource that uses the provided callbacks for memory allocation and deallocation.
 
 ```cpp
-class RMM_EXPORT callback_memory_resource : public cuda::mr::shared_resource<detail::callback_memory_resource_impl> {
+class RMM_EXPORT callback_memory_resource : public cuda::mr::shared_resource<detail::callback_memory_resource_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/callback_memory_resource.hpp:65`_
@@ -127,7 +127,7 @@ _Source: `cpp/include/rmm/mr/callback_memory_resource.hpp:65`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(callback_memory_resource const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(callback_memory_resource const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/callback_memory_resource.hpp:73`_
@@ -149,7 +149,7 @@ _Source: `cpp/include/rmm/mr/callback_memory_resource.hpp:93`_
 Memory resource that uses `cudaMallocFromPoolAsync`/`cudaFreeFromPoolAsync` with a managed memory pool for allocation/deallocation.
 
 ```cpp
-class RMM_EXPORT cuda_async_managed_memory_resource final : public cuda::mr::shared_resource<detail::cuda_async_managed_memory_resource_impl> {
+class RMM_EXPORT cuda_async_managed_memory_resource final : public cuda::mr::shared_resource<detail::cuda_async_managed_memory_resource_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_managed_memory_resource.hpp:28`_
@@ -159,7 +159,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_managed_memory_resource.hpp:28`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(cuda_async_managed_memory_resource const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(cuda_async_managed_memory_resource const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_managed_memory_resource.hpp:36`_
@@ -169,7 +169,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_managed_memory_resource.hpp:36`_
 Enables the `cuda::mr::host_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(cuda_async_managed_memory_resource const&, cuda::mr::host_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(cuda_async_managed_memory_resource const&, cuda::mr::host_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_managed_memory_resource.hpp:44`_
@@ -191,7 +191,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_managed_memory_resource.hpp:59`_
 Memory resource that uses `cudaMallocAsync`/`cudaFreeAsync` for allocation/deallocation.
 
 ```cpp
-class RMM_EXPORT cuda_async_memory_resource final : public cuda::mr::shared_resource<detail::cuda_async_memory_resource_impl> {
+class RMM_EXPORT cuda_async_memory_resource final : public cuda::mr::shared_resource<detail::cuda_async_memory_resource_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_memory_resource.hpp:30`_
@@ -201,7 +201,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_memory_resource.hpp:30`_
 Flags for specifying memory allocation handle types.
 
 ```cpp
-enum class allocation_handle_type : std::int32_t {
+enum class allocation_handle_type : std::int32_t
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_memory_resource.hpp:47`_
@@ -211,7 +211,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_memory_resource.hpp:47`_
 Flags for specifying memory pool usage.
 
 ```cpp
-enum class mempool_usage : unsigned short {
+enum class mempool_usage : unsigned short
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_memory_resource.hpp:70`_
@@ -221,7 +221,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_memory_resource.hpp:70`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(cuda_async_memory_resource const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(cuda_async_memory_resource const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_memory_resource.hpp:78`_
@@ -231,7 +231,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_memory_resource.hpp:78`_
 Constructs a cuda_async_memory_resource with the optionally specified initial pool size and release threshold.
 
 ```cpp
-cuda_async_memory_resource(std::optional<std::size_t> initial_pool_size = {},
+cuda_async_memory_resource(std::optional<std::size_t> initial_pool_size =
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_memory_resource.hpp:103`_
@@ -243,7 +243,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_memory_resource.hpp:103`_
 Memory resource that uses `cudaMallocAsync`/`cudaFreeAsync` for allocation/deallocation.
 
 ```cpp
-class cuda_async_view_memory_resource final {
+class cuda_async_view_memory_resource final
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_view_memory_resource.hpp:30`_
@@ -253,7 +253,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_view_memory_resource.hpp:30`_
 Constructs a cuda_async_view_memory_resource which uses an existing CUDA memory pool. The provided pool is not owned by cuda_async_view_memory_resource and must remain valid during the lifetime of the memory resource.
 
 ```cpp
-cuda_async_view_memory_resource(cudaMemPool_t pool_handle) : cuda_pool_handle_{[pool_handle]() {
+cuda_async_view_memory_resource(cudaMemPool_t pool_handle) : cuda_pool_handle_
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_view_memory_resource.hpp:42`_
@@ -263,7 +263,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_view_memory_resource.hpp:42`_
 Allocates memory of size at least `bytes`.
 
 ```cpp
-void* allocate(cuda::stream_ref stream, std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) {
+void* allocate(cuda::stream_ref stream, std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_view_memory_resource.hpp:81`_
@@ -273,7 +273,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_view_memory_resource.hpp:81`_
 Deallocate memory pointed to by `ptr`.
 
 ```cpp
-void deallocate(cuda::stream_ref stream, void* ptr, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {
+void deallocate(cuda::stream_ref stream, void* ptr, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_view_memory_resource.hpp:101`_
@@ -283,7 +283,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_view_memory_resource.hpp:101`_
 Allocates memory of size at least `bytes` synchronously.
 
 ```cpp
-void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) {
+void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_view_memory_resource.hpp:116`_
@@ -293,7 +293,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_view_memory_resource.hpp:116`_
 Deallocate memory pointed to by `ptr` synchronously.
 
 ```cpp
-void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {
+void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_view_memory_resource.hpp:130`_
@@ -303,7 +303,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_view_memory_resource.hpp:130`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(cuda_async_view_memory_resource const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(cuda_async_view_memory_resource const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_async_view_memory_resource.hpp:163`_
@@ -315,7 +315,7 @@ _Source: `cpp/include/rmm/mr/cuda_async_view_memory_resource.hpp:163`_
 Memory resource that uses cudaMalloc/Free for allocation/deallocation.
 
 ```cpp
-class cuda_memory_resource final {
+class cuda_memory_resource final
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_memory_resource.hpp:26`_
@@ -325,7 +325,7 @@ _Source: `cpp/include/rmm/mr/cuda_memory_resource.hpp:26`_
 Allocates memory of size at least `bytes`.
 
 ```cpp
-void* allocate([[maybe_unused]] cuda::stream_ref stream, std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) {
+void* allocate([[maybe_unused]] cuda::stream_ref stream, std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_memory_resource.hpp:49`_
@@ -335,7 +335,7 @@ _Source: `cpp/include/rmm/mr/cuda_memory_resource.hpp:49`_
 Deallocate memory pointed to by `ptr`.
 
 ```cpp
-void deallocate([[maybe_unused]] cuda::stream_ref stream, void* ptr, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {
+void deallocate([[maybe_unused]] cuda::stream_ref stream, void* ptr, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_memory_resource.hpp:69`_
@@ -345,7 +345,7 @@ _Source: `cpp/include/rmm/mr/cuda_memory_resource.hpp:69`_
 Allocates memory of size at least `bytes` synchronously.
 
 ```cpp
-void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) {
+void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_memory_resource.hpp:84`_
@@ -355,7 +355,7 @@ _Source: `cpp/include/rmm/mr/cuda_memory_resource.hpp:84`_
 Deallocate memory pointed to by `ptr` synchronously.
 
 ```cpp
-void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {
+void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_memory_resource.hpp:98`_
@@ -365,7 +365,7 @@ _Source: `cpp/include/rmm/mr/cuda_memory_resource.hpp:98`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(cuda_memory_resource const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(cuda_memory_resource const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/cuda_memory_resource.hpp:110`_
@@ -377,7 +377,7 @@ _Source: `cpp/include/rmm/mr/cuda_memory_resource.hpp:110`_
 A memory resource which allocates memory blocks of a single fixed size.
 
 ```cpp
-class RMM_EXPORT fixed_size_memory_resource : public cuda::mr::shared_resource<detail::fixed_size_memory_resource_impl> {
+class RMM_EXPORT fixed_size_memory_resource : public cuda::mr::shared_resource<detail::fixed_size_memory_resource_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/fixed_size_memory_resource.hpp:31`_
@@ -387,7 +387,7 @@ _Source: `cpp/include/rmm/mr/fixed_size_memory_resource.hpp:31`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(fixed_size_memory_resource const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(fixed_size_memory_resource const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/fixed_size_memory_resource.hpp:41`_
@@ -409,7 +409,7 @@ _Source: `cpp/include/rmm/mr/fixed_size_memory_resource.hpp:64`_
 Memory resource that uses cudaMallocManaged/Free for allocation/deallocation.
 
 ```cpp
-class managed_memory_resource final {
+class managed_memory_resource final
 ```
 
 _Source: `cpp/include/rmm/mr/managed_memory_resource.hpp:26`_
@@ -419,7 +419,7 @@ _Source: `cpp/include/rmm/mr/managed_memory_resource.hpp:26`_
 Allocates memory of size at least `bytes`.
 
 ```cpp
-void* allocate([[maybe_unused]] cuda::stream_ref stream, std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) {
+void* allocate([[maybe_unused]] cuda::stream_ref stream, std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
 ```
 
 _Source: `cpp/include/rmm/mr/managed_memory_resource.hpp:49`_
@@ -429,7 +429,7 @@ _Source: `cpp/include/rmm/mr/managed_memory_resource.hpp:49`_
 Deallocate memory pointed to by `ptr`.
 
 ```cpp
-void deallocate([[maybe_unused]] cuda::stream_ref stream, void* ptr, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {
+void deallocate([[maybe_unused]] cuda::stream_ref stream, void* ptr, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/managed_memory_resource.hpp:73`_
@@ -439,7 +439,7 @@ _Source: `cpp/include/rmm/mr/managed_memory_resource.hpp:73`_
 Allocates memory of size at least `bytes` synchronously.
 
 ```cpp
-void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) {
+void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
 ```
 
 _Source: `cpp/include/rmm/mr/managed_memory_resource.hpp:88`_
@@ -449,7 +449,7 @@ _Source: `cpp/include/rmm/mr/managed_memory_resource.hpp:88`_
 Deallocate memory pointed to by `ptr` synchronously.
 
 ```cpp
-void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {
+void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/managed_memory_resource.hpp:102`_
@@ -459,7 +459,7 @@ _Source: `cpp/include/rmm/mr/managed_memory_resource.hpp:102`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(managed_memory_resource const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(managed_memory_resource const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/managed_memory_resource.hpp:114`_
@@ -469,7 +469,7 @@ _Source: `cpp/include/rmm/mr/managed_memory_resource.hpp:114`_
 Enables the `cuda::mr::host_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(managed_memory_resource const&, cuda::mr::host_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(managed_memory_resource const&, cuda::mr::host_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/managed_memory_resource.hpp:124`_
@@ -481,7 +481,7 @@ _Source: `cpp/include/rmm/mr/managed_memory_resource.hpp:124`_
 Memory resource class for allocating pinned host memory.
 
 ```cpp
-class pinned_host_memory_resource final {
+class pinned_host_memory_resource final
 ```
 
 _Source: `cpp/include/rmm/mr/pinned_host_memory_resource.hpp:34`_
@@ -491,7 +491,7 @@ _Source: `cpp/include/rmm/mr/pinned_host_memory_resource.hpp:34`_
 Allocates pinned host memory of size at least `bytes` bytes.
 
 ```cpp
-void* allocate([[maybe_unused]] cuda::stream_ref stream, std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) {
+void* allocate([[maybe_unused]] cuda::stream_ref stream, std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
 ```
 
 _Source: `cpp/include/rmm/mr/pinned_host_memory_resource.hpp:63`_
@@ -501,7 +501,7 @@ _Source: `cpp/include/rmm/mr/pinned_host_memory_resource.hpp:63`_
 Deallocate memory pointed to by `ptr`.
 
 ```cpp
-void deallocate([[maybe_unused]] cuda::stream_ref stream, void* ptr, std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {
+void deallocate([[maybe_unused]] cuda::stream_ref stream, void* ptr, std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/pinned_host_memory_resource.hpp:89`_
@@ -511,7 +511,7 @@ _Source: `cpp/include/rmm/mr/pinned_host_memory_resource.hpp:89`_
 Allocates pinned host memory of size at least `bytes` bytes synchronously.
 
 ```cpp
-void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) {
+void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
 ```
 
 _Source: `cpp/include/rmm/mr/pinned_host_memory_resource.hpp:107`_
@@ -521,7 +521,7 @@ _Source: `cpp/include/rmm/mr/pinned_host_memory_resource.hpp:107`_
 Deallocate memory pointed to by `ptr` synchronously.
 
 ```cpp
-void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {
+void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/pinned_host_memory_resource.hpp:121`_
@@ -531,7 +531,7 @@ _Source: `cpp/include/rmm/mr/pinned_host_memory_resource.hpp:121`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(pinned_host_memory_resource const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(pinned_host_memory_resource const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/pinned_host_memory_resource.hpp:133`_
@@ -541,7 +541,7 @@ _Source: `cpp/include/rmm/mr/pinned_host_memory_resource.hpp:133`_
 Enables the `cuda::mr::host_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(pinned_host_memory_resource const&, cuda::mr::host_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(pinned_host_memory_resource const&, cuda::mr::host_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/pinned_host_memory_resource.hpp:143`_
@@ -553,7 +553,7 @@ _Source: `cpp/include/rmm/mr/pinned_host_memory_resource.hpp:143`_
 A coalescing best-fit suballocator which uses a pool of memory allocated from an upstream memory_resource.
 
 ```cpp
-class RMM_EXPORT pool_memory_resource : public cuda::mr::shared_resource<detail::pool_memory_resource_impl> {
+class RMM_EXPORT pool_memory_resource : public cuda::mr::shared_resource<detail::pool_memory_resource_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/pool_memory_resource.hpp:34`_
@@ -563,7 +563,7 @@ _Source: `cpp/include/rmm/mr/pool_memory_resource.hpp:34`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(pool_memory_resource const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(pool_memory_resource const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/pool_memory_resource.hpp:44`_
@@ -585,7 +585,7 @@ _Source: `cpp/include/rmm/mr/pool_memory_resource.hpp:62`_
 Resource that uses system memory resource to allocate memory with a headroom.
 
 ```cpp
-class RMM_EXPORT sam_headroom_memory_resource final : public cuda::mr::shared_resource<detail::sam_headroom_memory_resource_impl> {
+class RMM_EXPORT sam_headroom_memory_resource final : public cuda::mr::shared_resource<detail::sam_headroom_memory_resource_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/sam_headroom_memory_resource.hpp:35`_
@@ -595,7 +595,7 @@ _Source: `cpp/include/rmm/mr/sam_headroom_memory_resource.hpp:35`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(sam_headroom_memory_resource const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(sam_headroom_memory_resource const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/sam_headroom_memory_resource.hpp:43`_
@@ -605,7 +605,7 @@ _Source: `cpp/include/rmm/mr/sam_headroom_memory_resource.hpp:43`_
 Enables the `cuda::mr::host_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(sam_headroom_memory_resource const&, cuda::mr::host_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(sam_headroom_memory_resource const&, cuda::mr::host_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/sam_headroom_memory_resource.hpp:51`_
@@ -627,7 +627,7 @@ _Source: `cpp/include/rmm/mr/sam_headroom_memory_resource.hpp:61`_
 Check if system allocated memory (SAM) is supported on the specified device.
 
 ```cpp
-static bool is_system_memory_supported(cuda_device_id device_id) {
+static bool is_system_memory_supported(cuda_device_id device_id)
 ```
 
 _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:31`_
@@ -637,7 +637,7 @@ _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:31`_
 Memory resource that uses malloc/free for allocation/deallocation.
 
 ```cpp
-class system_memory_resource final {
+class system_memory_resource final
 ```
 
 _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:68`_
@@ -647,7 +647,7 @@ _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:68`_
 Allocates memory of size at least `bytes`.
 
 ```cpp
-void* allocate([[maybe_unused]] cuda::stream_ref stream, std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) {
+void* allocate([[maybe_unused]] cuda::stream_ref stream, std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
 ```
 
 _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:95`_
@@ -657,7 +657,7 @@ _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:95`_
 Deallocate memory pointed to by `ptr`.
 
 ```cpp
-void deallocate(cuda::stream_ref stream, void* ptr, std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {
+void deallocate(cuda::stream_ref stream, void* ptr, std::size_t bytes, [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:122`_
@@ -667,7 +667,7 @@ _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:122`_
 Allocates memory of size at least `bytes` synchronously.
 
 ```cpp
-void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) {
+void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
 ```
 
 _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:144`_
@@ -677,7 +677,7 @@ _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:144`_
 Deallocate memory pointed to by `ptr` synchronously.
 
 ```cpp
-void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {
+void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:158`_
@@ -687,7 +687,7 @@ _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:158`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(system_memory_resource const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(system_memory_resource const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:170`_
@@ -697,7 +697,7 @@ _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:170`_
 Enables the `cuda::mr::host_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(system_memory_resource const&, cuda::mr::host_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(system_memory_resource const&, cuda::mr::host_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:180`_
@@ -709,7 +709,7 @@ _Source: `cpp/include/rmm/mr/system_memory_resource.hpp:180`_
 Returns a reference to the initial resource.
 
 ```cpp
-RMM_EXPORT inline cuda_memory_resource& initial_resource() {
+RMM_EXPORT inline cuda_memory_resource& initial_resource()
 ```
 
 _Source: `cpp/include/rmm/mr/per_device_resource.hpp:57`_
@@ -719,7 +719,7 @@ _Source: `cpp/include/rmm/mr/per_device_resource.hpp:57`_
 returnReference to the lock
 
 ```cpp
-RMM_EXPORT inline std::mutex& ref_map_lock() {
+RMM_EXPORT inline std::mutex& ref_map_lock()
 ```
 
 _Source: `cpp/include/rmm/mr/per_device_resource.hpp:66`_
@@ -729,7 +729,7 @@ _Source: `cpp/include/rmm/mr/per_device_resource.hpp:66`_
 returnReference to the map from device id -> any_resource
 
 ```cpp
-RMM_EXPORT inline auto& get_ref_map() {
+RMM_EXPORT inline auto& get_ref_map()
 ```
 
 _Source: `cpp/include/rmm/mr/per_device_resource.hpp:76`_
@@ -739,7 +739,7 @@ _Source: `cpp/include/rmm/mr/per_device_resource.hpp:76`_
 Get the `device_async_resource_ref` for the specified device.
 
 ```cpp
-inline device_async_resource_ref get_per_device_resource_ref(cuda_device_id device_id) {
+inline device_async_resource_ref get_per_device_resource_ref(cuda_device_id device_id)
 ```
 
 _Source: `cpp/include/rmm/mr/per_device_resource.hpp:110`_
@@ -749,7 +749,7 @@ _Source: `cpp/include/rmm/mr/per_device_resource.hpp:110`_
 Set the memory resource for the specified device.
 
 ```cpp
-inline cuda::mr::any_resource<cuda::mr::device_accessible> set_per_device_resource( cuda_device_id device_id, cuda::mr::any_resource<cuda::mr::device_accessible> new_resource) {
+inline cuda::mr::any_resource<cuda::mr::device_accessible> set_per_device_resource( cuda_device_id device_id, cuda::mr::any_resource<cuda::mr::device_accessible> new_resource)
 ```
 
 _Source: `cpp/include/rmm/mr/per_device_resource.hpp:151`_
@@ -759,7 +759,7 @@ _Source: `cpp/include/rmm/mr/per_device_resource.hpp:151`_
 Get the `device_async_resource_ref` for the current device.
 
 ```cpp
-inline device_async_resource_ref get_current_device_resource_ref() {
+inline device_async_resource_ref get_current_device_resource_ref()
 ```
 
 _Source: `cpp/include/rmm/mr/per_device_resource.hpp:187`_
@@ -769,7 +769,7 @@ _Source: `cpp/include/rmm/mr/per_device_resource.hpp:187`_
 Set the memory resource for the current device.
 
 ```cpp
-inline cuda::mr::any_resource<cuda::mr::device_accessible> set_current_device_resource( cuda::mr::any_resource<cuda::mr::device_accessible> new_resource) {
+inline cuda::mr::any_resource<cuda::mr::device_accessible> set_current_device_resource( cuda::mr::any_resource<cuda::mr::device_accessible> new_resource)
 ```
 
 _Source: `cpp/include/rmm/mr/per_device_resource.hpp:215`_
@@ -779,7 +779,7 @@ _Source: `cpp/include/rmm/mr/per_device_resource.hpp:215`_
 Reset the memory resource for the specified device to the initial resource.
 
 ```cpp
-inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_per_device_resource( cuda_device_id device_id) {
+inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_per_device_resource( cuda_device_id device_id)
 ```
 
 _Source: `cpp/include/rmm/mr/per_device_resource.hpp:238`_
@@ -789,7 +789,7 @@ _Source: `cpp/include/rmm/mr/per_device_resource.hpp:238`_
 Reset the memory resource for the current device to the initial resource.
 
 ```cpp
-inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_current_device_resource() {
+inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_current_device_resource()
 ```
 
 _Source: `cpp/include/rmm/mr/per_device_resource.hpp:258`_
@@ -811,7 +811,7 @@ _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:49`_
 Construct a `polymorphic_allocator` using the provided memory resource.
 
 ```cpp
-polymorphic_allocator(cuda::mr::any_resource<cuda::mr::device_accessible> mr) : mr_(std::move(mr)) {
+polymorphic_allocator(cuda::mr::any_resource<cuda::mr::device_accessible> mr) : mr_(std::move(mr))
 ```
 
 _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:58`_
@@ -821,7 +821,7 @@ _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:58`_
 Construct a `polymorphic_allocator` using the underlying memory resource of `other`.
 
 ```cpp
-template <typename U> polymorphic_allocator(polymorphic_allocator<U> const& other) noexcept : mr_(other.get_upstream_resource()) {
+template <typename U> polymorphic_allocator(polymorphic_allocator<U> const& other) noexcept : mr_(other.get_upstream_resource())
 ```
 
 _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:68`_
@@ -831,7 +831,7 @@ _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:68`_
 Allocates storage for `num` objects of type `T` using the underlying memory resource.
 
 ```cpp
-value_type* allocate(std::size_t num, cuda_stream_view stream) {
+value_type* allocate(std::size_t num, cuda_stream_view stream)
 ```
 
 _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:81`_
@@ -841,7 +841,7 @@ _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:81`_
 Deallocates storage pointed to by `ptr`.
 
 ```cpp
-void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream) noexcept {
+void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:97`_
@@ -851,7 +851,7 @@ _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:97`_
 Construct a `stream_allocator_adaptor` using `a` as the underlying allocator.
 
 ```cpp
-stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view stream) : alloc_{allocator}, stream_{stream}
+stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view stream) : alloc_
 ```
 
 _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:190`_
@@ -861,7 +861,7 @@ _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:190`_
 Construct a `stream_allocator_adaptor` using `other.underlying_allocator()` and `other.stream()` as the underlying allocator and stream.
 
 ```cpp
-template <typename OtherAllocator> stream_allocator_adaptor(stream_allocator_adaptor<OtherAllocator> const& other) : stream_allocator_adaptor{other.underlying_allocator(), other.stream()}
+template <typename OtherAllocator> stream_allocator_adaptor(stream_allocator_adaptor<OtherAllocator> const& other) : stream_allocator_adaptor
 ```
 
 _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:203`_
@@ -871,7 +871,7 @@ _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:203`_
 Allocates storage for `num` objects of type `T` using the underlying allocator on `stream()`.
 
 ```cpp
-value_type* allocate(std::size_t num) { return alloc_.allocate(num, stream()); }
+value_type* allocate(std::size_t num)
 ```
 
 _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:227`_
@@ -881,7 +881,7 @@ _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:227`_
 Deallocates storage pointed to by `ptr` using the underlying allocator on `stream()`.
 
 ```cpp
-void deallocate(value_type* ptr, std::size_t num) noexcept {
+void deallocate(value_type* ptr, std::size_t num) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/polymorphic_allocator.hpp:238`_

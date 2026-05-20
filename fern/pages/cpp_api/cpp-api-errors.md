@@ -13,7 +13,7 @@ Generated from RMM C++ headers.
 Exception thrown when logical precondition is violated.
 
 ```cpp
-struct logic_error : public std::logic_error {
+struct logic_error : public std::logic_error
 ```
 
 _Source: `cpp/include/rmm/error.hpp:24`_
@@ -23,7 +23,7 @@ _Source: `cpp/include/rmm/error.hpp:24`_
 Exception thrown when a CUDA error is encountered.
 
 ```cpp
-struct cuda_error : public std::runtime_error {
+struct cuda_error : public std::runtime_error
 ```
 
 _Source: `cpp/include/rmm/error.hpp:34`_
@@ -33,7 +33,7 @@ _Source: `cpp/include/rmm/error.hpp:34`_
 Exception thrown when an RMM allocation fails
 
 ```cpp
-class bad_alloc : public std::bad_alloc {
+class bad_alloc : public std::bad_alloc
 ```
 
 _Source: `cpp/include/rmm/error.hpp:44`_
@@ -63,7 +63,7 @@ _Source: `cpp/include/rmm/error.hpp:58`_
 Exception thrown when RMM runs out of memory
 
 ```cpp
-class out_of_memory : public bad_alloc {
+class out_of_memory : public bad_alloc
 ```
 
 _Source: `cpp/include/rmm/error.hpp:76`_
@@ -93,7 +93,7 @@ _Source: `cpp/include/rmm/error.hpp:90`_
 Exception thrown when attempting to access outside of a defined range
 
 ```cpp
-class out_of_range : public std::out_of_range {
+class out_of_range : public std::out_of_range
 ```
 
 _Source: `cpp/include/rmm/error.hpp:99`_
@@ -103,7 +103,7 @@ _Source: `cpp/include/rmm/error.hpp:99`_
 Exception thrown when an argument to a function is invalid
 
 ```cpp
-class invalid_argument : public std::invalid_argument {
+class invalid_argument : public std::invalid_argument
 ```
 
 _Source: `cpp/include/rmm/error.hpp:108`_

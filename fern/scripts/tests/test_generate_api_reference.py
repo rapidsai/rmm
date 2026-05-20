@@ -145,3 +145,40 @@ def test_convert_doxygen_text_preserves_word_boundaries():
         generator.convert_doxygen_text(r"return\ref{Reference}")
         == "return Reference"
     )
+
+
+def test_read_cpp_declaration_sanitizes_comments_and_body_tokens():
+    generator = load_generator()
+    text = "\n".join(
+        [
+            "/** @brief Example */",
+            "class noisy   final { // implementation starts",
+            " public:",
+            "  void ignored();",
+            "};",
+        ]
+    )
+
+    declaration, line = generator.read_cpp_declaration(
+        text, text.index("*/") + 2
+    )
+
+    assert declaration == "class noisy final"
+    assert line == 2
+
+    text = "\n".join(
+        [
+            "/** @brief Example */",
+            "void noisy()",
+            "{ // implementation starts",
+            "  return;",
+            "}",
+        ]
+    )
+
+    declaration, line = generator.read_cpp_declaration(
+        text, text.index("*/") + 2
+    )
+
+    assert declaration == "void noisy()"
+    assert line == 2

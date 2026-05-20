@@ -13,7 +13,7 @@ Generated from RMM C++ headers.
 Owning wrapper for a CUDA stream.
 
 ```cpp
-class cuda_stream {
+class cuda_stream
 ```
 
 _Source: `cpp/include/rmm/cuda_stream.hpp:29`_
@@ -23,7 +23,7 @@ _Source: `cpp/include/rmm/cuda_stream.hpp:29`_
 stream creation flags.
 
 ```cpp
-enum class flags : unsigned int {
+enum class flags : unsigned int
 ```
 
 _Source: `cpp/include/rmm/cuda_stream.hpp:34`_
@@ -95,7 +95,7 @@ _Source: `cpp/include/rmm/cuda_stream.hpp:123`_
 A pool of CUDA streams.
 
 ```cpp
-class cuda_stream_pool {
+class cuda_stream_pool
 ```
 
 _Source: `cpp/include/rmm/cuda_stream_pool.hpp:31`_
@@ -147,7 +147,7 @@ _Source: `cpp/include/rmm/cuda_stream_pool.hpp:82`_
 Strongly-typed non-owning wrapper for CUDA streams with default constructor.
 
 ```cpp
-class cuda_stream_view {
+class cuda_stream_view
 ```
 
 _Source: `cpp/include/rmm/cuda_stream_view.hpp:28`_

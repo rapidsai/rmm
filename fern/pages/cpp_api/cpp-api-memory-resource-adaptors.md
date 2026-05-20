@@ -13,7 +13,7 @@ Generated from RMM C++ headers.
 Resource that adapts an upstream resource to allocate memory with a specified alignment.
 
 ```cpp
-class RMM_EXPORT aligned_resource_adaptor : public cuda::mr::shared_resource<detail::aligned_resource_adaptor_impl> {
+class RMM_EXPORT aligned_resource_adaptor : public cuda::mr::shared_resource<detail::aligned_resource_adaptor_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/aligned_resource_adaptor.hpp:33`_
@@ -23,7 +23,7 @@ _Source: `cpp/include/rmm/mr/aligned_resource_adaptor.hpp:33`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(aligned_resource_adaptor const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(aligned_resource_adaptor const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/aligned_resource_adaptor.hpp:41`_
@@ -45,7 +45,7 @@ _Source: `cpp/include/rmm/mr/aligned_resource_adaptor.hpp:63`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(failure_callback_resource_adaptor const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(failure_callback_resource_adaptor const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/failure_callback_resource_adaptor.hpp:55`_
@@ -55,7 +55,7 @@ _Source: `cpp/include/rmm/mr/failure_callback_resource_adaptor.hpp:55`_
 Construct a new `failure_callback_resource_adaptor` using `upstream` to satisfy allocation requests.
 
 ```cpp
-failure_callback_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream, failure_callback_t callback, void* callback_arg) : shared_base(cuda::mr::make_shared_resource< detail::failure_callback_resource_adaptor_impl<ExceptionType>>( std::move(upstream), std::move(callback), callback_arg)) {
+failure_callback_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream, failure_callback_t callback, void* callback_arg) : shared_base(cuda::mr::make_shared_resource< detail::failure_callback_resource_adaptor_impl<ExceptionType>>( std::move(upstream), std::move(callback), callback_arg))
 ```
 
 _Source: `cpp/include/rmm/mr/failure_callback_resource_adaptor.hpp:68`_
@@ -71,7 +71,7 @@ No documented declarations found.
 Resource that uses an upstream resource to allocate memory and limits the total allocations possible.
 
 ```cpp
-class RMM_EXPORT limiting_resource_adaptor : public cuda::mr::shared_resource<detail::limiting_resource_adaptor_impl> {
+class RMM_EXPORT limiting_resource_adaptor : public cuda::mr::shared_resource<detail::limiting_resource_adaptor_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/limiting_resource_adaptor.hpp:35`_
@@ -81,7 +81,7 @@ _Source: `cpp/include/rmm/mr/limiting_resource_adaptor.hpp:35`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(limiting_resource_adaptor const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(limiting_resource_adaptor const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/limiting_resource_adaptor.hpp:43`_
@@ -103,7 +103,7 @@ _Source: `cpp/include/rmm/mr/limiting_resource_adaptor.hpp:56`_
 Resource that uses an upstream resource to allocate memory and logs information about the requested allocation/deallocations.
 
 ```cpp
-class RMM_EXPORT logging_resource_adaptor : public cuda::mr::shared_resource<detail::logging_resource_adaptor_impl> {
+class RMM_EXPORT logging_resource_adaptor : public cuda::mr::shared_resource<detail::logging_resource_adaptor_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/logging_resource_adaptor.hpp:37`_
@@ -113,7 +113,7 @@ _Source: `cpp/include/rmm/mr/logging_resource_adaptor.hpp:37`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(logging_resource_adaptor const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(logging_resource_adaptor const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/logging_resource_adaptor.hpp:47`_
@@ -175,7 +175,7 @@ _Source: `cpp/include/rmm/mr/logging_resource_adaptor.hpp:132`_
 Resource that prefetches all memory allocations.
 
 ```cpp
-class RMM_EXPORT prefetch_resource_adaptor : public cuda::mr::shared_resource<detail::prefetch_resource_adaptor_impl> {
+class RMM_EXPORT prefetch_resource_adaptor : public cuda::mr::shared_resource<detail::prefetch_resource_adaptor_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/prefetch_resource_adaptor.hpp:28`_
@@ -185,7 +185,7 @@ _Source: `cpp/include/rmm/mr/prefetch_resource_adaptor.hpp:28`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(prefetch_resource_adaptor const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(prefetch_resource_adaptor const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/prefetch_resource_adaptor.hpp:36`_
@@ -207,7 +207,7 @@ _Source: `cpp/include/rmm/mr/prefetch_resource_adaptor.hpp:47`_
 Resource that uses an upstream resource to allocate memory and tracks allocation statistics (current, peak, total bytes and allocation counts).
 
 ```cpp
-class RMM_EXPORT statistics_resource_adaptor : public cuda::mr::shared_resource<detail::statistics_resource_adaptor_impl> {
+class RMM_EXPORT statistics_resource_adaptor : public cuda::mr::shared_resource<detail::statistics_resource_adaptor_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/statistics_resource_adaptor.hpp:32`_
@@ -217,7 +217,7 @@ _Source: `cpp/include/rmm/mr/statistics_resource_adaptor.hpp:32`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(statistics_resource_adaptor const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(statistics_resource_adaptor const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/statistics_resource_adaptor.hpp:47`_
@@ -239,7 +239,7 @@ _Source: `cpp/include/rmm/mr/statistics_resource_adaptor.hpp:57`_
 Resource that adapts an upstream resource to be thread safe.
 
 ```cpp
-class RMM_EXPORT thread_safe_resource_adaptor : public cuda::mr::shared_resource<detail::thread_safe_resource_adaptor_impl> {
+class RMM_EXPORT thread_safe_resource_adaptor : public cuda::mr::shared_resource<detail::thread_safe_resource_adaptor_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/thread_safe_resource_adaptor.hpp:33`_
@@ -249,7 +249,7 @@ _Source: `cpp/include/rmm/mr/thread_safe_resource_adaptor.hpp:33`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(thread_safe_resource_adaptor const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(thread_safe_resource_adaptor const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/thread_safe_resource_adaptor.hpp:43`_
@@ -271,7 +271,7 @@ _Source: `cpp/include/rmm/mr/thread_safe_resource_adaptor.hpp:54`_
 Default constructor creates an allocator using the default memory resource and default stream.
 
 ```cpp
-RMM_EXEC_CHECK_DISABLE thrust_allocator() {}
+RMM_EXEC_CHECK_DISABLE thrust_allocator()
 ```
 
 _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:63`_
@@ -281,7 +281,7 @@ _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:63`_
 Constructs a `thrust_allocator` using the default device memory resource and specified stream.
 
 ```cpp
-RMM_EXEC_CHECK_DISABLE explicit thrust_allocator(cuda_stream_view stream) : _stream{stream} {}
+RMM_EXEC_CHECK_DISABLE explicit thrust_allocator(cuda_stream_view stream) : _stream
 ```
 
 _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:72`_
@@ -291,7 +291,7 @@ _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:72`_
 Constructs a `thrust_allocator` using a device memory resource and stream.
 
 ```cpp
-RMM_EXEC_CHECK_DISABLE thrust_allocator(cuda_stream_view stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr) : _stream{stream}, _mr(std::move(mr))
+RMM_EXEC_CHECK_DISABLE thrust_allocator(cuda_stream_view stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr) : _stream
 ```
 
 _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:82`_
@@ -301,7 +301,7 @@ _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:82`_
 Copy constructor. Copies the resource pointer and stream.
 
 ```cpp
-RMM_EXEC_CHECK_DISABLE thrust_allocator(thrust_allocator const& other) : Base(other), _stream{other._stream}, _mr(other._mr), _device{other._device}
+RMM_EXEC_CHECK_DISABLE thrust_allocator(thrust_allocator const& other) : Base(other), _stream
 ```
 
 _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:93`_
@@ -311,7 +311,7 @@ _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:93`_
 Move constructor. Moves the resource pointer and stream.
 
 ```cpp
-RMM_EXEC_CHECK_DISABLE thrust_allocator(thrust_allocator&& other) noexcept : Base(std::move(other)), _stream{other._stream},
+RMM_EXEC_CHECK_DISABLE thrust_allocator(thrust_allocator&& other) noexcept : Base(std::move(other)), _stream
 ```
 
 _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:104`_
@@ -321,7 +321,7 @@ _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:104`_
 Copy constructor from a `thrust_allocator` of a different type. Copies the resource pointer and stream.
 
 ```cpp
-RMM_EXEC_CHECK_DISABLE template <typename U> thrust_allocator(thrust_allocator<U> const& other) : _mr(other.resource()), _stream{other.stream()}, _device{other._device}
+RMM_EXEC_CHECK_DISABLE template <typename U> thrust_allocator(thrust_allocator<U> const& other) : _mr(other.resource()), _stream
 ```
 
 _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:124`_
@@ -331,7 +331,7 @@ _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:124`_
 Allocate objects of type `T`
 
 ```cpp
-pointer allocate(size_type num) {
+pointer allocate(size_type num)
 ```
 
 _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:137`_
@@ -341,7 +341,7 @@ _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:137`_
 Deallocates objects of type `T`
 
 ```cpp
-void deallocate(pointer ptr, size_type num) noexcept {
+void deallocate(pointer ptr, size_type num) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:151`_
@@ -351,7 +351,7 @@ _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:151`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(thrust_allocator const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(thrust_allocator const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:176`_
@@ -363,7 +363,7 @@ _Source: `cpp/include/rmm/mr/thrust_allocator_adaptor.hpp:176`_
 Resource that uses an upstream resource to allocate memory and tracks allocations.
 
 ```cpp
-class RMM_EXPORT tracking_resource_adaptor : public cuda::mr::shared_resource<detail::tracking_resource_adaptor_impl> {
+class RMM_EXPORT tracking_resource_adaptor : public cuda::mr::shared_resource<detail::tracking_resource_adaptor_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/tracking_resource_adaptor.hpp:34`_
@@ -373,7 +373,7 @@ _Source: `cpp/include/rmm/mr/tracking_resource_adaptor.hpp:34`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(tracking_resource_adaptor const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(tracking_resource_adaptor const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/tracking_resource_adaptor.hpp:49`_
@@ -425,7 +425,7 @@ _Source: `cpp/include/rmm/mr/callback_memory_resource.hpp:52`_
 A device memory resource that uses the provided callbacks for memory allocation and deallocation.
 
 ```cpp
-class RMM_EXPORT callback_memory_resource : public cuda::mr::shared_resource<detail::callback_memory_resource_impl> {
+class RMM_EXPORT callback_memory_resource : public cuda::mr::shared_resource<detail::callback_memory_resource_impl>
 ```
 
 _Source: `cpp/include/rmm/mr/callback_memory_resource.hpp:65`_
@@ -435,7 +435,7 @@ _Source: `cpp/include/rmm/mr/callback_memory_resource.hpp:65`_
 Enables the `cuda::mr::device_accessible` property
 
 ```cpp
-RMM_CONSTEXPR_FRIEND void get_property(callback_memory_resource const&, cuda::mr::device_accessible) noexcept {
+RMM_CONSTEXPR_FRIEND void get_property(callback_memory_resource const&, cuda::mr::device_accessible) noexcept
 ```
 
 _Source: `cpp/include/rmm/mr/callback_memory_resource.hpp:73`_

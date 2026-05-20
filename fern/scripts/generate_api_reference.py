@@ -281,6 +281,12 @@ def read_cpp_declaration(text: str, start: int) -> tuple[str, int]:
                 in_block_comment = True
             line += 1
             continue
+        stripped, opens_body = sanitize_cpp_declaration_line(stripped)
+        if not stripped:
+            if opens_body and lines:
+                break
+            line += 1
+            continue
         lines.append(stripped)
         brace_depth += stripped.count("{") - stripped.count("}")
         if (
@@ -289,12 +295,21 @@ def read_cpp_declaration(text: str, start: int) -> tuple[str, int]:
             or ("{" in stripped and "}" in stripped and brace_depth == 0)
             or (stripped.endswith("}") and brace_depth == 0)
             or (brace_depth > 0 and "{" in stripped)
+            or opens_body
         ):
             break
         if len(lines) >= 8:
             break
     declaration = " ".join(lines).strip()
     return declaration, line
+
+
+def sanitize_cpp_declaration_line(line: str) -> tuple[str, bool]:
+    line = re.sub(r"//.*", "", line).strip()
+    opens_body = "{" in line
+    if opens_body:
+        line = line.split("{", 1)[0].strip()
+    return re.sub(r"\s+", " ", line), opens_body
 
 
 def cpp_declaration_name(signature: str) -> str:

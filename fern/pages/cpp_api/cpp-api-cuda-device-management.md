@@ -13,7 +13,7 @@ Generated from RMM C++ headers.
 Strong type for a CUDA device identifier.
 
 ```cpp
-struct cuda_device_id {
+struct cuda_device_id
 ```
 
 _Source: `cpp/include/rmm/cuda_device.hpp:27`_
@@ -23,7 +23,7 @@ _Source: `cpp/include/rmm/cuda_device.hpp:27`_
 Construct a `cuda_device_id` from the current device
 
 ```cpp
-cuda_device_id() noexcept : id_{get_current_cuda_device().value()} {}
+cuda_device_id() noexcept : id_
 ```
 
 _Source: `cpp/include/rmm/cuda_device.hpp:33`_
@@ -33,7 +33,7 @@ _Source: `cpp/include/rmm/cuda_device.hpp:33`_
 Construct a `cuda_device_id` from the specified integer value.
 
 ```cpp
-explicit constexpr cuda_device_id(value_type dev_id) noexcept : id_{dev_id} {}
+explicit constexpr cuda_device_id(value_type dev_id) noexcept : id_
 ```
 
 _Source: `cpp/include/rmm/cuda_device.hpp:40`_
@@ -73,7 +73,7 @@ _Source: `cpp/include/rmm/cuda_device.hpp:109`_
 RAII class that sets the current CUDA device to the specified device on construction and restores the previous device on destruction.
 
 ```cpp
-struct cuda_set_device_raii {
+struct cuda_set_device_raii
 ```
 
 _Source: `cpp/include/rmm/cuda_device.hpp:115`_
@@ -105,7 +105,7 @@ _Source: `cpp/include/rmm/prefetch.hpp:37`_
 Prefetch a span of memory to the specified device on the specified stream.
 
 ```cpp
-template <typename T> void prefetch(cuda::std::span<T const> data, rmm::cuda_device_id device, rmm::cuda_stream_view stream) {
+template <typename T> void prefetch(cuda::std::span<T const> data, rmm::cuda_device_id device, rmm::cuda_stream_view stream)
 ```
 
 _Source: `cpp/include/rmm/prefetch.hpp:53`_

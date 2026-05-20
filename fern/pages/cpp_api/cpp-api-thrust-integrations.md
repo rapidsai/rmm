@@ -23,7 +23,7 @@ _Source: `cpp/include/rmm/exec_policy.hpp:32`_
 Helper class usable as a Thrust CUDA execution policy that uses RMM for temporary memory allocation on the specified stream.
 
 ```cpp
-class exec_policy : public thrust_exec_policy_t {
+class exec_policy : public thrust_exec_policy_t
 ```
 
 _Source: `cpp/include/rmm/exec_policy.hpp:40`_
@@ -53,7 +53,7 @@ _Source: `cpp/include/rmm/exec_policy.hpp:56`_
 Helper class usable as a Thrust CUDA execution policy that uses RMM for temporary memory allocation on the specified stream and which allows the Thrust backend to skip stream synchronizations that are not required for correctness.
 
 ```cpp
-class exec_policy_nosync : public thrust_exec_policy_nosync_t {
+class exec_policy_nosync : public thrust_exec_policy_nosync_t
 ```
 
 _Source: `cpp/include/rmm/exec_policy.hpp:66`_

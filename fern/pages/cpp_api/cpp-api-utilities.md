@@ -49,7 +49,7 @@ _Source: `cpp/include/rmm/logger.hpp:37`_
 Determine at runtime if the CUDA driver supports the stream-ordered memory allocator functions.
 
 ```cpp
-struct runtime_async_alloc {
+struct runtime_async_alloc
 ```
 
 _Source: `cpp/include/rmm/detail/runtime_capabilities.hpp:36`_
@@ -59,7 +59,7 @@ _Source: `cpp/include/rmm/detail/runtime_capabilities.hpp:36`_
 Check whether the specified `cudaMemAllocationHandleType` is supported on the present CUDA driver/runtime version.
 
 ```cpp
-struct export_handle_type {
+struct export_handle_type
 ```
 
 _Source: `cpp/include/rmm/detail/runtime_capabilities.hpp:58`_
@@ -69,7 +69,7 @@ _Source: `cpp/include/rmm/detail/runtime_capabilities.hpp:58`_
 Check if the current device supports concurrent managed access. Concurrent managed access is required for prefetching to work.
 
 ```cpp
-struct concurrent_managed_access {
+struct concurrent_managed_access
 ```
 
 _Source: `cpp/include/rmm/detail/runtime_capabilities.hpp:119`_
@@ -79,7 +79,7 @@ _Source: `cpp/include/rmm/detail/runtime_capabilities.hpp:119`_
 Determine at runtime if the CUDA driver/runtime supports the stream-ordered managed memory allocator functions.
 
 ```cpp
-struct runtime_async_managed_alloc {
+struct runtime_async_managed_alloc
 ```
 
 _Source: `cpp/include/rmm/detail/runtime_capabilities.hpp:139`_
@@ -89,7 +89,7 @@ _Source: `cpp/include/rmm/detail/runtime_capabilities.hpp:139`_
 Check if the current device is an integrated memory system.
 
 ```cpp
-struct device_integrated_memory {
+struct device_integrated_memory
 ```
 
 _Source: `cpp/include/rmm/detail/runtime_capabilities.hpp:163`_
