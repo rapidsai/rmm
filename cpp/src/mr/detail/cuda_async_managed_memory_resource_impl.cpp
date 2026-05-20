@@ -46,9 +46,9 @@ cudaMemPool_t cuda_async_managed_memory_resource_impl::pool_handle() const noexc
 
 void* cuda_async_managed_memory_resource_impl::allocate(cuda::stream_ref stream,
                                                         std::size_t bytes,
-                                                        std::size_t /*alignment*/)
+                                                        std::size_t alignment)
 {
-  return pool_.allocate(stream, bytes);
+  return pool_.allocate(stream, bytes, alignment);
 }
 
 void cuda_async_managed_memory_resource_impl::deallocate(cuda::stream_ref stream,
