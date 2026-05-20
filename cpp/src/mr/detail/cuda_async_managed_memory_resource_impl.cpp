@@ -34,6 +34,11 @@ cuda_async_managed_memory_resource_impl::cuda_async_managed_memory_resource_impl
 #endif
 }
 
+cuda_async_managed_memory_resource_impl::cuda_async_managed_memory_resource_impl(construction_tag)
+  : cuda_async_managed_memory_resource_impl()
+{
+}
+
 cudaMemPool_t cuda_async_managed_memory_resource_impl::pool_handle() const noexcept
 {
   return pool_.pool_handle();

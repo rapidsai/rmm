@@ -13,7 +13,6 @@
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/failure_callback_resource_adaptor.hpp>
 #include <rmm/mr/fixed_size_memory_resource.hpp>
-#include <rmm/mr/is_resource_adaptor.hpp>
 #include <rmm/mr/limiting_resource_adaptor.hpp>
 #include <rmm/mr/logging_resource_adaptor.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
@@ -133,7 +132,6 @@ TYPED_TEST(CcclAdaptorTest, GetUpstreamResource)
 {
   rmm::device_async_resource_ref expected{this->cuda};
   EXPECT_EQ(this->mr.get_upstream_resource(), expected);
-  EXPECT_TRUE(rmm::mr::is_resource_adaptor<TypeParam>);
 }
 
 TYPED_TEST(CcclAdaptorTest, AllocFree)
