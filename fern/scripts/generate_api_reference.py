@@ -35,11 +35,18 @@ def relative_to_repo(path: Path) -> str:
 
 
 def require_command(command: str) -> None:
-    if shutil.which(command) is None:
+    if find_command(command) is None:
         raise SystemExit(
             f"{command!r} is required to generate Fern API reference pages. "
             "Install the docs environment from dependencies.yaml."
         )
+
+
+def find_command(command: str) -> str | None:
+    sibling = Path(sys.executable).with_name(command)
+    if sibling.exists():
+        return str(sibling)
+    return shutil.which(command)
 
 
 def docs_environment() -> dict[str, str]:
@@ -59,7 +66,10 @@ def run_command(args: list[str], *, cwd: Path, env: dict[str, str]) -> None:
 
 def build_doxygen_xml(env: dict[str, str]) -> None:
     require_command("doxygen")
-    run_command(["doxygen", "Doxyfile"], cwd=DOXYGEN_DIR, env=env)
+    doxygen = find_command("doxygen")
+    if doxygen is None:
+        raise SystemExit("'doxygen' is required to generate C++ API XML.")
+    run_command([doxygen, "Doxyfile"], cwd=DOXYGEN_DIR, env=env)
     if not DOXYGEN_XML_INDEX.exists():
         raise SystemExit(
             "Doxygen completed without producing cpp/doxygen/xml/index.xml"
@@ -67,11 +77,12 @@ def build_doxygen_xml(env: dict[str, str]) -> None:
 
 
 def build_sphinx_markdown(env: dict[str, str]) -> None:
-    require_command("sphinx-build")
     shutil.rmtree(MARKDOWN_BUILD_DIR, ignore_errors=True)
     run_command(
         [
-            "sphinx-build",
+            sys.executable,
+            "-m",
+            "sphinx.cmd.build",
             "-M",
             "markdown",
             ".",

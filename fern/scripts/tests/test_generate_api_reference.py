@@ -63,9 +63,27 @@ def test_copy_generated_markdown_pages_preserves_rendered_content(tmp_path):
     )
     assert copied == 2
     assert "Generated from the Sphinx API extraction build." in cpp_output
-    assert "This class allocates untyped and uninitialized device memory." in cpp_output
-    assert "Python memory resource docstrings are rendered here." in python_output
+    assert (
+        "This class allocates untyped and uninitialized device memory."
+        in cpp_output
+    )
+    assert (
+        "Python memory resource docstrings are rendered here." in python_output
+    )
     assert "docs.rapids.ai/api/rmm" not in cpp_output + python_output
+
+
+def test_find_command_prefers_current_python_environment(
+    tmp_path, monkeypatch
+):
+    generator = load_generator()
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    command = bin_dir / "doxygen"
+    command.write_text("#!/bin/sh\n", encoding="utf-8")
+    monkeypatch.setattr(generator.sys, "executable", str(bin_dir / "python"))
+
+    assert generator.find_command("doxygen") == str(command)
 
 
 def test_docs_yml_includes_native_api_navigation():
