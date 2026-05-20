@@ -46,6 +46,9 @@ def test_generator_writes_cpp_and_python_api_pages():
     cpp_utilities = (
         REPO_ROOT / "fern" / "pages" / "cpp_api" / "cpp-api-utilities.md"
     )
+    cpp_data = (
+        REPO_ROOT / "fern" / "pages" / "cpp_api" / "cpp-api-data-containers.md"
+    )
     cpp_thrust = (
         REPO_ROOT
         / "fern"
@@ -81,6 +84,34 @@ def test_generator_writes_cpp_and_python_api_pages():
         "def deallocate(self, ptr: int, nbytes: int, stream: Stream = ...) -> None:"
         in python_mr.read_text(encoding="utf-8")
     )
+    data_text = cpp_data.read_text(encoding="utf-8")
+    assert (
+        "This class allocates untyped and *uninitialized* device memory using a "
+        "`cuda::mr::any_resource<cuda::mr::device_accessible>`."
+    ) in data_text
+    assert (
+        "> **Note:** Unlike `std::vector` or `thrust::device_vector`, the "
+        "device memory allocated by a `device_buffer` is uninitialized."
+    ) in data_text
+    assert "Examples:" in data_text
+    assert "device_buffer custom_buff(100, stream, &mr);" in data_text
+    assert "buff_default.resize(100, stream);" in data_text
+    assert "**Parameters:**" in data_text
+    assert "- `size`: Size in bytes to allocate in device memory." in data_text
+    assert (
+        "- `stream`: CUDA stream on which memory may be allocated" in data_text
+    )
+    assert "### Device Buffer Constructor (device_buffer.hpp:116)" in data_text
+    assert (
+        "- `alignment`: Required alignment of the allocation. The actual "
+        "alignment will be at least the requested alignment."
+    ) in data_text
+    assert (
+        "- `rmm::invalid_argument`: If the requested alignment is not a power of two"
+        in data_text
+    )
+    assert "**Throws:**" in data_text
+    assert "- `rmm::bad_alloc`: If allocation fails." in data_text
     utilities_text = cpp_utilities.read_text(encoding="utf-8")
     assert (
         "Determine at runtime if the CUDA driver supports the stream-ordered "

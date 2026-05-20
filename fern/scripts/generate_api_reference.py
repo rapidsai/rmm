@@ -43,7 +43,7 @@ class CppEntry:
     name: str
     kind: str
     signature: str
-    summary: str
+    doc: list[str]
     source: Path
     line: int
 
@@ -155,6 +155,7 @@ PYTHON_SECTIONS = [
 ]
 
 COMMENT_RE = re.compile(r"/\*\*.*?\*/", re.DOTALL)
+LINE_COMMENT_RE = re.compile(r"(?m)^[ \t]*///.*(?:\n[ \t]*///.*)*")
 
 
 def main() -> int:
@@ -232,31 +233,84 @@ def collect_cpp_entries(section: CppSection) -> dict[str, list[CppEntry]]:
 def parse_cpp_header(path: Path) -> list[CppEntry]:
     text = read_text(path)
     entries: list[CppEntry] = []
-    for match in COMMENT_RE.finditer(text):
-        comment = clean_doxygen_comment(match.group(0))
+    entries_by_declaration: dict[tuple[int, str], CppEntry] = {}
+    for comment, end in cpp_doxygen_comments(text):
         if (
             not comment
             or "@file" in comment
             or is_doxygen_group_marker(comment)
         ):
             continue
-        declaration, line = read_cpp_declaration(text, match.end())
+        declaration, line = read_cpp_declaration(text, end)
         if not declaration:
             continue
         name = cpp_declaration_name(declaration)
         if not name:
             continue
-        entries.append(
-            CppEntry(
-                name=name,
-                kind=cpp_declaration_kind(declaration),
-                signature=normalize_cpp_signature(declaration),
-                summary=brief_from_comment(comment),
-                source=path,
-                line=line,
-            )
+        signature = normalize_cpp_signature(declaration)
+        key = (line, signature)
+        doc = render_doxygen_comment(comment)
+        if not doc and has_copydoc(comment):
+            doc = copied_doxygen_doc(entries, name)
+        if key in entries_by_declaration:
+            merge_cpp_entry_doc(entries_by_declaration[key], doc)
+            continue
+        entry = CppEntry(
+            name=name,
+            kind=cpp_declaration_kind(declaration),
+            signature=signature,
+            doc=doc,
+            source=path,
+            line=line,
         )
+        entries.append(entry)
+        entries_by_declaration[key] = entry
     return entries
+
+
+def cpp_doxygen_comments(text: str) -> list[tuple[str, int]]:
+    comments = [
+        (match.start(), match.end(), clean_doxygen_comment(match.group(0)))
+        for match in COMMENT_RE.finditer(text)
+    ]
+    comments.extend(
+        (
+            match.start(),
+            match.end(),
+            clean_doxygen_line_comment(match.group(0)),
+        )
+        for match in LINE_COMMENT_RE.finditer(text)
+    )
+    return [(comment, end) for _, end, comment in sorted(comments)]
+
+
+def clean_doxygen_line_comment(raw: str) -> str:
+    cleaned = []
+    for line in raw.splitlines():
+        cleaned.append(re.sub(r"^\s*/// ?", "", line).rstrip())
+    return "\n".join(cleaned).strip()
+
+
+def has_copydoc(comment: str) -> bool:
+    return any(
+        line.strip().startswith(("@copydoc", "\\copydoc"))
+        for line in comment.splitlines()
+    )
+
+
+def copied_doxygen_doc(entries: list[CppEntry], name: str) -> list[str]:
+    for entry in reversed(entries):
+        if entry.name == name and entry.doc:
+            return list(entry.doc)
+    return []
+
+
+def merge_cpp_entry_doc(entry: CppEntry, doc: list[str]) -> None:
+    if not doc:
+        return
+    if entry.doc:
+        entry.doc.append("")
+    entry.doc.extend(doc)
 
 
 def read_cpp_declaration(text: str, start: int) -> tuple[str, int]:
@@ -371,8 +425,8 @@ def unique_cpp_heading(
 
 def render_cpp_entry(entry: CppEntry, heading: str) -> list[str]:
     lines = [f"### {heading}", ""]
-    if entry.summary:
-        lines.extend([entry.summary, ""])
+    if entry.doc:
+        lines.extend([*entry.doc, ""])
     lines.extend(["```cpp", entry.signature, "```", ""])
     lines.extend([f"_Source: `{relative(entry.source)}:{entry.line}`_", ""])
     return lines
@@ -608,6 +662,184 @@ def is_doxygen_group_marker(comment: str) -> bool:
         marker in comment
         for marker in ("@addtogroup", "\\addtogroup", "@{", "\\{", "@}", "\\}")
     )
+
+
+def render_doxygen_comment(comment: str) -> list[str]:
+    lines = [line.rstrip() for line in comment.splitlines()]
+    rendered: list[str] = []
+    paragraph: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index].strip()
+        if not line:
+            append_doxygen_paragraph(rendered, paragraph)
+            index += 1
+            continue
+        if line.startswith("```"):
+            append_doxygen_paragraph(rendered, paragraph)
+            index = append_markdown_code_fence(rendered, lines, index)
+            continue
+        if match := re.match(r"[@\\]brief\s*(.*)", line):
+            append_doxygen_paragraph(rendered, paragraph)
+            text, index = collect_doxygen_text(lines, index, match.group(1))
+            append_doxygen_paragraph(rendered, [text])
+            continue
+        if match := re.match(r"[@\\]note\s*(.*)", line):
+            append_doxygen_paragraph(rendered, paragraph)
+            text, index = collect_doxygen_text(lines, index, match.group(1))
+            append_labeled_doxygen_paragraph(
+                rendered, "Note", text, quote=True
+            )
+            continue
+        if match := re.match(r"[@\\]return(?:s)?\s*(.*)", line):
+            append_doxygen_paragraph(rendered, paragraph)
+            text, index = collect_doxygen_text(lines, index, match.group(1))
+            append_labeled_doxygen_paragraph(rendered, "Returns", text)
+            continue
+        if re.match(r"[@\\]tparam\b", line):
+            append_doxygen_paragraph(rendered, paragraph)
+            items, index = collect_doxygen_items(lines, index, "tparam")
+            append_doxygen_items(rendered, "Template Parameters", items)
+            continue
+        if re.match(r"[@\\]param(?:\[[^\]]+\])?\b", line):
+            append_doxygen_paragraph(rendered, paragraph)
+            items, index = collect_doxygen_items(lines, index, "param")
+            append_doxygen_items(rendered, "Parameters", items)
+            continue
+        if re.match(r"[@\\]throws?\b", line):
+            append_doxygen_paragraph(rendered, paragraph)
+            items, index = collect_doxygen_items(lines, index, "throws?")
+            append_doxygen_items(rendered, "Throws", items)
+            continue
+        if re.match(r"[@\\]code\b", line):
+            append_doxygen_paragraph(rendered, paragraph)
+            index = append_doxygen_code_block(rendered, lines, index)
+            continue
+        if is_doxygen_command(line):
+            append_doxygen_paragraph(rendered, paragraph)
+            text, index = collect_doxygen_text(lines, index, "")
+            append_doxygen_paragraph(rendered, [text])
+            continue
+        paragraph.append(line)
+        index += 1
+    append_doxygen_paragraph(rendered, paragraph)
+    return trim_blank(rendered)
+
+
+def append_doxygen_paragraph(
+    rendered: list[str],
+    paragraph: list[str],
+) -> None:
+    if not paragraph:
+        return
+    text = convert_doxygen_text(
+        " ".join(line.strip() for line in paragraph if line.strip())
+    )
+    if text:
+        rendered.extend([text, ""])
+    paragraph.clear()
+
+
+def append_labeled_doxygen_paragraph(
+    rendered: list[str],
+    label: str,
+    text: str,
+    *,
+    quote: bool = False,
+) -> None:
+    text = convert_doxygen_text(text)
+    if not text:
+        return
+    prefix = "> " if quote else ""
+    rendered.extend([f"{prefix}**{label}:** {text}", ""])
+
+
+def append_markdown_code_fence(
+    rendered: list[str],
+    lines: list[str],
+    index: int,
+) -> int:
+    rendered.append(lines[index].strip())
+    index += 1
+    while index < len(lines):
+        rendered.append(lines[index].rstrip())
+        if lines[index].strip().startswith("```"):
+            index += 1
+            break
+        index += 1
+    rendered.append("")
+    return index
+
+
+def append_doxygen_code_block(
+    rendered: list[str],
+    lines: list[str],
+    index: int,
+) -> int:
+    rendered.append("```cpp")
+    index += 1
+    while index < len(lines):
+        line = lines[index].rstrip()
+        if re.match(r"[@\\]endcode\b", line.strip()):
+            index += 1
+            break
+        rendered.append(line)
+        index += 1
+    rendered.extend(["```", ""])
+    return index
+
+
+def collect_doxygen_text(
+    lines: list[str],
+    start_index: int,
+    first_line: str,
+) -> tuple[str, int]:
+    collected = [first_line.strip()] if first_line.strip() else []
+    index = start_index + 1
+    while index < len(lines):
+        line = lines[index].strip()
+        if not line or line.startswith("```") or is_doxygen_command(line):
+            break
+        collected.append(line)
+        index += 1
+    return " ".join(collected), index
+
+
+def collect_doxygen_items(
+    lines: list[str],
+    start_index: int,
+    command: str,
+) -> tuple[list[tuple[str, str]], int]:
+    items: list[tuple[str, str]] = []
+    index = start_index
+    pattern = re.compile(rf"[@\\]{command}(?:\[[^\]]+\])?\s+(\S+)\s*(.*)")
+    while index < len(lines):
+        line = lines[index].strip()
+        match = pattern.match(line)
+        if not match:
+            break
+        name = match.group(1)
+        text, index = collect_doxygen_text(lines, index, match.group(2))
+        items.append((name, text))
+        while index < len(lines) and not lines[index].strip():
+            index += 1
+        next_line = lines[index].strip() if index < len(lines) else ""
+        if not pattern.match(next_line):
+            break
+    return items, index
+
+
+def append_doxygen_items(
+    rendered: list[str],
+    label: str,
+    items: list[tuple[str, str]],
+) -> None:
+    if not items:
+        return
+    rendered.extend([f"**{label}:**", ""])
+    for name, text in items:
+        rendered.append(f"- `{name}`: {convert_doxygen_text(text)}")
+    rendered.append("")
 
 
 def brief_from_comment(comment: str) -> str:

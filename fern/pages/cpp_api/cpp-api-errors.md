@@ -12,6 +12,8 @@ Generated from RMM C++ headers.
 
 Exception thrown when logical precondition is violated.
 
+This exception should not be thrown directly and is instead thrown by the RMM_EXPECTS macro.
+
 ```cpp
 struct logic_error : public std::logic_error
 ```
@@ -42,6 +44,10 @@ _Source: `cpp/include/rmm/error.hpp:44`_
 
 Constructs a bad_alloc with the error message.
 
+**Parameters:**
+
+- `msg`: Message to be associated with the exception
+
 ```cpp
 bad_alloc(const char* msg);
 ```
@@ -51,6 +57,10 @@ _Source: `cpp/include/rmm/error.hpp:51`_
 ### Bad Alloc Constructor (error.hpp:58)
 
 Constructs a bad_alloc with the error message.
+
+**Parameters:**
+
+- `msg`: Message to be associated with the exception
 
 ```cpp
 bad_alloc(std::string const& msg);
@@ -62,6 +72,8 @@ _Source: `cpp/include/rmm/error.hpp:58`_
 
 Exception thrown when RMM runs out of memory
 
+This error should only be thrown when we know for sure a resource is out of memory.
+
 ```cpp
 class out_of_memory : public bad_alloc
 ```
@@ -72,6 +84,10 @@ _Source: `cpp/include/rmm/error.hpp:76`_
 
 Constructs an out_of_memory with the error message.
 
+**Parameters:**
+
+- `msg`: Message to be associated with the exception
+
 ```cpp
 out_of_memory(const char* msg);
 ```
@@ -81,6 +97,10 @@ _Source: `cpp/include/rmm/error.hpp:83`_
 ### Out Of Memory Constructor (error.hpp:90)
 
 Constructs an out_of_memory with the error message.
+
+**Parameters:**
+
+- `msg`: Message to be associated with the exception
 
 ```cpp
 out_of_memory(std::string const& msg);

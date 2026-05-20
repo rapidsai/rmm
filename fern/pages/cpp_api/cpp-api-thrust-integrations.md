@@ -32,6 +32,11 @@ _Source: `cpp/include/rmm/exec_policy.hpp:40`_
 
 Construct a new execution policy object
 
+**Parameters:**
+
+- `stream`: The stream on which to allocate temporary memory
+- `mr`: The resource to use for allocating temporary memory
+
 ```cpp
 explicit exec_policy( cuda_stream_view stream = cuda_stream_default, cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 ```
@@ -61,6 +66,11 @@ _Source: `cpp/include/rmm/exec_policy.hpp:66`_
 ### Exec Policy Nosync Constructor
 
 Construct a new execution policy object
+
+**Parameters:**
+
+- `stream`: The stream on which to allocate temporary memory
+- `mr`: The resource to use for allocating temporary memory
 
 ```cpp
 explicit exec_policy_nosync( cuda_stream_view stream = cuda_stream_default, cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
