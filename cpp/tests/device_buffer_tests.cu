@@ -535,9 +535,7 @@ TEST(DeviceBufferAlignmentTest, ExplicitAlignmentSmall)
   EXPECT_EQ(buff.size(), 100);
 }
 
-// Disabled: leaf MRs silently ignore unsupported alignment after #2324.
-// See https://github.com/rapidsai/rmm/issues/2342
-TEST(DeviceBufferAlignmentTest, DISABLED_ExplicitAlignmentTooLarge)
+TEST(DeviceBufferAlignmentTest, ExplicitAlignmentTooLarge)
 {
   auto constexpr alignment = rmm::CUDA_ALLOCATION_ALIGNMENT * 2;
   EXPECT_THROW(rmm::device_buffer(100, alignment, rmm::cuda_stream_default), rmm::bad_alloc);
@@ -560,9 +558,7 @@ TEST(DeviceBufferAlignmentTest, CopyFromSourceExplicitAlignment)
   EXPECT_EQ(buff.size(), host_data.size());
 }
 
-// Disabled: leaf MRs silently ignore unsupported alignment after #2324.
-// See https://github.com/rapidsai/rmm/issues/2342
-TEST(DeviceBufferAlignmentTest, DISABLED_CopyFromSourceAlignmentTooLarge)
+TEST(DeviceBufferAlignmentTest, CopyFromSourceAlignmentTooLarge)
 {
   std::vector<uint8_t> host_data(100, 42);
   auto constexpr alignment = rmm::CUDA_ALLOCATION_ALIGNMENT * 2;
@@ -622,10 +618,12 @@ TEST(DeviceBufferAlignmentTest, EmptyBufferAlignment)
 TEST(DeviceBufferAlignmentTest, EmptyBufferAlignmentTooLarge)
 {
   auto constexpr alignment = rmm::CUDA_ALLOCATION_ALIGNMENT * 2;
-  rmm::device_buffer buff(std::size_t{0}, alignment, rmm::cuda_stream_default);
-  EXPECT_EQ(buff.alignment(), alignment);
-  EXPECT_TRUE(buff.is_empty());
-  EXPECT_TRUE(rmm::is_pointer_aligned(buff.data(), alignment));
+  EXPECT_NO_THROW({
+    rmm::device_buffer buff(std::size_t{0}, alignment, rmm::cuda_stream_default);
+    EXPECT_EQ(buff.alignment(), alignment);
+    EXPECT_TRUE(buff.is_empty());
+    EXPECT_TRUE(rmm::is_pointer_aligned(buff.data(), alignment));
+  });
 }
 
 TEST(DeviceBufferAlignmentTest, DefaultConstructedHasValidAlignment)
