@@ -30,7 +30,10 @@ namespace detail {
  */
 class cuda_async_managed_memory_resource_impl {
  public:
+  struct construction_tag {};
+
   cuda_async_managed_memory_resource_impl();
+  explicit cuda_async_managed_memory_resource_impl(construction_tag);
 
   ~cuda_async_managed_memory_resource_impl() = default;
 

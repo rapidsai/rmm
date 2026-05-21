@@ -94,8 +94,12 @@ class system_memory_resource final {
    */
   void* allocate([[maybe_unused]] cuda::stream_ref stream,
                  std::size_t bytes,
-                 [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
+    if (bytes == 0) { return nullptr; }
+    RMM_EXPECTS(rmm::is_supported_base_resource_alignment(alignment),
+                "Requested alignment is larger than this memory resource supports.",
+                rmm::bad_alloc);
     try {
       return rmm::detail::aligned_host_allocate(
         bytes, rmm::CUDA_ALLOCATION_ALIGNMENT, [](std::size_t size) {
