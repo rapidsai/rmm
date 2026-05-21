@@ -28,8 +28,9 @@ PIP_INSTALL_SHARED_ARGS=(
 
 EXITCODE=0
 
-rapids-logger "Check GPU usage"
+rapids-logger "Check GPU status"
 nvidia-smi
+nvidia-smi -q | grep "Addressing Mode" || echo "Addressing Mode not reported"
 
 echo "::group::PyTorch Tests"
 
