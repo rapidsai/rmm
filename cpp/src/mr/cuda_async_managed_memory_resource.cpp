@@ -10,7 +10,8 @@ namespace RMM_NAMESPACE {
 namespace mr {
 
 cuda_async_managed_memory_resource::cuda_async_managed_memory_resource()
-  : shared_base(cuda::mr::make_shared_resource<detail::cuda_async_managed_memory_resource_impl>())
+  : shared_base(cuda::mr::make_shared_resource<detail::cuda_async_managed_memory_resource_impl>(
+      detail::cuda_async_managed_memory_resource_impl::construction_tag{}))
 {
 }
 

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 from rmm.mr import experimental
 from rmm.pylibrmm.memory_resource import (
@@ -26,10 +26,8 @@ from rmm.pylibrmm.memory_resource import (
     disable_logging,
     enable_logging,
     get_current_device_resource,
-    get_current_device_resource_type,
     get_log_filenames,
     get_per_device_resource,
-    get_per_device_resource_type,
     is_initialized,
     set_current_device_resource,
     set_per_device_resource,
@@ -61,10 +59,8 @@ __all__ = [
     "enable_logging",
     "experimental",
     "get_current_device_resource",
-    "get_current_device_resource_type",
     "get_log_filenames",
     "get_per_device_resource",
-    "get_per_device_resource_type",
     "is_initialized",
     "set_current_device_resource",
     "set_per_device_resource",
