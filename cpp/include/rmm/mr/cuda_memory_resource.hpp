@@ -48,8 +48,12 @@ class cuda_memory_resource final {
    */
   void* allocate([[maybe_unused]] cuda::stream_ref stream,
                  std::size_t bytes,
-                 [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
+    if (bytes == 0) { return nullptr; }
+    RMM_EXPECTS(rmm::is_supported_base_resource_alignment(alignment),
+                "Requested alignment is larger than this memory resource supports.",
+                rmm::bad_alloc);
     void* ptr{nullptr};
     RMM_CUDA_TRY_ALLOC(cudaMalloc(&ptr, bytes), bytes);
     return ptr;
