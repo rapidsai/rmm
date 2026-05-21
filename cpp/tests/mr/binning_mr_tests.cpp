@@ -28,7 +28,7 @@ TEST(BinningTest, ExplicitBinMR)
   mr.deallocate_sync(ptr, 512);
 }
 
-TEST(BinningTest, ZeroByteDeallocateIsNoOp)
+TEST(BinningTest, ZeroByteAllocationsUseBinResource)
 {
   cuda_mr cuda{};
   mock_resource mock;
@@ -36,10 +36,15 @@ TEST(BinningTest, ZeroByteDeallocateIsNoOp)
   binning_mr mr{cuda};
   mr.add_bin(1024, device_async_resource_ref{wrapper});
 
-  EXPECT_CALL(mock, deallocate).Times(0);
+  EXPECT_CALL(mock, allocate(::testing::_, 0, rmm::CUDA_ALLOCATION_ALIGNMENT))
+    .Times(2)
+    .WillRepeatedly(::testing::Return(nullptr));
+  EXPECT_CALL(mock, deallocate(::testing::_, nullptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT)).Times(2);
 
+  EXPECT_EQ(mr.allocate(cuda_stream_view{}, 0, rmm::CUDA_ALLOCATION_ALIGNMENT), nullptr);
   mr.deallocate(cuda_stream_view{}, nullptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  mr.deallocate_sync(nullptr, 0);
+  EXPECT_EQ(mr.allocate_sync(0, rmm::CUDA_ALLOCATION_ALIGNMENT), nullptr);
+  mr.deallocate_sync(nullptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 }  // namespace
