@@ -93,6 +93,8 @@ add_library(
   src/mr/callback_memory_resource.cpp
   src/mr/cuda_async_managed_memory_resource.cpp
   src/mr/cuda_async_memory_resource.cpp
+  src/mr/cuda_async_view_memory_resource.cpp
+  src/mr/cuda_memory_resource.cpp
   src/mr/detail/aligned_resource_adaptor_impl.cpp
   src/mr/detail/arena_memory_resource_impl.cpp
   src/mr/detail/binning_memory_resource_impl.cpp
@@ -111,10 +113,13 @@ add_library(
   src/mr/fixed_size_memory_resource.cpp
   src/mr/limiting_resource_adaptor.cpp
   src/mr/logging_resource_adaptor.cpp
+  src/mr/managed_memory_resource.cpp
   src/mr/pool_memory_resource.cpp
   src/mr/prefetch_resource_adaptor.cpp
+  src/mr/pinned_host_memory_resource.cpp
   src/mr/sam_headroom_memory_resource.cpp
   src/mr/statistics_resource_adaptor.cpp
+  src/mr/system_memory_resource.cpp
   src/mr/thread_safe_resource_adaptor.cpp
   src/mr/tracking_resource_adaptor.cpp
   src/prefetch.cpp
