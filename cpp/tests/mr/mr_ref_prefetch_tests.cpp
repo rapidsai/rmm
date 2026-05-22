@@ -7,13 +7,14 @@
 #include "cccl_mr_ref_test_basic.hpp"
 #include "cccl_mr_ref_test_mt.hpp"
 
-#include <rmm/mr/per_device_resource.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/prefetch_resource_adaptor.hpp>
 
 namespace rmm::test {
 
 struct PrefetchMRFixture : public ::testing::Test {
-  rmm::mr::prefetch_resource_adaptor mr{rmm::mr::get_current_device_resource_ref()};
+  rmm::mr::cuda_memory_resource upstream{};
+  rmm::mr::prefetch_resource_adaptor mr{upstream};
   rmm::device_async_resource_ref ref{mr};
   rmm::cuda_stream stream{};
 };

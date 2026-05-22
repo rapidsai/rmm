@@ -11,7 +11,7 @@
 #include "mr_ref_test_mt.hpp"
 
 #include <rmm/mr/arena_memory_resource.hpp>
-#include <rmm/mr/per_device_resource.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
 
 namespace rmm::test {
 namespace {
@@ -34,7 +34,8 @@ INSTANTIATE_TEST_SUITE_P(ArenaMultiThreadResourceTests,
 }  // namespace
 
 struct ArenaMRFixture : public ::testing::Test {
-  rmm::mr::arena_memory_resource mr{rmm::mr::get_current_device_resource_ref()};
+  rmm::mr::cuda_memory_resource upstream{};
+  rmm::mr::arena_memory_resource mr{upstream};
   rmm::device_async_resource_ref ref{mr};
   rmm::cuda_stream stream{};
 };
