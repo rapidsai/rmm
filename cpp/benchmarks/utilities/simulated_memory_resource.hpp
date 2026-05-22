@@ -13,6 +13,7 @@
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace rmm::mr {
 
@@ -56,15 +57,20 @@ class simulated_memory_resource final {
    */
   void* allocate([[maybe_unused]] cuda::stream_ref stream,
                  std::size_t bytes,
-                 [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
+    RMM_EXPECTS(rmm::is_supported_alignment(alignment),
+                "Alignment must be a non-zero power of two.",
+                rmm::logic_error);
+    auto const address        = reinterpret_cast<std::uintptr_t>(begin_);
+    auto* const aligned_begin = reinterpret_cast<char*>(rmm::align_up(address, alignment));
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    RMM_EXPECTS(begin_ + bytes <= end_,
+    RMM_EXPECTS(aligned_begin + bytes <= end_,
                 "Simulated memory size exceeded (failed to allocate " +
                   rmm::detail::format_bytes(bytes) + ")",
                 rmm::bad_alloc);
-    auto* ptr = static_cast<void*>(begin_);
-    begin_ += bytes;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    auto* ptr = static_cast<void*>(aligned_begin);
+    begin_    = aligned_begin + bytes;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return ptr;
   }
 
