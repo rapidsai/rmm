@@ -32,10 +32,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
+permissions: {}
+
 jobs:
   telemetry-setup:
     runs-on: ubuntu-latest
     continue-on-error: true
+    permissions:
+      contents: read
     env:
       OTEL_SERVICE_NAME: "build-rmm"
     steps:
@@ -51,7 +55,13 @@ jobs:
         uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
   cpp-build:
     needs: [telemetry-setup]
-    secrets: inherit
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      packages: read
+      pull-requests: read
+    secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@main
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
@@ -62,7 +72,13 @@ jobs:
       sha: ${{ inputs.sha }}
   python-build:
     needs: [telemetry-setup, cpp-build]
-    secrets: inherit
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      packages: read
+      pull-requests: read
+    secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@main
     with:
       # Build a conda package for each CUDA x ARCH x minimum supported Python version
@@ -74,7 +90,13 @@ jobs:
       sha: ${{ inputs.sha }}
   upload-conda:
     needs: [cpp-build, python-build]
-    secrets: inherit
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      packages: read
+      pull-requests: read
+    secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/conda-upload-packages.yaml@main
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
@@ -84,7 +106,13 @@ jobs:
   docs-build:
     if: github.ref_type == 'branch'
     needs: [python-build]
-    secrets: inherit
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      packages: read
+      pull-requests: read
+    secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@main
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
@@ -93,11 +121,17 @@ jobs:
       date: ${{ inputs.date }}
       node_type: "gpu-l4-latest-1"
       arch: "amd64"
-      container_image: "rapidsai/ci-conda:26.06-latest"
+      container_image: "rapidsai/ci-conda:26.08-latest"
       script: ci/build_docs.sh
   wheel-build-cpp:
     needs: [telemetry-setup]
-    secrets: inherit
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      packages: read
+      pull-requests: read
+    secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@main
     with:
       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
@@ -111,7 +145,13 @@ jobs:
       package-type: cpp
   wheel-build-python:
     needs: [telemetry-setup, wheel-build-cpp]
-    secrets: inherit
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      packages: read
+      pull-requests: read
+    secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@main
     with:
       # Build a wheel for each CUDA x ARCH x minimum supported Python version
@@ -126,7 +166,13 @@ jobs:
       package-type: python
   wheel-publish-cpp:
     needs: wheel-build-cpp
-    secrets: inherit
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      packages: read
+      pull-requests: read
+    secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@main
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
@@ -137,7 +183,13 @@ jobs:
       package-type: cpp
   wheel-publish-python:
     needs: wheel-build-python
-    secrets: inherit
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      packages: read
+      pull-requests: read
+    secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@main
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
@@ -150,6 +202,8 @@ jobs:
   telemetry-summarize:
     # This job must use a self-hosted runner to record telemetry traces.
     runs-on: linux-amd64-cpu4
+    permissions:
+      actions: read
     needs: [wheel-publish-cpp, wheel-publish-python, upload-conda, docs-build]
     if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() }}
     continue-on-error: true
@@ -161,3 +215,12 @@ jobs:
 
       - name: Telemetry summarize
         uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
+  devcontainers:
+    name: Build devcontainers
+    secrets: inherit  # zizmor: ignore[secrets-inherit]
+    uses: rapidsai/shared-workflows/.github/workflows/build-devcontainers.yaml@main
+    permissions:
+      packages: write
+    with:
+      push: true
+      cuda: '["12.9", "13.2"]'

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -34,9 +34,8 @@ TYPED_TEST(ContainerMultiDeviceTest, CreateDestroyDifferentActiveDevice)
   // only run on multidevice systems
   if (num_devices >= 2) {
     rmm::cuda_set_device_raii dev{rmm::cuda_device_id{0}};
-    auto orig_mr  = rmm::mr::get_current_device_resource_ref();
-    auto check_mr = device_check_resource_adaptor{orig_mr};
-    rmm::mr::set_current_device_resource_ref(check_mr);
+    auto orig_mr = rmm::mr::get_current_device_resource_ref();
+    rmm::mr::set_current_device_resource(device_check_resource_adaptor{orig_mr});
 
     {
       if constexpr (std::is_same_v<TypeParam, rmm::device_scalar<int>>) {
@@ -49,7 +48,7 @@ TYPED_TEST(ContainerMultiDeviceTest, CreateDestroyDifferentActiveDevice)
     }
 
     RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(0));
-    rmm::mr::set_current_device_resource_ref(orig_mr);
+    rmm::mr::set_current_device_resource(orig_mr);
   }
 }
 
@@ -61,9 +60,8 @@ TYPED_TEST(ContainerMultiDeviceTest, CreateMoveDestroyDifferentActiveDevice)
   // only run on multidevice systems
   if (num_devices >= 2) {
     rmm::cuda_set_device_raii dev{rmm::cuda_device_id{0}};
-    auto orig_mr  = rmm::mr::get_current_device_resource_ref();
-    auto check_mr = device_check_resource_adaptor{orig_mr};
-    rmm::mr::set_current_device_resource_ref(check_mr);
+    auto orig_mr = rmm::mr::get_current_device_resource_ref();
+    rmm::mr::set_current_device_resource(device_check_resource_adaptor{orig_mr});
 
     {
       auto buf_1 = []() {
@@ -89,7 +87,7 @@ TYPED_TEST(ContainerMultiDeviceTest, CreateMoveDestroyDifferentActiveDevice)
     }
 
     RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(0));
-    rmm::mr::set_current_device_resource_ref(orig_mr);
+    rmm::mr::set_current_device_resource(orig_mr);
   }
 }
 
@@ -101,9 +99,8 @@ TYPED_TEST(ContainerMultiDeviceTest, ResizeDifferentActiveDevice)
   // only run on multidevice systems
   if (num_devices >= 2) {
     rmm::cuda_set_device_raii dev{rmm::cuda_device_id{0}};
-    auto orig_mr  = rmm::mr::get_current_device_resource_ref();
-    auto check_mr = device_check_resource_adaptor{orig_mr};
-    rmm::mr::set_current_device_resource_ref(check_mr);
+    auto orig_mr = rmm::mr::get_current_device_resource_ref();
+    rmm::mr::set_current_device_resource(device_check_resource_adaptor{orig_mr});
 
     if constexpr (not std::is_same_v<TypeParam, rmm::device_scalar<int>>) {
       auto buf = TypeParam(128, rmm::cuda_stream_view{});
@@ -112,7 +109,7 @@ TYPED_TEST(ContainerMultiDeviceTest, ResizeDifferentActiveDevice)
     }
 
     RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(0));
-    rmm::mr::set_current_device_resource_ref(orig_mr);
+    rmm::mr::set_current_device_resource(orig_mr);
   }
 }
 
@@ -124,9 +121,8 @@ TYPED_TEST(ContainerMultiDeviceTest, ShrinkDifferentActiveDevice)
   // only run on multidevice systems
   if (num_devices >= 2) {
     rmm::cuda_set_device_raii dev{rmm::cuda_device_id{0}};
-    auto orig_mr  = rmm::mr::get_current_device_resource_ref();
-    auto check_mr = device_check_resource_adaptor{orig_mr};
-    rmm::mr::set_current_device_resource_ref(check_mr);
+    auto orig_mr = rmm::mr::get_current_device_resource_ref();
+    rmm::mr::set_current_device_resource(device_check_resource_adaptor{orig_mr});
 
     if constexpr (not std::is_same_v<TypeParam, rmm::device_scalar<int>>) {
       auto buf = TypeParam(128, rmm::cuda_stream_view{});
@@ -136,6 +132,6 @@ TYPED_TEST(ContainerMultiDeviceTest, ShrinkDifferentActiveDevice)
     }
 
     RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(0));
-    rmm::mr::set_current_device_resource_ref(orig_mr);
+    rmm::mr::set_current_device_resource(orig_mr);
   }
 }

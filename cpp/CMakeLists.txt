@@ -5,7 +5,7 @@
 # cmake-format: on
 # =============================================================================
 
-cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
+cmake_minimum_required(VERSION 4.0 FATAL_ERROR)
 
 include(../cmake/rapids_config.cmake)
 
@@ -48,9 +48,6 @@ message(VERBOSE "RMM: Build with NVTX support: ${RMM_NVTX}")
 # build type for cmake-gui.
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
 
-# cudart can be linked statically or dynamically
-option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
-
 # ##################################################################################################
 # * compiler options -------------------------------------------------------------------------------
 
@@ -76,16 +73,6 @@ create_logger_macros(RMM "rmm::default_logger()" include/rmm)
 include(cmake/thirdparty/get_cccl.cmake)
 include(cmake/thirdparty/get_nvtx.cmake)
 
-# Mark third-party includes as SYSTEM to suppress warnings from upstream headers
-foreach(_dep rapids_logger spdlog)
-  if(TARGET ${_dep})
-    get_target_property(_inc ${_dep} INTERFACE_INCLUDE_DIRECTORIES)
-    if(_inc)
-      set_target_properties(${_dep} PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_inc}")
-    endif()
-  endif()
-endforeach()
-
 # ##################################################################################################
 # * library targets --------------------------------------------------------------------------------
 
@@ -93,14 +80,45 @@ add_library(
   rmm
   src/aligned.cpp
   src/cuda_device.cpp
+  src/cuda_stream.cpp
   src/cuda_stream_pool.cpp
   src/cuda_stream_view.cpp
-  src/cuda_stream.cpp
   src/device_buffer.cpp
   src/error.cpp
   src/exec_policy.cpp
   src/logger.cpp
-  src/prefetch.cpp)
+  src/mr/aligned_resource_adaptor.cpp
+  src/mr/arena_memory_resource.cpp
+  src/mr/binning_memory_resource.cpp
+  src/mr/callback_memory_resource.cpp
+  src/mr/cuda_async_managed_memory_resource.cpp
+  src/mr/cuda_async_memory_resource.cpp
+  src/mr/detail/aligned_resource_adaptor_impl.cpp
+  src/mr/detail/arena_memory_resource_impl.cpp
+  src/mr/detail/binning_memory_resource_impl.cpp
+  src/mr/detail/callback_memory_resource_impl.cpp
+  src/mr/detail/cuda_async_managed_memory_resource_impl.cpp
+  src/mr/detail/cuda_async_memory_resource_impl.cpp
+  src/mr/detail/fixed_size_memory_resource_impl.cpp
+  src/mr/detail/limiting_resource_adaptor_impl.cpp
+  src/mr/detail/logging_resource_adaptor_impl.cpp
+  src/mr/detail/pool_memory_resource_impl.cpp
+  src/mr/detail/prefetch_resource_adaptor_impl.cpp
+  src/mr/detail/sam_headroom_memory_resource_impl.cpp
+  src/mr/detail/statistics_resource_adaptor_impl.cpp
+  src/mr/detail/thread_safe_resource_adaptor_impl.cpp
+  src/mr/detail/tracking_resource_adaptor_impl.cpp
+  src/mr/fixed_size_memory_resource.cpp
+  src/mr/limiting_resource_adaptor.cpp
+  src/mr/logging_resource_adaptor.cpp
+  src/mr/pool_memory_resource.cpp
+  src/mr/prefetch_resource_adaptor.cpp
+  src/mr/sam_headroom_memory_resource.cpp
+  src/mr/statistics_resource_adaptor.cpp
+  src/mr/thread_safe_resource_adaptor.cpp
+  src/mr/tracking_resource_adaptor.cpp
+  src/prefetch.cpp
+  src/runtime_shutdown.cpp)
 add_library(rmm::rmm ALIAS rmm)
 
 target_include_directories(
@@ -109,19 +127,8 @@ target_include_directories(
          "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
   INTERFACE "$<INSTALL_INTERFACE:include>")
 
-if(CUDA_STATIC_RUNTIME)
-  message(STATUS "RMM: Enabling static linking of cudart")
-  set(cudart_dep CUDA::cudart_static)
-else()
-  set(cudart_dep CUDA::cudart)
-endif()
-
-target_link_libraries(
-  rmm
-  PUBLIC CCCL::CCCL ${CMAKE_DL_LIBS} nvtx3::nvtx3-cpp rapids_logger::rapids_logger
-  PRIVATE "${cudart_dep}"
-  INTERFACE
-    "$<IF:$<BOOL:$<TARGET_PROPERTY:NO_CUDART_DEP>>,$<COMPILE_ONLY:${cudart_dep}>,${cudart_dep}>")
+target_link_libraries(rmm PUBLIC CCCL::CCCL ${CMAKE_DL_LIBS} nvtx3::nvtx3-cpp
+                                 rapids_logger::rapids_logger CUDA::cudart_static)
 
 set_target_properties(
   rmm
@@ -142,16 +149,14 @@ set(RMM_CXX_FLAGS
     -Wall
     -Werror
     -Wextra
-    -Wshadow
     -Wnon-virtual-dtor
     -Woverloaded-virtual
-
     -Wsign-conversion
     -Wno-unknown-pragmas
     -Wno-error=deprecated-declarations)
 set(RMM_CUDA_FLAGS
     -Werror=all-warnings
-    -Xcompiler=-Wall,-Werror,-Wextra,-Wshadow,-Wnon-virtual-dtor,-Woverloaded-virtual,-Wsign-conversion,-Wno-error=deprecated-declarations)
+    -Xcompiler=-Wall,-Werror,-Wextra,-Wnon-virtual-dtor,-Woverloaded-virtual,-Wsign-conversion,-Wno-error=deprecated-declarations)
 target_compile_options(rmm PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:${RMM_CXX_FLAGS}>"
                                    "$<$<COMPILE_LANGUAGE:CUDA>:${RMM_CUDA_FLAGS}>")
 

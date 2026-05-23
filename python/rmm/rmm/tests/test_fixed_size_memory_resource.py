@@ -57,7 +57,7 @@ class TestFixedSizeMemoryResource:
         self, fixed_size_mr, dtype, nelem, alloc
     ):
         assert (
-            rmm.mr.get_current_device_resource_type()
+            type(rmm.mr.get_current_device_resource())
             is rmm.mr.FixedSizeMemoryResource
         )
         array_tester(dtype, nelem, alloc)

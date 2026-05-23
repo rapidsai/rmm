@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -43,6 +43,16 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
 [[nodiscard]] bool is_supported_alignment(std::size_t alignment) noexcept;
 
 /**
+ * @brief Returns whether or not `alignment` is supported by base CUDA memory resources.
+ *
+ * @param[in] alignment to check
+ *
+ * @return True if the alignment is a valid memory alignment and is no larger than
+ * CUDA_ALLOCATION_ALIGNMENT, false otherwise.
+ */
+[[nodiscard]] bool is_supported_base_resource_alignment(std::size_t alignment) noexcept;
+
+/**
  * @brief Align up to nearest multiple of specified power of 2
  *
  * @param[in] value value to align
@@ -80,8 +90,8 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return true if the pointer is aligned
  */
-[[nodiscard]] bool is_pointer_aligned(void* ptr,
-                                      std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT) noexcept;
+[[nodiscard]] bool is_pointer_aligned(
+  void* ptr, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
 
 /** @} */  // end of group
 

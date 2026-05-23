@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -44,7 +44,7 @@ TEST_F(AsyncManagedMRTest, EqualityWithSamePool)
   // ultimately refer to the same underlying pool handle. Construct two and compare.
   cuda_async_managed_mr mr1{};
   cuda_async_managed_mr mr2{};
-  EXPECT_TRUE(mr1.is_equal(mr2));
+  EXPECT_EQ(mr1, mr2);
 }
 
 TEST_F(AsyncManagedMRTest, AllocatedPointerIsManaged)

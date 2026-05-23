@@ -1,14 +1,17 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <cstddef>
 #include <memory>
@@ -21,11 +24,11 @@ namespace mr {
  * @file
  */
 /**
- * @brief A stream ordered Allocator using a `rmm::mr::device_memory_resource` to satisfy
+ * @brief A stream ordered Allocator using a `device_async_resource_ref` to satisfy
  * (de)allocations.
  *
  * Similar to `std::pmr::polymorphic_allocator`, uses the runtime polymorphism of
- * `device_memory_resource` to allow containers with `polymorphic_allocator` as their static
+ * type-erased resource refs to allow containers with `polymorphic_allocator` as their static
  * allocator type to be interoperable, but exhibit different behavior depending on resource used.
  *
  * Unlike STL allocators, `polymorphic_allocator`'s `allocate` and `deallocate` functions are stream
@@ -52,7 +55,9 @@ class polymorphic_allocator {
    *
    * @param mr The upstream memory resource to use for allocation.
    */
-  polymorphic_allocator(device_async_resource_ref mr) : mr_{mr} {}
+  polymorphic_allocator(cuda::mr::any_resource<cuda::mr::device_accessible> mr) : mr_(std::move(mr))
+  {
+  }
 
   /**
    * @brief Construct a `polymorphic_allocator` using the underlying memory resource of `other`.
@@ -62,7 +67,7 @@ class polymorphic_allocator {
    */
   template <typename U>
   polymorphic_allocator(polymorphic_allocator<U> const& other) noexcept
-    : mr_{other.get_upstream_resource()}
+    : mr_(other.get_upstream_resource())
   {
   }
 
@@ -75,7 +80,8 @@ class polymorphic_allocator {
    */
   value_type* allocate(std::size_t num, cuda_stream_view stream)
   {
-    return static_cast<value_type*>(get_upstream_resource().allocate(stream, num * sizeof(T)));
+    return static_cast<value_type*>(
+      mr_.allocate(stream, num * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT));
   }
 
   /**
@@ -90,7 +96,7 @@ class polymorphic_allocator {
    */
   void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream) noexcept
   {
-    get_upstream_resource().deallocate(stream, ptr, num * sizeof(T));
+    mr_.deallocate(stream, ptr, num * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   /**
@@ -98,11 +104,11 @@ class polymorphic_allocator {
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return mr_;
+    return rmm::device_async_resource_ref{mr_};
   }
 
  private:
-  rmm::device_async_resource_ref mr_{
+  mutable cuda::mr::any_resource<cuda::mr::device_accessible> mr_{
     get_current_device_resource_ref()};  ///< Underlying resource used for (de)allocation
 };
 

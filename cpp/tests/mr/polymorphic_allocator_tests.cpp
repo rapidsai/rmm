@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -23,14 +23,13 @@ struct allocator_test : public ::testing::Test {
 TEST_F(allocator_test, default_resource)
 {
   rmm::mr::polymorphic_allocator<int> allocator{};
-  EXPECT_EQ(allocator.get_upstream_resource(),
-            rmm::device_async_resource_ref{rmm::mr::get_current_device_resource()});
+  EXPECT_EQ(allocator.get_upstream_resource(), rmm::mr::get_current_device_resource_ref());
 }
 
 TEST_F(allocator_test, custom_resource)
 {
   rmm::mr::cuda_memory_resource mr;
-  rmm::mr::polymorphic_allocator<int> allocator{&mr};
+  rmm::mr::polymorphic_allocator<int> allocator{mr};
   EXPECT_EQ(allocator.get_upstream_resource(), rmm::device_async_resource_ref{mr});
 }
 
@@ -38,8 +37,8 @@ void test_conversion(rmm::mr::polymorphic_allocator<int> /*unused*/) {}
 
 TEST_F(allocator_test, implicit_conversion)
 {
-  rmm::mr::cuda_memory_resource mr;
-  test_conversion(rmm::device_async_resource_ref{mr});
+  test_conversion(
+    cuda::mr::any_resource<cuda::mr::device_accessible>{rmm::mr::cuda_memory_resource{}});
 }
 
 TEST_F(allocator_test, self_equality)
@@ -51,22 +50,16 @@ TEST_F(allocator_test, self_equality)
 
 TEST_F(allocator_test, equal_resources)
 {
-  rmm::mr::cuda_memory_resource mr0;
-  rmm::mr::polymorphic_allocator<int> alloc0{&mr0};
-
-  rmm::mr::cuda_memory_resource mr1;
-  rmm::mr::polymorphic_allocator<int> alloc1{&mr1};
+  rmm::mr::polymorphic_allocator<int> alloc0{rmm::mr::cuda_memory_resource{}};
+  rmm::mr::polymorphic_allocator<int> alloc1{rmm::mr::cuda_memory_resource{}};
   EXPECT_EQ(alloc0, alloc1);
   EXPECT_FALSE(alloc0 != alloc1);
 }
 
 TEST_F(allocator_test, unequal_resources)
 {
-  rmm::mr::managed_memory_resource mr0;
-  rmm::mr::polymorphic_allocator<int> alloc0{&mr0};
-
-  rmm::mr::cuda_memory_resource mr1;
-  rmm::mr::polymorphic_allocator<int> alloc1{&mr1};
+  rmm::mr::polymorphic_allocator<int> alloc0{rmm::mr::managed_memory_resource{}};
+  rmm::mr::polymorphic_allocator<int> alloc1{rmm::mr::cuda_memory_resource{}};
   EXPECT_NE(alloc0, alloc1);
 }
 

@@ -5,11 +5,15 @@
 
 // Tests for resource_ref type conversions between host_device and device/host variants
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/limiting_resource_adaptor.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <thrust/host_vector.h>
 
 #include <gtest/gtest.h>
@@ -38,7 +42,7 @@ class new_delete_memory_resource {
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
     rmm::detail::aligned_host_deallocate(
-      ptr, bytes, alignment, [](void* p) { ::operator delete(p); });
+      ptr, bytes, alignment, [](void* ptr) { ::operator delete(ptr); });
   }
 
   void deallocate([[maybe_unused]] cuda::stream_ref stream,
@@ -54,7 +58,10 @@ class new_delete_memory_resource {
   bool operator!=(new_delete_memory_resource const& other) const { return !operator==(other); }
 
   // NOLINTBEGIN
-  friend void get_property(new_delete_memory_resource const&, cuda::mr::host_accessible) noexcept {}
+  constexpr friend void get_property(new_delete_memory_resource const&,
+                                     cuda::mr::host_accessible) noexcept
+  {
+  }
   // NOLINTEND
 };
 
@@ -70,9 +77,9 @@ TEST(ResourceRefConversion, ResourceToRef)
                             new_delete_memory_resource&>);
   rmm::host_resource_ref mr_ref{mr};
   // Use the converted ref
-  void* ptr = mr_ref.allocate_sync(1024);
+  void* ptr = mr_ref.allocate_sync(1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   ASSERT_NE(ptr, nullptr);
-  mr_ref.deallocate_sync(ptr, 1024);
+  mr_ref.deallocate_sync(ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 // Test conversion from host_device_async_resource_ref to device_async_resource_ref
@@ -95,9 +102,9 @@ TEST(ResourceRefConversion, HostDeviceToDeviceSync)
   static_assert(cuda::has_property<decltype(d_ref), cuda::mr::device_accessible>);
 
   // Use the converted ref
-  void* ptr = d_ref.allocate_sync(1024);
+  void* ptr = d_ref.allocate_sync(1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   ASSERT_NE(ptr, nullptr);
-  d_ref.deallocate_sync(ptr, 1024);
+  d_ref.deallocate_sync(ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 TEST(ResourceRefConversion, HostDeviceToDeviceAsync)
@@ -112,9 +119,9 @@ TEST(ResourceRefConversion, HostDeviceToDeviceAsync)
 
   // Use the converted ref
   rmm::cuda_stream stream{};
-  void* ptr = d_ref.allocate(stream, 1024);
+  void* ptr = d_ref.allocate(stream, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   ASSERT_NE(ptr, nullptr);
-  d_ref.deallocate(stream, ptr, 1024);
+  d_ref.deallocate(stream, ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 // Host allocator that takes a resource_ref (similar to cudf's rmm_host_allocator)
@@ -135,12 +142,15 @@ class host_allocator {
 
   T* allocate(std::size_t n)
   {
-    auto const result = mr_.allocate(stream_, n * sizeof(T));
+    auto const result = mr_.allocate(stream_, n * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT);
     stream_.synchronize();
     return static_cast<T*>(result);
   }
 
-  void deallocate(T* p, std::size_t n) noexcept { mr_.deallocate(stream_, p, n * sizeof(T)); }
+  void deallocate(T* p, std::size_t n) noexcept
+  {
+    mr_.deallocate(stream_, p, n * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT);
+  }
 
   bool operator==(host_allocator const& other) const { return mr_ == other.mr_; }
   bool operator!=(host_allocator const& other) const { return !(*this == other); }
@@ -209,6 +219,32 @@ TEST(ResourceRefConversionAllocator, VectorFromFunction)
   ASSERT_EQ(vec[0], 42);
 }
 
+TEST(ResourceCast, FindsConcreteResourceInAnyResource)
+{
+  constexpr std::size_t limit{1024};
+  rmm::mr::cuda_memory_resource cuda_mr{};
+  rmm::mr::limiting_resource_adaptor limiter{cuda_mr, limit};
+  cuda::mr::any_resource<cuda::mr::device_accessible> resource{limiter};
+
+  auto* const casted = cuda::mr::resource_cast<rmm::mr::limiting_resource_adaptor>(&resource);
+  ASSERT_NE(casted, nullptr);
+  EXPECT_EQ(casted->get_allocation_limit(), limit);
+  EXPECT_EQ(cuda::mr::resource_cast<rmm::mr::cuda_memory_resource>(&resource), nullptr);
+}
+
+TEST(ResourceCast, FindsConcreteResourceInDeviceAsyncResourceRef)
+{
+  constexpr std::size_t limit{1024};
+  rmm::mr::cuda_memory_resource cuda_mr{};
+  rmm::mr::limiting_resource_adaptor limiter{cuda_mr, limit};
+  rmm::device_async_resource_ref ref{limiter};
+
+  auto* const casted = cuda::mr::resource_cast<rmm::mr::limiting_resource_adaptor>(&ref);
+  ASSERT_NE(casted, nullptr);
+  EXPECT_EQ(casted->get_allocation_limit(), limit);
+  EXPECT_EQ(cuda::mr::resource_cast<rmm::mr::cuda_memory_resource>(&ref), nullptr);
+}
+
 // Test vector move (exercises allocator move semantics)
 TEST(ResourceRefConversionAllocator, VectorMove)
 {
@@ -217,4 +253,127 @@ TEST(ResourceRefConversionAllocator, VectorMove)
   vec1[0]   = 42;
   auto vec2 = std::move(vec1);
   ASSERT_EQ(vec2[0], 42);
+}
+
+// --------------------------------------------------------------------------
+// Tests for forward_property adaptor with RMM resource_ref as upstream.
+//
+// This exercises the fix for https://github.com/rapidsai/rmm/issues/2322:
+// an unconstrained friend get_property in cccl_async_resource_ref caused
+// ambiguity with CCCL's default get_property for dynamic_accessibility_property.
+// --------------------------------------------------------------------------
+
+// A minimal adaptor that uses cuda::forward_property with an RMM async resource ref as upstream.
+struct forwarding_adaptor
+  : cuda::forward_property<forwarding_adaptor, rmm::device_async_resource_ref> {
+  explicit forwarding_adaptor(rmm::device_async_resource_ref upstream) : upstream_{upstream} {}
+
+  rmm::device_async_resource_ref upstream_resource() const { return upstream_; }
+
+  void* allocate(cuda::stream_ref stream, std::size_t bytes, std::size_t alignment)
+  {
+    return upstream_.allocate(stream, bytes, alignment);
+  }
+  void deallocate(cuda::stream_ref stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment) noexcept
+  {
+    upstream_.deallocate(stream, ptr, bytes, alignment);
+  }
+  void* allocate_sync(std::size_t bytes, std::size_t alignment)
+  {
+    return upstream_.allocate_sync(bytes, alignment);
+  }
+  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
+  {
+    upstream_.deallocate_sync(ptr, bytes, alignment);
+  }
+
+  friend bool operator==(forwarding_adaptor const& lhs, forwarding_adaptor const& rhs)
+  {
+    return lhs.upstream_ == rhs.upstream_;
+  }
+  friend bool operator!=(forwarding_adaptor const& lhs, forwarding_adaptor const& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+ private:
+  rmm::device_async_resource_ref upstream_;
+};
+
+// A minimal adaptor using forward_property with an RMM sync resource ref as upstream.
+struct forwarding_sync_adaptor
+  : cuda::forward_property<forwarding_sync_adaptor, rmm::device_resource_ref> {
+  explicit forwarding_sync_adaptor(rmm::device_resource_ref upstream) : upstream_{upstream} {}
+
+  rmm::device_resource_ref upstream_resource() const { return upstream_; }
+
+  void* allocate_sync(std::size_t bytes, std::size_t alignment)
+  {
+    return upstream_.allocate_sync(bytes, alignment);
+  }
+  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment) noexcept
+  {
+    upstream_.deallocate_sync(ptr, bytes, alignment);
+  }
+
+  friend bool operator==(forwarding_sync_adaptor const& lhs, forwarding_sync_adaptor const& rhs)
+  {
+    return lhs.upstream_ == rhs.upstream_;
+  }
+  friend bool operator!=(forwarding_sync_adaptor const& lhs, forwarding_sync_adaptor const& rhs)
+  {
+    return !(lhs == rhs);
+  }
+
+ private:
+  rmm::device_resource_ref upstream_;
+};
+
+// Compile-time checks: verify that the forwarding adaptor satisfies resource concepts.
+static_assert(cuda::has_property<forwarding_adaptor, cuda::mr::device_accessible>,
+              "forwarding_adaptor must have device_accessible property via forward_property");
+
+static_assert(cuda::has_property<forwarding_sync_adaptor, cuda::mr::device_accessible>,
+              "forwarding_sync_adaptor must have device_accessible property via forward_property");
+
+// Type-erasing a forward_property adaptor into resource_ref triggers the ambiguity
+// from issue #2322. If the constraint on cccl_async_resource_ref::get_property is missing,
+// this will fail to compile when CCCL has dynamic_accessibility_property.
+TEST(ForwardPropertyAdaptor, TypeEraseAsyncAdaptor)
+{
+  rmm::mr::cuda_memory_resource mr{};
+  rmm::device_async_resource_ref upstream{mr};
+  forwarding_adaptor adaptor{upstream};
+  cuda::mr::resource_ref<cuda::mr::device_accessible> erased{adaptor};
+
+  rmm::cuda_stream stream{};
+  void* ptr = erased.allocate(stream, 1024, 256);
+  ASSERT_NE(ptr, nullptr);
+  erased.deallocate(stream, ptr, 1024, 256);
+}
+
+TEST(ForwardPropertyAdaptor, TypeEraseSyncAdaptor)
+{
+  rmm::mr::cuda_memory_resource mr{};
+  rmm::device_resource_ref upstream{mr};
+  forwarding_sync_adaptor adaptor{upstream};
+  cuda::mr::synchronous_resource_ref<cuda::mr::device_accessible> erased{adaptor};
+
+  void* ptr = erased.allocate_sync(1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  ASSERT_NE(ptr, nullptr);
+  erased.deallocate_sync(ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+}
+
+// Verify that get_property still works correctly through the forwarding adaptor.
+TEST(ForwardPropertyAdaptor, GetPropertyDeviceAccessible)
+{
+  rmm::mr::cuda_memory_resource mr{};
+  rmm::device_async_resource_ref upstream{mr};
+  forwarding_adaptor adaptor{upstream};
+
+  // Should compile and not throw - device_accessible is a stateless property
+  get_property(adaptor, cuda::mr::device_accessible{});
 }

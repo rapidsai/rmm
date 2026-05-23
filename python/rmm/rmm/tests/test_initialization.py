@@ -1,7 +1,10 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for RMM initialization and reinitialization."""
+
+from collections.abc import Callable, Generator
+from typing import Any
 
 import numpy as np
 import pytest
@@ -9,7 +12,7 @@ import pytest
 import rmm
 
 
-def test_reinitialize_initial_pool_size_gt_max():
+def test_reinitialize_initial_pool_size_gt_max() -> None:
     with pytest.raises(RuntimeError) as e:
         rmm.reinitialize(
             pool_allocator=True,
@@ -19,7 +22,7 @@ def test_reinitialize_initial_pool_size_gt_max():
     assert "Initial pool size exceeds the maximum pool size" in str(e.value)
 
 
-def test_reinitialize_with_valid_str_arg_pool_size():
+def test_reinitialize_with_valid_str_arg_pool_size() -> None:
     rmm.reinitialize(
         pool_allocator=True,
         initial_pool_size="2kib",
@@ -27,7 +30,7 @@ def test_reinitialize_with_valid_str_arg_pool_size():
     )
 
 
-def test_reinitialize_with_invalid_str_arg_pool_size():
+def test_reinitialize_with_invalid_str_arg_pool_size() -> None:
     with pytest.raises(ValueError) as e:
         rmm.reinitialize(
             pool_allocator=True,
@@ -38,7 +41,7 @@ def test_reinitialize_with_invalid_str_arg_pool_size():
 
 
 @pytest.fixture
-def make_reinit_hook():
+def make_reinit_hook() -> Generator[Callable[..., Any], None, None]:
     funcs = []
 
     def _make_reinit_hook(func, *args, **kwargs):

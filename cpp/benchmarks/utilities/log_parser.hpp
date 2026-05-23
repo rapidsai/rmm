@@ -8,7 +8,6 @@
 #include "rapidcsv.h"
 
 #include <rmm/detail/error.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -35,28 +34,29 @@ struct event {
   event(event&&) noexcept            = default;
   event& operator=(event&&) noexcept = default;
   ~event()                           = default;
-  event(action a, std::size_t sz, void const* ptr)
+  event(action act, std::size_t size, void const* ptr)
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    : act{a}, size{sz}, pointer{reinterpret_cast<uintptr_t>(ptr)}
+    : act{act}, size{size}, pointer{reinterpret_cast<uintptr_t>(ptr)}
   {
   }
 
   // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-  event(action a, std::size_t sz, uintptr_t ptr) : act{a}, size{sz}, pointer{ptr} {}
+  event(action act, std::size_t size, uintptr_t ptr) : act{act}, size{size}, pointer{ptr} {}
 
   event(std::size_t tid,
-        action a,
-        std::size_t sz,  // NOLINT(bugprone-easily-swappable-parameters)
+        action act,
+        std::size_t size,  // NOLINT(bugprone-easily-swappable-parameters)
         uintptr_t ptr,
-        uintptr_t strm,
-        std::size_t idx)
-    : act{a}, size{sz}, pointer{ptr}, thread_id{tid}, stream{strm}, index{idx}
+        uintptr_t stream,
+        std::size_t index)
+    : act{act}, size{size}, pointer{ptr}, thread_id{tid}, stream{stream}, index{index}
   {
   }
 
-  event(std::size_t tid, action a, std::size_t sz, void* ptr, uintptr_t strm, std::size_t idx)
+  event(
+    std::size_t tid, action act, std::size_t size, void* ptr, uintptr_t stream, std::size_t index)
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    : event{tid, a, sz, reinterpret_cast<uintptr_t>(ptr), strm, idx}
+    : event{tid, act, size, reinterpret_cast<uintptr_t>(ptr), stream, index}
   {
   }
 
@@ -94,37 +94,23 @@ inline std::ostream& operator<<(std::ostream& os, event const& evt)
  *
  * @note currently unused. Seemed necessary for ordering but it appears the log currently
  * is in timestamp order even for multithreaded logs.
- * @note This function can be simplified with C++20 and later.
- *
  * @param str_time The input time in format "HH:MM:SS:us" where us is a 6 digits microseconds part
  * of the current second. (This is the format rmm::mr::logging_resource_adaptor outputs)
  * @return std::chrono::time_point<std::chrono::system_clock> Converted time point.
  */
 inline std::chrono::time_point<std::chrono::system_clock> parse_time(std::string const& str_time)
 {
-  std::size_t current  = str_time.find(':');
-  std::size_t previous = 0;
-  int hours            = std::stoi(str_time.substr(previous, current - previous));
-  previous             = current;
-  current              = str_time.find(':');
-  int minutes          = std::stoi(str_time.substr(previous, current - previous));
-  previous             = current;
-  current              = str_time.find(':');
-  int seconds          = std::stoi(str_time.substr(previous, current - previous));
-  int microseconds     = std::stoi(str_time.substr(current + 1, str_time.length()));
+  int hours{};
+  int minutes{};
+  int seconds{};
+  int microseconds{};
+  char delimiter{};
+  std::istringstream{str_time} >> hours >> delimiter >> minutes >> delimiter >> seconds >>
+    delimiter >> microseconds;
 
-  auto const epoch_year{1970};
-  std::tm time{};
-  time.tm_sec  = seconds;
-  time.tm_min  = minutes;
-  time.tm_hour = hours;
-  time.tm_mday = 1;
-  time.tm_mon  = 0;
-  time.tm_year = epoch_year;
-
-  auto timepoint = std::chrono::system_clock::from_time_t(std::mktime(&time));
-  timepoint += std::chrono::microseconds{microseconds};
-  return timepoint;
+  return std::chrono::sys_days{std::chrono::year{1970} / std::chrono::January / 1} +
+         std::chrono::hours{hours} + std::chrono::minutes{minutes} + std::chrono::seconds{seconds} +
+         std::chrono::microseconds{microseconds};
 }
 
 /**

@@ -1,10 +1,9 @@
-# SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Optional
 
-from rmm.pylibrmm.cuda_stream import CudaStreamFlags
-from rmm.pylibrmm.stream import Stream
+from rmm.pylibrmm.stream import CudaStreamFlags, Stream
 
 class CudaStreamPool:
     def __init__(

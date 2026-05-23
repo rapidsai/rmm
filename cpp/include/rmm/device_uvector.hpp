@@ -117,14 +117,18 @@ class device_uvector {
    * Elements are uninitialized. Reading an element before it is initialized results in undefined
    * behavior.
    *
+   * @throws rmm::bad_alloc If the provided memory resource cannot allocate with alignment to
+   * satisfy the alignment requirements of the value type.
+   *
    * @param size The number of elements to allocate storage for
    * @param stream The stream on which to perform the allocation
    * @param mr The resource used to allocate the device storage
    */
-  explicit device_uvector(size_type size,
-                          cuda_stream_view stream,
-                          device_async_resource_ref mr = mr::get_current_device_resource_ref())
-    : _storage{elements_to_bytes(size), stream, mr}
+  explicit device_uvector(
+    size_type size,
+    cuda_stream_view stream,
+    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref())
+    : _storage{elements_to_bytes(size), std::alignment_of_v<T>, stream, std::move(mr)}
   {
   }
 
@@ -137,10 +141,11 @@ class device_uvector {
    * @param stream The stream on which to perform the copy
    * @param mr The resource used to allocate device memory for the new vector
    */
-  explicit device_uvector(device_uvector const& other,
-                          cuda_stream_view stream,
-                          device_async_resource_ref mr = mr::get_current_device_resource_ref())
-    : _storage{other._storage, stream, mr}
+  explicit device_uvector(
+    device_uvector const& other,
+    cuda_stream_view stream,
+    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref())
+    : _storage{other._storage, stream, std::move(mr)}
   {
   }
 

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for PinnedHostMemoryResource."""
@@ -17,7 +17,7 @@ def test_pinned_host_memory_resource(dtype, nelem, alloc):
     """Test PinnedHostMemoryResource as a basic memory resource."""
     mr = rmm.mr.PinnedHostMemoryResource()
     rmm.mr.set_current_device_resource(mr)
-    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    assert type(rmm.mr.get_current_device_resource()) is type(mr)
     array_tester(dtype, nelem, alloc)
 
 
@@ -33,7 +33,7 @@ def test_pinned_host_memory_resource_with_pool(dtype, nelem, alloc):
         maximum_pool_size="8MiB",
     )
     rmm.mr.set_current_device_resource(mr)
-    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    assert type(rmm.mr.get_current_device_resource()) is type(mr)
     array_tester(dtype, nelem, alloc)
 
 

@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+from typing import Any
+
 import pytest
 
 import rmm.pylibrmm.cuda_stream_pool
@@ -97,13 +99,16 @@ def test_cuda_core_buffer(current_device):
         rmm.pylibrmm.stream.CudaStreamFlags.NON_BLOCKING,
     ],
 )
-def test_cuda_stream_pool(current_device, flags):
+def test_cuda_stream_pool(
+    current_device: Any, flags: rmm.pylibrmm.stream.CudaStreamFlags
+) -> None:
     default_rmm_stream = rmm.pylibrmm.stream.Stream(
         current_device.default_stream
     )
 
     stream_pool = rmm.pylibrmm.cuda_stream_pool.CudaStreamPool(
-        pool_size=10, flags=flags
+        pool_size=10,
+        flags=flags,
     )
     assert stream_pool.get_pool_size() == 10
 
@@ -131,20 +136,6 @@ def test_hashable():
     a2 = rmm.pylibrmm.stream.Stream(a)
     assert a2 == a
     assert hash(a2) == hash(a)
-
-
-def test_cuda_stream_module_deprecation():
-    import importlib
-    import sys
-    import warnings
-
-    sys.modules.pop("rmm.pylibrmm.cuda_stream", None)
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        importlib.import_module("rmm.pylibrmm.cuda_stream")
-    assert any(
-        issubclass(warning.category, DeprecationWarning) for warning in w
-    )
 
 
 def test_flags_with_obj_raises():

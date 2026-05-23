@@ -1,18 +1,23 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "mr_ref_test_basic.hpp"
+#include "cccl_mr_ref_test_basic.hpp"
+
+#include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/fixed_size_memory_resource.hpp>
 
 namespace rmm::test {
-namespace {
 
 // Note: Fixed_Size MR cannot handle dynamic allocation sizes, so only basic tests are included
-INSTANTIATE_TEST_SUITE_P(FixedSizeResourceTests,
-                         mr_ref_test,
-                         ::testing::Values("Fixed_Size"),
-                         [](auto const& test_info) { return test_info.param; });
+struct FixedSizeMRFixture : public ::testing::Test {
+  rmm::mr::cuda_memory_resource upstream{};
+  rmm::mr::fixed_size_memory_resource mr{upstream};
+  rmm::device_async_resource_ref ref{mr};
+  rmm::cuda_stream stream{};
+};
 
-}  // namespace
+INSTANTIATE_TYPED_TEST_SUITE_P(FixedSizeMR, CcclMrRefTest, FixedSizeMRFixture);
+
 }  // namespace rmm::test

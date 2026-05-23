@@ -3,6 +3,10 @@
 
 """Tests for ArenaMemoryResource."""
 
+from collections.abc import Callable
+from typing import Any
+
+import numpy as np
 import pytest
 from test_helpers import (
     _TEST_POOL_SIZE,
@@ -28,10 +32,15 @@ import rmm
         ),
     ],
 )
-def test_arena_memory_resource(dtype, nelem, alloc, upstream_mr):
+def test_arena_memory_resource(
+    dtype: type[np.generic],
+    nelem: int,
+    alloc: Any,
+    upstream_mr: Callable[[], rmm.mr.DeviceMemoryResource],
+) -> None:
     upstream = upstream_mr()
     mr = rmm.mr.ArenaMemoryResource(upstream, arena_size=_TEST_POOL_SIZE)
 
     rmm.mr.set_current_device_resource(mr)
-    assert rmm.mr.get_current_device_resource_type() is type(mr)
+    assert type(rmm.mr.get_current_device_resource()) is type(mr)
     array_tester(dtype, nelem, alloc)

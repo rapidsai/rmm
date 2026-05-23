@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
+#include <rmm/detail/error.hpp>
 #include <rmm/device_scalar.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -30,24 +31,23 @@ struct DeviceScalarTest : public ::testing::Test {
 
   DeviceScalarTest() : value{random_value()} {}
 
-  template <typename U = T, std::enable_if_t<std::is_same_v<U, bool>, bool> = true>
-  U random_value()
+  template <typename U = T>
+  requires std::is_same_v<U, bool> U random_value()
   {
     static std::bernoulli_distribution distribution{};
     return distribution(generator);
   }
 
-  template <typename U                                                                     = T,
-            std::enable_if_t<(std::is_integral_v<U> && not std::is_same_v<U, bool>), bool> = true>
-  U random_value()
+  template <typename U = T>
+  requires(std::is_integral_v<U> && not std::is_same_v<U, bool>) U random_value()
   {
     static std::uniform_int_distribution<U> distribution{std::numeric_limits<T>::lowest(),
                                                          std::numeric_limits<T>::max()};
     return distribution(generator);
   }
 
-  template <typename U = T, std::enable_if_t<std::is_floating_point_v<U>, bool> = true>
-  U random_value()
+  template <typename U = T>
+  requires std::is_floating_point_v<U> U random_value()
   {
     auto const mean{100};
     auto const stddev{20};
@@ -140,4 +140,20 @@ TYPED_TEST(DeviceScalarTest, SetGetStream)
   scalar.set_stream(otherstream);
 
   EXPECT_EQ(scalar.stream(), otherstream);
+}
+
+TEST(DeviceScalarAlignmentTest, SmallAlignment)
+{
+  auto s = rmm::device_scalar<int>(rmm::cuda_stream_view{});
+  EXPECT_TRUE(rmm::is_pointer_aligned(s.data(), std::alignment_of_v<decltype(s)::value_type>));
+}
+
+TEST(DeviceScalarAlignmentTest, LargeAlignment)
+{
+  struct alignas(rmm::CUDA_ALLOCATION_ALIGNMENT * 2) OverAligned {
+    int value;
+  };
+
+  EXPECT_THROW(std::ignore = rmm::device_scalar<OverAligned>(rmm::cuda_stream_view{}),
+               rmm::bad_alloc);
 }

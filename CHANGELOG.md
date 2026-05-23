@@ -1,3 +1,57 @@
+# rmm 26.04.00 (8 Apr 2026)
+
+### 🚨 Breaking Changes
+* Remove zero-value special casing in set_element_async to preserve IEEE 754 -0.0 by @wjxiz1992 in https://github.com/rapidsai/rmm/pull/2302
+### 🐛 Bug Fixes
+* Unset CUDAARCHS in librmm conda recipe by @bdice in https://github.com/rapidsai/rmm/pull/2237
+* Fix ABA problem in tracking resource adaptor and statistics resource adaptor by @wence- in https://github.com/rapidsai/rmm/pull/2304
+* Fix missing ulimit in CUDA 13.1 devcontainers by @bdice in https://github.com/rapidsai/rmm/pull/2309
+* Fix PTDS test registration to run the correct binary by @bdice in https://github.com/rapidsai/rmm/pull/2314
+* Fix tracking and aligned adaptors for zero-sized allocations by @wence- in https://github.com/rapidsai/rmm/pull/2316
+* Fix flags type annotation in CudaStreamPool by @TomAugspurger in https://github.com/rapidsai/rmm/pull/2331
+### 🚀 New Features
+* Fix bool narrow-conversion in device_uvector to cuda::std::span conversion by @PointKernel in https://github.com/rapidsai/rmm/pull/2243
+* Add debug build and test CI job by @bdice in https://github.com/rapidsai/rmm/pull/2233
+* Add CodeRabbit configuration and AI review guidelines by @bdice in https://github.com/rapidsai/rmm/pull/2244
+* Add CI jobs for PyTorch and CuPy integration tests by @bdice in https://github.com/rapidsai/rmm/pull/2240
+### 🛠️ Improvements
+* wheel builds: react to changes in pip's handling of build constraints by @mmccarty in https://github.com/rapidsai/rmm/pull/2212
+* Merge release/26.02 into main by @jameslamb in https://github.com/rapidsai/rmm/pull/2216
+* Remove LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE by @gforsyth in https://github.com/rapidsai/rmm/pull/2223
+* Use verify-hardcoded-version pre-commit hook by @KyleFromNVIDIA in https://github.com/rapidsai/rmm/pull/2222
+* Bump pre-commit-hooks to 1.3.3 by @KyleFromNVIDIA in https://github.com/rapidsai/rmm/pull/2229
+* Remove numba-cuda upper bound by @brandon-b-miller in https://github.com/rapidsai/rmm/pull/2218
+* tighten wheel size limits, expand CI-skipping logic, other small build changes by @jameslamb in https://github.com/rapidsai/rmm/pull/2236
+* Drop Python 3.10 support by @gforsyth in https://github.com/rapidsai/rmm/pull/2235
+* remove pip.conf migration code in CI scripts, update CI-skipping rules by @jameslamb in https://github.com/rapidsai/rmm/pull/2242
+* refactor: build wheels and conda packages using Python limited API by @gforsyth in https://github.com/rapidsai/rmm/pull/2241
+* Remove compatibility code for CCCL earlier than 3.2 by @bdice in https://github.com/rapidsai/rmm/pull/2248
+* Use GHA id-token for `sccache-dist` auth in CI by @trxcllnt in https://github.com/rapidsai/rmm/pull/2249
+* Solve ABA problem for stream event map by @wence- in https://github.com/rapidsai/rmm/pull/2252
+* Drop usage of thrust iterators by @miscco in https://github.com/rapidsai/rmm/pull/2254
+* fix check-nightly-ci job by @jameslamb in https://github.com/rapidsai/rmm/pull/2261
+* feat(python): add support for Python 3.14 by @gforsyth in https://github.com/rapidsai/rmm/pull/2260
+* Use std::addressof instead of & for identity comparisons by @bdice in https://github.com/rapidsai/rmm/pull/2262
+* Move stream objects from `cuda_stream` cython to `stream` cython by @brandon-b-miller in https://github.com/rapidsai/rmm/pull/2256
+* refactor(limited api): add explicit `wheel.py-api` to `pyproject.toml`
+ by @gforsyth in https://github.com/rapidsai/rmm/pull/2263
+* Update Cython lower bound pin to 3.2.2 by @vyasr in https://github.com/rapidsai/rmm/pull/2266
+* Remove pytest upper bound pin by @vyasr in https://github.com/rapidsai/rmm/pull/2268
+* Reduce default pool sizes in Python tests to speed up suite by @bdice in https://github.com/rapidsai/rmm/pull/2273
+* Remove rmm::detail::polyfill in favor of CCCL concepts, require CCCL >=3.3 by @bdice in https://github.com/rapidsai/rmm/pull/2283
+* Scope binning memory resource fixture to class in Python tests by @bdice in https://github.com/rapidsai/rmm/pull/2284
+* examples: read tag from RAPIDS_BRANCH file by @jameslamb in https://github.com/rapidsai/rmm/pull/2293
+* ensure 'torch' CUDA wheels are installed in CI by @jameslamb in https://github.com/rapidsai/rmm/pull/2279
+* Cap numba-cuda upper bound at <0.29.0 by @brandon-b-miller in https://github.com/rapidsai/rmm/pull/2306
+* build wheels with CUDA 13.0.x, test wheels against mix of CTK versions by @jameslamb in https://github.com/rapidsai/rmm/pull/2270
+
+## New Contributors
+* @mmccarty made their first contribution in https://github.com/rapidsai/rmm/pull/2212
+* @PointKernel made their first contribution in https://github.com/rapidsai/rmm/pull/2243
+* @wjxiz1992 made their first contribution in https://github.com/rapidsai/rmm/pull/2302
+
+**Full Changelog**: https://github.com/rapidsai/rmm/compare/v26.04.00a...release/26.04
+
 # rmm 26.02.00 (4 Feb 2026)
 
 ### 🚨 Breaking Changes

@@ -21,3 +21,11 @@
 #define RMM_HIDDEN
 #define RMM_NAMESPACE rmm
 #endif
+
+// Work around breathe "friend constexpr friend" bug (breathe-doc/breathe#916).
+// Doxygen expands this to plain `friend`; normal builds get `constexpr friend`.
+#if defined(DOXYGEN)
+#define RMM_CONSTEXPR_FRIEND friend
+#else
+#define RMM_CONSTEXPR_FRIEND constexpr friend
+#endif

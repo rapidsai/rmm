@@ -1,11 +1,17 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "cccl_mr_ref_test_allocation.hpp"
+#include "cccl_mr_ref_test_basic.hpp"
+#include "cccl_mr_ref_test_mt.hpp"
 #include "mr_ref_test_allocation.hpp"
 #include "mr_ref_test_basic.hpp"
 #include "mr_ref_test_mt.hpp"
+
+#include <rmm/mr/arena_memory_resource.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
 
 namespace rmm::test {
 namespace {
@@ -13,17 +19,29 @@ namespace {
 INSTANTIATE_TEST_SUITE_P(ArenaResourceTests,
                          mr_ref_test,
                          ::testing::Values("Arena"),
-                         [](auto const& test_info) { return test_info.param; });
+                         [](auto const& info) { return info.param; });
 
 INSTANTIATE_TEST_SUITE_P(ArenaResourceAllocationTests,
                          mr_ref_allocation_test,
                          ::testing::Values("Arena"),
-                         [](auto const& test_info) { return test_info.param; });
+                         [](auto const& info) { return info.param; });
 
 INSTANTIATE_TEST_SUITE_P(ArenaMultiThreadResourceTests,
                          mr_ref_test_mt,
                          ::testing::Values("Arena"),
-                         [](auto const& test_info) { return test_info.param; });
+                         [](auto const& info) { return info.param; });
 
 }  // namespace
+
+struct ArenaMRFixture : public ::testing::Test {
+  rmm::mr::cuda_memory_resource upstream{};
+  rmm::mr::arena_memory_resource mr{upstream};
+  rmm::device_async_resource_ref ref{mr};
+  rmm::cuda_stream stream{};
+};
+
+INSTANTIATE_TYPED_TEST_SUITE_P(ArenaMR, CcclMrRefTest, ArenaMRFixture);
+INSTANTIATE_TYPED_TEST_SUITE_P(ArenaMR, CcclMrRefAllocationTest, ArenaMRFixture);
+INSTANTIATE_TYPED_TEST_SUITE_P(ArenaMR, CcclMrRefTestMT, ArenaMRFixture);
+
 }  // namespace rmm::test

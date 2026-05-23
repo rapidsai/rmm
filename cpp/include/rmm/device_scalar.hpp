@@ -83,9 +83,10 @@ class device_scalar {
    * @param stream Stream on which to perform asynchronous allocation.
    * @param mr Optional, resource with which to allocate.
    */
-  explicit device_scalar(cuda_stream_view stream,
-                         device_async_resource_ref mr = mr::get_current_device_resource_ref())
-    : _storage{1, stream, mr}
+  explicit device_scalar(
+    cuda_stream_view stream,
+    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref())
+    : _storage{1, stream, std::move(mr)}
   {
   }
 
@@ -99,16 +100,19 @@ class device_scalar {
    * `cudaStreamWaitEvent()`).
    *
    * @throws rmm::bad_alloc if allocating the device memory for `initial_value` fails.
+   * @throws rmm::bad_alloc If the provided memory resource cannot allocate with alignment to
+   * satisfy the alignment requirements of the value type.
    * @throws rmm::cuda_error if copying `initial_value` to device memory fails.
    *
    * @param initial_value The initial value of the object in device memory.
    * @param stream Optional, stream on which to perform allocation and copy.
    * @param mr Optional, resource with which to allocate.
    */
-  explicit device_scalar(value_type const& initial_value,
-                         cuda_stream_view stream,
-                         device_async_resource_ref mr = mr::get_current_device_resource_ref())
-    : _storage{1, stream, mr}
+  explicit device_scalar(
+    value_type const& initial_value,
+    cuda_stream_view stream,
+    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref())
+    : _storage{1, stream, std::move(mr)}
   {
     set_value_async(initial_value, stream);
   }
@@ -125,10 +129,11 @@ class device_scalar {
    * @param stream The stream to use for the allocation and copy
    * @param mr The resource to use for allocating the new `device_scalar`
    */
-  device_scalar(device_scalar const& other,
-                cuda_stream_view stream,
-                device_async_resource_ref mr = mr::get_current_device_resource_ref())
-    : _storage{other._storage, stream, mr}
+  device_scalar(
+    device_scalar const& other,
+    cuda_stream_view stream,
+    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref())
+    : _storage{other._storage, stream, std::move(mr)}
   {
   }
 
