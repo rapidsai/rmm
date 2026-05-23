@@ -82,7 +82,7 @@ using MRFactoryFunc = std::function<any_device_resource(std::size_t)>;
 struct allocation {
   allocation() = default;
   void* ptr{};
-  allocation(void* ptr, std::size_t size) : ptr{ptr}, size{size} {}
+  allocation(void* pointer, std::size_t bytes) : ptr{pointer}, size{bytes} {}
   std::size_t size{};
 };
 
@@ -359,14 +359,14 @@ int main(int argc, char** argv)
                             "Enable verbose printing of log events",
                             cxxopts::value<bool>()->default_value("false"));
 
-      auto args = options.parse(argc, argv);
+      auto parsed_args = options.parse(argc, argv);
 
-      if (args.count("file") == 0) {
+      if (parsed_args.count("file") == 0) {
         std::cout << options.help() << std::endl;
         exit(0);
       }
 
-      return args;
+      return parsed_args;
     }();
 
     auto filename = args["file"].as<std::string>();

@@ -20,7 +20,7 @@ struct block_base {
   void* ptr{};  ///< Raw memory pointer
 
   block_base() = default;
-  block_base(void* ptr) : ptr{ptr} {};
+  block_base(void* raw_pointer) : ptr{raw_pointer} {};
 
   /// Returns the raw pointer for this block
   [[nodiscard]] inline void* pointer() const { return ptr; }

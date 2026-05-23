@@ -38,9 +38,9 @@ INSTANTIATE_TEST_SUITE_P(StatisticsTest, allocation_size, ::testing::Values(0, 2
 
 TEST_P(allocation_size, MultiThreaded)
 {
-  const std::size_t allocation_size = GetParam();
-  auto upstream                     = rmm::mr::cuda_memory_resource{};
-  auto delayed = delayed_memory_resource(upstream, std::chrono::milliseconds{300});
+  const std::size_t alloc_bytes = GetParam();
+  auto upstream                 = rmm::mr::cuda_memory_resource{};
+  auto delayed                  = delayed_memory_resource(upstream, std::chrono::milliseconds{300});
   statistics_adaptor mr{rmm::device_async_resource_ref{delayed}};
   auto stream = rmm::cuda_stream{};
   // Provoke interleaving to test that statistics counters are updated with correct ordering
@@ -62,14 +62,14 @@ TEST_P(allocation_size, MultiThreaded)
     threads.emplace_back([&, i = i]() {
       void* ptr{nullptr};
       if (i != 0) { std::this_thread::sleep_for(std::chrono::milliseconds{100}); }
-      EXPECT_NO_THROW(ptr = mr.allocate(stream, allocation_size, rmm::CUDA_ALLOCATION_ALIGNMENT));
-      if (allocation_size != 0) {
+      EXPECT_NO_THROW(ptr = mr.allocate(stream, alloc_bytes, rmm::CUDA_ALLOCATION_ALIGNMENT));
+      if (alloc_bytes != 0) {
         EXPECT_NE(ptr, nullptr);
       } else {
         EXPECT_EQ(ptr, nullptr);
       }
       if (i == 0) { std::this_thread::sleep_for(std::chrono::milliseconds{100}); }
-      mr.deallocate(stream, ptr, allocation_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      mr.deallocate(stream, ptr, alloc_bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
     });
   }
   for (auto& t : threads) {
@@ -78,7 +78,7 @@ TEST_P(allocation_size, MultiThreaded)
   EXPECT_EQ(mr.get_bytes_counter().value, 0);
   EXPECT_EQ(mr.get_allocations_counter().value, 0);
   EXPECT_EQ(mr.get_allocations_counter().total, 2);
-  EXPECT_EQ(mr.get_bytes_counter().total, 2 * allocation_size);
+  EXPECT_EQ(mr.get_bytes_counter().total, 2 * alloc_bytes);
 }
 
 TEST(StatisticsTest, Empty)

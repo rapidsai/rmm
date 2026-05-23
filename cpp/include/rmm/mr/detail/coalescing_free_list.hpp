@@ -27,8 +27,8 @@ namespace mr::detail {
  */
 struct block : public block_base {
   block() = default;
-  block(char* ptr, std::size_t size, bool is_head)
-    : block_base{ptr}, size_bytes{size}, head{is_head}
+  block(char* raw_pointer, std::size_t size, bool is_head)
+    : block_base{raw_pointer}, size_bytes{size}, head{is_head}
   {
   }
 

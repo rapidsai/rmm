@@ -135,7 +135,7 @@ class system_memory_resource final {
     RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 
     rmm::detail::aligned_host_deallocate(
-      ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT, [](void* ptr) { ::operator delete(ptr); });
+      ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT, [](void* memory) { ::operator delete(memory); });
   }
 
   /**

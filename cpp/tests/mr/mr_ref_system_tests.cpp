@@ -12,12 +12,12 @@ namespace {
 INSTANTIATE_TEST_SUITE_P(SystemResourceTests,
                          mr_ref_test,
                          ::testing::Values("System"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 INSTANTIATE_TEST_SUITE_P(SystemResourceAllocationTests,
                          mr_ref_allocation_test,
                          ::testing::Values("System"),
-                         [](auto const& info) { return info.param; });
+                         [](auto const& test_info) { return test_info.param; });
 
 }  // namespace
 }  // namespace rmm::test

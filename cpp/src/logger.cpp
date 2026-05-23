@@ -25,9 +25,9 @@ std::string default_pattern() { return "[%6t][%H:%M:%S:%f][%-6l] %v"; }
 rapids_logger::logger& default_logger()
 {
   static rapids_logger::logger logger_ = [] {
-    rapids_logger::logger logger_{"RMM", {default_sink()}};
-    logger_.set_pattern(default_pattern());
-    return logger_;
+    rapids_logger::logger instance{"RMM", {default_sink()}};
+    instance.set_pattern(default_pattern());
+    return instance;
   }();
   return logger_;
 }

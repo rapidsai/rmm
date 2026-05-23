@@ -95,8 +95,8 @@ class pinned_host_memory_resource final {
                   [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
     std::size_t constexpr alloc_alignment = rmm::CUDA_ALLOCATION_ALIGNMENT;
-    rmm::detail::aligned_host_deallocate(ptr, bytes, alloc_alignment, [](void* ptr) {
-      RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaFreeHost(ptr));
+    rmm::detail::aligned_host_deallocate(ptr, bytes, alloc_alignment, [](void* memory) {
+      RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaFreeHost(memory));
     });
   }
 

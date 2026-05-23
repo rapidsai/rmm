@@ -20,7 +20,7 @@
 cuda_event_timer::cuda_event_timer(benchmark::State& state,
                                    bool flush_l2_cache,
                                    rmm::cuda_stream_view stream)
-  : stream(stream), p_state(&state)
+  : stream_(stream), p_state(&state)
 {
   // flush all of L2$
   if (flush_l2_cache) {
@@ -47,7 +47,7 @@ cuda_event_timer::cuda_event_timer(benchmark::State& state,
 
 cuda_event_timer::~cuda_event_timer()
 {
-  RMM_CUDA_ASSERT_OK(cudaEventRecord(stop, stream.value()));
+  RMM_CUDA_ASSERT_OK(cudaEventRecord(stop, stream_.value()));
   RMM_CUDA_ASSERT_OK(cudaEventSynchronize(stop));
 
   float milliseconds = 0.0F;

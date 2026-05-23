@@ -34,29 +34,41 @@ struct event {
   event(event&&) noexcept            = default;
   event& operator=(event&&) noexcept = default;
   ~event()                           = default;
-  event(action act, std::size_t size, void const* ptr)
+  event(action action_type, std::size_t bytes, void const* ptr)
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    : act{act}, size{size}, pointer{reinterpret_cast<uintptr_t>(ptr)}
+    : act{action_type}, size{bytes}, pointer{reinterpret_cast<uintptr_t>(ptr)}
   {
   }
 
   // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-  event(action act, std::size_t size, uintptr_t ptr) : act{act}, size{size}, pointer{ptr} {}
-
-  event(std::size_t tid,
-        action act,
-        std::size_t size,  // NOLINT(bugprone-easily-swappable-parameters)
-        uintptr_t ptr,
-        uintptr_t stream,
-        std::size_t index)
-    : act{act}, size{size}, pointer{ptr}, thread_id{tid}, stream{stream}, index{index}
+  event(action action_type, std::size_t bytes, uintptr_t ptr)
+    : act{action_type}, size{bytes}, pointer{ptr}
   {
   }
 
-  event(
-    std::size_t tid, action act, std::size_t size, void* ptr, uintptr_t stream, std::size_t index)
+  event(std::size_t tid,
+        action action_type,
+        std::size_t bytes,  // NOLINT(bugprone-easily-swappable-parameters)
+        uintptr_t ptr,
+        uintptr_t stream_id,
+        std::size_t event_index)
+    : act{action_type},
+      size{bytes},
+      pointer{ptr},
+      thread_id{tid},
+      stream{stream_id},
+      index{event_index}
+  {
+  }
+
+  event(std::size_t tid,
+        action action_type,
+        std::size_t bytes,
+        void* ptr,
+        uintptr_t stream_id,
+        std::size_t event_index)
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    : event{tid, act, size, reinterpret_cast<uintptr_t>(ptr), stream, index}
+    : event{tid, action_type, bytes, reinterpret_cast<uintptr_t>(ptr), stream_id, event_index}
   {
   }
 
