@@ -219,20 +219,20 @@ static void num_size_range(benchmark::Benchmark* bench)
   }
 }
 
-int g_num_allocations = -1;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
-int g_max_size        = -1;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+int num_allocations = -1;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+int max_size        = -1;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 void benchmark_range(benchmark::Benchmark* bench)
 {
-  if (g_num_allocations > 0) {
-    if (g_max_size > 0) {
-      bench->Args({g_num_allocations, g_max_size})->Unit(benchmark::kMillisecond);
+  if (num_allocations > 0) {
+    if (max_size > 0) {
+      bench->Args({num_allocations, max_size})->Unit(benchmark::kMillisecond);
     } else {
-      size_range(bench, g_num_allocations);
+      size_range(bench, num_allocations);
     }
   } else {
-    if (g_max_size > 0) {
-      num_range(bench, g_max_size);
+    if (max_size > 0) {
+      num_range(bench, max_size);
     } else {
       num_size_range(bench);
     }
@@ -262,13 +262,13 @@ void declare_benchmark(std::string const& name)
 }
 
 static void profile_random_allocations(MRFactoryFunc const& factory,
-                                       std::size_t num_allocations,
-                                       std::size_t max_size)
+                                       std::size_t allocation_count,
+                                       std::size_t max_allocation_size)
 {
   auto mr = factory();
 
   try {
-    uniform_random_allocations(mr, num_allocations, max_size, max_usage);
+    uniform_random_allocations(mr, allocation_count, max_allocation_size, max_usage);
   } catch (std::exception const& e) {
     std::cout << "Error: " << e.what() << "\n";
   }
@@ -297,9 +297,9 @@ int main(int argc, char** argv)
                           "Maximum allocation size (default of 0 tests a range)",
                           cxxopts::value<int>()->default_value("4096"));
 
-    auto args         = options.parse(argc, argv);
-    g_num_allocations = args["numallocs"].as<int>();
-    g_max_size        = args["maxsize"].as<int>();
+    auto args       = options.parse(argc, argv);
+    num_allocations = args["numallocs"].as<int>();
+    max_size        = args["maxsize"].as<int>();
 
     if (args.count("profile") > 0) {
       std::map<std::string, MRFactoryFunc> const funcs({{"arena", &make_arena},
@@ -309,20 +309,20 @@ int main(int argc, char** argv)
                                                         {"pool", &make_pool}});
       auto resource = args["resource"].as<std::string>();
 
-      std::cout << "Profiling " << resource << " with " << g_num_allocations
-                << " allocations of max " << g_max_size << "B\n";
+      std::cout << "Profiling " << resource << " with " << num_allocations << " allocations of max "
+                << max_size << "B\n";
 
       profile_random_allocations(funcs.at(resource),
-                                 static_cast<std::size_t>(g_num_allocations),
-                                 static_cast<std::size_t>(g_max_size));
+                                 static_cast<std::size_t>(num_allocations),
+                                 static_cast<std::size_t>(max_size));
 
       std::cout << "Finished\n";
     } else {
       if (args.count("numallocs") == 0) {  // if zero reset to -1 so we benchmark over a range
-        g_num_allocations = -1;
+        num_allocations = -1;
       }
       if (args.count("maxsize") == 0) {  // if zero reset to -1 so we benchmark over a range
-        g_max_size = -1;
+        max_size = -1;
       }
 
       if (args.count("resource") > 0) {
