@@ -9,14 +9,8 @@
 option(DISABLE_DEPRECATION_WARNING "Disable warnings generated from deprecated declarations." OFF)
 option(CODE_COVERAGE "Enable generating code coverage with gcov." OFF)
 
-set(RMM_TESTS_CXX_FLAGS
-    -Wall
-    -Werror
-    -Wextra
-    -Wnon-virtual-dtor
-    -Woverloaded-virtual
-    -Wsign-conversion
-    -Wno-unknown-pragmas)
+set(RMM_TESTS_CXX_FLAGS -Wall -Werror -Wextra -Wnon-virtual-dtor -Woverloaded-virtual
+                        -Wsign-conversion -Wno-unknown-pragmas)
 set(RMM_TESTS_CUDA_FLAGS
     -Werror=all-warnings
     -Xcompiler=-Wall,-Werror,-Wextra,-Wnon-virtual-dtor,-Woverloaded-virtual,-Wsign-conversion)
