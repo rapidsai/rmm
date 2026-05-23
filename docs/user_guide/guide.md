@@ -16,6 +16,14 @@ to use RMM for allocating device memory.
 
 See the project [README](https://github.com/rapidsai/rmm) for how to install RMM.
 
+## Migration Guides
+
+```{toctree}
+:maxdepth: 1
+
+../migration_guide_2606
+```
+
 ## Using RMM
 
 There are two ways to use RMM in Python code:
