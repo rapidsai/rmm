@@ -37,7 +37,9 @@ cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
     static_cast<cudaMemAllocationHandleType>(export_handle_type.value_or(cudaMemHandleTypeNone));
 
 #if defined(cudaMemPoolCreateUsageHwDecompress)
-  if (enable_hw_decompress) { pool_props.usage = cudaMemPoolCreateUsageHwDecompress; }
+  if (enable_hw_decompress && rmm::detail::hwdecompress::is_supported()) {
+    pool_props.usage = cudaMemPoolCreateUsageHwDecompress;
+  }
 #else
   (void)enable_hw_decompress;
 #endif
