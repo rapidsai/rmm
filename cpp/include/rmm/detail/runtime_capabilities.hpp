@@ -16,9 +16,9 @@ namespace RMM_NAMESPACE {
 namespace detail {
 
 /**
- * @brief Minimum CUDA driver version for hardware decompression support
+ * @brief Minimum CUDA runtime and driver version for hardware decompression support
  */
-#define RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION 12080
+#define RMM_MIN_HWDECOMPRESS_CUDA_VERSION 12080
 
 /**
  * @brief Minimum CUDA driver version for stream-ordered managed memory allocator support
@@ -76,10 +76,10 @@ struct export_handle_type {
 
 /**
  * @brief Check whether `cudaMemPoolCreateUsageHwDecompress` is a supported
- * pool property on the present CUDA driver version.
+ * pool property on the present CUDA runtime and driver.
  *
- * Requires RMM to be built with a supported CUDA version 12.8+, otherwise
- * this always returns false.
+ * Requires RMM to be built with CUDA headers that define
+ * `cudaMemPoolCreateUsageHwDecompress`, otherwise this always returns false.
  *
  * @return true if supported
  * @return false if unsupported
@@ -93,12 +93,14 @@ struct export_handle_type {
 struct hwdecompress {
   static bool is_supported()
   {
-#if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
-    // Check if hardware decompression is supported (requires CUDA 12.8 driver or higher)
+#if defined(cudaMemPoolCreateUsageHwDecompress)
     static bool is_supported = []() {
       int driver_version{};
       RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
-      return driver_version >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION;
+      int runtime_version{};
+      RMM_CUDA_TRY(cudaRuntimeGetVersion(&runtime_version));
+      return driver_version >= RMM_MIN_HWDECOMPRESS_CUDA_VERSION and
+             runtime_version >= RMM_MIN_HWDECOMPRESS_CUDA_VERSION;
     }();
     return is_supported;
 #else

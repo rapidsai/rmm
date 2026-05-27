@@ -20,7 +20,7 @@ class HWDecompressTest : public ::testing::Test {
  protected:
   static void check_decompress_capable(void* ptr)
   {
-#if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
+#if defined(cudaMemPoolCreateUsageHwDecompress)
     if (rmm::detail::hwdecompress::is_supported()) {
       bool is_capable{};
       auto err =
@@ -36,7 +36,7 @@ class HWDecompressTest : public ::testing::Test {
     }
 #else
     GTEST_SKIP() << "Skipping since hardware decompression is not supported "
-                 << "by the CUDA version used to build RMM.";
+                 << "by the CUDA headers used to build RMM.";
 #endif
   }
 };
