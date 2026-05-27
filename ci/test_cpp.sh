@@ -33,8 +33,9 @@ set -u
 
 rapids-print-env
 
-rapids-logger "Check GPU usage"
+rapids-logger "Check GPU status"
 nvidia-smi
+nvidia-smi -q | grep "Addressing Mode" || echo "Addressing Mode not reported"
 
 # Run librmm gtests from librmm-tests package
 rapids-logger "Run gtests"

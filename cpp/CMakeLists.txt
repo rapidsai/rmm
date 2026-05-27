@@ -5,7 +5,7 @@
 # cmake-format: on
 # =============================================================================
 
-cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
+cmake_minimum_required(VERSION 4.0 FATAL_ERROR)
 
 include(../cmake/rapids_config.cmake)
 
@@ -47,9 +47,6 @@ message(VERBOSE "RMM: Build with NVTX support: ${RMM_NVTX}")
 # Set logging level. Must go before including gtests and benchmarks. Set the possible values of
 # build type for cmake-gui.
 message(STATUS "RMM: RMM_LOGGING_LEVEL = '${RMM_LOGGING_LEVEL}'")
-
-# cudart can be linked statically or dynamically
-option(CUDA_STATIC_RUNTIME "Statically link the CUDA runtime" OFF)
 
 # ##################################################################################################
 # * compiler options -------------------------------------------------------------------------------
@@ -120,7 +117,8 @@ add_library(
   src/mr/statistics_resource_adaptor.cpp
   src/mr/thread_safe_resource_adaptor.cpp
   src/mr/tracking_resource_adaptor.cpp
-  src/prefetch.cpp)
+  src/prefetch.cpp
+  src/runtime_shutdown.cpp)
 add_library(rmm::rmm ALIAS rmm)
 
 target_include_directories(
@@ -129,19 +127,8 @@ target_include_directories(
          "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
   INTERFACE "$<INSTALL_INTERFACE:include>")
 
-if(CUDA_STATIC_RUNTIME)
-  message(STATUS "RMM: Enabling static linking of cudart")
-  set(cudart_dep CUDA::cudart_static)
-else()
-  set(cudart_dep CUDA::cudart)
-endif()
-
-target_link_libraries(
-  rmm
-  PUBLIC CCCL::CCCL ${CMAKE_DL_LIBS} nvtx3::nvtx3-cpp rapids_logger::rapids_logger
-  PRIVATE "${cudart_dep}"
-  INTERFACE
-    "$<IF:$<BOOL:$<TARGET_PROPERTY:NO_CUDART_DEP>>,$<COMPILE_ONLY:${cudart_dep}>,${cudart_dep}>")
+target_link_libraries(rmm PUBLIC CCCL::CCCL ${CMAKE_DL_LIBS} nvtx3::nvtx3-cpp
+                                 rapids_logger::rapids_logger CUDA::cudart_static)
 
 set_target_properties(
   rmm

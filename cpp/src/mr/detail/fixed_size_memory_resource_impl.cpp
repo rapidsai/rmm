@@ -7,6 +7,7 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/mr/detail/fixed_size_memory_resource_impl.hpp>
+#include <rmm/process_is_exiting.hpp>
 
 #include <cuda/iterator>
 
@@ -92,6 +93,8 @@ fixed_size_memory_resource_impl::block_type fixed_size_memory_resource_impl::fre
 void fixed_size_memory_resource_impl::release()
 {
   lock_guard lock(this->get_mutex());
+
+  if (rmm::process_is_exiting()) { return; }
 
   for (auto block : upstream_blocks_) {
     upstream_mr_.deallocate_sync(

@@ -4,6 +4,7 @@
  */
 
 #include "../byte_literals.hpp"
+#include "../mock_resource.hpp"
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
@@ -23,6 +24,9 @@ namespace {
 
 template <typename ExceptionType = rmm::bad_alloc>
 using failure_callback_adaptor = rmm::mr::failure_callback_resource_adaptor<ExceptionType>;
+
+using ::testing::_;
+using ::testing::Return;
 
 bool failure_handler(std::size_t /*bytes*/, void* arg)
 {
@@ -76,6 +80,26 @@ TEST(FailureCallbackTest, RetryAllocationOnce)
   EXPECT_EQ(retried, false);
   EXPECT_THROW((void)mr.allocate_sync(1_MiB), rmm::bad_alloc);
   EXPECT_EQ(retried, true);
+}
+
+TEST(FailureCallbackTest, ForwardsAlignment)
+{
+  mock_resource mock;
+  mock_resource_wrapper wrapper{&mock};
+  bool retried{false};
+  failure_callback_adaptor<> mr{device_async_resource_ref{wrapper}, failure_handler, &retried};
+
+  cuda_stream_view stream;
+  std::byte pointer_value{};
+  void* const pointer = &pointer_value;
+  auto const size{1024};
+  auto const alignment{512};
+
+  EXPECT_CALL(mock, allocate(_, size, alignment)).WillOnce(Return(pointer));
+  EXPECT_CALL(mock, deallocate(_, pointer, size, alignment)).Times(1);
+
+  EXPECT_EQ(mr.allocate(stream, size, alignment), pointer);
+  mr.deallocate(stream, pointer, size, alignment);
 }
 
 TEST(FailureCallbackTest, DifferentExceptionTypes)

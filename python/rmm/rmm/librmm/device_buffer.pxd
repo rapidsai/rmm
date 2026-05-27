@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
+from cuda.bindings.cyruntime cimport cudaStream_t
+
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 from rmm.librmm.memory_resource cimport any_resource, device_accessible
 
@@ -32,6 +34,12 @@ cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
             const void* source_data,
             size_t size,
             cuda_stream_view stream,
+            any_resource[device_accessible] mr
+        ) except +
+        device_buffer(
+            const void* source_data,
+            size_t size,
+            cudaStream_t stream,
             any_resource[device_accessible] mr
         ) except +
         device_buffer(

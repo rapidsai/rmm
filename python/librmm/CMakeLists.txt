@@ -1,11 +1,11 @@
 # =============================================================================
 # cmake-format: off
-# SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 # cmake-format: on
 # =============================================================================
 
-cmake_minimum_required(VERSION 3.30.4 FATAL_ERROR)
+cmake_minimum_required(VERSION 4.0 FATAL_ERROR)
 
 include(../../cmake/rapids_config.cmake)
 
@@ -26,6 +26,5 @@ unset(rmm_FOUND)
 
 set(BUILD_TESTS OFF)
 set(BUILD_BENCHMARKS OFF)
-set(CUDA_STATIC_RUNTIME ON)
 
 add_subdirectory(../../cpp rmm-cpp)

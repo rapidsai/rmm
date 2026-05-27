@@ -39,8 +39,9 @@ RAPIDS_TESTS_DIR=${RAPIDS_TESTS_DIR:-"${PWD}/test-results"}
 RAPIDS_COVERAGE_DIR=${RAPIDS_COVERAGE_DIR:-"${PWD}/coverage-results"}
 mkdir -p "${RAPIDS_TESTS_DIR}" "${RAPIDS_COVERAGE_DIR}"
 
-rapids-logger "Check GPU usage"
+rapids-logger "Check GPU status"
 nvidia-smi
+nvidia-smi -q | grep "Addressing Mode" || echo "Addressing Mode not reported"
 
 rapids-logger "pytest rmm"
 

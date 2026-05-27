@@ -176,12 +176,16 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     Parameters
     ----------
     initial_pool_size : int | str, optional
-        Initial pool size in bytes. By default, half the available memory
-        on the device is used. A string argument is parsed using `parse_bytes`.
+        Initial pool size in bytes. If provided, the pool will be primed by
+        allocating and immediately deallocating this amount of memory on the
+        default CUDA stream. A string argument is parsed using `parse_bytes`.
     release_threshold: int, optional
         Release threshold in bytes. If the pool size grows beyond this
         value, unused memory held by the pool will be released at the
-        next synchronization point.
+        next synchronization point. If not provided, the release threshold
+        is set to the maximum representable ``uint64_t`` value, so that
+        the pool retains memory across synchronization events unless the
+        caller specifies otherwise.
     enable_ipc: bool, optional
         If True, enables export of POSIX file descriptor handles for the memory
         allocated by this resource so that it can be used with CUDA IPC.
@@ -1123,28 +1127,6 @@ cpdef set_current_device_resource(DeviceMemoryResource mr):
     set_per_device_resource(getDevice(), mr)
 
 
-cpdef get_per_device_resource_type(int device):
-    """
-    Get the memory resource type used for RMM device allocations on the
-    specified device.
-
-    .. deprecated:: 26.06
-        Use ``type(get_per_device_resource(device))`` instead.
-
-    Parameters
-    ----------
-    device : int
-        The device ID
-    """
-    warnings.warn(
-        "get_per_device_resource_type is deprecated. "
-        "Use type(get_per_device_resource(device)) instead.",
-        FutureWarning,
-        stacklevel=2,
-    )
-    return type(get_per_device_resource(device))
-
-
 cpdef DeviceMemoryResource get_current_device_resource():
     """
     Get the memory resource used for RMM device allocations on the current
@@ -1154,23 +1136,6 @@ cpdef DeviceMemoryResource get_current_device_resource():
     active CUDA device, behavior is undefined.
     """
     return get_per_device_resource(getDevice())
-
-
-cpdef get_current_device_resource_type():
-    """
-    Get the memory resource type used for RMM device allocations on the
-    current device.
-
-    .. deprecated:: 26.06
-        Use ``type(get_current_device_resource())`` instead.
-    """
-    warnings.warn(
-        "get_current_device_resource_type is deprecated. "
-        "Use type(get_current_device_resource()) instead.",
-        FutureWarning,
-        stacklevel=2,
-    )
-    return type(get_current_device_resource())
 
 
 cpdef is_initialized():

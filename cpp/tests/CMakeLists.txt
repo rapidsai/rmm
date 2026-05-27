@@ -96,9 +96,9 @@ function(ConfigureTest TEST_NAME)
     set(_RMM_TEST_PERCENT 100)
   endif()
 
-  if(_RMM_TEST_CUDART STREQUAL SHARED)
+  if(_RMM_TEST_CUDART STREQUAL "SHARED")
     set(cudart_link_libs $<COMPILE_ONLY:rmm> CUDA::cudart)
-  elseif(_RMM_TEST_CUDART STREQUAL STATIC)
+  elseif(_RMM_TEST_CUDART STREQUAL "STATIC")
     set(cudart_link_libs $<COMPILE_ONLY:rmm> CUDA::cudart_static)
   else()
     set(cudart_link_libs rmm)
@@ -242,6 +242,29 @@ ConfigureTest(CONTAINER_MULTIDEVICE_TEST container_multidevice_tests.cu)
 
 # error macros tests
 ConfigureTest(ERROR_MACROS_TEST error_macros_tests.cpp)
+
+# process_is_exiting API tests (CPU-only, no CUDA calls).
+ConfigureTest(PROCESS_IS_EXITING_TEST process_is_exiting_tests.cpp)
+
+# Standalone shutdown test: a binary (no gtest) that verifies the flag is observed as true from a C
+# atexit handler registered before register_process_exit_hook(), exercising the C++ std::atexit
+# sequencing guarantee the fix relies on. CTest checks the exit code.
+add_executable(PROCESS_IS_EXITING_SHUTDOWN_TEST process_is_exiting_shutdown_test.cpp)
+target_include_directories(PROCESS_IS_EXITING_SHUTDOWN_TEST
+                           PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
+target_link_libraries(PROCESS_IS_EXITING_SHUTDOWN_TEST PRIVATE rmm
+                                                               $<TARGET_NAME_IF_EXISTS:conda_env>)
+set_target_properties(
+  PROCESS_IS_EXITING_SHUTDOWN_TEST
+  PROPERTIES POSITION_INDEPENDENT_CODE ON
+             RUNTIME_OUTPUT_DIRECTORY "$<BUILD_INTERFACE:${RMM_BINARY_DIR}/gtests>"
+             INSTALL_RPATH "\$ORIGIN/../../../lib"
+             CXX_STANDARD 20
+             CXX_STANDARD_REQUIRED ON)
+rapids_test_add(
+  NAME PROCESS_IS_EXITING_SHUTDOWN_TEST
+  COMMAND PROCESS_IS_EXITING_SHUTDOWN_TEST
+  INSTALL_COMPONENT_SET testing)
 
 # Resource ref construction and conversion tests
 ConfigureTest(RESOURCE_REF_CONVERSION_TEST mr/resource_ref_conversion_tests.cpp)

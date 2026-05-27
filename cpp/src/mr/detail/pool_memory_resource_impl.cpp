@@ -10,6 +10,7 @@
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/detail/pool_memory_resource_impl.hpp>
+#include <rmm/process_is_exiting.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -169,6 +170,8 @@ pool_memory_resource_impl::block_type pool_memory_resource_impl::free_block(
 void pool_memory_resource_impl::release()
 {
   lock_guard lock(this->get_mutex());
+
+  if (rmm::process_is_exiting()) { return; }
 
   for (auto block : upstream_blocks_) {
     get_upstream_resource().deallocate_sync(

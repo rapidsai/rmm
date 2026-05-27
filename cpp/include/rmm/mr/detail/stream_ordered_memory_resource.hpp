@@ -10,6 +10,7 @@
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/format.hpp>
 #include <rmm/logger.hpp>
+#include <rmm/process_is_exiting.hpp>
 
 #include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
@@ -485,6 +486,8 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
   void release()
   {
     lock_guard lock(mtx_);
+
+    if (rmm::process_is_exiting()) { return; }
 
     for (auto s_e : stream_events_) {
       RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaEventSynchronize(s_e.second.event));

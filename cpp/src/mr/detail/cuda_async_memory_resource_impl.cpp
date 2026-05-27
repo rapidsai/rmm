@@ -3,17 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/mr/detail/cuda_async_memory_resource_impl.hpp>
+#include <rmm/process_is_exiting.hpp>
 
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -49,10 +50,8 @@ cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
   RMM_CUDA_TRY(cudaMemPoolCreate(&cuda_pool_handle, &pool_props));
   pool_ = cuda_async_view_memory_resource{cuda_pool_handle};
 
-  auto const [free, total] = rmm::available_device_memory();
-
   // Need an l-value to take address to pass to cudaMemPoolSetAttribute
-  uint64_t threshold = release_threshold.value_or(total);
+  std::uint64_t threshold = release_threshold.value_or(std::numeric_limits<std::uint64_t>::max());
   RMM_CUDA_TRY(cudaMemPoolSetAttribute(pool_handle(), cudaMemPoolAttrReleaseThreshold, &threshold));
 
   // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
@@ -66,6 +65,8 @@ cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
 
 cuda_async_memory_resource_impl::~cuda_async_memory_resource_impl()
 {
+  if (rmm::process_is_exiting()) { return; }
+
   RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaMemPoolDestroy(pool_handle()));
 }
 
@@ -76,9 +77,9 @@ cudaMemPool_t cuda_async_memory_resource_impl::pool_handle() const noexcept
 
 void* cuda_async_memory_resource_impl::allocate(cuda::stream_ref stream,
                                                 std::size_t bytes,
-                                                std::size_t /*alignment*/)
+                                                std::size_t alignment)
 {
-  return pool_.allocate(stream, bytes);
+  return pool_.allocate(stream, bytes, alignment);
 }
 
 void cuda_async_memory_resource_impl::deallocate(cuda::stream_ref stream,
@@ -100,7 +101,9 @@ void cuda_async_memory_resource_impl::deallocate_sync(void* ptr,
                                                       std::size_t bytes,
                                                       std::size_t alignment) noexcept
 {
-  deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
+  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+  deallocate(stream, ptr, bytes, alignment);
+  RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 }
 
 }  // namespace detail

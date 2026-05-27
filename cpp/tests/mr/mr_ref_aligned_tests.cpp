@@ -7,12 +7,13 @@
 #include "cccl_mr_ref_test_basic.hpp"
 
 #include <rmm/mr/aligned_resource_adaptor.hpp>
-#include <rmm/mr/per_device_resource.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
 
 namespace rmm::test {
 
 struct AlignedMRFixture : public ::testing::Test {
-  rmm::mr::aligned_resource_adaptor mr{rmm::mr::get_current_device_resource_ref()};
+  rmm::mr::cuda_memory_resource upstream{};
+  rmm::mr::aligned_resource_adaptor mr{upstream};
   rmm::device_async_resource_ref ref{mr};
   rmm::cuda_stream stream{};
 };

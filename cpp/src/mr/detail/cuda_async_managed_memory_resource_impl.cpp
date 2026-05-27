@@ -34,6 +34,11 @@ cuda_async_managed_memory_resource_impl::cuda_async_managed_memory_resource_impl
 #endif
 }
 
+cuda_async_managed_memory_resource_impl::cuda_async_managed_memory_resource_impl(construction_tag)
+  : cuda_async_managed_memory_resource_impl()
+{
+}
+
 cudaMemPool_t cuda_async_managed_memory_resource_impl::pool_handle() const noexcept
 {
   return pool_.pool_handle();
@@ -41,9 +46,9 @@ cudaMemPool_t cuda_async_managed_memory_resource_impl::pool_handle() const noexc
 
 void* cuda_async_managed_memory_resource_impl::allocate(cuda::stream_ref stream,
                                                         std::size_t bytes,
-                                                        std::size_t /*alignment*/)
+                                                        std::size_t alignment)
 {
-  return pool_.allocate(stream, bytes);
+  return pool_.allocate(stream, bytes, alignment);
 }
 
 void cuda_async_managed_memory_resource_impl::deallocate(cuda::stream_ref stream,
@@ -66,7 +71,9 @@ void cuda_async_managed_memory_resource_impl::deallocate_sync(void* ptr,
                                                               std::size_t bytes,
                                                               std::size_t alignment) noexcept
 {
-  deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
+  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+  deallocate(stream, ptr, bytes, alignment);
+  RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 }
 
 }  // namespace detail

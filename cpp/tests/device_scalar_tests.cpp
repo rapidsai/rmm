@@ -31,24 +31,23 @@ struct DeviceScalarTest : public ::testing::Test {
 
   DeviceScalarTest() : value{random_value()} {}
 
-  template <typename U = T, std::enable_if_t<std::is_same_v<U, bool>, bool> = true>
-  U random_value()
+  template <typename U = T>
+  requires std::is_same_v<U, bool> U random_value()
   {
     static std::bernoulli_distribution distribution{};
     return distribution(generator);
   }
 
-  template <typename U                                                                     = T,
-            std::enable_if_t<(std::is_integral_v<U> && not std::is_same_v<U, bool>), bool> = true>
-  U random_value()
+  template <typename U = T>
+  requires(std::is_integral_v<U> && not std::is_same_v<U, bool>) U random_value()
   {
     static std::uniform_int_distribution<U> distribution{std::numeric_limits<T>::lowest(),
                                                          std::numeric_limits<T>::max()};
     return distribution(generator);
   }
 
-  template <typename U = T, std::enable_if_t<std::is_floating_point_v<U>, bool> = true>
-  U random_value()
+  template <typename U = T>
+  requires std::is_floating_point_v<U> U random_value()
   {
     auto const mean{100};
     auto const stddev{20};
@@ -149,9 +148,7 @@ TEST(DeviceScalarAlignmentTest, SmallAlignment)
   EXPECT_TRUE(rmm::is_pointer_aligned(s.data(), std::alignment_of_v<decltype(s)::value_type>));
 }
 
-// Disabled: leaf MRs silently ignore unsupported alignment after #2324.
-// See https://github.com/rapidsai/rmm/issues/2342
-TEST(DeviceScalarAlignmentTest, DISABLED_LargeAlignment)
+TEST(DeviceScalarAlignmentTest, LargeAlignment)
 {
   struct alignas(rmm::CUDA_ALLOCATION_ALIGNMENT * 2) OverAligned {
     int value;
