@@ -67,6 +67,15 @@ class tracking_resource_adaptor_impl {
 
   [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
 
+  /**
+   * @brief Get the outstanding allocations map.
+   *
+   * @warning The returned reference is a view of internal mutable state. It is only safe to use
+   * when the caller ensures no concurrent allocations or deallocations are made through this
+   * tracking resource adaptor.
+   *
+   * @return map of outstanding allocations (pointer → allocation_info)
+   */
   [[nodiscard]] std::map<void*, allocation_info> const& get_outstanding_allocations()
     const noexcept;
 
