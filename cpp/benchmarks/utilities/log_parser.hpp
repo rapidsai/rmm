@@ -94,37 +94,23 @@ inline std::ostream& operator<<(std::ostream& os, event const& evt)
  *
  * @note currently unused. Seemed necessary for ordering but it appears the log currently
  * is in timestamp order even for multithreaded logs.
- * @note This function can be simplified with C++20 and later.
- *
  * @param str_time The input time in format "HH:MM:SS:us" where us is a 6 digits microseconds part
  * of the current second. (This is the format rmm::mr::logging_resource_adaptor outputs)
  * @return std::chrono::time_point<std::chrono::system_clock> Converted time point.
  */
 inline std::chrono::time_point<std::chrono::system_clock> parse_time(std::string const& str_time)
 {
-  std::size_t current  = str_time.find(':');
-  std::size_t previous = 0;
-  int hours            = std::stoi(str_time.substr(previous, current - previous));
-  previous             = current;
-  current              = str_time.find(':');
-  int minutes          = std::stoi(str_time.substr(previous, current - previous));
-  previous             = current;
-  current              = str_time.find(':');
-  int seconds          = std::stoi(str_time.substr(previous, current - previous));
-  int microseconds     = std::stoi(str_time.substr(current + 1, str_time.length()));
+  int hours{};
+  int minutes{};
+  int seconds{};
+  int microseconds{};
+  char delimiter{};
+  std::istringstream{str_time} >> hours >> delimiter >> minutes >> delimiter >> seconds >>
+    delimiter >> microseconds;
 
-  auto const epoch_year{1970};
-  std::tm time{};
-  time.tm_sec  = seconds;
-  time.tm_min  = minutes;
-  time.tm_hour = hours;
-  time.tm_mday = 1;
-  time.tm_mon  = 0;
-  time.tm_year = epoch_year;
-
-  auto timepoint = std::chrono::system_clock::from_time_t(std::mktime(&time));
-  timepoint += std::chrono::microseconds{microseconds};
-  return timepoint;
+  return std::chrono::sys_days{std::chrono::year{1970} / std::chrono::January / 1} +
+         std::chrono::hours{hours} + std::chrono::minutes{minutes} + std::chrono::seconds{seconds} +
+         std::chrono::microseconds{microseconds};
 }
 
 /**
