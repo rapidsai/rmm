@@ -20,7 +20,7 @@ class HWDecompressTest : public ::testing::Test {
  protected:
   static void check_decompress_capable(void* ptr)
   {
-#if CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
+#if CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_VERSION
     if (rmm::detail::hwdecompress::is_supported()) {
       bool is_capable{};
       auto err =
