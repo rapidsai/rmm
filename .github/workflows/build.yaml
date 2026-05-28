@@ -198,7 +198,7 @@ jobs:
       date: ${{ inputs.date }}
       package-name: rmm
       package-type: python
-      publish-wheel-search-key: rmm_wheel_python_abi3
+      publish-wheel-search-key: rmm_wheel_python_rmm
   telemetry-summarize:
     # This job must use a self-hosted runner to record telemetry traces.
     runs-on: linux-amd64-cpu4
