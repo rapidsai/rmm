@@ -181,6 +181,7 @@ jobs:
       date: ${{ inputs.date }}
       package-name: librmm
       package-type: cpp
+      publish-wheel-search-key: rmm_wheel_cpp_librmm
   wheel-publish-python:
     needs: wheel-build-python
     permissions:
