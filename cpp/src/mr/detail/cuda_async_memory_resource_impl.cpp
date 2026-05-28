@@ -36,7 +36,7 @@ cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
   pool_props.handleTypes =
     static_cast<cudaMemAllocationHandleType>(export_handle_type.value_or(cudaMemHandleTypeNone));
 
-#if CUDART_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
+#if CUDART_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_VERSION
   // usage field in the cudaMemPoolProps only exists in new enough versions of the runtime
   // headers.
   if (enable_hw_decompress) { pool_props.usage = 0x2; }
