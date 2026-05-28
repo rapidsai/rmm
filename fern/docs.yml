@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://schema.buildwithfern.dev/docs-yml.json
+
+title: "RMM"
+instances:
+  - url: "nvidia-rmm.docs.buildwithfern.com/rmm"
+    custom-domain: docs.nvidia.com/rmm
+colors:
+  accentPrimary:
+    light: "#2F4B00"
+    dark: "#76B900"
+  background:
+    light: "#FFFFFF"
+    dark: "#000000"
+check:
+  rules:
+    broken-links: "error"
+layout:
+  searchbar-placement: "header"
+  page-width: "1376px"
+  sidebar-width: "248px"
+  content-width: "812px"
+  tabs-placement: "header"
+  hide-feedback: true
+theme:
+  page-actions: "toolbar"
+  footer-nav: "minimal"
+experimental:
+  basepath-aware: true
+navbar-links:
+  - type: "secondary"
+    text: "GitHub"
+    url: "https://github.com/rapidsai/rmm"
+  - type: "secondary"
+    text: "CUDA-X"
+    url: "https://www.nvidia.com/en-us/technologies/cuda-x/"
+navigation:
+  - page: "Home"
+    path: "./pages/index.md"
+  - page: "User Guide"
+    path: "./pages/user_guide/guide.md"
+  - section: "API Reference"
+    contents:
+      - section: "C++ API"
+        contents:
+          - page: "Overview"
+            path: "./pages/api_reference/cpp/index.md"
+          - section: "Memory Resources"
+            contents:
+              - page: "Overview"
+                path: "./pages/api_reference/cpp/memory_resources/index.md"
+              - page: "Memory Resources"
+                path: "./pages/api_reference/cpp/memory_resources/memory_resources.md"
+              - page: "Memory Resource Adaptors"
+                path: "./pages/api_reference/cpp/memory_resources/memory_resource_adaptors.md"
+          - page: "Data Containers"
+            path: "./pages/api_reference/cpp/data_containers.md"
+          - page: "Thrust Integrations"
+            path: "./pages/api_reference/cpp/thrust_integrations.md"
+          - page: "CUDA Device Management"
+            path: "./pages/api_reference/cpp/cuda_device_management.md"
+          - page: "CUDA Streams"
+            path: "./pages/api_reference/cpp/cuda_streams.md"
+          - page: "Errors"
+            path: "./pages/api_reference/cpp/errors.md"
+          - page: "Utilities"
+            path: "./pages/api_reference/cpp/utilities.md"
+          - page: "RMM Namespace"
+            path: "./pages/api_reference/cpp/rmm_namespace.md"
+      - section: "Python API"
+        contents:
+          - page: "Overview"
+            path: "./pages/api_reference/python/index.md"
+          - page: "rmm"
+            path: "./pages/api_reference/python/rmm.md"
+          - page: "Memory Resources"
+            path: "./pages/api_reference/python/mr.md"
+          - page: "Allocators"
+            path: "./pages/api_reference/python/allocators.md"
+          - page: "Statistics"
+            path: "./pages/api_reference/python/statistics.md"
+          - page: "pylibrmm"
+            path: "./pages/api_reference/python/pylibrmm.md"
+          - page: "librmm"
+            path: "./pages/api_reference/python/librmm.md"

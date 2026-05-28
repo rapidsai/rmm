@@ -19,11 +19,12 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd "$(dirname "$0")"; pwd)
 
-VALIDARGS="clean librmm rmm -v -g -n --ptds -h tests benchmarks"
-HELP="$0 [clean] [librmm] [rmm] [-v] [-g] [-n] [--ptds] [--cmake-args=\"<args>\"] [-h]
+VALIDARGS="clean librmm rmm docs -v -g -n --ptds -h tests benchmarks"
+HELP="$0 [clean] [librmm] [rmm] [docs] [-v] [-g] [-n] [--ptds] [--cmake-args=\"<args>\"] [-h]
    clean                       - remove all existing build artifacts and configuration (start over)
    librmm                      - build and install the librmm C++ code
    rmm                         - build and install the rmm Python package
+   docs                        - validate the Fern documentation
    benchmarks                  - build benchmarks
    tests                       - build tests
    -v                          - verbose build mode
@@ -182,4 +183,9 @@ if (( NUMARGS == 0 )) || hasArg rmm; then
     SKBUILD_CMAKE_ARGS="-DCMAKE_PREFIX_PATH=${INSTALL_PREFIX};$(IFS=';'; echo "${EXTRA_CMAKE_ARGS[*]}")" python -m pip install \
         "${PYTHON_ARGS_FOR_INSTALL[@]}" \
         "${REPODIR}"/python/rmm
+fi
+
+# Validate Fern docs
+if hasArg docs; then
+    "${REPODIR}/fern/build_docs.sh" "${FERN_DOCS_MODE:-check}"
 fi

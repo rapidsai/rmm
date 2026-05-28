@@ -14,8 +14,3 @@ errors
 utilities
 rmm_namespace
 ```
-
-## Indices and tables
-
-- {ref}`genindex`
-- {ref}`search`

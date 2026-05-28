@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 # Configuration file for the Sphinx documentation builder.
@@ -46,27 +46,19 @@ release = (
 # ones.
 
 extensions = [
-    "IPython.sphinxext.ipython_console_highlighting",
-    "IPython.sphinxext.ipython_directive",
     "breathe",
     "myst_parser",
-    "nbsphinx",
     "numpydoc",
+    "sphinx_markdown_builder",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
-    "sphinx_copybutton",
     "sphinx_markdown_tables",
-    "sphinxcontrib.jquery",
 ]
 
 # Breathe Configuration
-breathe_projects = {"librmm": "../cpp/doxygen/xml"}
+breathe_projects = {"librmm": "../../../cpp/doxygen/xml"}
 breathe_default_project = "librmm"
-
-copybutton_prompt_text = ">>> "
-
-ipython_mplbackend = "str"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -109,6 +101,11 @@ pygments_style = "sphinx"
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
+
+markdown_flavor = "github"
+markdown_uri_doc_suffix = ".md"
+markdown_anchor_sections = True
+markdown_anchor_signatures = True
 
 
 # -- Options for HTML output ----------------------------------------------

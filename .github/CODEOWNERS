@@ -6,6 +6,9 @@ benchmarks/        @rapidsai/rmm-cpp-codeowners
 #python code owners
 python/            @rapidsai/rmm-python-codeowners
 
+#docs code owners
+fern/              @rapidsai/rmm-cpp-codeowners @rapidsai/rmm-python-codeowners
+
 #cmake code owners
 **/CMakeLists.txt  @rapidsai/rmm-cmake-codeowners
 **/cmake/          @rapidsai/rmm-cmake-codeowners

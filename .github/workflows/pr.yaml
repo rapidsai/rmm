@@ -136,6 +136,7 @@ jobs:
           - '!ci/test_wheel.sh'
           - '!ci/validate_wheel.sh'
           - '!docs/**'
+          - '!fern/**'
           - '!img/**'
           - '!python/**'
         test_python_conda:
@@ -165,6 +166,7 @@ jobs:
           - '!cpp/.clang-tidy'
           - '!cpp/doxygen/**'
           - '!docs/**'
+          - '!fern/**'
           - '!img/**'
         test_python_wheels:
           - '**'
@@ -197,6 +199,7 @@ jobs:
           - '!cpp/.clang-tidy'
           - '!cpp/doxygen/**'
           - '!docs/**'
+          - '!fern/**'
           - '!img/**'
   checks:
     permissions:

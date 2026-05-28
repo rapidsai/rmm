@@ -98,6 +98,8 @@ cpp/doxygen/html
 cpp/doxygen/latex
 cpp/doxygen/xml
 docs/_build
+fern/pages/api_reference
+fern/sphinx/build
 
 #Java
 target
@@ -134,6 +136,7 @@ celerybeat-schedule
 
 # dotenv
 .env
+.venv-docs/
 
 # virtualenv
 .venv
