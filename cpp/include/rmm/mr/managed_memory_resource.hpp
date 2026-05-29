@@ -5,7 +5,6 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
-#include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 
 #include <cuda/memory_resource>
@@ -23,7 +22,7 @@ namespace mr {
 /**
  * @brief Memory resource that uses cudaMallocManaged/Free for allocation/deallocation.
  */
-class managed_memory_resource final {
+class RMM_EXPORT managed_memory_resource final {
  public:
   managed_memory_resource()                               = default;
   ~managed_memory_resource()                              = default;
@@ -48,19 +47,7 @@ class managed_memory_resource final {
    */
   void* allocate([[maybe_unused]] cuda::stream_ref stream,
                  std::size_t bytes,
-                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
-  {
-    // FIXME: Unlike cudaMalloc, cudaMallocManaged will throw an error for 0
-    // size allocations.
-    if (bytes == 0) { return nullptr; }
-    RMM_EXPECTS(rmm::is_supported_base_resource_alignment(alignment),
-                "Requested alignment is larger than this memory resource supports.",
-                rmm::bad_alloc);
-
-    void* ptr{nullptr};
-    RMM_CUDA_TRY_ALLOC(cudaMallocManaged(&ptr, bytes), bytes);
-    return ptr;
-  }
+                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   /**
    * @brief Deallocate memory pointed to by \p ptr.
@@ -75,11 +62,8 @@ class managed_memory_resource final {
    */
   void deallocate([[maybe_unused]] cuda::stream_ref stream,
                   void* ptr,
-                  [[maybe_unused]] std::size_t bytes,
-                  [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaFree(ptr));
-  }
+                  std::size_t bytes,
+                  std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
 
   /**
    * @brief Allocates memory of size at least \p bytes synchronously.
@@ -88,12 +72,7 @@ class managed_memory_resource final {
    * @param alignment The alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
-  {
-    auto* ptr = allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
-    RMM_CUDA_TRY(cudaStreamSynchronize(cudaStream_t{nullptr}));
-    return ptr;
-  }
+  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   /**
    * @brief Deallocate memory pointed to by \p ptr synchronously.
@@ -104,10 +83,7 @@ class managed_memory_resource final {
    */
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
-                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
-  }
+                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
 
   /**
    * @brief Enables the `cuda::mr::device_accessible` property
@@ -136,12 +112,12 @@ class managed_memory_resource final {
    *
    * @return true Always
    */
-  [[nodiscard]] bool operator==(managed_memory_resource const&) const noexcept { return true; }
+  [[nodiscard]] bool operator==(managed_memory_resource const&) const noexcept;
 
   /**
    * @copydoc operator==
    */
-  [[nodiscard]] bool operator!=(managed_memory_resource const&) const noexcept { return false; }
+  [[nodiscard]] bool operator!=(managed_memory_resource const&) const noexcept;
 };
 
 // static property checks

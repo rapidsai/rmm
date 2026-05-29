@@ -65,7 +65,6 @@ void* binning_memory_resource_impl::allocate(cuda::stream_ref stream,
                                              std::size_t bytes,
                                              std::size_t alignment)
 {
-  if (bytes == 0) { return nullptr; }
   return get_resource_ref(bytes).allocate(stream, bytes, alignment);
 }
 
@@ -79,7 +78,6 @@ void binning_memory_resource_impl::deallocate(cuda::stream_ref stream,
 
 void* binning_memory_resource_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  if (bytes == 0) { return nullptr; }
   return get_resource_ref(bytes).allocate(cuda_stream_view{}, bytes, alignment);
 }
 

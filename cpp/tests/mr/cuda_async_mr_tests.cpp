@@ -4,6 +4,7 @@
  */
 
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/mr/cuda_async_memory_resource.hpp>
 
 #include <cuda_runtime_api.h>
