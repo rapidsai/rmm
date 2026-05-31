@@ -39,3 +39,6 @@ sccache --stop-server >/dev/null 2>&1 || true
 
 # remove build_cache directory
 rm -rf "$RAPIDS_CONDA_BLD_OUTPUT_DIR"/build_cache
+
+RAPIDS_PACKAGE_NAME="$(rapids-artifact-name conda_cpp librmm rmm --cuda "$RAPIDS_CUDA_VERSION")"
+export RAPIDS_PACKAGE_NAME

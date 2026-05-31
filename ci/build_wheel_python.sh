@@ -18,7 +18,7 @@ rapids-generate-version > ./VERSION
 pushd "${package_dir}"
 
 RAPIDS_PY_CUDA_SUFFIX=$(rapids-wheel-ctk-name-gen "${RAPIDS_CUDA_VERSION}")
-LIBRMM_WHEELHOUSE=$(RAPIDS_PY_WHEEL_NAME="librmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-github cpp)
+LIBRMM_WHEELHOUSE=$(rapids-download-from-github "$(rapids-artifact-name wheel_cpp librmm rmm --cuda "$RAPIDS_CUDA_VERSION")")
 
 # ensure 'rmm' wheel builds always use the 'librmm' just built in the same CI run
 #
@@ -70,5 +70,5 @@ absolute_wheel_dir=$(realpath "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}")
 popd
 ci/check_symbols.sh "$(echo "${absolute_wheel_dir}"/rmm_*.whl)"
 
-RAPIDS_PACKAGE_NAME="$(rapids-package-name wheel_python rmm --stable --cuda)"
+RAPIDS_PACKAGE_NAME="$(rapids-artifact-name wheel_python rmm rmm --stable --cuda "$RAPIDS_CUDA_VERSION")"
 export RAPIDS_PACKAGE_NAME
