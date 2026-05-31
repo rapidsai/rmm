@@ -7,6 +7,7 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
+#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/limiting_resource_adaptor.hpp>

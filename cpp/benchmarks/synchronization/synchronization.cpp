@@ -32,17 +32,17 @@ cuda_event_timer::cuda_event_timer(benchmark::State& state,
 
     if (l2_cache_bytes > 0) {
       const int memset_value = 0;
-      rmm::device_buffer l2_cache_buffer(static_cast<std::size_t>(l2_cache_bytes), stream);
+      rmm::device_buffer l2_cache_buffer(static_cast<std::size_t>(l2_cache_bytes), stream_);
       RMM_CUDA_TRY(cudaMemsetAsync(l2_cache_buffer.data(),
                                    memset_value,
                                    static_cast<std::size_t>(l2_cache_bytes),
-                                   stream.value()));
+                                   stream_.value()));
     }
   }
 
   RMM_CUDA_TRY(cudaEventCreate(&start));
   RMM_CUDA_TRY(cudaEventCreate(&stop));
-  RMM_CUDA_TRY(cudaEventRecord(start, stream.value()));
+  RMM_CUDA_TRY(cudaEventRecord(start, stream_.value()));
 }
 
 cuda_event_timer::~cuda_event_timer()

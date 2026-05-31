@@ -86,6 +86,8 @@ requirements:
     - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
     - numpy >=1.23,<3.0
     - python
+  run_constraints:
+    - cupy >=13.6.0,!=14.0.0,!=14.1.0
   ignore_run_exports:
     from_package:
       - cuda-python
