@@ -62,10 +62,8 @@ C++:
 - {ref}`Replace do_allocate/do_deallocate overrides <rmm-2604-2606-custom-resource-guide>`.
 - {ref}`Add allocate_sync/deallocate_sync <rmm-2604-2606-custom-resource-guide>`.
 - {ref}`Ensure custom resources are copyable <rmm-2604-2606-copyable-custom-resources>`.
-- {ref}`Move get_property friends out of function scope <rmm-2604-2606-get-property-local-classes>`.
 - {ref}`Dereference resource pointers for ref APIs <rmm-2604-2606-resource-pointers>`.
 - {ref}`Use resource_cast instead of dynamic_cast <rmm-2604-2606-resource-cast>`.
-- {ref}`Remove const data members when assignability is required <rmm-2604-2606-const-members>`.
 - {ref}`Replace cuda::stream_ref{} <rmm-2604-2606-stream-ref-default>`.
 - {ref}`Capture concrete type info before type-erasing <rmm-2604-2606-any-resource-type-erased>`.
 
@@ -493,45 +491,6 @@ RMM's adaptor implementations use a separate implementation class held through
 `rmm::mr::detail::limiting_resource_adaptor_impl` for an example of that
 structure.
 
-(rmm-2604-2606-get-property-local-classes)=
-### `get_property` Friend Cannot Be Defined in Local Classes
-
-C++ does not allow `friend` function definitions inside function-scoped
-(local) classes. If you define a wrapper struct inside a function body
-(common in tests), the `get_property` friend required by the CCCL resource
-concept will fail to compile. Move the struct to namespace scope:
-
-```cpp
-// Won't compile — friend definition in local class
-void my_test() {
-  struct local_wrapper {
-    void* allocate(...) { ... }
-    void deallocate(...) noexcept { ... }
-    bool operator==(local_wrapper const&) const noexcept { return true; }
-    bool operator!=(local_wrapper const& other) const noexcept { return !(*this == other); }
-    constexpr friend void get_property(local_wrapper const&,
-                                       cuda::mr::device_accessible) noexcept {}  // ERROR
-  };
-}
-
-// Fix: move to namespace scope (e.g., anonymous namespace in the test file)
-namespace {
-struct local_wrapper {
-  void* allocate(...) { ... }
-  void deallocate(...) noexcept { ... }
-  bool operator==(local_wrapper const&) const noexcept { return true; }
-  bool operator!=(local_wrapper const& other) const noexcept { return !(*this == other); }
-  constexpr friend void get_property(local_wrapper const&,
-                                     cuda::mr::device_accessible) noexcept {}  // OK
-};
-}  // namespace
-
-void my_test() {
-  local_wrapper w;
-  // ...
-}
-```
-
 (rmm-2604-2606-resource-pointers)=
 ### Resource Pointers No Longer Convert to `device_async_resource_ref`
 
@@ -541,31 +500,28 @@ expected. In 26.06, `device_memory_resource` is gone, so pointers to concrete
 resource types (e.g., `limiting_resource_adaptor*`, `pool_memory_resource*`) do
 **not** implicitly convert to `device_async_resource_ref`.
 
-If you have a function that returns a resource pointer, **dereference** the
-pointer when passing it to APIs that accept `device_async_resource_ref`:
+If you own the function returning a resource pointer, change it to return the
+resource by value. This matches RMM's value-resource model and preserves the
+resource lifetime through internal shared ownership:
 
 ```cpp
-// 26.04 — implicit conversion from pointer
-rmm::mr::limiting_resource_adaptor<rmm::mr::device_memory_resource>* mr = get_some_resource();
-downstream_function(stream, mr);   // OK: device_memory_resource* -> resource_ref
+// 26.04
+rmm::mr::device_memory_resource* get_some_resource();
 
-// 26.06 — dereference the pointer
-rmm::mr::limiting_resource_adaptor* mr = get_some_resource();
-downstream_function(stream, *mr);  // OK: limiting_resource_adaptor& -> resource_ref
-//                          ^ dereference
+// 26.06
+cuda::mr::any_resource<cuda::mr::device_accessible> get_some_resource();
 ```
 
-This applies to any downstream functions with `device_async_resource_ref`
-parameters. APIs that take
-`cuda::mr::any_resource<cuda::mr::device_accessible>` can also receive concrete
-resource objects directly.
+If you cannot change the returning API, dereference the pointer when passing it
+to APIs that accept `device_async_resource_ref`:
 
-> **Tip:** If you see confusing compilation errors about `cuda_stream_view`
-> not converting to `std::size_t`, it likely means the compiler skipped a
-> `(size, stream, mr)` overload (because `mr` didn't match
-> `device_async_resource_ref`) and tried a `(size, alignment, stream, mr)`
-> overload instead. The fix is to dereference the pointer or use a ref-returning
-> API.
+```cpp
+rmm::mr::limiting_resource_adaptor* mr = get_some_resource();
+downstream_function(stream, *mr);
+```
+
+APIs that take `cuda::mr::any_resource<cuda::mr::device_accessible>` can receive
+concrete resource objects directly.
 
 (rmm-2604-2606-resource-cast)=
 ### Use `resource_cast` Instead of `dynamic_cast`
@@ -593,38 +549,7 @@ if (limiting != nullptr) { /* it's a limiting adaptor */ }
 ```
 
 `resource_cast` uses exact type matching. It returns `nullptr` when the stored
-resource has a different concrete type, including a derived or wrapped type. If
-you need broader application-level categorization, track that state explicitly
-alongside the resource.
-
-(rmm-2604-2606-const-members)=
-### `const` Data Members Prevent `resource_ref` Construction
-
-The CCCL `resource_ref` (and `any_resource`) requires stored types to satisfy
-`semiregular`, which includes copy and move *assignability*. A `const` data
-member prevents the compiler from generating copy/move assignment operators,
-so a resource with `const` members will fail concept checks even if it is
-otherwise well-formed:
-
-```cpp
-// Won't work — const member prevents assignment
-struct my_resource {
-  const std::size_t limit;  // ERROR: makes type non-assignable
-  void* allocate(cuda::stream_ref, std::size_t, std::size_t) { ... }
-  // ...
-};
-// static_assert(cuda::mr::resource<my_resource>);  // FAILS
-
-// Fix: remove const
-struct my_resource {
-  std::size_t limit;  // OK: type is now assignable
-  // ...
-};
-```
-
-This is easy to miss because `const` members don't prevent *construction*
-or *copy construction* — only assignment. The error messages from the concept
-check can be cryptic (e.g., "type must be movable").
+resource has a different concrete type, including a derived or wrapped type.
 
 (rmm-2604-2606-stream-ref-default)=
 ### `cuda::stream_ref{}` Default Constructor Is Deprecated
