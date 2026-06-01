@@ -79,26 +79,7 @@ cdef extern from "<cuda/memory_resource>" namespace "cuda::mr" nogil:
         pass
     cdef cppclass any_resource[Properties]:
         any_resource() except +
-
-
-# Inline C++ helper to convert device_async_resource_ref to
-# any_resource<device_accessible> for passing to constructor parameters.
-# Needed because Cython wraps intermediate values in __Pyx_FakeReference<T>,
-# a proxy with operator T&(). CCCL's any_resource only has a constrained
-# forwarding constructor that cannot see through this proxy. A free function
-# performs the conversion in pure C++ where it works directly.
-# TODO: Remove once CCCL merges NVIDIA/cccl#8320 and RMM upgrades.
-cdef extern from *:
-    """
-    #include <cuda/memory_resource>
-    #include <rmm/resource_ref.hpp>
-    inline cuda::mr::any_resource<cuda::mr::device_accessible>
-    make_any_device_resource(rmm::device_async_resource_ref ref) {
-        return cuda::mr::any_resource<cuda::mr::device_accessible>(ref);
-    }
-    """
-    any_resource[device_accessible] make_any_device_resource(
-        device_async_resource_ref) nogil except +
+        any_resource(device_async_resource_ref) except +
 
 
 # Inline C++ helper to construct optional[device_async_resource_ref] from any
