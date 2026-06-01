@@ -46,15 +46,15 @@ TYPED_TEST_P(CcclMrRefTestMT, SetCurrentDeviceResourceRefPerThread_mt)
   std::vector<std::thread> threads;
   threads.reserve(static_cast<std::size_t>(num_devices));
 
-  auto local_mr = this->ref;
+  auto mr = this->ref;
 
   for (int i = 0; i < num_devices; ++i) {
     threads.emplace_back(
-      [local_mr](auto dev_id) {
+      [mr](auto dev_id) {
         RMM_CUDA_TRY(cudaSetDevice(dev_id));
         test_get_current_device_resource_ref();
 
-        rmm::mr::set_current_device_resource(local_mr);
+        rmm::mr::set_current_device_resource(mr);
         test_get_current_device_resource_ref();
 
         rmm::mr::reset_current_device_resource();
@@ -73,10 +73,10 @@ TYPED_TEST_P(CcclMrRefTestMT, Allocate)
   int device;
   RMM_CUDA_TRY(cudaGetDevice(&device));
 
-  auto local_mr = this->ref;
-  spawn([device, local_mr]() {
+  auto mr = this->ref;
+  spawn([device, mr]() {
     RMM_CUDA_TRY(cudaSetDevice(device));
-    test_various_allocations(local_mr);
+    test_various_allocations(mr);
   });
 }
 

@@ -20,7 +20,7 @@
 cuda_event_timer::cuda_event_timer(benchmark::State& state,
                                    bool flush_l2_cache,
                                    rmm::cuda_stream_view stream)
-  : stream_(stream), p_state(&state)
+  : stream(stream), p_state(&state)
 {
   // flush all of L2$
   if (flush_l2_cache) {
@@ -32,22 +32,22 @@ cuda_event_timer::cuda_event_timer(benchmark::State& state,
 
     if (l2_cache_bytes > 0) {
       const int memset_value = 0;
-      rmm::device_buffer l2_cache_buffer(static_cast<std::size_t>(l2_cache_bytes), stream_);
+      rmm::device_buffer l2_cache_buffer(static_cast<std::size_t>(l2_cache_bytes), stream);
       RMM_CUDA_TRY(cudaMemsetAsync(l2_cache_buffer.data(),
                                    memset_value,
                                    static_cast<std::size_t>(l2_cache_bytes),
-                                   stream_.value()));
+                                   stream.value()));
     }
   }
 
   RMM_CUDA_TRY(cudaEventCreate(&start));
   RMM_CUDA_TRY(cudaEventCreate(&stop));
-  RMM_CUDA_TRY(cudaEventRecord(start, stream_.value()));
+  RMM_CUDA_TRY(cudaEventRecord(start, stream.value()));
 }
 
 cuda_event_timer::~cuda_event_timer()
 {
-  RMM_CUDA_ASSERT_OK(cudaEventRecord(stop, stream_.value()));
+  RMM_CUDA_ASSERT_OK(cudaEventRecord(stop, stream.value()));
   RMM_CUDA_ASSERT_OK(cudaEventSynchronize(stop));
 
   float milliseconds = 0.0F;

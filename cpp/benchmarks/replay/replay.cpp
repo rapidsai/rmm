@@ -82,7 +82,7 @@ using MRFactoryFunc = std::function<any_device_resource(std::size_t)>;
 struct allocation {
   allocation() = default;
   void* ptr{};
-  allocation(void* pointer, std::size_t bytes) : ptr{pointer}, size{bytes} {}
+  allocation(void* ptr, std::size_t size) : ptr{ptr}, size{size} {}
   std::size_t size{};
 };
 

@@ -39,18 +39,18 @@ void* arena_memory_resource_impl::allocate(cuda::stream_ref stream,
 #else
   bytes = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
 #endif
-  auto& stream_arena = get_arena(sv);
+  auto& arena = get_arena(sv);
 
   {
     std::shared_lock lock(mtx_);
-    void* pointer = stream_arena.allocate_sync(bytes);
+    void* pointer = arena.allocate_sync(bytes);
     if (pointer != nullptr) { return pointer; }
   }
 
   {
     std::unique_lock lock(mtx_);
     defragment();
-    void* pointer = stream_arena.allocate_sync(bytes);
+    void* pointer = arena.allocate_sync(bytes);
     if (pointer == nullptr) {
       if (dump_log_on_failure_) { dump_memory_log(bytes); }
       auto const msg = std::string("Maximum pool size exceeded (failed to allocate ") +
@@ -73,11 +73,11 @@ void arena_memory_resource_impl::deallocate(cuda::stream_ref stream,
 #else
   bytes = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
 #endif
-  auto& stream_arena = get_arena(sv);
+  auto& arena = get_arena(sv);
 
   {
     std::shared_lock lock(mtx_);
-    if (stream_arena.deallocate(sv, ptr, bytes)) { return; }
+    if (arena.deallocate(sv, ptr, bytes)) { return; }
   }
 
   {
