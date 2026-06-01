@@ -42,7 +42,6 @@ C++:
 - {ref}`Update device_buffer resource arguments <rmm-2604-2606-device-buffer>`.
 - {ref}`Update resource_ref aliases and pointer conversions <rmm-2604-2606-resource-ref-aliases>`.
 - {ref}`Link against librmm <rmm-2604-2606-compiled-resources>`.
-- {ref}`Update include directives for removed headers <rmm-2604-2606-removed-headers>`.
 
 Python/Cython:
 
@@ -65,7 +64,6 @@ C++:
 - {ref}`Dereference resource pointers for ref APIs <rmm-2604-2606-resource-pointers>`.
 - {ref}`Use resource_cast instead of dynamic_cast <rmm-2604-2606-resource-cast>`.
 - {ref}`Replace cuda::stream_ref{} <rmm-2604-2606-stream-ref-default>`.
-- {ref}`Capture concrete type info before type-erasing <rmm-2604-2606-any-resource-type-erased>`.
 
 Python/Cython:
 
@@ -571,30 +569,6 @@ void* allocate_sync(std::size_t bytes, std::size_t alignment) {
 }
 ```
 
-(rmm-2604-2606-any-resource-type-erased)=
-### `any_resource` Is Fully Type-Erased (No `get<T>()`)
-
-`cuda::mr::any_resource<cuda::mr::device_accessible>` does not provide a
-`get<T>()` method to recover the concrete resource type. Once a resource is
-stored in `any_resource`, the concrete type is lost.
-
-If you need access to concrete type information after construction (e.g.,
-calling `pool_memory_resource::pool_size()` or capturing a
-`cuda_async_memory_resource::pool_handle()`), you must extract that
-information *before* storing the resource into `any_resource`:
-
-```cpp
-// Won't work — can't get concrete type back
-cuda::mr::any_resource<cuda::mr::device_accessible> mr =
-    rmm::mr::pool_memory_resource(cuda_mr, pool_size);
-// mr.get<rmm::mr::pool_memory_resource>()  // NO SUCH METHOD
-
-// Fix: capture what you need before type-erasing
-rmm::mr::pool_memory_resource pool(cuda_mr, pool_size);
-auto pool_sz = pool.pool_size();  // capture before storing
-cuda::mr::any_resource<cuda::mr::device_accessible> mr = std::move(pool);
-```
-
 ### Python/Cython
 
 (rmm-2604-2606-cython-pxd)=
@@ -753,11 +727,3 @@ self.c_ref = make_my_resource_ref(deref(self.c_obj))
 This pattern matches how RMM's own Python bindings work internally. The
 `optional` return type avoids issues with `device_async_resource_ref`'s
 non-default-constructible nature during Cython assignment.
-
-(rmm-2604-2606-removed-headers)=
-## Removed Headers
-
-| Removed Header | Replacement |
-|----------------|-------------|
-| `rmm/mr/device_memory_resource.hpp` | Implement `cuda::mr::resource` concept directly |
-| `rmm/mr/owning_wrapper.hpp` | Resources are value types with shared ownership |
