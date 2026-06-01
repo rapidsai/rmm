@@ -3,15 +3,15 @@
 RMM 26.06 completes the migration to CCCL-native memory resources. This release
 removes `device_memory_resource`, eliminates the `Upstream` template parameter
 from all resources and adaptors, introduces `cuda::mr::shared_resource`-based
-ownership, and removes several legacy APIs. This guide covers every breaking
-change and shows how to update consuming code.
+ownership, and removes several legacy APIs. This guide covers the breaking
+changes and shows how to update consuming code.
 
 ## Summary of Breaking Changes
 
 RMM's memory resource model changes from inheritance-based resources to
 CCCL-native value resources:
 
-- `device_memory_resource` is removed; resources now satisfy CCCL's
+- `device_memory_resource` is removed; resources must now satisfy CCCL's
   `cuda::mr::resource` concept directly.
 - Resources and adaptors are no longer templated on `Upstream`.
 - Upstream resources are stored as
@@ -22,10 +22,11 @@ CCCL-native value resources:
 Several APIs change as a consequence:
 
 - Allocation order changes from `allocate(size, stream)` to
-  `allocate(stream, size, alignment)`.
+  `allocate(stream, size, alignment)`. This aligns with the CCCL memory
+  resource design.
 - Pointer-based per-device resource setters are replaced by `any_resource`
   setters.
-- `owning_wrapper` and `device_memory_resource_view` are removed.
+- `owning_wrapper` is removed.
 - Resource implementations are compiled into `librmm` instead of being fully
   header-only.
 - Python `DeviceMemoryResource` stores a concrete `unique_ptr` plus a resource
@@ -40,7 +41,6 @@ C++:
 - {ref}`Replace pointer-based per-device resource setters <rmm-2604-2606-per-device-resource>`.
 - {ref}`Update device_buffer resource arguments <rmm-2604-2606-device-buffer>`.
 - {ref}`Update resource_ref aliases and pointer conversions <rmm-2604-2606-resource-ref-aliases>`.
-- {ref}`Update failure_callback_t includes <rmm-2604-2606-failure-callback-t>`.
 - {ref}`Link against librmm <rmm-2604-2606-compiled-resources>`.
 - {ref}`Update cuda_stream to cuda::stream_ref noexcept assumptions <rmm-2604-2606-cuda-stream-conversion>`.
 - {ref}`Update include directives for removed headers <rmm-2604-2606-removed-headers>`.
@@ -94,16 +94,16 @@ still exist in 26.06 as deprecated compatibility APIs, but will be removed in
 
 Replacements:
 
-- `get_current_device_resource()` returning `device_memory_resource*` ->
+- `get_current_device_resource()` returning `device_memory_resource*` →
   `get_current_device_resource_ref()` returning `device_async_resource_ref`.
-- `set_current_device_resource(device_memory_resource*)` ->
+- `set_current_device_resource(device_memory_resource*)` →
   `set_current_device_resource(cuda::mr::any_resource<cuda::mr::device_accessible>)`.
-- `get_per_device_resource(id)` returning `device_memory_resource*` ->
-  `get_per_device_resource_ref(id)` returning `device_async_resource_ref`.
-- `set_per_device_resource(id, device_memory_resource*)` ->
-  `set_per_device_resource(id, cuda::mr::any_resource<cuda::mr::device_accessible>)`.
-- `reset_per_device_resource_ref(id)` -> `reset_per_device_resource(id)`.
-- `reset_current_device_resource_ref()` -> `reset_current_device_resource()`.
+- `get_per_device_resource(cuda_device_id)` returning `device_memory_resource*` →
+  `get_per_device_resource_ref(cuda_device_id)` returning `device_async_resource_ref`.
+- `set_per_device_resource(cuda_device_id, device_memory_resource*)` →
+  `set_per_device_resource(cuda_device_id, cuda::mr::any_resource<cuda::mr::device_accessible>)`.
+- `reset_per_device_resource_ref(cuda_device_id)` → `reset_per_device_resource(cuda_device_id)`.
+- `reset_current_device_resource_ref()` → `reset_current_device_resource()`.
 
 The `set_*` functions now return `cuda::mr::any_resource<cuda::mr::device_accessible>`,
 an owning type-erased resource that holds the previously set resource. This can
@@ -151,25 +151,11 @@ can no longer be constructed from a `device_memory_resource*`. Code that
 constructed a `resource_ref` from a `device_memory_resource` pointer must
 be updated to pass the concrete resource type directly.
 
-(rmm-2604-2606-failure-callback-t)=
-### `failure_callback_t` Moved to Separate Header
-
-The `failure_callback_t` type alias is now in its own header:
-
-```cpp
-// 26.04
-#include <rmm/mr/failure_callback_resource_adaptor.hpp>  // included failure_callback_t
-
-// 26.06
-#include <rmm/mr/failure_callback_t.hpp>  // for failure_callback_t alone
-#include <rmm/mr/failure_callback_resource_adaptor.hpp>  // also includes it
-```
-
 (rmm-2604-2606-compiled-resources)=
 ### Resource Implementations Are Compiled, Not Header-Only
 
 In 26.04, RMM resource implementations were entirely header-only (template
-definitions lived in the headers). In 26.06, the de-templated resources have
+definitions lived in the headers). In 26.06, many resources and adaptors have
 their implementations in compiled translation units under `cpp/src/mr/`. The
 public headers contain only the class declaration and inline accessors.
 
@@ -292,17 +278,17 @@ is now a non-template class. The upstream is accepted as a
 
 Remove the `Upstream` template parameter from these type names:
 
-- `pool_memory_resource<Upstream>` -> `pool_memory_resource`
-- `arena_memory_resource<Upstream>` -> `arena_memory_resource`
-- `fixed_size_memory_resource<Upstream>` -> `fixed_size_memory_resource`
-- `binning_memory_resource<Upstream>` -> `binning_memory_resource`
-- `logging_resource_adaptor<Upstream>` -> `logging_resource_adaptor`
-- `tracking_resource_adaptor<Upstream>` -> `tracking_resource_adaptor`
-- `statistics_resource_adaptor<Upstream>` -> `statistics_resource_adaptor`
-- `aligned_resource_adaptor<Upstream>` -> `aligned_resource_adaptor`
-- `limiting_resource_adaptor<Upstream>` -> `limiting_resource_adaptor`
-- `thread_safe_resource_adaptor<Upstream>` -> `thread_safe_resource_adaptor`
-- `prefetch_resource_adaptor<Upstream>` -> `prefetch_resource_adaptor`
+- `pool_memory_resource<Upstream>` → `pool_memory_resource`
+- `arena_memory_resource<Upstream>` → `arena_memory_resource`
+- `fixed_size_memory_resource<Upstream>` → `fixed_size_memory_resource`
+- `binning_memory_resource<Upstream>` → `binning_memory_resource`
+- `logging_resource_adaptor<Upstream>` → `logging_resource_adaptor`
+- `tracking_resource_adaptor<Upstream>` → `tracking_resource_adaptor`
+- `statistics_resource_adaptor<Upstream>` → `statistics_resource_adaptor`
+- `aligned_resource_adaptor<Upstream>` → `aligned_resource_adaptor`
+- `limiting_resource_adaptor<Upstream>` → `limiting_resource_adaptor`
+- `thread_safe_resource_adaptor<Upstream>` → `thread_safe_resource_adaptor`
+- `prefetch_resource_adaptor<Upstream>` → `prefetch_resource_adaptor`
 
 Note: `failure_callback_resource_adaptor` retains a template parameter, but it
 is now `ExceptionType` (defaulting to `rmm::out_of_memory`), not `Upstream`.
