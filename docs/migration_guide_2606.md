@@ -42,13 +42,11 @@ C++:
 - {ref}`Update device_buffer resource arguments <rmm-2604-2606-device-buffer>`.
 - {ref}`Update resource_ref aliases and pointer conversions <rmm-2604-2606-resource-ref-aliases>`.
 - {ref}`Link against librmm <rmm-2604-2606-compiled-resources>`.
-- {ref}`Update cuda_stream to cuda::stream_ref noexcept assumptions <rmm-2604-2606-cuda-stream-conversion>`.
 - {ref}`Update include directives for removed headers <rmm-2604-2606-removed-headers>`.
 
 Python/Cython:
 
 - {ref}`Update DeviceMemoryResource internals <rmm-2604-2606-python-device-memory-resource>`.
-- {ref}`Update per-device resource binding calls <rmm-2604-2606-python-per-device-resource>`.
 - {ref}`Update downstream Cython function signatures <rmm-2604-2606-cython-downstream-pxd>`.
 - {ref}`Update downstream Cython .pyx calls <rmm-2604-2606-cython-pyx>`.
 
@@ -167,13 +165,6 @@ memory resource layer, you will need to update your build system to link the
 For CMake users, this should already work if you use `find_package(rmm)` or
 `rapids_find_package(rmm)` — the imported `rmm::rmm` target handles linking.
 
-(rmm-2604-2606-cuda-stream-conversion)=
-### `rmm::cuda_stream` to `cuda::stream_ref` Conversion
-
-`rmm::cuda_stream::operator cuda::stream_ref()` is no longer `noexcept`. This
-is unlikely to require code changes but may affect `noexcept` specifications in
-downstream code that converts `cuda_stream` to `stream_ref`.
-
 ### Python/Cython
 
 (rmm-2604-2606-python-device-memory-resource)=
@@ -198,19 +189,11 @@ self.c_obj.reset(new pool_memory_resource[device_memory_resource](
 
 # 26.06
 self.c_obj.reset(new pool_memory_resource(
-    make_any_device_resource(upstream_mr.get_mr()),
+    upstream_mr.get_mr(),
     initial_pool_size,
     maximum_pool_size))
 self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 ```
-
-(rmm-2604-2606-python-per-device-resource)=
-### Per-Device Resource Python API
-
-The Python `set_per_device_resource` and `set_current_device_resource`
-functions now call the `any_resource`-based C++ setters under the hood, passing
-`make_any_device_resource(mr.get_mr())` instead of `device_memory_resource*`.
-The Python-level API is unchanged for users.
 
 ## Memory Resource Changes
 
@@ -290,9 +273,10 @@ Remove the `Upstream` template parameter from these type names:
 - `thread_safe_resource_adaptor<Upstream>` → `thread_safe_resource_adaptor`
 - `prefetch_resource_adaptor<Upstream>` → `prefetch_resource_adaptor`
 
-Note: `failure_callback_resource_adaptor` retains a template parameter, but it
-is now `ExceptionType` (defaulting to `rmm::out_of_memory`), not `Upstream`.
-The upstream is passed as a `cuda::mr::any_resource<cuda::mr::device_accessible>`.
+Note: `failure_callback_resource_adaptor<Upstream, ExceptionType>` becomes
+`failure_callback_resource_adaptor<ExceptionType>`, where `ExceptionType`
+defaults to `rmm::out_of_memory`. The upstream is passed as a
+`cuda::mr::any_resource<cuda::mr::device_accessible>`.
 
 ```cpp
 // 26.04
@@ -712,11 +696,12 @@ cdef cppclass pool_memory_resource:
 (rmm-2604-2606-cython-failure-callback)=
 ### `failure_callback_resource_adaptor` Cython Template Change
 
-The Cython template parameter changes from `Upstream` to `ExceptionType`:
+The Cython template parameters change from `[Upstream, ExceptionType]` to
+`[ExceptionType]`:
 
 ```cython
 # 26.04
-cdef cppclass failure_callback_resource_adaptor[Upstream](device_memory_resource):
+cdef cppclass failure_callback_resource_adaptor[Upstream, ExceptionType](device_memory_resource):
     failure_callback_resource_adaptor(Upstream* upstream_mr, ...) except +
 
 # 26.06
@@ -748,7 +733,6 @@ from rmm.librmm.memory_resource cimport (
     any_resource,
     device_accessible,
     device_async_resource_ref,
-    make_any_device_resource,
 )
 
 cdef extern from "mylib/api.hpp" namespace "mylib" nogil:
@@ -761,7 +745,8 @@ cdef extern from "mylib/api.hpp" namespace "mylib" nogil:
 `device_async_resource_ref` is a lightweight value type (like a pointer),
 so it is passed by value rather than by pointer. If the target C++ API takes
 an owning `cuda::mr::any_resource<cuda::mr::device_accessible>`, declare the
-parameter as `any_resource[device_accessible]` instead.
+parameter as `any_resource[device_accessible]` instead and pass `mr.get_mr()`
+from `.pyx` code.
 
 (rmm-2604-2606-cython-pyx)=
 ### Downstream Cython `.pyx` Files: Passing Resource References
@@ -783,12 +768,13 @@ with nogil:
 ```
 
 When the target C++ function takes `cuda::mr::any_resource<cuda::mr::device_accessible>`,
-wrap the returned ref with `make_any_device_resource`:
+also pass `mr.get_mr()`. Cython can construct `any_resource[device_accessible]`
+from `device_async_resource_ref` directly:
 
 ```cython
 cdef DeviceMemoryResource mr = ...
 with nogil:
-    result = cpp_my_function(input.view(), make_any_device_resource(mr.get_mr()))
+    result = cpp_my_function(input.view(), mr.get_mr())
 ```
 
 (rmm-2604-2606-cython-resource-ref-helpers)=
@@ -811,7 +797,6 @@ from rmm.librmm.memory_resource cimport (
     any_resource,
     device_accessible,
     device_async_resource_ref,
-    make_any_device_resource,
 )
 
 cdef extern from "<my_project/my_resource.hpp>" nogil:
@@ -838,7 +823,7 @@ Then in your `.pyx`, after constructing the C++ object, set `c_ref`:
 
 ```cython
 # my_project/my_resource.pyx
-self.c_obj.reset(new cpp_MyResource(make_any_device_resource(upstream_mr.get_mr())))
+self.c_obj.reset(new cpp_MyResource(upstream_mr.get_mr()))
 self.c_ref = make_my_resource_ref(deref(self.c_obj))
 ```
 
