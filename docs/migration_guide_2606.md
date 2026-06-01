@@ -47,7 +47,6 @@ Python/Cython:
 
 - {ref}`Update DeviceMemoryResource internals <rmm-2604-2606-python-device-memory-resource>`.
 - {ref}`Update downstream Cython function signatures <rmm-2604-2606-cython-downstream-pxd>`.
-- {ref}`Update downstream Cython .pyx calls <rmm-2604-2606-cython-pyx>`.
 
 ### Memory resource changes
 
@@ -68,9 +67,7 @@ C++:
 Python/Cython:
 
 - {ref}`Update Cython .pxd resource declarations <rmm-2604-2606-cython-pxd>`.
-- {ref}`Update failure_callback_resource_adaptor declarations <rmm-2604-2606-cython-failure-callback>`.
 - {ref}`Update downstream Cython function signatures <rmm-2604-2606-cython-downstream-pxd>`.
-- {ref}`Update downstream Cython .pyx calls <rmm-2604-2606-cython-pyx>`.
 - {ref}`Add make_*_resource_ref helpers <rmm-2604-2606-cython-resource-ref-helpers>`.
 
 ## RMM Library Changes
@@ -590,24 +587,6 @@ cdef cppclass pool_memory_resource:
                          optional[size_t] maximum_pool_size) except +
 ```
 
-(rmm-2604-2606-cython-failure-callback)=
-### `failure_callback_resource_adaptor` Cython Template Change
-
-The Cython template parameters change from `[Upstream, ExceptionType]` to
-`[ExceptionType]`:
-
-```cython
-# 26.04
-cdef cppclass failure_callback_resource_adaptor[Upstream, ExceptionType](device_memory_resource):
-    failure_callback_resource_adaptor(Upstream* upstream_mr, ...) except +
-
-# 26.06
-cdef cppclass failure_callback_resource_adaptor[ExceptionType]:
-    failure_callback_resource_adaptor(any_resource[device_accessible] upstream_mr, ...) except +
-
-ctypedef failure_callback_resource_adaptor[out_of_memory] failure_callback_resource_adaptor_oom
-```
-
 (rmm-2604-2606-cython-downstream-pxd)=
 ### Downstream Cython `.pxd` Declarations: Pointer to Value Type
 
@@ -626,11 +605,7 @@ cdef extern from "mylib/api.hpp" namespace "mylib" nogil:
     ) except +
 
 # 26.06
-from rmm.librmm.memory_resource cimport (
-    any_resource,
-    device_accessible,
-    device_async_resource_ref,
-)
+from rmm.librmm.memory_resource cimport device_async_resource_ref
 
 cdef extern from "mylib/api.hpp" namespace "mylib" nogil:
     unique_ptr[column] my_function(
@@ -644,35 +619,6 @@ so it is passed by value rather than by pointer. If the target C++ API takes
 an owning `cuda::mr::any_resource<cuda::mr::device_accessible>`, declare the
 parameter as `any_resource[device_accessible]` instead and pass `mr.get_mr()`
 from `.pyx` code.
-
-(rmm-2604-2606-cython-pyx)=
-### Downstream Cython `.pyx` Files: Passing Resource References
-
-In `.pyx` files that call C++ functions, keep using `mr.get_mr()` when the
-target C++ function takes `device_async_resource_ref`. `get_mr()` returns a
-`device_async_resource_ref` and can be used directly inside `with nogil:` blocks:
-
-```cython
-# 26.04
-cdef DeviceMemoryResource mr = ...
-with nogil:
-    result = cpp_my_function(input.view(), mr.get_mr())
-
-# 26.06
-cdef DeviceMemoryResource mr = ...
-with nogil:
-    result = cpp_my_function(input.view(), mr.get_mr())
-```
-
-When the target C++ function takes `cuda::mr::any_resource<cuda::mr::device_accessible>`,
-also pass `mr.get_mr()`. Cython can construct `any_resource[device_accessible]`
-from `device_async_resource_ref` directly:
-
-```cython
-cdef DeviceMemoryResource mr = ...
-with nogil:
-    result = cpp_my_function(input.view(), mr.get_mr())
-```
 
 (rmm-2604-2606-cython-resource-ref-helpers)=
 ### Downstream Cython Wrappers Need `make_*_resource_ref` Helpers
