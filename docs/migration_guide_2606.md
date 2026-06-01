@@ -68,7 +68,6 @@ C++:
 - {ref}`Remove const data members when assignability is required <rmm-2604-2606-const-members>`.
 - {ref}`Replace cuda::stream_ref{} <rmm-2604-2606-stream-ref-default>`.
 - {ref}`Capture concrete type info before type-erasing <rmm-2604-2606-any-resource-type-erased>`.
-- {ref}`Remove device_memory_resource_view usage <rmm-2604-2606-device-memory-resource-view>`.
 
 Python/Cython:
 
@@ -272,11 +271,8 @@ Remove the `Upstream` template parameter from these type names:
 - `limiting_resource_adaptor<Upstream>` → `limiting_resource_adaptor`
 - `thread_safe_resource_adaptor<Upstream>` → `thread_safe_resource_adaptor`
 - `prefetch_resource_adaptor<Upstream>` → `prefetch_resource_adaptor`
-
-Note: `failure_callback_resource_adaptor<Upstream, ExceptionType>` becomes
-`failure_callback_resource_adaptor<ExceptionType>`, where `ExceptionType`
-defaults to `rmm::out_of_memory`. The upstream is passed as a
-`cuda::mr::any_resource<cuda::mr::device_accessible>`.
+- `failure_callback_resource_adaptor<Upstream, ExceptionType>` →
+  `failure_callback_resource_adaptor<ExceptionType>`
 
 ```cpp
 // 26.04
@@ -291,7 +287,7 @@ rmm::mr::logging_resource_adaptor logged{pool, "log.csv"};
 ```
 
 (rmm-2604-2606-upstream-any-resource)=
-### Upstream Resources Are Passed by `any_resource`, Not Pointer
+### Upstream Resources Are Passed by `any_resource` Value, Not Pointer
 
 Constructors for adaptors and pool-based resources now take
 `cuda::mr::any_resource<cuda::mr::device_accessible>` (an owning type-erased
@@ -384,15 +380,6 @@ rmm::mr::cuda_memory_resource cuda_mr;
 rmm::mr::pool_memory_resource pool{cuda_mr, pool_size};
 // pool is stored by value; its state is kept alive by internal shared ownership
 ```
-
-(rmm-2604-2606-device-memory-resource-view)=
-### `device_memory_resource_view` Is Removed
-
-**Header removed:** `rmm/mr/detail/device_memory_resource_view.hpp`
-
-This bridge class was used to wrap a `device_async_resource_ref` into a
-`device_memory_resource`. It is no longer needed since the legacy base class
-is gone.
 
 (rmm-2604-2606-custom-resource-guide)=
 ### Custom Resource Implementation Guide
@@ -838,4 +825,3 @@ non-default-constructible nature during Cython assignment.
 |----------------|-------------|
 | `rmm/mr/device_memory_resource.hpp` | Implement `cuda::mr::resource` concept directly |
 | `rmm/mr/owning_wrapper.hpp` | Resources are value types with shared ownership |
-| `rmm/mr/detail/device_memory_resource_view.hpp` | No replacement needed |
