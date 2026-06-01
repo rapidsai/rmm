@@ -404,7 +404,8 @@ class my_resource : public rmm::mr::device_memory_resource {
 // 26.06
 class my_resource {
  public:
-  explicit my_resource(rmm::device_async_resource_ref upstream) : upstream_(upstream) {}
+  explicit my_resource(cuda::mr::any_resource<cuda::mr::device_accessible> upstream)
+    : upstream_(std::move(upstream)) {}
 
   // Async (stream-ordered) interface
   void* allocate(cuda::stream_ref stream, std::size_t bytes,
@@ -438,10 +439,14 @@ class my_resource {
   constexpr friend void get_property(my_resource const&, cuda::mr::device_accessible) noexcept {}
 
  private:
-  rmm::device_async_resource_ref upstream_;
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_;
 };
 static_assert(cuda::mr::resource_with<my_resource, cuda::mr::device_accessible>);
 ```
+
+RMM adaptors store upstream resources as
+`cuda::mr::any_resource<cuda::mr::device_accessible>` so the upstream resource
+stays alive with the adaptor state.
 
 > **Note:** The CCCL `resource` concept requires both the async interface
 > (`allocate`/`deallocate` with `stream_ref`) and the synchronous interface
@@ -460,7 +465,8 @@ movable**. If your custom resource holds non-copyable members like
 `std::shared_mutex`, `std::unique_ptr`, or `std::unordered_set`, it cannot
 be stored directly in `any_resource`.
 
-The fix is to wrap non-copyable state in `std::shared_ptr`:
+A lightweight fix for small custom resources is to wrap shared state in
+`std::shared_ptr`:
 
 ```cpp
 // Won't work — shared_mutex is not copyable
@@ -481,6 +487,11 @@ class my_tracking_resource {
   // ...
 };
 ```
+
+RMM's adaptor implementations use a separate implementation class held through
+`cuda::mr::shared_resource`. See `rmm::mr::limiting_resource_adaptor` and
+`rmm::mr::detail::limiting_resource_adaptor_impl` for an example of that
+structure.
 
 (rmm-2604-2606-get-property-local-classes)=
 ### `get_property` Friend Cannot Be Defined in Local Classes
