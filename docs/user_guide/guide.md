@@ -123,19 +123,19 @@ by migratable memory.
 >>> cuda_stream = device.create_stream(rmm_stream)
 ```
 
-### `MemoryResource` objects
+### Memory resource objects
 
-`MemoryResource` objects are used to configure how device memory allocations are made by
+Memory resource objects are used to configure how device memory allocations are made by
 RMM.
 
-By default if a `MemoryResource` is not set explicitly, RMM uses the `CudaMemoryResource`, which
+By default if a memory resource is not set explicitly, RMM uses the `CudaMemoryResource`, which
 uses `cudaMalloc` for allocating device memory.
 
 `rmm.reinitialize()` provides an easy way to initialize RMM with specific memory resource options
 across multiple devices. See `help(rmm.reinitialize)` for full details.
 
 For lower-level control, the `rmm.mr.set_current_device_resource()` function can be
-used to set a different MemoryResource for the current CUDA device.  For
+used to set a different current device resource for the current CUDA device.  For
 example, enabling the `ManagedMemoryResource` tells RMM to use
 `cudaMallocManaged` instead of `cudaMalloc` for allocating memory:
 
@@ -178,13 +178,13 @@ Similarly, to use a pool of managed memory:
 >>> rmm.mr.set_current_device_resource(pool)
 ```
 
-Other `MemoryResource`s include:
+Other memory resources include:
 
 * `FixedSizeMemoryResource` for allocating fixed blocks of memory
 * `BinningMemoryResource` for allocating blocks within specified "bin" sizes from different memory
 resources
 
-`MemoryResource`s are highly configurable and can be composed together in different ways.
+Memory resources are highly configurable and can be composed together in different ways.
 See `help(rmm.mr)` for more information.
 
 ## Using RMM with third-party libraries

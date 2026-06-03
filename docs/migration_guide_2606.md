@@ -12,7 +12,8 @@ RMM's memory resource model changes from inheritance-based resources to
 CCCL-native value resources:
 
 - `device_memory_resource` is removed; resources must now satisfy CCCL's
-  `cuda::mr::resource` concept directly.
+  [`cuda::mr::resource` concept](https://nvidia.github.io/cccl/unstable/libcudacxx/extended_api/memory_resource/resource.html)
+  directly.
 - Resources and adaptors are no longer templated on `Upstream`.
 - Upstream resources are stored as
   `cuda::mr::any_resource<cuda::mr::device_accessible>` instead of raw pointers.
@@ -163,7 +164,8 @@ In 26.04, all RMM memory resources — both base resources like
 `cuda_memory_resource` and adaptors like `pool_memory_resource` — inherited from
 `rmm::mr::device_memory_resource` and overrode `do_allocate` / `do_deallocate`
 virtual methods. In 26.06, this base class no longer exists. Every resource
-(base and adaptor alike) instead satisfies CCCL's `cuda::mr::resource` concept
+(base and adaptor alike) instead satisfies CCCL's
+[`cuda::mr::resource` concept](https://nvidia.github.io/cccl/unstable/libcudacxx/extended_api/memory_resource/resource.html)
 directly.
 
 This means code that relied on polymorphism through `device_memory_resource*`
@@ -266,8 +268,8 @@ rmm::mr::pool_memory_resource pool{cuda_mr, pool_size};
 (rmm-2604-2606-allocation-signatures)=
 ### Allocation and Deallocation Signature Changes
 
-The CCCL resource concept uses a different argument order and adds an alignment
-parameter:
+The [CCCL resource concept](https://nvidia.github.io/cccl/unstable/libcudacxx/extended_api/memory_resource/resource.html)
+uses a different argument order and adds an alignment parameter:
 
 ```cpp
 // 26.04 (device_memory_resource virtual interface)
