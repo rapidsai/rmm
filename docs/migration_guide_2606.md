@@ -29,8 +29,6 @@ Several APIs change as a consequence:
 - `owning_wrapper` is removed.
 - Resource implementations are compiled into `librmm` instead of being fully
   header-only.
-- Python `DeviceMemoryResource` stores a concrete `unique_ptr` plus a resource
-  ref instead of `shared_ptr` to the old base class.
 
 ## Migration Checklist
 
@@ -42,11 +40,6 @@ C++:
 - {ref}`Update device_buffer resource arguments <rmm-2604-2606-device-buffer>`.
 - {ref}`Update resource_ref aliases and pointer conversions <rmm-2604-2606-resource-ref-aliases>`.
 - {ref}`Link against librmm <rmm-2604-2606-compiled-resources>`.
-
-Python/Cython:
-
-- {ref}`Update DeviceMemoryResource internals <rmm-2604-2606-python-device-memory-resource>`.
-- {ref}`Update downstream Cython function signatures <rmm-2604-2606-cython-downstream-pxd>`.
 
 ### Memory resource changes
 
@@ -64,11 +57,11 @@ C++:
 - {ref}`Use resource_cast instead of dynamic_cast <rmm-2604-2606-resource-cast>`.
 - {ref}`Replace cuda::stream_ref{} <rmm-2604-2606-stream-ref-default>`.
 
-Python/Cython:
+Cython:
 
 - {ref}`Update Cython .pxd resource declarations <rmm-2604-2606-cython-pxd>`.
 - {ref}`Update downstream Cython function signatures <rmm-2604-2606-cython-downstream-pxd>`.
-- {ref}`Add make_*_resource_ref helpers <rmm-2604-2606-cython-resource-ref-helpers>`.
+- {ref}`Update custom Cython resource wrappers <rmm-2604-2606-cython-resource-ref-helpers>`.
 
 ## RMM Library Changes
 
@@ -156,36 +149,6 @@ memory resource layer, you will need to update your build system to link the
 
 For CMake users, this should already work if you use `find_package(rmm)` or
 `rapids_find_package(rmm)` — the imported `rmm::rmm` target handles linking.
-
-### Python/Cython
-
-(rmm-2604-2606-python-device-memory-resource)=
-### `DeviceMemoryResource` Internal Representation
-
-The base `DeviceMemoryResource` class in Python no longer holds a
-`shared_ptr[device_memory_resource]`. Instead, each concrete subclass holds a
-`unique_ptr` to its specific C++ type, and the base class holds an
-`optional[device_async_resource_ref]` (`c_ref`).
-
-**Cython bindings authors:**
-- Replace `self.c_obj.get()` (which returned `device_memory_resource*`) with
-  `self.get_mr()` (which returns `device_async_resource_ref`).
-- Keep using `get_mr()` in `.pyx` code when passing a resource ref to C++.
-- Constructing a resource now requires two steps: create the `unique_ptr`
-  object, then create the `device_async_resource_ref` from it:
-
-```cython
-# 26.04
-self.c_obj.reset(new pool_memory_resource[device_memory_resource](
-    upstream_mr.get_mr(), initial_pool_size, maximum_pool_size))
-
-# 26.06
-self.c_obj.reset(new pool_memory_resource(
-    upstream_mr.get_mr(),
-    initial_pool_size,
-    maximum_pool_size))
-self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
-```
 
 ## Memory Resource Changes
 
@@ -566,7 +529,11 @@ void* allocate_sync(std::size_t bytes, std::size_t alignment) {
 }
 ```
 
-### Python/Cython
+### Cython
+
+The Python memory resource API is unchanged. This section only applies to
+projects that cimport RMM Cython declarations or expose C++ memory resources
+through Cython.
 
 (rmm-2604-2606-cython-pxd)=
 ### Cython `pxd` Declarations Updated
@@ -621,17 +588,11 @@ parameter as `any_resource[device_accessible]` instead and pass `mr.get_mr()`
 from `.pyx` code.
 
 (rmm-2604-2606-cython-resource-ref-helpers)=
-### Downstream Cython Wrappers Need `make_*_resource_ref` Helpers
+### Custom Cython Resource Wrappers
 
-RMM's Python bindings include inline C++ helper functions
-(`make_device_async_resource_ref`) that produce
-`optional[device_async_resource_ref]` from each concrete RMM resource type.
-These are needed because Cython cannot invoke C++ implicit conversion
-operators directly.
-
-Downstream projects that wrap their own `shared_resource`-based types in
-Cython must define similar helpers. Define an inline C++ function in a
-`cdef extern from *` block in your `.pxd` file:
+If a downstream project wraps its own `shared_resource`-based resource type in
+Cython, define an inline C++ helper that returns
+`optional[device_async_resource_ref]` from the concrete resource type:
 
 ```cython
 # my_project/my_resource.pxd
