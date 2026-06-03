@@ -634,7 +634,7 @@ There are two ways to use RMM in Python code:
 
 1. Using the `rmm.DeviceBuffer` API to explicitly create and manage
    device memory allocations
-2. Transparently via external libraries such as CuPy and Numba
+2. Transparently via external libraries such as CuPy and Numba-CUDA
 
 RMM provides memory resource objects to control _how_ device
 memory is allocated in both the above uses.
@@ -748,10 +748,10 @@ allocations by setting the CuPy CUDA allocator to
 It does not initialize nor change the current resource, e.g., enabling a memory pool.
 See [here](#memory-resource-objects) for more information on changing the current memory resource.
 
-### Using RMM with Numba
+### Using RMM with Numba-CUDA
 
-You can configure Numba to use RMM for memory allocations using the
-Numba [EMM Plugin](https://numba.readthedocs.io/en/stable/cuda/external-memory.html#setting-emm-plugin).
+You can configure Numba-CUDA to use RMM for memory allocations using the Numba-CUDA [EMM
+Plugin](https://nvidia.github.io/numba-cuda/user/external-memory.html#setting-the-emm-plugin).
 
 This can be done in two ways:
 
@@ -761,7 +761,7 @@ This can be done in two ways:
 $ NUMBA_CUDA_MEMORY_MANAGER=rmm.allocators.numba python (args)
 ```
 
-2. Using the `set_memory_manager()` function provided by Numba:
+2. Using the `set_memory_manager()` function provided by Numba-CUDA:
 
 ```python
 >>> from numba import cuda
@@ -769,7 +769,7 @@ $ NUMBA_CUDA_MEMORY_MANAGER=rmm.allocators.numba python (args)
 >>> cuda.set_memory_manager(RMMNumbaManager)
 ```
 
-**Note:** This only configures Numba to use the current RMM resource for allocations.
+**Note:** This only configures Numba-CUDA to use the current RMM resource for allocations.
 It does not initialize nor change the current resource, e.g., enabling a memory pool.
 See [here](#memory-resource-objects) for more information on changing the current memory resource.
 

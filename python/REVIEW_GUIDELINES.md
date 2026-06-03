@@ -4,7 +4,7 @@
 
 **Target**: Sub-3% false positive rate. Be direct, concise, minimal.
 
-**Context**: RMM Python layer provides Pythonic interfaces for GPU memory management, including device arrays, memory resources, and integration with CuPy, Numba, and other CUDA-aware Python libraries.
+**Context**: RMM Python layer provides Pythonic interfaces for GPU memory management, including device arrays, memory resources, and integration with CuPy, Numba-CUDA, and other CUDA-aware Python libraries.
 
 For general development guidance including build commands, test commands, code style, and project structure, see the top-level `AGENTS.md`.
 
@@ -31,7 +31,7 @@ For general development guidance including build commands, test commands, code s
 - We usually require at least one release cycle for deprecations
 
 ### Integration Errors
-- Incorrect handling of CuPy/Numba array interfaces
+- Incorrect handling of CuPy/Numba-CUDA array interfaces
 - Silent data corruption from type coercion
 - Missing validation causing crashes on invalid input
 - **Incorrect CUDA stream handling in Python bindings**
@@ -57,7 +57,7 @@ For general development guidance including build commands, test commands, code s
 - Missing validation of allocation/deallocation correctness
 - Missing edge case coverage (zero-size, alignment)
 - **Using external datasets** (tests must not depend on external resources)
-- Missing tests for different array types (CuPy, Numba)
+- Missing tests for different array types (CuPy, Numba-CUDA)
 
 ### Documentation
 - Missing or incorrect docstrings for public methods
@@ -76,7 +76,7 @@ For general development guidance including build commands, test commands, code s
 
 1. **Memory safety**: Resource cleanup correct? Lifetime management?
 2. **API stability**: Breaking changes to Python APIs?
-3. **Integration**: CuPy/Numba compatibility maintained?
+3. **Integration**: CuPy/Numba-CUDA compatibility maintained?
 4. **Input validation**: Size/type checks present?
 5. **Documentation**: Public API documented?
 6. **Ask, don't tell**: "Have you considered X?" not "You should do X"
@@ -177,7 +177,7 @@ def __exit__(self, exc_type, exc_val, exc_tb):
 
 **Array Interfaces**:
 - Support `__cuda_array_interface__` for interoperability
-- Handle different array types (CuPy, Numba DeviceNDArray)
+- Handle different array types (CuPy, Numba-CUDA DeviceNDArray)
 - Preserve array attributes where appropriate
 
 **Error Messages**:
