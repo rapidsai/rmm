@@ -220,13 +220,13 @@ uses a different argument order and adds an alignment parameter:
 ```cpp
 // 26.04 (device_memory_resource virtual interface)
 void* allocate(std::size_t bytes, cuda_stream_view stream);
-void  deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream);
+void deallocate(void* ptr, std::size_t bytes, cuda_stream_view stream);
 
 // 26.06 (CCCL resource concept)
 void* allocate(cuda::stream_ref stream, std::size_t bytes,
                std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
-void  deallocate(cuda::stream_ref stream, void* ptr, std::size_t bytes,
-                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
+void deallocate(cuda::stream_ref stream, void* ptr, std::size_t bytes,
+                std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
 ```
 
 Key differences:
@@ -318,13 +318,11 @@ class my_resource {
   // Synchronous interface — required by the CCCL resource concept
   void* allocate_sync(std::size_t bytes,
                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) {
-    auto* ptr = allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
-    RMM_CUDA_TRY(cudaStreamSynchronize(cudaStream_t{nullptr}));
-    return ptr;
+    return upstream_.allocate_sync(bytes, alignment);
   }
   void deallocate_sync(void* p, std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {
-    deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, p, bytes, alignment);
+    upstream_.deallocate_sync(p, bytes, alignment);
   }
 
   bool operator==(my_resource const& other) const noexcept {
@@ -349,9 +347,9 @@ stays alive with the adaptor state.
 > **Note:** The CCCL `resource` concept requires both the async interface
 > (`allocate`/`deallocate` with `stream_ref`) and the synchronous interface
 > (`allocate_sync`/`deallocate_sync` without a stream). If you omit the
-> synchronous methods, `static_assert` will fail. A simple implementation can
-> delegate to the async methods with a null stream as shown above, synchronizing
-> before returning from allocation.
+> synchronous methods, `static_assert` will fail. If a resource implements sync
+> methods by calling async methods directly, it must synchronize before returning
+> from both `allocate_sync` and `deallocate_sync`.
 
 (rmm-2606-copyable-custom-resources)=
 ### Custom Resources Must Be Copyable for `any_resource`
