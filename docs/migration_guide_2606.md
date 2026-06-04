@@ -37,38 +37,38 @@ Several APIs change as a consequence:
 
 C++:
 
-- {ref}`Replace pointer-based per-device resource setters <rmm-2604-2606-per-device-resource>`.
-- {ref}`Update device_buffer resource arguments <rmm-2604-2606-device-buffer>`.
-- {ref}`Update resource_ref aliases and pointer conversions <rmm-2604-2606-resource-ref-aliases>`.
-- {ref}`Link against librmm <rmm-2604-2606-compiled-resources>`.
+- {ref}`Replace pointer-based per-device resource setters <rmm-2606-per-device-resource>`.
+- {ref}`Update device_buffer resource arguments <rmm-2606-device-buffer>`.
+- {ref}`Update resource_ref aliases and pointer conversions <rmm-2606-resource-ref-aliases>`.
+- {ref}`Link against librmm <rmm-2606-compiled-resources>`.
 
 ### Memory resource changes
 
 C++:
 
-- {ref}`Remove device_memory_resource includes and inheritance <rmm-2604-2606-device-memory-resource>`.
-- {ref}`Remove Upstream template parameters <rmm-2604-2606-template-parameters>`.
-- {ref}`Pass upstream resources by value <rmm-2604-2606-upstream-any-resource>`.
-- {ref}`Update allocate/deallocate calls <rmm-2604-2606-allocation-signatures>`.
-- {ref}`Remove owning_wrapper usage <rmm-2604-2606-owning-wrapper>`.
-- {ref}`Replace do_allocate/do_deallocate overrides <rmm-2604-2606-custom-resource-guide>`.
-- {ref}`Add allocate_sync/deallocate_sync <rmm-2604-2606-custom-resource-guide>`.
-- {ref}`Ensure custom resources are copyable <rmm-2604-2606-copyable-custom-resources>`.
-- {ref}`Dereference resource pointers for ref APIs <rmm-2604-2606-resource-pointers>`.
-- {ref}`Use resource_cast instead of dynamic_cast <rmm-2604-2606-resource-cast>`.
-- {ref}`Replace cuda::stream_ref{} <rmm-2604-2606-stream-ref-default>`.
+- {ref}`Remove Upstream template parameters <rmm-2606-template-parameters>`.
+- {ref}`Pass upstream resources by value <rmm-2606-upstream-any-resource>`.
+- {ref}`Remove owning_wrapper usage <rmm-2606-owning-wrapper>`.
+- {ref}`Dereference resource pointers for ref APIs <rmm-2606-resource-pointers>`.
+- {ref}`Use resource_cast instead of dynamic_cast <rmm-2606-resource-cast>`.
+- {ref}`Remove device_memory_resource includes and inheritance <rmm-2606-device-memory-resource>`.
+- {ref}`Update allocate/deallocate calls <rmm-2606-allocation-signatures>`.
+- {ref}`Replace do_allocate/do_deallocate overrides <rmm-2606-custom-resource-guide>`.
+- {ref}`Add allocate_sync/deallocate_sync <rmm-2606-custom-resource-guide>`.
+- {ref}`Ensure custom resources are copyable <rmm-2606-copyable-custom-resources>`.
+- {ref}`Replace cuda::stream_ref{} <rmm-2606-stream-ref-default>`.
 
 Cython:
 
-- {ref}`Update Cython .pxd resource declarations <rmm-2604-2606-cython-pxd>`.
-- {ref}`Update downstream Cython function signatures <rmm-2604-2606-cython-downstream-pxd>`.
-- {ref}`Update custom Cython resource wrappers <rmm-2604-2606-cython-resource-ref-helpers>`.
+- {ref}`Update Cython .pxd resource declarations <rmm-2606-cython-pxd>`.
+- {ref}`Update downstream Cython function signatures <rmm-2606-cython-downstream-pxd>`.
+- {ref}`Update custom Cython resource wrappers <rmm-2606-cython-resource-ref-helpers>`.
 
 ## RMM Library Changes
 
 ### C++
 
-(rmm-2604-2606-per-device-resource)=
+(rmm-2606-per-device-resource)=
 ### Per-Device Resource API Changes
 
 The pointer-based per-device resource setter functions are removed. Use the
@@ -108,7 +108,7 @@ auto ref = rmm::mr::get_current_device_resource_ref();
 ```
 
 
-(rmm-2604-2606-device-buffer)=
+(rmm-2606-device-buffer)=
 ### `device_buffer` Internal Changes
 
 `rmm::device_buffer` now stores a `cuda::mr::any_resource<cuda::mr::device_accessible>`
@@ -119,7 +119,7 @@ the same, but:
 - `memory_resource()` returns `rmm::device_async_resource_ref` (was
   `device_memory_resource*` in older releases).
 
-(rmm-2604-2606-resource-ref-aliases)=
+(rmm-2606-resource-ref-aliases)=
 ### `resource_ref` Type Aliases Updated
 
 The `rmm::device_async_resource_ref` and related type aliases in
@@ -135,7 +135,7 @@ can no longer be constructed from a `device_memory_resource*`. Code that
 constructed a `resource_ref` from a `device_memory_resource` pointer must
 be updated to pass the concrete resource type directly.
 
-(rmm-2604-2606-compiled-resources)=
+(rmm-2606-compiled-resources)=
 ### Resource Implementations Are Compiled, Not Header-Only
 
 In 26.04, RMM resource implementations were entirely header-only (template
@@ -149,67 +149,13 @@ memory resource layer, you will need to update your build system to link the
 `rmm` library target.
 
 For CMake users, this should already work if you use `find_package(rmm)` or
-`rapids_find_package(rmm)` — the imported `rmm::rmm` target handles linking.
+`rapids_find_package(rmm)`; the imported `rmm::rmm` target handles linking.
 
 ## Memory Resource Changes
 
-### C++
+### Using Memory Resources
 
-(rmm-2604-2606-device-memory-resource)=
-### `device_memory_resource` Base Class Is Removed
-
-**Header removed:** `rmm/mr/device_memory_resource.hpp`
-
-In 26.04, all RMM memory resources — both base resources like
-`cuda_memory_resource` and adaptors like `pool_memory_resource` — inherited from
-`rmm::mr::device_memory_resource` and overrode `do_allocate` / `do_deallocate`
-virtual methods. In 26.06, this base class no longer exists. Every resource
-(base and adaptor alike) instead satisfies CCCL's
-[`cuda::mr::resource` concept](https://nvidia.github.io/cccl/unstable/libcudacxx/extended_api/memory_resource/resource.html)
-directly.
-
-This means code that relied on polymorphism through `device_memory_resource*`
-(e.g., storing heterogeneous resources in a container of `device_memory_resource*`)
-must switch to `device_async_resource_ref` or `cuda::mr::any_resource<cuda::mr::device_accessible>`.
-
-**What to change:**
-- Remove any `#include <rmm/mr/device_memory_resource.hpp>`.
-- Remove any inheritance from `device_memory_resource` in custom resources.
-- Remove `do_allocate` / `do_deallocate` overrides; implement `allocate` and
-  `deallocate` with the CCCL signature instead (see
-  {ref}`Allocation Signature Changes <rmm-2604-2606-allocation-signatures>`).
-- Remove calls to `device_memory_resource::allocate(bytes, stream)`. Use
-  `device_async_resource_ref` or call the resource's `allocate(stream, bytes)` directly.
-- Replace `device_memory_resource*` variables with `device_async_resource_ref`
-  (non-owning) or `cuda::mr::any_resource<cuda::mr::device_accessible>` (owning).
-
-```cpp
-// 26.04
-#include <rmm/mr/device_memory_resource.hpp>
-
-class my_resource : public rmm::mr::device_memory_resource {
-  void* do_allocate(std::size_t bytes, rmm::cuda_stream_view stream) override { ... }
-  void do_deallocate(void* ptr, std::size_t bytes, rmm::cuda_stream_view stream) override { ... }
-};
-
-// 26.06
-#include <cuda/memory_resource>
-
-class my_resource {
- public:
-  void* allocate(cuda::stream_ref stream, std::size_t bytes, std::size_t alignment = 256) { ... }
-  void deallocate(cuda::stream_ref stream, void* ptr, std::size_t bytes,
-                  std::size_t alignment = 256) noexcept { ... }
-  bool operator==(my_resource const&) const noexcept { ... }
-  bool operator!=(my_resource const& other) const noexcept { return !(*this == other); }
-
-  // Declare properties via ADL friend:
-  constexpr friend void get_property(my_resource const&, cuda::mr::device_accessible) noexcept {}
-};
-static_assert(cuda::mr::resource_with<my_resource, cuda::mr::device_accessible>);
-```
-
-(rmm-2604-2606-template-parameters)=
+(rmm-2606-template-parameters)=
 ### Template Parameters Removed from All Resources and Adaptors
 
 Every resource and adaptor that previously took an `Upstream` template parameter
@@ -244,7 +190,7 @@ rmm::mr::pool_memory_resource pool{cuda_mr, initial_size};
 rmm::mr::logging_resource_adaptor logged{pool, "log.csv"};
 ```
 
-(rmm-2604-2606-upstream-any-resource)=
+(rmm-2606-upstream-any-resource)=
 ### Upstream Resources Are Passed by `any_resource` Value, Not Pointer
 
 Constructors for adaptors and pool-based resources now take
@@ -265,7 +211,7 @@ rmm::mr::cuda_memory_resource cuda_mr;
 rmm::mr::pool_memory_resource pool{cuda_mr, pool_size};
 ```
 
-(rmm-2604-2606-allocation-signatures)=
+(rmm-2606-allocation-signatures)=
 ### Allocation and Deallocation Signature Changes
 
 The [CCCL resource concept](https://nvidia.github.io/cccl/unstable/libcudacxx/extended_api/memory_resource/resource.html)
@@ -298,17 +244,9 @@ wrapper preserves the `allocate(stream, bytes)` calling convention.
 
 ### Resources Use `cuda::mr::shared_resource` for Ownership
 
-All RMM resources with non-trivial state now inherit from
-`cuda::mr::shared_resource<detail::*_impl>`. This includes pool resources,
-all adaptors, and also base resources like `cuda_async_memory_resource` and
-`callback_memory_resource`. Only truly trivial resources like
-`cuda_memory_resource` remain standalone. This means:
-
-- **Resources are copyable** and copies share ownership of the underlying state.
-- Resource lifetime is managed by reference counting internally; no need
-  for `std::shared_ptr` or `std::unique_ptr` wrappers externally.
-- Each resource class is a thin public API shell; implementation details
-  live in a `detail::*_impl` class.
+RMM resources with non-trivial state are value types. Copies share ownership of
+the underlying state, so users no longer need external `std::shared_ptr`,
+`std::unique_ptr`, or `owning_wrapper` objects to keep upstream resources alive.
 
 ```cpp
 // 26.06 — copying a pool shares the same underlying pool
@@ -316,7 +254,7 @@ rmm::mr::pool_memory_resource pool{cuda_mr, pool_size};
 auto pool_copy = pool;  // both reference the same pool state
 ```
 
-(rmm-2604-2606-owning-wrapper)=
+(rmm-2606-owning-wrapper)=
 ### `owning_wrapper` Is Removed
 
 **Header removed:** `rmm/mr/owning_wrapper.hpp`
@@ -339,7 +277,9 @@ rmm::mr::pool_memory_resource pool{cuda_mr, pool_size};
 // pool is stored by value; its state is kept alive by internal shared ownership
 ```
 
-(rmm-2604-2606-custom-resource-guide)=
+### Implementing Memory Resources
+
+(rmm-2606-custom-resource-guide)=
 ### Custom Resource Implementation Guide
 
 If you maintain a custom memory resource, here is the minimal migration:
@@ -413,7 +353,7 @@ stays alive with the adaptor state.
 > delegate to the async methods with a null stream as shown above, synchronizing
 > before returning from allocation.
 
-(rmm-2604-2606-copyable-custom-resources)=
+(rmm-2606-copyable-custom-resources)=
 ### Custom Resources Must Be Copyable for `any_resource`
 
 `cuda::mr::any_resource<cuda::mr::device_accessible>` (used internally by
@@ -451,7 +391,7 @@ RMM's adaptor implementations use a separate implementation class held through
 `rmm::mr::detail::limiting_resource_adaptor_impl` for an example of that
 structure.
 
-(rmm-2604-2606-resource-pointers)=
+(rmm-2606-resource-pointers)=
 ### Resource Pointers No Longer Convert to `device_async_resource_ref`
 
 In 26.04, `device_async_resource_ref` was implicitly constructible from any
@@ -483,7 +423,60 @@ downstream_function(stream, *mr);
 APIs that take `cuda::mr::any_resource<cuda::mr::device_accessible>` can receive
 concrete resource objects directly.
 
-(rmm-2604-2606-resource-cast)=
+(rmm-2606-device-memory-resource)=
+### `device_memory_resource` Base Class Is Removed
+
+**Header removed:** `rmm/mr/device_memory_resource.hpp`
+
+In 26.04, all RMM memory resources inherited from
+`rmm::mr::device_memory_resource` and overrode `do_allocate` / `do_deallocate`
+virtual methods. In 26.06, this base class no longer exists. Every resource
+instead satisfies CCCL's
+[`cuda::mr::resource` concept](https://nvidia.github.io/cccl/unstable/libcudacxx/extended_api/memory_resource/resource.html)
+directly.
+
+This means code that relied on polymorphism through `device_memory_resource*`
+(e.g., storing heterogeneous resources in a container of `device_memory_resource*`)
+must switch to `device_async_resource_ref` or `cuda::mr::any_resource<cuda::mr::device_accessible>`.
+
+**What to change:**
+- Remove any `#include <rmm/mr/device_memory_resource.hpp>`.
+- Remove any inheritance from `device_memory_resource` in custom resources.
+- Remove `do_allocate` / `do_deallocate` overrides; implement `allocate` and
+  `deallocate` with the CCCL signature instead (see
+  {ref}`Allocation Signature Changes <rmm-2606-allocation-signatures>`).
+- Remove calls to `device_memory_resource::allocate(bytes, stream)`. Use
+  `device_async_resource_ref` or call the resource's `allocate(stream, bytes)` directly.
+- Replace `device_memory_resource*` variables with `device_async_resource_ref`
+  (non-owning) or `cuda::mr::any_resource<cuda::mr::device_accessible>` (owning).
+
+```cpp
+// 26.04
+#include <rmm/mr/device_memory_resource.hpp>
+
+class my_resource : public rmm::mr::device_memory_resource {
+  void* do_allocate(std::size_t bytes, rmm::cuda_stream_view stream) override { ... }
+  void do_deallocate(void* ptr, std::size_t bytes, rmm::cuda_stream_view stream) override { ... }
+};
+
+// 26.06
+#include <cuda/memory_resource>
+
+class my_resource {
+ public:
+  void* allocate(cuda::stream_ref stream, std::size_t bytes, std::size_t alignment = 256) { ... }
+  void deallocate(cuda::stream_ref stream, void* ptr, std::size_t bytes,
+                  std::size_t alignment = 256) noexcept { ... }
+  bool operator==(my_resource const&) const noexcept { ... }
+  bool operator!=(my_resource const& other) const noexcept { return !(*this == other); }
+
+  // Declare properties via ADL friend:
+  constexpr friend void get_property(my_resource const&, cuda::mr::device_accessible) noexcept {}
+};
+static_assert(cuda::mr::resource_with<my_resource, cuda::mr::device_accessible>);
+```
+
+(rmm-2606-resource-cast)=
 ### Use `resource_cast` Instead of `dynamic_cast`
 
 In 26.04, all resources inherited from `device_memory_resource`, so
@@ -511,7 +504,7 @@ if (limiting != nullptr) { /* it's a limiting adaptor */ }
 `resource_cast` uses exact type matching. It returns `nullptr` when the stored
 resource has a different concrete type, including a derived or wrapped type.
 
-(rmm-2604-2606-stream-ref-default)=
+(rmm-2606-stream-ref-default)=
 ### `cuda::stream_ref{}` Default Constructor Is Deprecated
 
 The default constructor `cuda::stream_ref{}` is deprecated in CCCL. Use
@@ -537,7 +530,7 @@ The Python memory resource API is unchanged. This section only applies to
 projects that cimport RMM Cython declarations or expose C++ memory resources
 through Cython.
 
-(rmm-2604-2606-cython-pxd)=
+(rmm-2606-cython-pxd)=
 ### Cython `pxd` Declarations Updated
 
 All Cython `pxd` declarations for RMM resources remove the
@@ -556,7 +549,7 @@ cdef cppclass pool_memory_resource:
                          optional[size_t] maximum_pool_size) except +
 ```
 
-(rmm-2604-2606-cython-downstream-pxd)=
+(rmm-2606-cython-downstream-pxd)=
 ### Downstream Cython `.pxd` Declarations: Pointer to Value Type
 
 Downstream libraries (e.g., cudf) that declare C++ function signatures in
@@ -589,7 +582,7 @@ an owning `cuda::mr::any_resource<cuda::mr::device_accessible>`, declare the
 parameter as `any_resource[device_accessible]` instead and pass `mr.get_mr()`
 from `.pyx` code.
 
-(rmm-2604-2606-cython-resource-ref-helpers)=
+(rmm-2606-cython-resource-ref-helpers)=
 ### Custom Cython Resource Wrappers
 
 If a downstream project wraps its own `shared_resource`-based resource type in
