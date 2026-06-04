@@ -79,6 +79,7 @@ cdef extern from "<cuda/memory_resource>" namespace "cuda::mr" nogil:
         pass
     cdef cppclass any_resource[Properties]:
         any_resource() except +
+        any_resource(device_async_resource_ref) except +
 
 
 # Inline C++ helper to convert device_async_resource_ref to
