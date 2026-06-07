@@ -22,7 +22,7 @@ from packaging.version import Version
 
 # -- Project information -----------------------------------------------------
 
-project = "rmm"
+project = "RMM"
 copyright = f"2018-{datetime.datetime.today().year}, NVIDIA Corporation"
 author = "NVIDIA Corporation"
 
