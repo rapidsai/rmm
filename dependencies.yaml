@@ -343,11 +343,12 @@ dependencies:
           - &numba numba>=0.60.0,<0.65.0
           - &numba_cuda numba-cuda>=0.22.1
           - numpydoc
-          - pydata-sphinx-theme>=0.15.4
           - sphinx
           - sphinx-copybutton
           - sphinx-markdown-tables
           - sphinxcontrib-jquery
+          - pip:
+              - nvidia-sphinx-theme
   py_version:
     specific:
       - output_types: conda

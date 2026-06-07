@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 # Configuration file for the Sphinx documentation builder.
@@ -117,7 +117,7 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 
-html_theme = "pydata_sphinx_theme"
+html_theme = "nvidia_sphinx_theme"
 html_logo = "_static/RAPIDS-logo-purple.png"
 
 html_theme_options = {
