@@ -335,7 +335,6 @@ dependencies:
         packages:
           - breathe>=4.35.0
           - *doxygen
-          - graphviz
           - ipython
           - make
           - myst-parser
