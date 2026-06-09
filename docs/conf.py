@@ -118,7 +118,6 @@ todo_include_todos = False
 #
 
 html_theme = "nvidia_sphinx_theme"
-html_logo = "_static/RAPIDS-logo-purple.png"
 
 html_theme_options = {
     "external_links": [],
@@ -322,8 +321,4 @@ def on_missing_reference(app, env, node, contnode):
 
 
 def setup(app):
-    app.add_css_file("https://docs.rapids.ai/assets/css/custom.css")
-    app.add_js_file(
-        "https://docs.rapids.ai/assets/js/custom.js", loading_method="defer"
-    )
     app.connect("missing-reference", on_missing_reference)
