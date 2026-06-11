@@ -88,6 +88,15 @@ TEST(AlignedTest, ThrowOnInvalidAllocationAlignment)
   EXPECT_THROW(construct_alignment(wrapper, 768), rmm::logic_error);
 }
 
+TEST(AlignedTest, ThrowOnInvalidRequestedAlignment)
+{
+  mock_resource mock;
+  mock_resource_wrapper wrapper{&mock};
+  aligned_adaptor mr{device_async_resource_ref{wrapper}};
+
+  EXPECT_THROW((void)mr.allocate(cuda_stream_view{}, 1024, 768), rmm::logic_error);
+}
+
 TEST(AlignedTest, SupportsGetMemInfo)
 {
   mock_resource mock;
@@ -194,6 +203,54 @@ TEST(AlignedTest, AlignUpstreamAddress)
     auto const size{65536};
     EXPECT_EQ(mr.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT), expected_pointer);
     mr.deallocate(stream, expected_pointer, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  }
+}
+
+TEST(AlignedTest, AlignsCallerRequestedAlignment)
+{
+  mock_resource mock;
+  mock_resource_wrapper wrapper{&mock};
+  aligned_adaptor mr{device_async_resource_ref{wrapper}};
+
+  cuda_stream_view stream;
+  auto const alignment{4096};
+  {
+    void* const pointer = int_to_address(256);
+    auto const size{7936};
+    EXPECT_CALL(mock, allocate(_, size, _)).WillOnce(Return(pointer));
+    EXPECT_CALL(mock, deallocate(_, pointer, size, _)).Times(1);
+  }
+
+  {
+    void* const expected_pointer = int_to_address(4096);
+    auto const size{1024};
+    EXPECT_EQ(mr.allocate(stream, size, alignment), expected_pointer);
+    mr.deallocate(stream, expected_pointer, size, alignment);
+  }
+}
+
+TEST(AlignedTest, CallerRequestedAlignmentOverridesThreshold)
+{
+  mock_resource mock;
+  mock_resource_wrapper wrapper{&mock};
+  auto const alignment{4096};
+  auto const threshold{65536};
+  aligned_adaptor mr{device_async_resource_ref{wrapper}, alignment, threshold};
+
+  cuda_stream_view stream;
+  auto const requested_alignment{8192};
+  {
+    void* const pointer = int_to_address(256);
+    auto const size{16128};
+    EXPECT_CALL(mock, allocate(_, size, _)).WillOnce(Return(pointer));
+    EXPECT_CALL(mock, deallocate(_, pointer, size, _)).Times(1);
+  }
+
+  {
+    void* const expected_pointer = int_to_address(8192);
+    auto const size{1024};
+    EXPECT_EQ(mr.allocate(stream, size, requested_alignment), expected_pointer);
+    mr.deallocate(stream, expected_pointer, size, requested_alignment);
   }
 }
 
