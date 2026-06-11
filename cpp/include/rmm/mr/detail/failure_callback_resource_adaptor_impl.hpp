@@ -15,7 +15,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT_NAMESPACE {
 namespace mr {
 namespace detail {
 
@@ -109,4 +109,4 @@ class failure_callback_resource_adaptor_impl {
 
 }  // namespace detail
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT_NAMESPACE

@@ -21,6 +21,40 @@ pool_memory_resource::pool_memory_resource(
 {
 }
 
+pool_memory_resource::~pool_memory_resource() = default;
+
+void* pool_memory_resource::allocate(cuda::stream_ref stream,
+                                     std::size_t bytes,
+                                     std::size_t alignment)
+{
+  return get().allocate(stream, bytes, alignment);
+}
+
+void pool_memory_resource::deallocate(cuda::stream_ref stream,
+                                      void* ptr,
+                                      std::size_t bytes,
+                                      std::size_t alignment) noexcept
+{
+  get().deallocate(stream, ptr, bytes, alignment);
+}
+
+void* pool_memory_resource::allocate_sync(std::size_t bytes, std::size_t alignment)
+{
+  return get().allocate_sync(bytes, alignment);
+}
+
+void pool_memory_resource::deallocate_sync(void* ptr,
+                                           std::size_t bytes,
+                                           std::size_t alignment) noexcept
+{
+  get().deallocate_sync(ptr, bytes, alignment);
+}
+
+bool pool_memory_resource::operator==(pool_memory_resource const& other) const noexcept
+{
+  return static_cast<shared_base const&>(*this) == static_cast<shared_base const&>(other);
+}
+
 device_async_resource_ref pool_memory_resource::get_upstream_resource() const noexcept
 {
   return get().get_upstream_resource();

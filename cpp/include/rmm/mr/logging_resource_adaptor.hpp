@@ -4,17 +4,19 @@
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/logging_resource_adaptor_impl.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/stream_ref>
 
 #include <initializer_list>
 #include <ostream>
 #include <string>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT_NAMESPACE {
 namespace mr {
 
 /**
@@ -106,6 +108,72 @@ class RMM_EXPORT logging_resource_adaptor
                            bool auto_flush = false);
 
   /**
+   * @brief Allocate memory using this resource.
+   *
+   * @param stream Stream on which to perform the allocation
+   * @param bytes The size of the allocation
+   * @param alignment The alignment of the allocation
+   * @return Pointer to the newly allocated memory
+   */
+  [[nodiscard]] void* allocate(cuda::stream_ref stream,
+                               std::size_t bytes,
+                               std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
+
+  /**
+   * @brief Deallocate memory using this resource.
+   *
+   * @param stream Stream on which to perform deallocation
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation
+   * @param alignment The alignment that was passed to the allocation call
+   */
+  void deallocate(cuda::stream_ref stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
+
+  /**
+   * @brief Allocate memory synchronously using this resource.
+   *
+   * @param bytes The size of the allocation
+   * @param alignment The alignment of the allocation
+   * @return Pointer to the newly allocated memory
+   */
+  [[nodiscard]] void* allocate_sync(std::size_t bytes,
+                                    std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
+
+  /**
+   * @brief Deallocate memory synchronously using this resource.
+   *
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation
+   * @param alignment The alignment that was passed to the allocation call
+   */
+  void deallocate_sync(void* ptr,
+                       std::size_t bytes,
+                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
+
+  /**
+   * @brief Compare two resources for equality.
+   *
+   * @param other The other resource to compare against
+   * @return true if the resources compare equal, false otherwise
+   */
+  [[nodiscard]] bool operator==(logging_resource_adaptor const& other) const noexcept;
+  /**
+   * @brief Compare two resources for inequality.
+   *
+   * @param other The other resource to compare against
+   * @return true if the resources do not compare equal, false otherwise
+   */
+  [[nodiscard]] bool operator!=(logging_resource_adaptor const& other) const noexcept
+  {
+    return !(*this == other);
+  }
+
+  ~logging_resource_adaptor();
+
+  /**
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept;
@@ -137,4 +205,4 @@ static_assert(cuda::mr::resource_with<logging_resource_adaptor, cuda::mr::device
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT_NAMESPACE
