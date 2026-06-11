@@ -1,9 +1,10 @@
-# SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 cimport cython
 from cython.operator cimport dereference as deref
 from libc.stddef cimport size_t
+from libcpp.memory cimport make_shared
 
 from rmm.librmm.cuda_stream cimport cuda_stream_flags
 from rmm.librmm.cuda_stream_pool cimport cuda_stream_pool
@@ -24,7 +25,7 @@ cdef class CudaStreamPool:
     def __cinit__(self, size_t pool_size = 16,
                   cuda_stream_flags flags = cuda_stream_flags.sync_default):
         with nogil:
-            self.c_obj.reset(new cuda_stream_pool(pool_size, flags))
+            self.c_obj = make_shared[cuda_stream_pool](pool_size, flags)
 
     def __dealloc__(self):
         with nogil:
