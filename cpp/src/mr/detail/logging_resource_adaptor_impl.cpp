@@ -26,24 +26,14 @@ logging_resource_adaptor_impl::logging_resource_adaptor_impl(
 
 void* logging_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  auto const stream = cuda_stream_view{};
-  try {
-    auto const ptr = upstream_mr_.allocate(stream, bytes, alignment);
-    logger_->info("allocate,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream));
-    return ptr;
-  } catch (...) {
-    logger_->info("allocate failure,%p,%zu,%s", nullptr, bytes, rmm::detail::format_stream(stream));
-    throw;
-  }
+  return allocate(cuda_stream_view{}, bytes, alignment);
 }
 
 void logging_resource_adaptor_impl::deallocate_sync(void* ptr,
                                                     std::size_t bytes,
                                                     std::size_t alignment) noexcept
 {
-  auto const stream = cuda_stream_view{};
-  logger_->info("free,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream));
-  upstream_mr_.deallocate(stream, ptr, bytes, alignment);
+  deallocate(cuda_stream_view{}, ptr, bytes, alignment);
 }
 
 void* logging_resource_adaptor_impl::allocate(cuda::stream_ref stream,
