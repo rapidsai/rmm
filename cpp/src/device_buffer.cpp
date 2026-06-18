@@ -56,8 +56,9 @@ device_buffer::device_buffer(void const* source_data,
               "Requested alignment is not a power of 2",
               rmm::invalid_argument);
   cuda_set_device_raii dev{_device};
-  allocate_async(size);
-  copy_async(source_data, size);
+  auto tmp = device_buffer{size, alignment, stream, _mr};
+  tmp.copy_async(source_data, size);
+  *this = std::move(tmp);
 }
 
 device_buffer::device_buffer(device_buffer const& other,
