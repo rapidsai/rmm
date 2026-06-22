@@ -55,9 +55,10 @@ void* limiting_resource_adaptor_impl::allocate(cuda::stream_ref stream,
   }
 
   allocated_bytes_ -= proposed_size;
-  auto const msg = std::string("Exceeded memory limit (failed to allocate ") +
-                   rmm::detail::format_bytes(bytes) + ")";
-  RMM_FAIL(msg.c_str(), rmm::out_of_memory);
+  std::stringstream msg;
+  msg << "Exceeded memory limit " << allocation_limit_ << "; Allocated bytes " << allocated_bytes_
+      << "; Requested bytes " << bytes << "\n";
+  RMM_FAIL(msg.str(), rmm::out_of_memory);
 }
 
 void limiting_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
