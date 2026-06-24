@@ -384,7 +384,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - numpy>=1.23,<3.0
+          - numpy>=2.0,<3.0
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:
@@ -414,7 +414,7 @@ dependencies:
               dependencies: "oldest"
             packages:
               - numba==0.60.0
-              - numpy==1.23.*
+              - numpy==2.0.*
           - matrix:
             packages:
               - *numba
@@ -520,14 +520,14 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - cupy>=13.6.0,!=14.0.0,!=14.1.0
+          - cupy>=14.0.1,!=14.1.0
     specific:
       - output_types: [requirements, pyproject]
         matrices:
           - matrix:
               cuda: "12.*"
             packages:
-              - cupy-cuda12x>=13.6.0,!=14.0.0,!=14.1.0
+              - cupy-cuda12x[ctk]>=14.0.1,!=14.1.0
           - matrix:
             packages:
-              - cupy-cuda13x>=13.6.0,!=14.0.0,!=14.1.0
+              - cupy-cuda13x[ctk]>=14.0.1,!=14.1.0
