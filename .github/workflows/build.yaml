@@ -62,7 +62,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@main
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@test-gh200
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
@@ -79,7 +79,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@main
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@test-gh200
     with:
       # Build a conda package for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
@@ -97,7 +97,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/conda-upload-packages.yaml@main
+    uses: rapidsai/shared-workflows/.github/workflows/conda-upload-packages.yaml@test-gh200
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
@@ -113,7 +113,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@main
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@test-gh200
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
@@ -132,7 +132,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@main
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@test-gh200
     with:
       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
       build_type: ${{ inputs.build_type || 'branch' }}
@@ -152,7 +152,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@main
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@test-gh200
     with:
       # Build a wheel for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
@@ -173,7 +173,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@main
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@test-gh200
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
@@ -191,7 +191,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@main
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@test-gh200
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
@@ -219,7 +219,7 @@ jobs:
   devcontainers:
     name: Build devcontainers
     secrets: inherit  # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/build-devcontainers.yaml@main
+    uses: rapidsai/shared-workflows/.github/workflows/build-devcontainers.yaml@test-gh200
     permissions:
       packages: write
     with:
