@@ -5,6 +5,7 @@ cimport cython
 from cython.operator cimport dereference as deref
 from libc.stddef cimport size_t
 from libcpp.memory cimport make_shared
+from libcpp.utility cimport move
 
 from rmm.librmm.cuda_stream cimport cuda_stream_flags
 from rmm.librmm.cuda_stream_pool cimport cuda_stream_pool
@@ -26,6 +27,14 @@ cdef class CudaStreamPool:
                   cuda_stream_flags flags = cuda_stream_flags.sync_default):
         with nogil:
             self.c_obj = make_shared[cuda_stream_pool](pool_size, flags)
+
+    @staticmethod
+    cdef CudaStreamPool c_from_shared_ptr(shared_ptr[cuda_stream_pool] pool):
+        if pool == NULL:
+            raise ValueError("Provided pool must not be null")
+        cdef CudaStreamPool obj = CudaStreamPool.__new__(CudaStreamPool)
+        obj.c_obj = move(pool)
+        return obj
 
     def __dealloc__(self):
         with nogil:

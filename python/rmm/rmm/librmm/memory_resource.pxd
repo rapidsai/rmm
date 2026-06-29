@@ -89,7 +89,7 @@ cdef extern from "<cuda/memory_resource>" namespace "cuda::mr" nogil:
 # forwarding constructor that cannot see through this proxy. A free function
 # performs the conversion in pure C++ where it works directly.
 # TODO: Remove once CCCL merges NVIDIA/cccl#8320 and RMM upgrades.
-cdef extern from *:
+cdef extern from * nogil:
     """
     #include <cuda/memory_resource>
     #include <rmm/resource_ref.hpp>
@@ -99,7 +99,7 @@ cdef extern from *:
     }
     """
     any_resource[device_accessible] make_any_device_resource(
-        device_async_resource_ref) nogil except +
+        device_async_resource_ref) except +
 
 
 # Inline C++ helper to construct optional[device_async_resource_ref] from any
@@ -107,7 +107,7 @@ cdef extern from *:
 # (self.c_ref = make_device_async_resource_ref(...)) uses optional's
 # default-constructible temporary instead of device_async_resource_ref's
 # non-default-constructible one.
-cdef extern from *:
+cdef extern from * nogil:
     """
     #include <optional>
     #include <rmm/resource_ref.hpp>
@@ -381,7 +381,7 @@ ctypedef failure_callback_resource_adaptor[out_of_memory] \
 # The make_device_async_resource_ref template (declared above) also covers
 # failure_callback_resource_adaptor_oom; just declare the overload here
 # since the typedef is only available after the class is declared.
-cdef extern from *:
+cdef extern from * nogil:
     """
     // already defined above via template
     """
