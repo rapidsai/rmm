@@ -9,12 +9,20 @@ allocate and use pools of GPU memory, or to use
 [managed memory](https://developer.nvidia.com/blog/unified-memory-cuda-beginners/)
 for allocations.
 
-You can also easily configure other libraries like Numba and CuPy
+You can also easily configure other libraries like Numba-CUDA and CuPy
 to use RMM for allocating device memory.
 
 ## Installation
 
 See the project [README](https://github.com/rapidsai/rmm) for how to install RMM.
+
+## Migration Guides
+
+```{toctree}
+:maxdepth: 1
+
+../migration_guide_2606
+```
 
 ## Using RMM
 
@@ -22,15 +30,15 @@ There are two ways to use RMM in Python code:
 
 1. Using the `rmm.DeviceBuffer` API to explicitly create and manage
    device memory allocations
-2. Transparently via external libraries such as CuPy and Numba
+2. Transparently via external libraries such as CuPy and Numba-CUDA
 
-RMM provides a `MemoryResource` abstraction to control _how_ device
+RMM provides memory resource objects to control _how_ device
 memory is allocated in both the above uses.
 
 ### `DeviceBuffer` Objects
 
 A `DeviceBuffer` represents an **untyped, uninitialized device memory
-allocation**.  `DeviceBuffer`s can be created by providing the
+allocation**. `DeviceBuffer` objects can be created by providing the
 size of the allocation in bytes:
 
 ```python
@@ -48,7 +56,7 @@ can be accessed via the `.size` and `.ptr` attributes respectively:
 140202544726016
 ```
 
-`DeviceBuffer`s can also be created by copying data from host memory:
+A `DeviceBuffer` can also be created by copying data from host memory:
 
 ```python
 >>> import rmm
@@ -59,7 +67,7 @@ can be accessed via the `.size` and `.ptr` attributes respectively:
 24
 ```
 
-Conversely, the data underlying a `DeviceBuffer` can be copied to the host:
+Conversely, the data in a `DeviceBuffer` can be copied to the host:
 
 ```python
 >>> np.frombuffer(buf.tobytes())
@@ -68,14 +76,11 @@ array([1., 2., 3.])
 
 #### Prefetching a `DeviceBuffer`
 
-[CUDA Unified Memory](
-  https://developer.nvidia.com/blog/unified-memory-cuda-beginners/
-), also known as managed memory, can be allocated using an
-`rmm.mr.ManagedMemoryResource` explicitly, or by calling `rmm.reinitialize`
-with `managed_memory=True`.
+[CUDA Unified Memory](https://developer.nvidia.com/blog/unified-memory-cuda-beginners/), also known
+as managed memory, can be allocated using an `rmm.mr.ManagedMemoryResource` explicitly, or by
+calling `rmm.reinitialize` with `managed_memory=True`.
 
-A `DeviceBuffer` backed by managed memory or other
-migratable memory (such as
+A `DeviceBuffer` backed by managed memory or other migratable memory (such as
 [HMM/ATS](https://developer.nvidia.com/blog/simplifying-gpu-application-development-with-heterogeneous-memory-management/)
 memory) may be prefetched to a specified device, for example to reduce or eliminate page faults.
 
@@ -103,7 +108,7 @@ destination device ID and stream are optional parameters.
 by migratable memory.
 
 `rmm.pylibrmm.stream.Stream` implements the [CUDA Stream Protocol](https://nvidia.github.io/cuda-python/cuda-core/latest/interoperability.html#cuda-stream-protocol), so it can be used with
-`cuda.core.`.
+`cuda.core`.
 
 ```python
 >>> from cuda.core import Device
@@ -115,19 +120,19 @@ by migratable memory.
 >>> cuda_stream = device.create_stream(rmm_stream)
 ```
 
-### `MemoryResource` objects
+### Memory resource objects
 
-`MemoryResource` objects are used to configure how device memory allocations are made by
+Memory resource objects are used to configure how device memory allocations are made by
 RMM.
 
-By default if a `MemoryResource` is not set explicitly, RMM uses the `CudaMemoryResource`, which
+By default if a memory resource is not set explicitly, RMM uses the `CudaMemoryResource`, which
 uses `cudaMalloc` for allocating device memory.
 
 `rmm.reinitialize()` provides an easy way to initialize RMM with specific memory resource options
 across multiple devices. See `help(rmm.reinitialize)` for full details.
 
 For lower-level control, the `rmm.mr.set_current_device_resource()` function can be
-used to set a different MemoryResource for the current CUDA device.  For
+used to set a different resource for the current CUDA device. For
 example, enabling the `ManagedMemoryResource` tells RMM to use
 `cudaMallocManaged` instead of `cudaMalloc` for allocating memory:
 
@@ -137,14 +142,14 @@ example, enabling the `ManagedMemoryResource` tells RMM to use
 ```
 
 > :warning: The default resource must be set for any device **before**
-> allocating any device memory on that device.  Setting or changing the
+> allocating any device memory on that device. Setting or changing the
 > resource after device allocations have been made can lead to unexpected
-> behaviour or crashes.
+> behavior or crashes.
 
 As another example, `PoolMemoryResource` allows you to allocate a
 large "pool" of device memory up-front. Subsequent allocations will
-draw from this pool of already allocated memory.  The example
-below shows how to construct a PoolMemoryResource with an initial size
+draw from this pool of already allocated memory. The example
+below shows how to construct a `PoolMemoryResource` with an initial size
 of 1 GiB and a maximum size of 4 GiB. The pool uses
 `CudaMemoryResource` as its underlying ("upstream") memory resource:
 
@@ -170,24 +175,22 @@ Similarly, to use a pool of managed memory:
 >>> rmm.mr.set_current_device_resource(pool)
 ```
 
-Other `MemoryResource`s include:
+Other memory resources include:
 
 * `FixedSizeMemoryResource` for allocating fixed blocks of memory
 * `BinningMemoryResource` for allocating blocks within specified "bin" sizes from different memory
 resources
 
-`MemoryResource`s are highly configurable and can be composed together in different ways.
+Memory resources are highly configurable and can be composed together in different ways.
 See `help(rmm.mr)` for more information.
 
 ## Using RMM with third-party libraries
 
-A number of libraries provide hooks to control their device
-allocations. RMM provides implementations of these for
-[CuPy](https://cupy.dev),
-[numba](https://numba.readthedocs.io/en/stable/), and [PyTorch](https://pytorch.org) in the
-`rmm.allocators` submodule. All these approaches configure the library
-to use the _current_ RMM memory resource for device
-allocations.
+A number of libraries provide hooks to control their device allocations. RMM provides
+implementations of these for [CuPy](https://cupy.dev),
+[Numba-CUDA](https://nvidia.github.io/numba-cuda/), and [PyTorch](https://pytorch.org) in the
+`rmm.allocators` submodule. All these approaches configure the library to use the _current_ RMM
+memory resource for device allocations.
 
 ### Using RMM with CuPy
 
@@ -201,48 +204,47 @@ allocations by setting the CuPy CUDA allocator to
 >>> cupy.cuda.set_allocator(rmm_cupy_allocator)
 ```
 
-### Using RMM with Numba
+### Using RMM with Numba-CUDA
 
-You can configure [Numba](https://numba.readthedocs.io/en/stable/) to use RMM for memory allocations using the
-Numba [EMM Plugin](https://numba.readthedocs.io/en/stable/cuda/external-memory.html#setting-emm-plugin).
+You can configure [Numba-CUDA](https://nvidia.github.io/numba-cuda/) to use RMM for memory allocations using the
+Numba-CUDA [EMM Plugin](https://nvidia.github.io/numba-cuda/user/external-memory.html).
 
 This can be done in two ways:
 
 1. Setting the environment variable `NUMBA_CUDA_MEMORY_MANAGER`:
 
-  ```bash
-  $ NUMBA_CUDA_MEMORY_MANAGER=rmm.allocators.numba python (args)
-  ```
+```bash
+$ NUMBA_CUDA_MEMORY_MANAGER=rmm.allocators.numba python (args)
+```
 
-2. Using the `set_memory_manager()` function provided by Numba:
+2. Using the `set_memory_manager()` function provided by Numba-CUDA:
 
-  ```python
-  >>> from numba import cuda
-  >>> from rmm.allocators.numba import RMMNumbaManager
-  >>> cuda.set_memory_manager(RMMNumbaManager)
-  ```
+```python
+>>> from numba import cuda
+>>> from rmm.allocators.numba import RMMNumbaManager
+>>> cuda.set_memory_manager(RMMNumbaManager)
+```
 
 ### Using RMM with PyTorch
 
-You can configure
-[PyTorch](https://pytorch.org/docs/stable/notes/cuda.html) to use RMM
-for memory allocations using their by configuring the current
-allocator.
+You can configure [PyTorch](https://pytorch.org/docs/stable/notes/cuda.html) to use RMM for memory
+allocations by configuring the current allocator.
 
 ```python
->>> from rmm.allocators.torch import rmm_torch_allocator
->>> import torch
+from rmm.allocators.torch import rmm_torch_allocator
+import torch
 
->>> torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
+torch.cuda.memory.change_current_allocator(rmm_torch_allocator)
 ```
 
 ## Memory statistics and profiling
 
 RMM can profile memory usage and track memory statistics by using either of the following:
-  - Use the context manager `rmm.statistics.statistics()` to enable statistics tracking for a specific code block.
-  - Call `rmm.statistics.enable_statistics()` to enable statistics tracking globally.
+- Use the context manager `rmm.statistics.statistics()` to enable statistics tracking for a specific code block.
+- Call `rmm.statistics.enable_statistics()` to enable statistics tracking globally.
 
 Common to both usages is that they modify the currently active RMM memory resource. The current device resource is wrapped with a `StatisticsResourceAdaptor` which must remain the topmost resource throughout the statistics tracking:
+
 ```python
 >>> import rmm
 >>> import rmm.statistics
@@ -263,6 +265,7 @@ Common to both usages is that they modify the currently active RMM memory resour
 ```
 
 With statistics enabled, you can query statistics of the current and peak bytes and number of allocations performed by the current RMM memory resource:
+
 ```python
 >>> buf = rmm.DeviceBuffer(size=10)
 >>> rmm.statistics.get_statistics()
@@ -271,13 +274,14 @@ Statistics(current_bytes=16, current_count=1, peak_bytes=16, peak_count=1, total
 
 ### Memory Profiler
 To profile a specific block of code, first enable memory statistics by calling `rmm.statistics.enable_statistics()`. To profile a function, use `profiler` as a function decorator:
+
 ```python
 >>> @rmm.statistics.profiler()
 ... def f(size):
 ...   rmm.DeviceBuffer(size=size)
 >>> f(1000)
 
->>> # By default, the profiler write to rmm.statistics.default_profiler_records
+>>> # By default, the profiler writes to rmm.statistics.default_profiler_records
 >>> print(rmm.statistics.default_profiler_records.report())
 Memory Profiling
 ================
@@ -294,6 +298,7 @@ ncalls     memory_peak    memory_total  filename:lineno(function)
 ```
 
 To profile a code block, use `profiler` as a context manager:
+
 ```python
 >>> with rmm.statistics.profiler(name="my code block"):
 ...     rmm.DeviceBuffer(size=20)
@@ -314,6 +319,7 @@ ncalls     memory_peak    memory_total  filename:lineno(function)
 ```
 
 The `profiler` supports nesting:
+
 ```python
 >>> with rmm.statistics.profiler(name="outer"):
 ...     buf1 = rmm.DeviceBuffer(size=10)

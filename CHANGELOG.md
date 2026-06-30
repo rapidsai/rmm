@@ -1,3 +1,74 @@
+# rmm 26.06.00 (3 Jun 2026)
+
+### 🚨 Breaking Changes
+* Refactor fixed_size_memory_resource and binning_memory_resource to shared CCCL MR design by @bdice in https://github.com/rapidsai/rmm/pull/2264
+* Refactor tracking, statistics, and aligned resource adaptors to shared CCCL MR design by @bdice in https://github.com/rapidsai/rmm/pull/2265
+* Return owning any_resource from set_per_device_resource_ref by @bdice in https://github.com/rapidsai/rmm/pull/2271
+* Refactor arena_memory_resource to shared CCCL MR design by @bdice in https://github.com/rapidsai/rmm/pull/2272
+* Refactor callback_memory_resource to shared CCCL MR design by @bdice in https://github.com/rapidsai/rmm/pull/2274
+* Refactor prefetch_resource_adaptor to shared CCCL MR design by @bdice in https://github.com/rapidsai/rmm/pull/2275
+* Refactor thread_safe_resource_adaptor to shared CCCL MR design by @bdice in https://github.com/rapidsai/rmm/pull/2276
+* Refactor limiting_resource_adaptor to shared CCCL MR design by @bdice in https://github.com/rapidsai/rmm/pull/2277
+* Refactor failure_callback_resource_adaptor to shared CCCL MR design by @bdice in https://github.com/rapidsai/rmm/pull/2278
+* Remove owning_wrapper by @bdice in https://github.com/rapidsai/rmm/pull/2286
+* Migrate base memory resources to native CCCL resource concept by @bdice in https://github.com/rapidsai/rmm/pull/2289
+* Migrate Python/Cython bindings from device_memory_resource to device_async_resource_ref by @bdice in https://github.com/rapidsai/rmm/pull/2300
+* Remove device_memory_resource inheritance from all resources and adaptors by @bdice in https://github.com/rapidsai/rmm/pull/2301
+* Add constructors for `device_buffer` that take an explicit alignment parameter by @wence- in https://github.com/rapidsai/rmm/pull/2330
+* Remove bridge infrastructure and device_memory_resource by @bdice in https://github.com/rapidsai/rmm/pull/2324
+* Fix default-constructed device_buffer having invalid alignment by @bdice in https://github.com/rapidsai/rmm/pull/2337
+* Store any_resource members in polymorphic_allocator, thrust_allocator, and device_check_resource_adaptor by @bdice in https://github.com/rapidsai/rmm/pull/2340
+* Remove deprecated rmm.pylibrmm.cuda_stream module by @bdice in https://github.com/rapidsai/rmm/pull/2335
+* Delete cccl_adaptors.hpp and use raw CCCL resource_ref types by @bdice in https://github.com/rapidsai/rmm/pull/2325
+* Fix any_resource type-erasure mismatch in cccl_async_resource_ref by @bdice in https://github.com/rapidsai/rmm/pull/2349
+* Use any_resource<device_accessible> for upstream constructor parameters by @bdice in https://github.com/rapidsai/rmm/pull/2354
+* Deprecate get_per_device_resource_type and get_current_device_resource_type by @bdice in https://github.com/rapidsai/rmm/pull/2357
+* Merge staging into main: CCCL memory resource migration by @bdice in https://github.com/rapidsai/rmm/pull/2361
+* Deprecate is_resource_adaptor by @bdice in https://github.com/rapidsai/rmm/pull/2388
+### 🐛 Bug Fixes
+* Compile RMM with `-Wsign-conversion` by @Matt711 in https://github.com/rapidsai/rmm/pull/2308
+* Use forward_property for property forwarding in resource_ref wrappers by @bdice in https://github.com/rapidsai/rmm/pull/2328
+* Remove deprecated benchmark::internal::Benchmark usage by @bdice in https://github.com/rapidsai/rmm/pull/2346
+* Fix pool_memory_resource crash during process exit by @bdice in https://github.com/rapidsai/rmm/pull/2367
+* Add constructor tag to avoid bug NVIDIA/cccl#9043 by @bdice in https://github.com/rapidsai/rmm/pull/2406
+### 📖 Documentation
+* Fix Python docs for initial async mr size by @vyasr in https://github.com/rapidsai/rmm/pull/2374
+### 🚀 New Features
+* Add implicit conversion from rmm::cuda_stream to cuda::stream_ref by @bdice in https://github.com/rapidsai/rmm/pull/2326
+* Add get_mr() method to DeviceMemoryResource for downstream Cython usage by @bdice in https://github.com/rapidsai/rmm/pull/2362
+* feat(python): add cudaStream_t overloads to device_buffer and device_uvector Cython declarations by @vyasr in https://github.com/rapidsai/rmm/pull/2376
+### 🛠️ Improvements
+* Merge main into staging by @bdice in https://github.com/rapidsai/rmm/pull/2288
+* Scope fixed-size fixture to class; exercise distinct bins in binning tests by @bdice in https://github.com/rapidsai/rmm/pull/2291
+* Forward-merge release/26.04 into main by @bdice in https://github.com/rapidsai/rmm/pull/2310
+* Merge main into staging by @bdice in https://github.com/rapidsai/rmm/pull/2311
+* Reduce C++ test runtime by avoiding expensive CUDA driver paths by @bdice in https://github.com/rapidsai/rmm/pull/2315
+* Merge main into staging by @bdice in https://github.com/rapidsai/rmm/pull/2320
+* Add opt-in option to remove cudart dependency by @KyleFromNVIDIA in https://github.com/rapidsai/rmm/pull/2317
+* Merge main into staging by @bdice in https://github.com/rapidsai/rmm/pull/2341
+* Fix CCCL main compatibility: explicit alignment and NVCC host/device diagnostics by @bdice in https://github.com/rapidsai/rmm/pull/2343
+* Add type annotations to RMM tests by @TomAugspurger in https://github.com/rapidsai/rmm/pull/2332
+* Merge main into staging by @bdice in https://github.com/rapidsai/rmm/pull/2347
+* Fix deprecations of CCCL allocations without specified alignment by @bdice in https://github.com/rapidsai/rmm/pull/2351
+* Update to clang 20.1.8 by @bdice in https://github.com/rapidsai/rmm/pull/2355
+* Add set_per_device_resource and set_current_device_resource taking any_resource by value by @bdice in https://github.com/rapidsai/rmm/pull/2356
+* Merge main into staging by @bdice in https://github.com/rapidsai/rmm/pull/2360
+* fix(ci): resolve all zizmor findings and add zizmor pre-commit checks by @gforsyth in https://github.com/rapidsai/rmm/pull/2373
+* Use `token.rapids.nvidia.com` when issuing S3 bucket creds in devcontainers by @trxcllnt in https://github.com/rapidsai/rmm/pull/2371
+* Default to static linking of cudart by @KyleFromNVIDIA in https://github.com/rapidsai/rmm/pull/2375
+* Empty commit to trigger a build by @bdice in https://github.com/rapidsai/rmm/pull/2377
+* Build and test with CUDA 13.2.0 by @bdice in https://github.com/rapidsai/rmm/pull/2378
+* fix(ci): add explicit `actions: write` permission for `telemetry-summarize`
+ by @gforsyth in https://github.com/rapidsai/rmm/pull/2380
+* Default cuda_async_memory_resource release threshold to uint64_t max by @bdice in https://github.com/rapidsai/rmm/pull/2379
+* [pre-commit.ci] pre-commit autoupdate by @pre-commit-ci[bot] in https://github.com/rapidsai/rmm/pull/2352
+* Add resource_cast coverage for RMM resources by @bdice in https://github.com/rapidsai/rmm/pull/2386
+* skip CuPy 14.1.0 by @jameslamb in https://github.com/rapidsai/rmm/pull/2427
+
+## New Contributors
+
+**Full Changelog**: https://github.com/rapidsai/rmm/compare/v26.06.00a...release/26.06
+
 # rmm 26.04.00 (8 Apr 2026)
 
 ### 🚨 Breaking Changes
