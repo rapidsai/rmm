@@ -70,8 +70,8 @@ requirements:
     - cuda-version =${{ cuda_version }}
     - cuda-cudart-dev
     - if: cuda_major == "12"
-      then: cuda-python >=12.9.2,<13.0
-      else: cuda-python >=13.0.1,<14.0
+      then: cuda-bindings >=12.9.2,<13.0
+      else: cuda-bindings >=13.0.1,<14.0
     - cython >=3.2.2
     - rapids-build-backend >=0.4.0,<0.5.0
     - librmm =${{ version }}
@@ -81,8 +81,8 @@ requirements:
     - scikit-build-core>=0.11.0
   run:
     - if: cuda_major == "12"
-      then: cuda-python >=12.9.2,<13.0
-      else: cuda-python >=13.0.1,<14.0
+      then: cuda-bindings >=12.9.2,<13.0
+      else: cuda-bindings >=13.0.1,<14.0
     - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
     - numpy >=2.0,<3.0
     - python
@@ -90,8 +90,9 @@ requirements:
     - cupy >=14.0.1,!=14.1.0
   ignore_run_exports:
     from_package:
-      - cuda-python
+      - cuda-bindings
       - cuda-cudart-dev
+      - cuda-python
     by_name:
       - cuda-version
 
