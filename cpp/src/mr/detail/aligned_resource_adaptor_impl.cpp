@@ -14,6 +14,26 @@
 namespace RMM_NAMESPACE {
 namespace mr {
 namespace detail {
+namespace {
+
+[[nodiscard]] std::size_t upstream_allocation_size(std::size_t bytes, std::size_t alignment)
+{
+  auto const aligned_size = rmm::align_up(bytes, alignment);
+  return aligned_size + (alignment - rmm::CUDA_ALLOCATION_ALIGNMENT);
+}
+
+[[nodiscard]] std::size_t effective_alignment(std::size_t bytes,
+                                              std::size_t requested_alignment,
+                                              std::size_t configured_alignment,
+                                              std::size_t alignment_threshold) noexcept
+{
+  return std::max(
+    {requested_alignment,
+     bytes >= alignment_threshold ? configured_alignment : rmm::CUDA_ALLOCATION_ALIGNMENT,
+     rmm::CUDA_ALLOCATION_ALIGNMENT});
+}
+
+}  // namespace
 
 aligned_resource_adaptor_impl::aligned_resource_adaptor_impl(
   cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
@@ -39,24 +59,21 @@ std::size_t aligned_resource_adaptor_impl::get_alignment_threshold() const noexc
   return alignment_threshold_;
 }
 
-std::size_t aligned_resource_adaptor_impl::upstream_allocation_size(std::size_t bytes) const
-{
-  auto const aligned_size = rmm::align_up(bytes, alignment_);
-  return aligned_size + (alignment_ - rmm::CUDA_ALLOCATION_ALIGNMENT);
-}
-
 void* aligned_resource_adaptor_impl::allocate(cuda::stream_ref stream,
                                               std::size_t bytes,
-                                              std::size_t /*alignment*/)
+                                              std::size_t alignment)
 {
-  if (bytes == 0 || alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
+  RMM_EXPECTS(rmm::is_supported_alignment(alignment), "Allocation alignment is not a power of 2.");
+  auto const effective_align =
+    effective_alignment(bytes, alignment, alignment_, alignment_threshold_);
+  if (bytes == 0 || effective_align == rmm::CUDA_ALLOCATION_ALIGNMENT) {
     return upstream_mr_.allocate(stream, bytes, 1);
   }
-  auto const size = upstream_allocation_size(bytes);
+  auto const size = upstream_allocation_size(bytes, effective_align);
   void* pointer   = upstream_mr_.allocate(stream, size, 1);
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   auto const address         = reinterpret_cast<std::size_t>(pointer);
-  auto const aligned_address = rmm::align_up(address, alignment_);
+  auto const aligned_address = rmm::align_up(address, effective_align);
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast,performance-no-int-to-ptr)
   void* aligned_pointer = reinterpret_cast<void*>(aligned_address);
   if (pointer != aligned_pointer) {
@@ -70,9 +87,11 @@ void* aligned_resource_adaptor_impl::allocate(cuda::stream_ref stream,
 void aligned_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
                                                void* ptr,
                                                std::size_t bytes,
-                                               std::size_t /*alignment*/) noexcept
+                                               std::size_t alignment) noexcept
 {
-  if (bytes == 0 || alignment_ == rmm::CUDA_ALLOCATION_ALIGNMENT || bytes < alignment_threshold_) {
+  auto const effective_align =
+    effective_alignment(bytes, alignment, alignment_, alignment_threshold_);
+  if (bytes == 0 || effective_align == rmm::CUDA_ALLOCATION_ALIGNMENT) {
     upstream_mr_.deallocate(stream, ptr, bytes, 1);
   } else {
     {
@@ -83,7 +102,7 @@ void aligned_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
         pointers_.erase(iter);
       }
     }
-    upstream_mr_.deallocate(stream, ptr, upstream_allocation_size(bytes), 1);
+    upstream_mr_.deallocate(stream, ptr, upstream_allocation_size(bytes, effective_align), 1);
   }
 }
 
