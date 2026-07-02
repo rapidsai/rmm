@@ -78,6 +78,11 @@ TYPED_TEST(PrefetchTest, PointerAndSize)
   this->expect_prefetched(buff.data(), buff.size(), rmm::get_current_cuda_device());
 }
 
+TEST(PrefetchTest, EmptyPrefetchIsNoOp)
+{
+  rmm::prefetch(nullptr, 0, rmm::get_current_cuda_device(), rmm::cuda_stream_view{});
+}
+
 TYPED_TEST(PrefetchTest, DeviceUVector)
 {
   {

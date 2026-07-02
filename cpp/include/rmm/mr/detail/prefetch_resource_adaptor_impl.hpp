@@ -68,6 +68,7 @@ class prefetch_resource_adaptor_impl {
 
  private:
   cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
+  bool prefetch_enabled_{};
 };
 
 }  // namespace detail
