@@ -6,7 +6,7 @@
 
 #include <rmm/detail/export.hpp>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_EXPORT_NAMESPACE {
 
 /**
  * @addtogroup memory_resources
@@ -61,4 +61,4 @@ bool process_is_exiting() noexcept;
 
 /** @} */  // end of group
 
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_EXPORT_NAMESPACE

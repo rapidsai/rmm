@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT_NAMESPACE {
 
 /**
  * @brief Exception thrown when logical precondition is violated.
@@ -109,4 +109,4 @@ class invalid_argument : public std::invalid_argument {
   using std::invalid_argument::invalid_argument;
 };
 
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT_NAMESPACE

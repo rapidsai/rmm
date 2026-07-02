@@ -29,7 +29,7 @@
  * that was active when the memory resource was created.
  */
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup memory_resources
@@ -262,4 +262,4 @@ inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_current_device_
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT_NAMESPACE

@@ -18,7 +18,7 @@
 #include <cassert>
 #include <cstddef>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT_NAMESPACE {
 /**
  * @addtogroup data_containers
  * @{
@@ -424,4 +424,4 @@ class device_buffer {
 };
 
 /** @} */  // end of group
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT_NAMESPACE
