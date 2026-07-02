@@ -139,7 +139,7 @@ set_target_properties(
   rmm
   PROPERTIES BUILD_RPATH "\$ORIGIN"
              INSTALL_RPATH "\$ORIGIN"
-             CXX_STANDARD 17
+             CXX_STANDARD 20
              CXX_STANDARD_REQUIRED ON
              CXX_VISIBILITY_PRESET hidden
              POSITION_INDEPENDENT_CODE ON
