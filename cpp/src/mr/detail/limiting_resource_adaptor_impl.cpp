@@ -8,6 +8,9 @@
 #include <rmm/detail/format.hpp>
 #include <rmm/mr/detail/limiting_resource_adaptor_impl.hpp>
 
+#include <cuda/stream_ref>
+#include <cuda_runtime_api.h>
+
 namespace RMM_NAMESPACE {
 namespace mr {
 namespace detail {
@@ -52,9 +55,10 @@ void* limiting_resource_adaptor_impl::allocate(cuda::stream_ref stream,
   }
 
   allocated_bytes_ -= proposed_size;
-  auto const msg = std::string("Exceeded memory limit (failed to allocate ") +
-                   rmm::detail::format_bytes(bytes) + ")";
-  RMM_FAIL(msg.c_str(), rmm::out_of_memory);
+  std::stringstream msg;
+  msg << "Exceeded memory limit " << allocation_limit_ << "; Allocated bytes " << allocated_bytes_
+      << "; Requested bytes " << bytes << "\n";
+  RMM_FAIL(msg.str(), rmm::out_of_memory);
 }
 
 void limiting_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
@@ -69,14 +73,19 @@ void limiting_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
 
 void* limiting_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  return allocate(cuda_stream_view{}, bytes, alignment);
+  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+  auto* ptr         = allocate(stream, bytes, alignment);
+  RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
+  return ptr;
 }
 
 void limiting_resource_adaptor_impl::deallocate_sync(void* ptr,
                                                      std::size_t bytes,
                                                      std::size_t alignment) noexcept
 {
-  deallocate(cuda_stream_view{}, ptr, bytes, alignment);
+  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+  deallocate(stream, ptr, bytes, alignment);
+  RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 }
 
 }  // namespace detail

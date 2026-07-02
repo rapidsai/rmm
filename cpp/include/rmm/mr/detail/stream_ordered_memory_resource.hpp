@@ -164,9 +164,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
   [[nodiscard]] void* allocate_sync(std::size_t bytes,
                                     std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    auto const stream = cuda_stream_view{};
+    auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
     void* ptr         = allocate(stream, bytes, alignment);
-    stream.synchronize();
+    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
     return ptr;
   }
 
@@ -182,7 +182,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
     std::size_t bytes,
     [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    deallocate(cuda_stream_view{}, ptr, bytes, alignment);
+    auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+    deallocate(stream, ptr, bytes, alignment);
+    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
   }
 
  protected:
