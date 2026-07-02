@@ -95,9 +95,9 @@ void tracking_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
           "Alloc bytes (%zu) and Dealloc bytes (%zu) do not match", allocated_bytes, bytes);
         bytes = allocated_bytes;
       }
+      allocated_bytes_ -= bytes;
     }
   }
-  allocated_bytes_ -= bytes;
   upstream_mr_.deallocate(stream, ptr, bytes, alignment);
 }
 

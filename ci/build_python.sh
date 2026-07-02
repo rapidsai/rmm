@@ -15,7 +15,7 @@ rapids-generate-version > ./VERSION
 
 rapids-logger "Begin py build"
 
-CPP_CHANNEL=$(rapids-download-conda-from-github cpp)
+CPP_CHANNEL=$(rapids-download-from-github "$(rapids-artifact-name conda_cpp librmm rmm --cuda "$RAPIDS_CUDA_VERSION")")
 
 sccache --stop-server 2>/dev/null || true
 
@@ -45,5 +45,5 @@ sccache --stop-server >/dev/null 2>&1 || true
 # See https://github.com/prefix-dev/rattler-build/issues/1424
 rm -rf "$RAPIDS_CONDA_BLD_OUTPUT_DIR"/build_cache
 
-RAPIDS_PACKAGE_NAME="$(rapids-package-name conda_python rmm --stable --cuda)"
+RAPIDS_PACKAGE_NAME="$(rapids-artifact-name conda_python rmm --stable --cuda)"
 export RAPIDS_PACKAGE_NAME

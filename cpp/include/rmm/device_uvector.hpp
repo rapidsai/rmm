@@ -17,6 +17,7 @@
 #include <cuda/std/span>
 
 #include <cstddef>
+#include <limits>
 #include <type_traits>
 #include <utility>
 
@@ -119,6 +120,7 @@ class device_uvector {
    *
    * @throws rmm::bad_alloc If the provided memory resource cannot allocate with alignment to
    * satisfy the alignment requirements of the value type.
+   * @throws rmm::invalid_argument If the requested size overflows the maximum allocation size.
    *
    * @param size The number of elements to allocate storage for
    * @param stream The stream on which to perform the allocation
@@ -351,6 +353,8 @@ class device_uvector {
    * first `size()` elements from the current allocation are copied there as if by memcpy. Finally,
    * the old allocation is freed and replaced by the new allocation.
    *
+   * @throws rmm::invalid_argument If the requested capacity overflows the maximum allocation size.
+   *
    * @param new_capacity The desired capacity (number of elements)
    * @param stream The stream on which to perform the allocation/copy (if any)
    */
@@ -371,6 +375,8 @@ class device_uvector {
    * If `new_size > capacity()`, elements are copied as if by memcpy to a new allocation.
    *
    * The invariant `size() <= capacity()` holds.
+   *
+   * @throws rmm::invalid_argument If the requested size overflows the maximum allocation size.
    *
    * @param new_size The desired number of elements
    * @param stream The stream on which to perform the allocation/copy (if any)
@@ -617,8 +623,11 @@ class device_uvector {
  private:
   device_buffer _storage{};  ///< Device memory storage for vector elements
 
-  [[nodiscard]] size_type constexpr elements_to_bytes(size_type num_elements) const noexcept
+  [[nodiscard]] size_type elements_to_bytes(size_type num_elements) const
   {
+    RMM_EXPECTS(num_elements <= std::numeric_limits<size_type>::max() / sizeof(value_type),
+                "Requested size overflows device_uvector storage.",
+                rmm::invalid_argument);
     return num_elements * sizeof(value_type);
   }
 

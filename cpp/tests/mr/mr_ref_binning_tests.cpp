@@ -8,12 +8,13 @@
 #include "cccl_mr_ref_test_mt.hpp"
 
 #include <rmm/mr/binning_memory_resource.hpp>
-#include <rmm/mr/per_device_resource.hpp>
+#include <rmm/mr/cuda_memory_resource.hpp>
 
 namespace rmm::test {
 
 struct BinningMRFixture : public ::testing::Test {
-  rmm::mr::binning_memory_resource mr{rmm::mr::get_current_device_resource_ref(), 18, 22};
+  rmm::mr::cuda_memory_resource upstream{};
+  rmm::mr::binning_memory_resource mr{upstream, 18, 22};
   rmm::device_async_resource_ref ref{mr};
   rmm::cuda_stream stream{};
 };

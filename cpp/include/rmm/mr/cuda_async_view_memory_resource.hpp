@@ -5,9 +5,7 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
-#include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/detail/runtime_capabilities.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/stream_ref>
@@ -27,7 +25,7 @@ namespace mr {
  * @brief Memory resource that uses `cudaMallocAsync`/`cudaFreeAsync` for
  * allocation/deallocation.
  */
-class cuda_async_view_memory_resource final {
+class RMM_EXPORT cuda_async_view_memory_resource final {
  public:
   /**
    * @brief Constructs a cuda_async_view_memory_resource which uses an existing CUDA memory pool.
@@ -39,23 +37,14 @@ class cuda_async_view_memory_resource final {
    * @param pool_handle Handle to a CUDA memory pool which will be used to
    * serve allocation requests.
    */
-  cuda_async_view_memory_resource(cudaMemPool_t pool_handle)
-    : cuda_pool_handle_{[pool_handle]() {
-        RMM_EXPECTS(nullptr != pool_handle, "Unexpected null pool handle.");
-        return pool_handle;
-      }()}
-  {
-    // Check if cudaMallocAsync Memory pool supported
-    RMM_EXPECTS(rmm::detail::runtime_async_alloc::is_supported(),
-                "cudaMallocAsync not supported with this CUDA driver/runtime version");
-  }
+  cuda_async_view_memory_resource(cudaMemPool_t pool_handle);
 
   /**
    * @brief Returns the underlying native handle to the CUDA pool
    *
    * @return cudaMemPool_t Handle to the underlying CUDA pool
    */
-  [[nodiscard]] cudaMemPool_t pool_handle() const noexcept { return cuda_pool_handle_; }
+  [[nodiscard]] cudaMemPool_t pool_handle() const noexcept;
 
   cuda_async_view_memory_resource()  = default;
   ~cuda_async_view_memory_resource() = default;
@@ -80,16 +69,7 @@ class cuda_async_view_memory_resource final {
    */
   void* allocate(cuda::stream_ref stream,
                  std::size_t bytes,
-                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
-  {
-    if (bytes == 0) { return nullptr; }
-    RMM_EXPECTS(rmm::is_supported_base_resource_alignment(alignment),
-                "Requested alignment is larger than this memory resource supports.",
-                rmm::bad_alloc);
-    void* ptr{nullptr};
-    RMM_CUDA_TRY_ALLOC(cudaMallocFromPoolAsync(&ptr, bytes, pool_handle(), stream.get()), bytes);
-    return ptr;
-  }
+                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   /**
    * @brief Deallocate memory pointed to by \p ptr.
@@ -102,11 +82,8 @@ class cuda_async_view_memory_resource final {
    */
   void deallocate(cuda::stream_ref stream,
                   void* ptr,
-                  [[maybe_unused]] std::size_t bytes,
-                  [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    if (ptr != nullptr) { RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaFreeAsync(ptr, stream.get())); }
-  }
+                  std::size_t bytes,
+                  std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
 
   /**
    * @brief Allocates memory of size at least \p bytes synchronously.
@@ -115,12 +92,7 @@ class cuda_async_view_memory_resource final {
    * @param alignment The alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
-  {
-    auto* ptr = allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
-    RMM_CUDA_TRY(cudaStreamSynchronize(cudaStream_t{nullptr}));
-    return ptr;
-  }
+  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   /**
    * @brief Deallocate memory pointed to by \p ptr synchronously.
@@ -131,10 +103,7 @@ class cuda_async_view_memory_resource final {
    */
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
-                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
-  }
+                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
 
   /**
    * @brief Compare this resource to another.
@@ -143,18 +112,12 @@ class cuda_async_view_memory_resource final {
    * @return true If the two resources are equivalent
    * @return false If the two resources are not equal
    */
-  [[nodiscard]] bool operator==(cuda_async_view_memory_resource const& other) const noexcept
-  {
-    return pool_handle() == other.pool_handle();
-  }
+  [[nodiscard]] bool operator==(cuda_async_view_memory_resource const& other) const noexcept;
 
   /**
    * @copydoc operator==
    */
-  [[nodiscard]] bool operator!=(cuda_async_view_memory_resource const& other) const noexcept
-  {
-    return !operator==(other);
-  }
+  [[nodiscard]] bool operator!=(cuda_async_view_memory_resource const& other) const noexcept;
 
   /**
    * @brief Enables the `cuda::mr::device_accessible` property

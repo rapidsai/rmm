@@ -12,6 +12,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <driver_types.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -36,8 +38,10 @@ cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
   pool_props.handleTypes =
     static_cast<cudaMemAllocationHandleType>(export_handle_type.value_or(cudaMemHandleTypeNone));
 
-#if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_DRIVER_VERSION
-  if (enable_hw_decompress) { pool_props.usage = 0x2; }
+#if CUDART_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_VERSION
+  // usage field in the cudaMemPoolProps only exists in new enough versions of the runtime
+  // headers.
+  if (enable_hw_decompress) { pool_props.usage = cudaMemPoolCreateUsageHwDecompress; }
 #else
   (void)enable_hw_decompress;
 #endif
@@ -101,7 +105,9 @@ void cuda_async_memory_resource_impl::deallocate_sync(void* ptr,
                                                       std::size_t bytes,
                                                       std::size_t alignment) noexcept
 {
-  deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
+  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+  deallocate(stream, ptr, bytes, alignment);
+  RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 }
 
 }  // namespace detail
