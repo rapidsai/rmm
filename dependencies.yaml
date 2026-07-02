@@ -182,10 +182,10 @@ dependencies:
           - matrix:
               cuda: "12.*"
             packages:
-              - &cuda_bindings12 cuda-bindings==12.*,>=12.9.2
+              - &cuda_bindings12 cuda-bindings>=12.9.2,<13.0
           - matrix: # All CUDA 13 versions
             packages:
-              - &cuda_bindings13 cuda-bindings==13.*,>=13.0.1
+              - &cuda_bindings13 cuda-bindings>=13.0.1,<14.0
   depends_on_librmm:
     common:
       - output_types: conda
