@@ -30,15 +30,16 @@ class logging_resource_adaptor_impl {
                                 cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
                                 bool auto_flush);
 
-  void* allocate_sync(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t));
+  [[nodiscard]] void* allocate_sync(std::size_t bytes,
+                                    std::size_t alignment = alignof(std::max_align_t));
 
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
                        std::size_t alignment = alignof(std::max_align_t)) noexcept;
 
-  void* allocate(cuda::stream_ref stream,
-                 std::size_t bytes,
-                 std::size_t alignment = alignof(std::max_align_t));
+  [[nodiscard]] void* allocate(cuda::stream_ref stream,
+                               std::size_t bytes,
+                               std::size_t alignment = alignof(std::max_align_t));
 
   void deallocate(cuda::stream_ref stream,
                   void* ptr,

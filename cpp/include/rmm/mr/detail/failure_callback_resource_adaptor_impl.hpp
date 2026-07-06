@@ -60,9 +60,9 @@ class failure_callback_resource_adaptor_impl {
       const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
   }
 
-  void* allocate(cuda::stream_ref stream,
-                 std::size_t bytes,
-                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+  [[nodiscard]] void* allocate(cuda::stream_ref stream,
+                               std::size_t bytes,
+                               std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
     void* ret{};
     while (true) {
@@ -84,7 +84,8 @@ class failure_callback_resource_adaptor_impl {
     upstream_mr_.deallocate(stream, ptr, bytes, alignment);
   }
 
-  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+  [[nodiscard]] void* allocate_sync(std::size_t bytes,
+                                    std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
     return allocate(cuda_stream_view{}, bytes, alignment);
   }
