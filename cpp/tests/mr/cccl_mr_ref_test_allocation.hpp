@@ -24,14 +24,10 @@ TYPED_TEST_SUITE_P(CcclMrRefAllocationTest);
 TYPED_TEST_P(CcclMrRefAllocationTest, AllocateDefault) { test_various_allocations(this->ref); }
 
 TYPED_TEST_P(CcclMrRefAllocationTest, AllocateDefaultStream)
-{
-  test_various_async_allocations(this->ref, cuda_stream_view{});
-}
+{ test_various_async_allocations(this->ref, cuda_stream_view{}); }
 
 TYPED_TEST_P(CcclMrRefAllocationTest, AllocateOnStream)
-{
-  test_various_async_allocations(this->ref, this->stream);
-}
+{ test_various_async_allocations(this->ref, this->stream); }
 
 TYPED_TEST_P(CcclMrRefAllocationTest, RandomAllocations) { test_random_allocations(this->ref); }
 
@@ -47,19 +43,13 @@ TYPED_TEST_P(CcclMrRefAllocationTest, RandomAllocationsStream)
 }
 
 TYPED_TEST_P(CcclMrRefAllocationTest, MixedRandomAllocationFree)
-{
-  test_mixed_random_allocation_free(this->ref, default_max_size);
-}
+{ test_mixed_random_allocation_free(this->ref, default_max_size); }
 
 TYPED_TEST_P(CcclMrRefAllocationTest, MixedRandomAllocationFreeDefaultStream)
-{
-  test_mixed_random_async_allocation_free(this->ref, default_max_size, cuda_stream_view{});
-}
+{ test_mixed_random_async_allocation_free(this->ref, default_max_size, cuda_stream_view{}); }
 
 TYPED_TEST_P(CcclMrRefAllocationTest, MixedRandomAllocationFreeStream)
-{
-  test_mixed_random_async_allocation_free(this->ref, default_max_size, this->stream);
-}
+{ test_mixed_random_async_allocation_free(this->ref, default_max_size, this->stream); }
 
 REGISTER_TYPED_TEST_SUITE_P(CcclMrRefAllocationTest,
                             AllocateDefault,

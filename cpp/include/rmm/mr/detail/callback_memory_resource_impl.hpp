@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -41,14 +41,10 @@ class callback_memory_resource_impl {
   callback_memory_resource_impl& operator=(callback_memory_resource_impl&&)      = delete;
 
   bool operator==(callback_memory_resource_impl const& other) const noexcept
-  {
-    return this == std::addressof(other);
-  }
+  { return this == std::addressof(other); }
 
   bool operator!=(callback_memory_resource_impl const& other) const noexcept
-  {
-    return !(*this == other);
-  }
+  { return !(*this == other); }
 
   void* allocate(cuda::stream_ref stream,
                  std::size_t bytes,

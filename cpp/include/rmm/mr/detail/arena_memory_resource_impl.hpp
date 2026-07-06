@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -44,14 +44,10 @@ class arena_memory_resource_impl {
   arena_memory_resource_impl& operator=(arena_memory_resource_impl&&)      = delete;
 
   bool operator==(arena_memory_resource_impl const& other) const noexcept
-  {
-    return this == std::addressof(other);
-  }
+  { return this == std::addressof(other); }
 
   bool operator!=(arena_memory_resource_impl const& other) const noexcept
-  {
-    return !(*this == other);
-  }
+  { return !(*this == other); }
 
   void* allocate(cuda::stream_ref stream,
                  std::size_t bytes,

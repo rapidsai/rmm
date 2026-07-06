@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -72,9 +72,7 @@ class raii_temp_directory {
   raii_temp_directory(raii_temp_directory const&)            = delete;
 
   [[nodiscard]] std::string generate_path(std::string filename) const
-  {
-    return directory_path_ / filename;
-  }
+  { return directory_path_ / filename; }
 
  private:
   std::filesystem::path directory_path_{};

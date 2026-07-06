@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -40,24 +40,18 @@ cuda_async_managed_memory_resource_impl::cuda_async_managed_memory_resource_impl
 }
 
 cudaMemPool_t cuda_async_managed_memory_resource_impl::pool_handle() const noexcept
-{
-  return pool_.pool_handle();
-}
+{ return pool_.pool_handle(); }
 
 void* cuda_async_managed_memory_resource_impl::allocate(cuda::stream_ref stream,
                                                         std::size_t bytes,
                                                         std::size_t alignment)
-{
-  return pool_.allocate(stream, bytes, alignment);
-}
+{ return pool_.allocate(stream, bytes, alignment); }
 
 void cuda_async_managed_memory_resource_impl::deallocate(cuda::stream_ref stream,
                                                          void* ptr,
                                                          std::size_t bytes,
                                                          std::size_t /*alignment*/) noexcept
-{
-  pool_.deallocate(stream, ptr, bytes);
-}
+{ pool_.deallocate(stream, ptr, bytes); }
 
 void* cuda_async_managed_memory_resource_impl::allocate_sync(std::size_t bytes,
                                                              std::size_t alignment)

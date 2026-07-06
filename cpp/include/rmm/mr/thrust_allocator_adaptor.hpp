@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -159,9 +159,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return rmm::device_async_resource_ref{_mr};
-  }
+  { return rmm::device_async_resource_ref{_mr}; }
 
   /**
    * @briefreturn{The stream used by this allocator}

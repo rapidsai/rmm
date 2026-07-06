@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -50,9 +50,7 @@ class cuda_async_memory_resource_impl {
   }
 
   [[nodiscard]] bool operator!=(cuda_async_memory_resource_impl const& other) const noexcept
-  {
-    return !(*this == other);
-  }
+  { return !(*this == other); }
 
   /**
    * @brief Returns the underlying native handle to the CUDA pool

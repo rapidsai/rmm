@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -21,9 +21,7 @@
 namespace rmm::test {
 namespace {
 inline bool is_aligned(void* ptr, std::size_t alignment = alignof(std::max_align_t))
-{
-  return rmm::is_pointer_aligned(ptr, alignment);
-}
+{ return rmm::is_pointer_aligned(ptr, alignment); }
 
 // Returns true if a pointer points to a device memory or managed memory allocation.
 inline bool is_device_memory(void* ptr)

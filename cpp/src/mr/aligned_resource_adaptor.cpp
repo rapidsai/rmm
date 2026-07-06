@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -20,9 +20,7 @@ aligned_resource_adaptor::aligned_resource_adaptor(
 }
 
 device_async_resource_ref aligned_resource_adaptor::get_upstream_resource() const noexcept
-{
-  return get().get_upstream_resource();
-}
+{ return get().get_upstream_resource(); }
 
 }  // namespace mr
 }  // namespace RMM_NAMESPACE

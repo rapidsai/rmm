@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -324,9 +324,7 @@ class device_uvector {
    * @return The value of the first element
    */
   [[nodiscard]] value_type front_element(cuda_stream_view stream) const
-  {
-    return element(0, stream);
-  }
+  { return element(0, stream); }
 
   /**
    * @brief Returns the last element.
@@ -340,9 +338,7 @@ class device_uvector {
    * @return The value of the last element
    */
   [[nodiscard]] value_type back_element(cuda_stream_view stream) const
-  {
-    return element(size() - 1, stream);
-  }
+  { return element(size() - 1, stream); }
 
   /**
    * @brief Increases the capacity of the vector to `new_capacity` elements.
@@ -359,9 +355,7 @@ class device_uvector {
    * @param stream The stream on which to perform the allocation/copy (if any)
    */
   void reserve(size_type new_capacity, cuda_stream_view stream)
-  {
-    _storage.reserve(elements_to_bytes(new_capacity), stream);
-  }
+  { _storage.reserve(elements_to_bytes(new_capacity), stream); }
 
   /**
    * @brief Resizes the vector to contain `new_size` elements.
@@ -382,9 +376,7 @@ class device_uvector {
    * @param stream The stream on which to perform the allocation/copy (if any)
    */
   void resize(size_type new_size, cuda_stream_view stream)
-  {
-    _storage.resize(elements_to_bytes(new_size), stream);
-  }
+  { _storage.resize(elements_to_bytes(new_size), stream); }
 
   /**
    * @brief Forces deallocation of unused device memory.
@@ -409,9 +401,7 @@ class device_uvector {
    * allocation.
    */
   [[nodiscard]] size_type capacity() const noexcept
-  {
-    return bytes_to_elements(_storage.capacity());
-  }
+  { return bytes_to_elements(_storage.capacity()); }
 
   /**
    * @brief Returns pointer to underlying device storage.
@@ -432,9 +422,7 @@ class device_uvector {
    * @return const_pointer Raw const pointer to element storage in device memory.
    */
   [[nodiscard]] const_pointer data() const noexcept
-  {
-    return static_cast<const_pointer>(_storage.data());
-  }
+  { return static_cast<const_pointer>(_storage.data()); }
 
   /**
    * @brief Returns an iterator to the first element.
@@ -510,9 +498,7 @@ class device_uvector {
    * @return Immutable iterator to the last element.
    */
   [[nodiscard]] const_reverse_iterator crbegin() const noexcept
-  {
-    return const_reverse_iterator(cend());
-  }
+  { return const_reverse_iterator(cend()); }
 
   /**
    * @brief Returns a const_reverse_iterator to the last element.
@@ -543,9 +529,7 @@ class device_uvector {
    * @return Immutable iterator to the element before the first element.
    */
   [[nodiscard]] const_reverse_iterator crend() const noexcept
-  {
-    return const_reverse_iterator(begin());
-  }
+  { return const_reverse_iterator(begin()); }
 
   /**
    * @brief Returns const_reverse_iterator to the element preceding the first element of the vector.
@@ -581,26 +565,20 @@ class device_uvector {
    * @briefreturn{cuda::std::span of the vector}
    */
   [[nodiscard]] operator cuda::std::span<T const>() const noexcept
-  {
-    return cuda::std::span<T const>(data(), size());
-  }
+  { return cuda::std::span<T const>(data(), size()); }
 
   /**
    * @briefreturn{cuda::std::span of the vector}
    */
   [[nodiscard]] operator cuda::std::span<T>() noexcept
-  {
-    return cuda::std::span<T>(data(), size());
-  }
+  { return cuda::std::span<T>(data(), size()); }
 
   /**
    * @briefreturn{The resource used to allocate and deallocate the device
    * storage}
    */
   [[nodiscard]] rmm::device_async_resource_ref memory_resource() noexcept
-  {
-    return _storage.memory_resource();
-  }
+  { return _storage.memory_resource(); }
 
   /**
    * @briefreturn{Stream most recently specified for allocation/deallocation}
@@ -632,9 +610,7 @@ class device_uvector {
   }
 
   [[nodiscard]] size_type constexpr bytes_to_elements(size_type num_bytes) const noexcept
-  {
-    return num_bytes / sizeof(value_type);
-  }
+  { return num_bytes / sizeof(value_type); }
 };
 
 /** @} */  // end of group

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -81,19 +81,13 @@ TEST_P(mr_ref_test_mt, Allocate)
 }
 
 TEST_P(mr_ref_test_mt, AllocateDefaultStream)
-{
-  spawn(test_various_async_allocations, this->ref, rmm::cuda_stream_view{});
-}
+{ spawn(test_various_async_allocations, this->ref, rmm::cuda_stream_view{}); }
 
 TEST_P(mr_ref_test_mt, AllocateOnStream)
-{
-  spawn(test_various_async_allocations, this->ref, this->stream.view());
-}
+{ spawn(test_various_async_allocations, this->ref, this->stream.view()); }
 
 TEST_P(mr_ref_test_mt, RandomAllocations)
-{
-  spawn(test_random_allocations, this->ref, default_num_allocations, default_max_size);
-}
+{ spawn(test_random_allocations, this->ref, default_num_allocations, default_max_size); }
 
 TEST_P(mr_ref_test_mt, RandomAllocationsDefaultStream)
 {
@@ -114,9 +108,7 @@ TEST_P(mr_ref_test_mt, RandomAllocationsStream)
 }
 
 TEST_P(mr_ref_test_mt, MixedRandomAllocationFree)
-{
-  spawn(test_mixed_random_allocation_free, this->ref, default_max_size);
-}
+{ spawn(test_mixed_random_allocation_free, this->ref, default_max_size); }
 
 TEST_P(mr_ref_test_mt, MixedRandomAllocationFreeDefaultStream)
 {
@@ -142,9 +134,7 @@ TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsPerThreadDefaultStream)
 }
 
 TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsSameStream)
-{
-  test_async_allocate_free_different_threads(this->ref, this->stream, this->stream);
-}
+{ test_async_allocate_free_different_threads(this->ref, this->stream, this->stream); }
 
 TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsDifferentStream)
 {

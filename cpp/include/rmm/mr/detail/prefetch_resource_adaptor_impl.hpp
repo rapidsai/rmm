@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -35,14 +35,10 @@ class prefetch_resource_adaptor_impl {
   prefetch_resource_adaptor_impl& operator=(prefetch_resource_adaptor_impl&&)      = delete;
 
   bool operator==(prefetch_resource_adaptor_impl const& other) const noexcept
-  {
-    return this == std::addressof(other);
-  }
+  { return this == std::addressof(other); }
 
   bool operator!=(prefetch_resource_adaptor_impl const& other) const noexcept
-  {
-    return !(*this == other);
-  }
+  { return !(*this == other); }
 
   [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
 

@@ -49,19 +49,13 @@ TYPED_TEST_P(CcclMrRefTest, SelfEquality) { EXPECT_TRUE(this->ref == this->ref);
 
 // Simple reproducer for https://github.com/rapidsai/rmm/issues/861
 TYPED_TEST_P(CcclMrRefTest, AllocationsAreDifferent)
-{
-  concurrent_allocations_are_different(this->ref);
-}
+{ concurrent_allocations_are_different(this->ref); }
 
 TYPED_TEST_P(CcclMrRefTest, AsyncAllocationsAreDifferentDefaultStream)
-{
-  concurrent_async_allocations_are_different(this->ref, cuda_stream_view{});
-}
+{ concurrent_async_allocations_are_different(this->ref, cuda_stream_view{}); }
 
 TYPED_TEST_P(CcclMrRefTest, AsyncAllocationsAreDifferent)
-{
-  concurrent_async_allocations_are_different(this->ref, this->stream);
-}
+{ concurrent_async_allocations_are_different(this->ref, this->stream); }
 
 REGISTER_TYPED_TEST_SUITE_P(CcclMrRefTest,
                             SetCurrentDeviceResourceRef,

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -35,9 +35,7 @@ device_async_resource_ref aligned_resource_adaptor_impl::get_upstream_resource()
 std::size_t aligned_resource_adaptor_impl::get_alignment() const noexcept { return alignment_; }
 
 std::size_t aligned_resource_adaptor_impl::get_alignment_threshold() const noexcept
-{
-  return alignment_threshold_;
-}
+{ return alignment_threshold_; }
 
 std::size_t aligned_resource_adaptor_impl::upstream_allocation_size(std::size_t bytes) const
 {
@@ -88,16 +86,12 @@ void aligned_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
 }
 
 void* aligned_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
-{
-  return allocate(cuda_stream_view{}, bytes, alignment);
-}
+{ return allocate(cuda_stream_view{}, bytes, alignment); }
 
 void aligned_resource_adaptor_impl::deallocate_sync(void* ptr,
                                                     std::size_t bytes,
                                                     std::size_t alignment) noexcept
-{
-  deallocate(cuda_stream_view{}, ptr, bytes, alignment);
-}
+{ deallocate(cuda_stream_view{}, ptr, bytes, alignment); }
 
 }  // namespace detail
 }  // namespace mr

@@ -81,19 +81,13 @@ TYPED_TEST_P(CcclMrRefTestMT, Allocate)
 }
 
 TYPED_TEST_P(CcclMrRefTestMT, AllocateDefaultStream)
-{
-  spawn(test_various_async_allocations, this->ref, rmm::cuda_stream_view{});
-}
+{ spawn(test_various_async_allocations, this->ref, rmm::cuda_stream_view{}); }
 
 TYPED_TEST_P(CcclMrRefTestMT, AllocateOnStream)
-{
-  spawn(test_various_async_allocations, this->ref, this->stream.view());
-}
+{ spawn(test_various_async_allocations, this->ref, this->stream.view()); }
 
 TYPED_TEST_P(CcclMrRefTestMT, RandomAllocations)
-{
-  spawn(test_random_allocations, this->ref, default_num_allocations, default_max_size);
-}
+{ spawn(test_random_allocations, this->ref, default_num_allocations, default_max_size); }
 
 TYPED_TEST_P(CcclMrRefTestMT, RandomAllocationsDefaultStream)
 {
@@ -114,9 +108,7 @@ TYPED_TEST_P(CcclMrRefTestMT, RandomAllocationsStream)
 }
 
 TYPED_TEST_P(CcclMrRefTestMT, MixedRandomAllocationFree)
-{
-  spawn(test_mixed_random_allocation_free, this->ref, default_max_size);
-}
+{ spawn(test_mixed_random_allocation_free, this->ref, default_max_size); }
 
 TYPED_TEST_P(CcclMrRefTestMT, MixedRandomAllocationFreeDefaultStream)
 {
@@ -142,9 +134,7 @@ TYPED_TEST_P(CcclMrRefTestMT, AllocFreeDifferentThreadsPerThreadDefaultStream)
 }
 
 TYPED_TEST_P(CcclMrRefTestMT, AllocFreeDifferentThreadsSameStream)
-{
-  test_async_allocate_free_different_threads(this->ref, this->stream, this->stream);
-}
+{ test_async_allocate_free_different_threads(this->ref, this->stream, this->stream); }
 
 TYPED_TEST_P(CcclMrRefTestMT, AllocFreeDifferentThreadsDifferentStream)
 {

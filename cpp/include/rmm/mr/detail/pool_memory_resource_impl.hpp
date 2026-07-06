@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -41,14 +41,10 @@ class pool_memory_resource_impl final
   ~pool_memory_resource_impl();
 
   bool operator==(pool_memory_resource_impl const& other) const noexcept
-  {
-    return this == std::addressof(other);
-  }
+  { return this == std::addressof(other); }
 
   bool operator!=(pool_memory_resource_impl const& other) const noexcept
-  {
-    return !(*this == other);
-  }
+  { return !(*this == other); }
 
   [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
 

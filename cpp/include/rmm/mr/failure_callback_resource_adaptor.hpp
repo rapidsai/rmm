@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -80,9 +80,7 @@ class failure_callback_resource_adaptor
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return this->get().get_upstream_resource();
-  }
+  { return this->get().get_upstream_resource(); }
 };
 
 static_assert(

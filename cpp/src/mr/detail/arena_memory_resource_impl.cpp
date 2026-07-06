@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -88,16 +88,12 @@ void arena_memory_resource_impl::deallocate(cuda::stream_ref stream,
 }
 
 void* arena_memory_resource_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
-{
-  return allocate(cuda_stream_view{}, bytes, alignment);
-}
+{ return allocate(cuda_stream_view{}, bytes, alignment); }
 
 void arena_memory_resource_impl::deallocate_sync(void* ptr,
                                                  std::size_t bytes,
                                                  std::size_t alignment) noexcept
-{
-  deallocate(cuda_stream_view{}, ptr, bytes, alignment);
-}
+{ deallocate(cuda_stream_view{}, ptr, bytes, alignment); }
 
 void arena_memory_resource_impl::defragment()
 {
@@ -188,9 +184,7 @@ void arena_memory_resource_impl::dump_memory_log(std::size_t bytes)
 }
 
 bool arena_memory_resource_impl::use_per_thread_arena(cuda_stream_view stream)
-{
-  return stream.is_per_thread_default();
-}
+{ return stream.is_per_thread_default(); }
 
 }  // namespace detail
 }  // namespace mr

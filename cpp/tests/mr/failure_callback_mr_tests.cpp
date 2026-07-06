@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -45,24 +45,18 @@ class always_throw_memory_resource final {
   void* allocate(cuda::stream_ref /*stream*/,
                  std::size_t /*bytes*/,
                  std::size_t /*alignment*/ = rmm::CUDA_ALLOCATION_ALIGNMENT)
-  {
-    throw ExceptionType{"foo"};
-  }
+  { throw ExceptionType{"foo"}; }
   void deallocate(cuda::stream_ref /*stream*/,
                   void* /*ptr*/,
                   std::size_t /*bytes*/,
                   std::size_t /*alignment*/ = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept {};
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
-  {
-    return allocate(rmm::cuda_stream_view{}, bytes, alignment);
-  }
+  { return allocate(rmm::cuda_stream_view{}, bytes, alignment); }
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    deallocate(rmm::cuda_stream_view{}, ptr, bytes, alignment);
-  }
+  { deallocate(rmm::cuda_stream_view{}, ptr, bytes, alignment); }
 
   bool operator==(always_throw_memory_resource const&) const noexcept { return true; }
   bool operator!=(always_throw_memory_resource const&) const noexcept { return false; }

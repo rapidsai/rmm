@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -26,29 +26,21 @@ callback_memory_resource_impl::callback_memory_resource_impl(
 void* callback_memory_resource_impl::allocate(cuda::stream_ref stream,
                                               std::size_t bytes,
                                               std::size_t /*alignment*/)
-{
-  return allocate_callback_(bytes, cuda_stream_view{stream.get()}, allocate_callback_arg_);
-}
+{ return allocate_callback_(bytes, cuda_stream_view{stream.get()}, allocate_callback_arg_); }
 
 void callback_memory_resource_impl::deallocate(cuda::stream_ref stream,
                                                void* ptr,
                                                std::size_t bytes,
                                                std::size_t /*alignment*/) noexcept
-{
-  deallocate_callback_(ptr, bytes, cuda_stream_view{stream.get()}, deallocate_callback_arg_);
-}
+{ deallocate_callback_(ptr, bytes, cuda_stream_view{stream.get()}, deallocate_callback_arg_); }
 
 void* callback_memory_resource_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
-{
-  return allocate(cuda_stream_view{}, bytes, alignment);
-}
+{ return allocate(cuda_stream_view{}, bytes, alignment); }
 
 void callback_memory_resource_impl::deallocate_sync(void* ptr,
                                                     std::size_t bytes,
                                                     std::size_t alignment) noexcept
-{
-  deallocate(cuda_stream_view{}, ptr, bytes, alignment);
-}
+{ deallocate(cuda_stream_view{}, ptr, bytes, alignment); }
 
 }  // namespace detail
 }  // namespace mr

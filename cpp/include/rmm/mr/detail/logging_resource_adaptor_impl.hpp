@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -46,14 +46,10 @@ class logging_resource_adaptor_impl {
                   std::size_t alignment = alignof(std::max_align_t)) noexcept;
 
   bool operator==(logging_resource_adaptor_impl const& other) const noexcept
-  {
-    return upstream_mr_ == other.upstream_mr_ && logger_ == other.logger_;
-  }
+  { return upstream_mr_ == other.upstream_mr_ && logger_ == other.logger_; }
 
   bool operator!=(logging_resource_adaptor_impl const& other) const noexcept
-  {
-    return !(*this == other);
-  }
+  { return !(*this == other); }
 
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept;
 
