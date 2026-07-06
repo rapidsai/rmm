@@ -18,6 +18,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <vector>
 
 #ifdef RMM_DEBUG_PRINT
 #include <rmm/cuda_device.hpp>
@@ -108,7 +109,46 @@ void pool_memory_resource_impl::initialize_pool(std::size_t initial_size,
 pool_memory_resource_impl::block_type pool_memory_resource_impl::expand_pool(
   std::size_t size, [[maybe_unused]] free_list& blocks, cuda_stream_view stream)
 {
-  return try_to_expand(size_to_grow(size), size, stream);
+  auto grow_size = size_to_grow(size);
+  // When the pool is capped and cannot grow enough to satisfy `size` in a single new upstream
+  // block, try to reclaim entirely-free upstream blocks (whose budget prevents growth) back to
+  // upstream, freeing headroom under `maximum_pool_size_` to grow a sufficiently large block.
+  if (grow_size < size && maximum_pool_size_.has_value()) {
+    reclaim_free_blocks(size);
+    grow_size = size_to_grow(size);
+  }
+  return try_to_expand(grow_size, size, stream);
+}
+
+void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size)
+{
+  // Reclaiming only makes sense when the pool is capped. The sole caller guarantees this, but
+  // guard defensively so the helper does not depend on an externally-checked precondition.
+  if (!maximum_pool_size_.has_value()) { return; }
+  auto const max_pool_size = maximum_pool_size_.value();
+
+  // If `size` can never fit under the cap even with every free block reclaimed, there is nothing to
+  // gain: avoid the synchronize and the destructive reclaim on a request that will fail anyway.
+  if (size > max_pool_size) { return; }
+
+  // Synchronize all events before returning any memory to upstream. A block may have last been used
+  // on a stream different from the free list it now sits in (via cross-stream merging), so syncing
+  // only its current list's event is insufficient for async upstreams. This mirrors release().
+  this->synchronize_all_events();
+
+  // Snapshot the set of upstream blocks so we can erase from `upstream_blocks_` while iterating.
+  // Reclaiming a block never frees another, so a single pass reclaims all reclaimable blocks.
+  std::vector<block_type> const candidates(upstream_blocks_.cbegin(), upstream_blocks_.cend());
+  for (auto const& blk : candidates) {
+    // `current_pool_size_ <= max_pool_size` is an invariant, so the subtraction cannot underflow.
+    if (max_pool_size - current_pool_size_ >= size) { return; }
+    if (this->try_reclaim_free_block(blk.pointer(), blk.size())) {
+      get_upstream_resource().deallocate_sync(
+        blk.pointer(), blk.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
+      upstream_blocks_.erase(blk);
+      current_pool_size_ -= blk.size();
+    }
+  }
 }
 
 std::size_t pool_memory_resource_impl::size_to_grow(std::size_t size) const

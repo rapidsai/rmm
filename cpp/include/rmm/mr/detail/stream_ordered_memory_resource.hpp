@@ -263,6 +263,60 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
     stream_free_blocks_[get_event(stream)].insert(std::move(blocks));
   }
 
+  /**
+   * @brief Synchronizes every event this resource may associate with pooled memory.
+   *
+   * After this returns, all asynchronous work previously ordered on any stream tracked by this
+   * resource has completed on the host. This must be called before any pooled memory is returned to
+   * an upstream resource whose deallocation is itself asynchronous (e.g. `cudaFreeAsync`), because
+   * a block may have last been used on a stream different from the free list it now resides in.
+   *
+   * It synchronizes the union of two event sets:
+   * 1. every event in `stream_events_`, which covers the provenance of blocks merged in from
+   *    non-default streams; and
+   * 2. the key event of every free list in `stream_free_blocks_`, which additionally covers
+   *    per-thread-default-stream (PTDS) lists whose events live in thread-local storage and are not
+   *    in `stream_events_`. A reclaimable block is always pulled from `stream_free_blocks_`, so
+   *    syncing every list's key event guarantees its last use has completed.
+   *
+   * An event may appear in both sets; the redundant `cudaEventSynchronize` is harmless.
+   * `cudaEventSynchronize` on a resource-owned event is safe even if the underlying stream was
+   * destroyed. The sole residual limitation matches `release()`: a block already merged out of a
+   * PTDS free list (its source entry consumed by `merge_lists`) is bounded only by the destination
+   * stream's wait, so this is not a regression. The caller must hold `mtx_`.
+   *
+   * Runs on the allocate path (not the destructor), so the throwing `RMM_CUDA_TRY` is used.
+   */
+  void synchronize_all_events()
+  {
+    for (auto const& s_e : stream_events_) {
+      RMM_CUDA_TRY(cudaEventSynchronize(s_e.second.event));
+    }
+    for (auto const& [stream_event, blocks] : stream_free_blocks_) {
+      RMM_CUDA_TRY(cudaEventSynchronize(stream_event.event));
+    }
+  }
+
+  /**
+   * @brief Attempts to remove an entirely-free upstream block from the per-stream free lists.
+   *
+   * Searches every per-stream free list for an exact, entirely-free upstream block matching `ptr`
+   * and `size` and erases it if found. This is a pure find-and-erase with no CUDA calls: the caller
+   * is responsible for synchronizing outstanding work (see `synchronize_all_events`) before
+   * returning the reclaimed memory to upstream. The caller must hold `mtx_`.
+   *
+   * @param ptr The head pointer of the upstream allocation to reclaim.
+   * @param size The full size in bytes of the upstream allocation to reclaim.
+   * @return true if the block was found fully-free and erased, false otherwise.
+   */
+  bool try_reclaim_free_block(char const* ptr, std::size_t size)
+  {
+    for (auto& stream_blocks : stream_free_blocks_) {
+      if (stream_blocks.second.erase_block(ptr, size)) { return true; }
+    }
+    return false;
+  }
+
 #ifdef RMM_DEBUG_PRINT
   void print_free_blocks() const
   {

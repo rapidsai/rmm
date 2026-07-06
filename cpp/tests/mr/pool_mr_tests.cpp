@@ -4,6 +4,7 @@
  */
 
 #include <rmm/cuda_device.hpp>
+#include <rmm/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
@@ -100,6 +101,68 @@ TEST(PoolTest, InitialAndMaxPoolSizeEqual)
   EXPECT_NO_THROW([]() {
     pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1000192, 1000192);
     (void)mr.allocate_sync(1000);
+  }());
+}
+
+// Issue #1957
+TEST(PoolTest, AllocateMaxWithInitialPoolSize)
+{
+  EXPECT_NO_THROW([]() {
+    pool_mr mr(rmm::mr::get_current_device_resource_ref(), 256, 1024);
+    auto* ptr = mr.allocate_sync(1024);
+    mr.deallocate_sync(ptr, 1024);
+  }());
+}
+
+TEST(PoolTest, AllocateMaxWithZeroInitialPoolSize)
+{
+  EXPECT_NO_THROW([]() {
+    pool_mr mr(rmm::mr::get_current_device_resource_ref(), 0, 1024);
+    auto* ptr = mr.allocate_sync(1024);
+    mr.deallocate_sync(ptr, 1024);
+  }());
+}
+
+// Issue #1957: a partially-used upstream block must never be reclaimed.
+TEST(PoolTest, PartialUseBlockNotReclaimed)
+{
+  pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1024, 2048);
+  // Splits the 1024B upstream block, leaving it partly in use.
+  auto* ptr = mr.allocate_sync(512);
+  // The 1024B block is not fully free, so it cannot be reclaimed; the pool still cannot grow to
+  // satisfy 2048B under the 2048B cap.
+  EXPECT_THROW((void)mr.allocate_sync(2048), rmm::out_of_memory);
+  // The held pointer remained valid throughout.
+  EXPECT_NO_THROW(mr.deallocate_sync(ptr, 512));
+}
+
+// Issue #1957: a request larger than the maximum pool size throws (and reclaim terminates).
+TEST(PoolTest, AllocateLargerThanMaxThrows)
+{
+  pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1024, 1024);
+  EXPECT_THROW((void)mr.allocate_sync(2048), rmm::out_of_memory);
+
+  EXPECT_EQ(mr.pool_size(), 1024);
+  EXPECT_NO_THROW([](pool_mr& resource) {
+    auto* ptr = resource.allocate_sync(1024);
+    resource.deallocate_sync(ptr, 1024);
+  }(mr));
+}
+
+// Issue #1957: reclaim a block sitting in a non-default stream's free list.
+TEST(PoolTest, ReclaimAcrossStreams)
+{
+  pool_mr mr(rmm::mr::get_current_device_resource_ref(), 256, 1024);
+  rmm::cuda_stream stream;
+  {
+    // Allocate and free 256B on a non-default stream so the freed block lands in that stream's
+    // free list.
+    rmm::device_buffer buf(256, stream.view(), mr);
+  }
+  // Growing to 1024B requires reclaiming the entirely-free cross-stream block after syncing.
+  EXPECT_NO_THROW([&]() {
+    auto* ptr = mr.allocate_sync(1024);
+    mr.deallocate_sync(ptr, 1024);
   }());
 }
 
