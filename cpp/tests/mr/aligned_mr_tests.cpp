@@ -16,6 +16,8 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <limits>
+#include <tuple>
 
 namespace rmm::test {
 namespace {
@@ -24,6 +26,9 @@ using ::testing::_;
 using ::testing::Return;
 
 using aligned_adaptor = rmm::mr::aligned_resource_adaptor;
+
+static_assert(!noexcept(rmm::align_up(std::size_t{}, std::size_t{})),
+              "align_up must not be noexcept: it throws rmm::logic_error on invalid input");
 
 void* int_to_address(std::size_t val)
 {
@@ -246,6 +251,73 @@ TEST(AlignedTest, AlignRealPointer)
   void* alloc = mr.allocate_sync(threshold);
   EXPECT_TRUE(rmm::is_pointer_aligned(alloc, alignment));
   mr.deallocate_sync(alloc, threshold);
+}
+
+TEST(AlignedTest, AlignUpThrowsOnNonPowerOfTwoAlignment)
+{
+  EXPECT_THROW(std::ignore = rmm::align_up(100, 3), rmm::logic_error);
+  EXPECT_THROW(std::ignore = rmm::align_up(100, 100), rmm::logic_error);
+}
+
+TEST(AlignedTest, AlignUpThrowsOnZeroAlignment)
+{
+  EXPECT_THROW(std::ignore = rmm::align_up(100, 0), rmm::logic_error);
+}
+
+TEST(AlignedTest, AlignUpThrowsOnOverflow)
+{
+  EXPECT_THROW(std::ignore = rmm::align_up(std::numeric_limits<std::size_t>::max(),
+                                           rmm::CUDA_ALLOCATION_ALIGNMENT),
+               rmm::logic_error);
+}
+
+TEST(AlignedTest, AlignUpJustBelowOverflowBoundarySucceeds)
+{
+  auto const max_value = std::numeric_limits<std::size_t>::max();
+  auto const alignment = std::size_t{256};
+  auto const value     = max_value - alignment;
+  // The largest multiple of `alignment` representable in std::size_t is `max_value - 255`,
+  // since `max_value + 1` is the next multiple of 256 above it, which overflows. `value` is
+  // exactly one less than that multiple, so aligning up must land on it.
+  auto const expected = max_value - (alignment - 1);
+  std::size_t result{};
+  EXPECT_NO_THROW(result = rmm::align_up(value, alignment));
+  EXPECT_EQ(result, expected);
+  EXPECT_GE(result, value);
+}
+
+TEST(AlignedTest, AlignUpExactOverflowBoundary)
+{
+  auto const max_value = std::numeric_limits<std::size_t>::max();
+  auto const alignment = std::size_t{256};
+  // `max_value - 255` is the largest value that is itself already a multiple of 256, i.e. the
+  // true boundary of the safe region: aligning it up must be a no-op.
+  auto const boundary = max_value - (alignment - 1);
+  std::size_t result{};
+  EXPECT_NO_THROW(result = rmm::align_up(boundary, alignment));
+  EXPECT_EQ(result, boundary);
+
+  // One more than the boundary is the smallest value whose correctly-rounded result would be
+  // `max_value + 1`, which wraps around to 0.
+  EXPECT_THROW(std::ignore = rmm::align_up(boundary + 1, alignment), rmm::logic_error);
+}
+
+TEST(AlignedTest, AlignUpAlignmentOfOneIsNoOp)
+{
+  // `1` is a valid power of two, so `alignment - 1 == 0` and the mask is all-ones: align_up
+  // becomes a pure no-op that can never trigger the overflow guard, even at SIZE_MAX.
+  auto const max_value = std::numeric_limits<std::size_t>::max();
+  std::size_t result{};
+  EXPECT_NO_THROW(result = rmm::align_up(max_value, std::size_t{1}));
+  EXPECT_EQ(result, max_value);
+  EXPECT_EQ(rmm::align_up(12345, 1), 12345);
+}
+
+TEST(AlignedTest, AlignUpHappyPathUnchanged)
+{
+  EXPECT_EQ(rmm::align_up(257, 256), 512);
+  EXPECT_EQ(rmm::align_up(256, 256), 256);
+  EXPECT_EQ(rmm::align_up(0, 256), 0);
 }
 
 TEST(AlignedTest, SmallAlignmentsBumpedTo256Bytes)
