@@ -22,6 +22,27 @@ namespace RMM_NAMESPACE {
 namespace mr {
 namespace detail {
 
+/// The type used to key per-stream arenas by CUDA stream ID.
+using stream_id_type = unsigned long long;
+
+/**
+ * @brief Return the CUDA stream ID used to key per-stream arenas.
+ *
+ * Normalizes the default stream to `cudaStreamLegacy` for consistency between
+ * PTDS and non-PTDS mode, then returns the stream's ID from `cudaStreamGetId`.
+ * Keying by ID (rather than the raw `cudaStream_t` handle) prevents a newly
+ * created stream that reuses a destroyed stream's handle value from inheriting
+ * stale arena state (ABA reuse).
+ *
+ * @param stream The stream for which to get the ID.
+ * @param may_throw If `true`, a `cudaStreamGetId` failure throws `rmm::cuda_error` (only safe to
+ * pass from a context that is not `noexcept`, e.g. the `allocate` path). If `false`, failure is
+ * only asserted in debug builds and silently ignored in release builds, matching the
+ * `noexcept`-safe requirements of the `deallocate`/`deallocate_sync` path.
+ * @return The CUDA stream ID.
+ */
+stream_id_type get_stream_id(cuda_stream_view stream, bool may_throw);
+
 /**
  * @brief Implementation class for arena_memory_resource.
  *
@@ -81,9 +102,9 @@ class arena_memory_resource_impl {
 
   void deallocate_from_other_arena(cuda_stream_view stream, void* ptr, std::size_t bytes);
 
-  arena& get_arena(cuda_stream_view stream);
+  arena& get_arena(cuda_stream_view stream, bool may_throw);
   arena& get_thread_arena();
-  arena& get_stream_arena(cuda_stream_view stream);
+  arena& get_stream_arena(cuda_stream_view stream, bool may_throw);
 
   void dump_memory_log(std::size_t bytes);
 
@@ -91,7 +112,7 @@ class arena_memory_resource_impl {
 
   global_arena global_arena_;
   std::map<std::thread::id, std::shared_ptr<arena>> thread_arenas_;
-  std::map<cudaStream_t, arena> stream_arenas_;
+  std::map<stream_id_type, arena> stream_arenas_;
   bool dump_log_on_failure_{};
   std::shared_ptr<rapids_logger::logger> logger_{};
   mutable std::shared_mutex map_mtx_;

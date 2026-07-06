@@ -637,5 +637,68 @@ TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
   EXPECT_GE(file_status.st_size, 0);
 }
 
+// Distinct live streams get distinct IDs, and a stream's ID is stable across calls.
+TEST(ArenaStreamIdTest, DistinctStreamsHaveDistinctStableIds)  // NOLINT
+{
+  rmm::cuda_stream stream_a{};
+  rmm::cuda_stream stream_b{};
+
+  EXPECT_NE(rmm::mr::detail::get_stream_id(stream_a.view(), /*may_throw=*/true),
+            rmm::mr::detail::get_stream_id(stream_b.view(), /*may_throw=*/true));
+  EXPECT_EQ(rmm::mr::detail::get_stream_id(stream_a.view(), /*may_throw=*/true),
+            rmm::mr::detail::get_stream_id(stream_a.view(), /*may_throw=*/true));
+}
+
+// The default stream is normalized via cudaStreamLegacy, so it maps to one consistent key.
+TEST(ArenaStreamIdTest, DefaultStreamNormalizesToLegacyId)  // NOLINT
+{
+  auto const id = rmm::mr::detail::get_stream_id(rmm::cuda_stream_view{}, /*may_throw=*/true);
+  EXPECT_EQ(id, rmm::mr::detail::get_stream_id(rmm::cuda_stream_view{}, /*may_throw=*/true));
+
+#ifndef CUDA_API_PER_THREAD_DEFAULT_STREAM
+  // Non-PTDS: the default stream normalizes to cudaStreamLegacy, so it keys to the legacy id.
+  EXPECT_EQ(rmm::mr::detail::get_stream_id(rmm::cuda_stream_view{}, /*may_throw=*/true),
+            rmm::mr::detail::get_stream_id(rmm::cuda_stream_legacy, /*may_throw=*/true));
+#endif
+
+  // In both modes, a real created stream must never collide with the legacy key. This catches a
+  // regression that collapses every stream to a single key.
+  rmm::cuda_stream stream{};
+  EXPECT_NE(rmm::mr::detail::get_stream_id(stream.view(), /*may_throw=*/true),
+            rmm::mr::detail::get_stream_id(rmm::cuda_stream_legacy, /*may_throw=*/true));
+}
+
+// Regression for #2394: CUDA can hand a destroyed stream's raw handle value to a new stream (ABA
+// reuse). Keying arenas by the raw handle would let the new stream inherit stale arena state.
+// Keying by cudaStreamGetId prevents this: a reused handle yields a distinct ID.
+//
+// This test cannot force reuse deterministically because CUDA does not guarantee handle-reuse
+// timing (see the issue's own caveat), so it probes up to a bounded number of iterations and
+// skips if reuse is never observed. It either proves the property or skips, never falsely fails.
+TEST(ArenaStreamIdTest, ReusedRawHandleYieldsDistinctId)  // NOLINT
+{
+  cudaStream_t raw{};
+  rmm::mr::detail::stream_id_type id{};
+  {
+    rmm::cuda_stream original{};
+    raw = original.view().value();
+    id  = rmm::mr::detail::get_stream_id(original.view(), /*may_throw=*/true);
+  }  // original destroyed here, freeing its raw handle for potential reuse
+
+  constexpr int max_iterations = 2048;
+  bool observed_reuse          = false;
+  for (int i = 0; i < max_iterations; ++i) {
+    rmm::cuda_stream candidate{};
+    if (candidate.view().value() == raw) {
+      // Same raw handle, but the ID must differ so no stale arena is inherited.
+      EXPECT_NE(rmm::mr::detail::get_stream_id(candidate.view(), /*may_throw=*/true), id);
+      observed_reuse = true;
+      break;
+    }
+  }
+
+  if (!observed_reuse) { GTEST_SKIP() << "CUDA did not reuse the stream handle within the bound"; }
+}
+
 }  // namespace
 }  // namespace rmm::test
