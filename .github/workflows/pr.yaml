@@ -19,13 +19,11 @@ jobs:
       - conda-python-build
       - conda-python-tests
       - conda-python-tests-integration-optional
-      - conda-python-tests-nightly
       - docs-build
       - wheel-build-cpp
       - wheel-build-python
       - wheel-tests
       - wheel-tests-integration-optional
-      - wheel-tests-nightly
       - devcontainer
       - telemetry-setup
     permissions:
@@ -292,21 +290,6 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_python.sh
-  conda-python-tests-nightly:
-    needs: [conda-python-build, changed-files]
-    permissions:
-      actions: read
-      contents: read
-      id-token: write
-      packages: read
-      pull-requests: read
-    secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@main
-    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python_conda
-    with:
-      build_type: pull-request
-      matrix_type: nightly
-      script: ci/test_python.sh
   conda-python-tests-integration-optional:
     needs: [conda-python-build, changed-files]
     permissions:
@@ -386,21 +369,6 @@ jobs:
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python_wheels
     with:
       build_type: pull-request
-      script: ci/test_wheel.sh
-  wheel-tests-nightly:
-    needs: [wheel-build-python, changed-files]
-    permissions:
-      actions: read
-      contents: read
-      id-token: write
-      packages: read
-      pull-requests: read
-    secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@main
-    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python_wheels
-    with:
-      build_type: pull-request
-      matrix_type: nightly
       script: ci/test_wheel.sh
   wheel-tests-integration-optional:
     needs: [wheel-build-python, changed-files]
