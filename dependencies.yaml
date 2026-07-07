@@ -182,10 +182,10 @@ dependencies:
           - matrix:
               cuda: "12.*"
             packages:
-              - &cuda_python12 cuda-python>=12.9.2,<13.0
+              - &cuda_bindings12 cuda-bindings>=12.9.2,<13.0
           - matrix: # All CUDA 13 versions
             packages:
-              - &cuda_python13 cuda-python>=13.0.1,<14.0
+              - &cuda_bindings13 cuda-bindings>=13.0.1,<14.0
   depends_on_librmm:
     common:
       - output_types: conda
@@ -391,10 +391,10 @@ dependencies:
           - matrix:
               cuda: "12.*"
             packages:
-              - *cuda_python12
+              - *cuda_bindings12
           - matrix: # All CUDA 13 versions
             packages:
-              - *cuda_python13
+              - *cuda_bindings13
   test_cpp:
     common:
       - output_types: conda
@@ -404,6 +404,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
+          - cuda-core>=0.5.1
           - packaging
           - pytest
           - pytest-cov
@@ -412,7 +413,22 @@ dependencies:
         matrices:
           - matrix:
               dependencies: "oldest"
+              cuda: "12.*"
             packages:
+              - cuda-bindings==12.9.2
+          - matrix:
+              dependencies: "oldest"
+              cuda: "13.*"
+            packages:
+              - cuda-bindings==13.0.1
+          - matrix:
+            packages:
+      - output_types: [conda, requirements, pyproject]
+        matrices:
+          - matrix:
+              dependencies: "oldest"
+            packages:
+              - cuda-core==0.5.1
               - numba==0.60.0
               - numpy==2.0.*
           - matrix:
