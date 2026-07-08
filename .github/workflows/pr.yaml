@@ -45,10 +45,6 @@ jobs:
     env:
       OTEL_SERVICE_NAME: "pr-rmm"
     steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
-        with:
-          egress-policy: audit
       - name: Telemetry setup
         # This gate is here and not at the job level because we need the job to not be skipped,
         # since other jobs depend on it.
@@ -62,10 +58,6 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
-        with:
-          egress-policy: audit
       - name: Get PR Info
         id: get-pr-info
         uses: nv-gha-runners/get-pr-info@090577647b8ddc4e06e809e264f7881650ecdccf # main
@@ -416,10 +408,6 @@ jobs:
     if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() && github.run_attempt == '1' }}
     continue-on-error: true
     steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
-        with:
-          egress-policy: audit
       - name: Telemetry summarize
         uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
     env:
