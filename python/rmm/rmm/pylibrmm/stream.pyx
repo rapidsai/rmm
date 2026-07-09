@@ -64,7 +64,7 @@ cdef class Stream:
         obj : object, optional
             If None (the default), a new CUDA stream is created.
             Otherwise a thin wrapper is created around an existing
-            stream from Numba, CuPy, or any object implementing the
+            stream from Numba-CUDA, CuPy, or any object implementing the
             CUDA stream protocol (``__cuda_stream__``).
         flags : CudaStreamFlags, optional
             Stream creation flags. Only valid when ``obj`` is None;

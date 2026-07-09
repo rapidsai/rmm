@@ -14,6 +14,7 @@
 #include <rmm/mr/managed_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
+#include <rmm/mr/tracking_resource_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <thrust/equal.h>
@@ -171,6 +172,16 @@ TYPED_TEST(DeviceBufferTest, CopyFromNullptrNonZero)
 {
   // can  copy from a nullptr only if size == 0
   EXPECT_THROW(rmm::device_buffer buff(nullptr, 1, rmm::cuda_stream_default), rmm::logic_error);
+}
+
+TYPED_TEST(DeviceBufferTest, CopyFromNullptrNonZeroFreesAllocation)
+{
+  rmm::mr::tracking_resource_adaptor mr{rmm::device_async_resource_ref{this->mr}};
+
+  EXPECT_THROW(std::ignore = rmm::device_buffer(nullptr, 1, rmm::cuda_stream_default, mr),
+               rmm::logic_error);
+  EXPECT_EQ(mr.get_outstanding_allocations().size(), 0);
+  EXPECT_EQ(mr.get_allocated_bytes(), 0);
 }
 
 TYPED_TEST(DeviceBufferTest, CopyConstructor)

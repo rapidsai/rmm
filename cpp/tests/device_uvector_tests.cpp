@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iterator>
+#include <limits>
 #include <type_traits>
 #include <utility>
 
@@ -59,6 +60,15 @@ TYPED_TEST(TypedUVectorTest, NonZeroSizeConstructor)
   EXPECT_EQ(vec.end(), vec.begin() + vec.size());
   EXPECT_FALSE(vec.is_empty());
   EXPECT_NE(vec.element_ptr(0), nullptr);
+}
+
+TEST(DeviceUVectorOverflowTest, Constructor)
+{
+  auto constexpr overflowing_size = std::numeric_limits<std::size_t>::max() / sizeof(uint64_t) + 1;
+
+  EXPECT_THROW(
+    std::ignore = rmm::device_uvector<uint64_t>(overflowing_size, rmm::cuda_stream_view{}),
+    rmm::invalid_argument);
 }
 
 TYPED_TEST(TypedUVectorTest, CopyConstructor)
@@ -156,6 +166,14 @@ TYPED_TEST(TypedUVectorTest, ReserveLarger)
   EXPECT_EQ(vec.element(0, this->stream()), 1);
 }
 
+TEST(DeviceUVectorOverflowTest, Reserve)
+{
+  auto constexpr overflowing_size = std::numeric_limits<std::size_t>::max() / sizeof(uint64_t) + 1;
+  rmm::device_uvector<uint64_t> vec(0, rmm::cuda_stream_view{});
+
+  EXPECT_THROW(vec.reserve(overflowing_size, rmm::cuda_stream_view{}), rmm::invalid_argument);
+}
+
 TYPED_TEST(TypedUVectorTest, ResizeToZero)
 {
   auto const original_size{12345};
@@ -168,6 +186,14 @@ TYPED_TEST(TypedUVectorTest, ResizeToZero)
 
   vec.shrink_to_fit(this->stream());
   EXPECT_EQ(vec.capacity(), 0);
+}
+
+TEST(DeviceUVectorOverflowTest, Resize)
+{
+  auto constexpr overflowing_size = std::numeric_limits<std::size_t>::max() / sizeof(uint64_t) + 1;
+  rmm::device_uvector<uint64_t> vec(0, rmm::cuda_stream_view{});
+
+  EXPECT_THROW(vec.resize(overflowing_size, rmm::cuda_stream_view{}), rmm::invalid_argument);
 }
 
 TYPED_TEST(TypedUVectorTest, Release)

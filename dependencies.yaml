@@ -182,10 +182,10 @@ dependencies:
           - matrix:
               cuda: "12.*"
             packages:
-              - &cuda_python12 cuda-python>=12.9.2,<13.0
+              - &cuda_bindings12 cuda-bindings>=12.9.2,<13.0
           - matrix: # All CUDA 13 versions
             packages:
-              - &cuda_python13 cuda-python>=13.0.1,<14.0
+              - &cuda_bindings13 cuda-bindings>=13.0.1,<14.0
   depends_on_librmm:
     common:
       - output_types: conda
@@ -344,7 +344,6 @@ dependencies:
         packages:
           - breathe>=4.35.0
           - *doxygen
-          - graphviz
           - ipython
           - make
           - myst-parser
@@ -352,11 +351,12 @@ dependencies:
           - &numba numba>=0.60.0,<0.65.0
           - &numba_cuda numba-cuda>=0.22.1
           - numpydoc
-          - pydata-sphinx-theme>=0.15.4
           - sphinx
           - sphinx-copybutton
           - sphinx-markdown-tables
           - sphinxcontrib-jquery
+          - pip:
+              - nvidia-sphinx-theme
   py_version:
     specific:
       - output_types: conda
@@ -384,17 +384,17 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - numpy>=1.23,<3.0
+          - numpy>=2.0,<3.0
     specific:
       - output_types: [conda, requirements, pyproject]
         matrices:
           - matrix:
               cuda: "12.*"
             packages:
-              - *cuda_python12
+              - *cuda_bindings12
           - matrix: # All CUDA 13 versions
             packages:
-              - *cuda_python13
+              - *cuda_bindings13
   test_cpp:
     common:
       - output_types: conda
@@ -404,6 +404,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
+          - cuda-core>=0.5.1
           - packaging
           - pytest
           - pytest-cov
@@ -412,9 +413,24 @@ dependencies:
         matrices:
           - matrix:
               dependencies: "oldest"
+              cuda: "12.*"
             packages:
+              - cuda-bindings==12.9.2
+          - matrix:
+              dependencies: "oldest"
+              cuda: "13.*"
+            packages:
+              - cuda-bindings==13.0.1
+          - matrix:
+            packages:
+      - output_types: [conda, requirements, pyproject]
+        matrices:
+          - matrix:
+              dependencies: "oldest"
+            packages:
+              - cuda-core==0.5.1
               - numba==0.60.0
-              - numpy==1.23.*
+              - numpy==2.0.*
           - matrix:
             packages:
               - *numba
@@ -520,14 +536,34 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - cupy>=13.6.0,!=14.0.0,!=14.1.0
+          - cupy>=14.0.1,!=14.1.0
     specific:
-      - output_types: [requirements, pyproject]
+      - output_types: requirements
         matrices:
           - matrix:
               cuda: "12.*"
             packages:
-              - cupy-cuda12x>=13.6.0,!=14.0.0,!=14.1.0
+              - &cupy_cu12 cupy-cuda12x>=14.0.1,!=14.1.0
           - matrix:
             packages:
-              - cupy-cuda13x>=13.6.0,!=14.0.0,!=14.1.0
+              - &cupy_cu13 cupy-cuda13x>=14.0.1,!=14.1.0
+      - output_types: pyproject
+        matrices:
+          - matrix:
+              cuda: "12.*"
+              use_cuda_wheels: "false"
+            packages:
+              - *cupy_cu12
+          - matrix:
+              cuda: "13.*"
+              use_cuda_wheels: "false"
+            packages:
+              - *cupy_cu13
+          - matrix:
+              cuda: "12.*"
+            packages:
+              - cupy-cuda12x[ctk]>=14.0.1,!=14.1.0
+          # fallback to CUDA 13 versions if 'cuda' is '13.*' or not provided
+          - matrix:
+            packages:
+              - cupy-cuda13x[ctk]>=14.0.1,!=14.1.0

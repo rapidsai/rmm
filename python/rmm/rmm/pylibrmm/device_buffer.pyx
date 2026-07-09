@@ -196,9 +196,9 @@ cdef class DeviceBuffer:
         >>> assert db is not db_copy
         >>> assert db.ptr != db_copy.ptr
         """
-        ret = DeviceBuffer(ptr=self.ptr, size=self.size, stream=self.stream)
-        ret.mr = self.mr
-        return ret
+        return DeviceBuffer(
+            ptr=self.ptr, size=self.size, stream=self.stream, mr=self.mr
+        )
 
     def __copy__(self):
         return self.copy()

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,6 +10,7 @@
 
 #include <benchmark/benchmark.h>
 
+#include <cstdint>
 #include <stdexcept>
 
 static void BM_StreamPoolGetStream(benchmark::State& state)
@@ -18,7 +19,7 @@ static void BM_StreamPoolGetStream(benchmark::State& state)
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     auto stream = stream_pool.get_stream();
-    cudaStreamQuery(stream.value());
+    RMM_CUDA_TRY(cudaStreamQuery(stream.value()));
   }
 
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
@@ -29,7 +30,7 @@ static void BM_CudaStreamClass(benchmark::State& state)
 {
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     auto stream = rmm::cuda_stream{};
-    cudaStreamQuery(stream.view().value());
+    RMM_CUDA_TRY(cudaStreamQuery(stream.view().value()));
   }
 
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));

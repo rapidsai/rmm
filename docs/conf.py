@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 # Configuration file for the Sphinx documentation builder.
@@ -22,7 +22,7 @@ from packaging.version import Version
 
 # -- Project information -----------------------------------------------------
 
-project = "rmm"
+project = "NVIDIA RMM"
 copyright = f"2018-{datetime.datetime.today().year}, NVIDIA Corporation"
 author = "NVIDIA Corporation"
 
@@ -117,8 +117,7 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 
-html_theme = "pydata_sphinx_theme"
-html_logo = "_static/RAPIDS-logo-purple.png"
+html_theme = "nvidia_sphinx_theme"
 
 html_theme_options = {
     "external_links": [],
@@ -127,12 +126,6 @@ html_theme_options = {
             "name": "GitHub",
             "url": "https://github.com/rapidsai/rmm",
             "icon": "fa-brands fa-github",
-            "type": "fontawesome",
-        },
-        {
-            "name": "X",
-            "url": "https://x.com/rapidsai",
-            "icon": "fa-brands fa-x-twitter",
             "type": "fontawesome",
         },
     ],
@@ -177,8 +170,8 @@ latex_documents = [
     (
         master_doc,
         "rmm.tex",
-        "RMM Documentation",
-        "NVIDIA Corporation",
+        f"{project} Documentation",
+        author,
         "manual",
     )
 ]
@@ -188,7 +181,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "rmm", "RMM Documentation", [author], 1)]
+man_pages = [(master_doc, "rmm", f"{project} Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -200,7 +193,7 @@ texinfo_documents = [
     (
         master_doc,
         "rmm",
-        "RMM Documentation",
+        f"{project} Documentation",
         author,
         "rmm",
         "One line description of project.",
@@ -322,8 +315,4 @@ def on_missing_reference(app, env, node, contnode):
 
 
 def setup(app):
-    app.add_css_file("https://docs.rapids.ai/assets/css/custom.css")
-    app.add_js_file(
-        "https://docs.rapids.ai/assets/js/custom.js", loading_method="defer"
-    )
     app.connect("missing-reference", on_missing_reference)
