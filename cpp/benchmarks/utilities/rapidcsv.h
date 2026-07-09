@@ -256,9 +256,7 @@ class Converter {
  */
 template <>
 inline void Converter<std::string>::ToStr(const std::string& pVal, std::string& pStr) const
-{
-  pStr = pVal;
-}
+{ pStr = pVal; }
 
 /**
  * @brief     Specialized implementation handling string to string conversion.
@@ -267,9 +265,7 @@ inline void Converter<std::string>::ToStr(const std::string& pVal, std::string& 
  */
 template <>
 inline void Converter<std::string>::ToVal(const std::string& pStr, std::string& pVal) const
-{
-  pVal = pStr;
-}
+{ pVal = pStr; }
 
 template <typename T>
 using ConvFunc = std::function<void(const std::string& pStr, T& pVal)>;
@@ -470,9 +466,7 @@ class Document {
       mData(),
       mColumnNames(),
       mRowNames()
-  {
-    ReadCsv(pStream);
-  }
+  { ReadCsv(pStream); }
 
   /**
    * @brief   Read Document data from file.
@@ -1668,14 +1662,10 @@ class Document {
 #pragma warning(disable : 4996)
 #endif
   static std::string ToString(const std::wstring& pWStr)
-  {
-    return std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.to_bytes(pWStr);
-  }
+  { return std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.to_bytes(pWStr); }
 
   static std::wstring ToWString(const std::string& pStr)
-  {
-    return std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.from_bytes(pStr);
-  }
+  { return std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.from_bytes(pStr); }
 #if defined(_MSC_VER)
 #pragma warning(pop)
 #endif

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -185,9 +185,7 @@ inline cuda::mr::any_resource<cuda::mr::device_accessible> set_per_device_resour
  * @return `device_async_resource_ref` active for the current device
  */
 inline device_async_resource_ref get_current_device_resource_ref()
-{
-  return get_per_device_resource_ref(rmm::get_current_cuda_device());
-}
+{ return get_per_device_resource_ref(rmm::get_current_cuda_device()); }
 
 /**
  * @brief Set the memory resource for the current device.
@@ -214,9 +212,7 @@ inline device_async_resource_ref get_current_device_resource_ref()
  */
 inline cuda::mr::any_resource<cuda::mr::device_accessible> set_current_device_resource(
   cuda::mr::any_resource<cuda::mr::device_accessible> new_resource)
-{
-  return set_per_device_resource(rmm::get_current_cuda_device(), std::move(new_resource));
-}
+{ return set_per_device_resource(rmm::get_current_cuda_device(), std::move(new_resource)); }
 
 /**
  * @brief Reset the memory resource for the specified device to the initial resource.
@@ -237,9 +233,7 @@ inline cuda::mr::any_resource<cuda::mr::device_accessible> set_current_device_re
  */
 inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_per_device_resource(
   cuda_device_id device_id)
-{
-  return set_per_device_resource(device_id, {detail::initial_resource()});
-}
+{ return set_per_device_resource(device_id, {detail::initial_resource()}); }
 
 /**
  * @brief Reset the memory resource for the current device to the initial resource.
@@ -256,9 +250,7 @@ inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_per_device_reso
  * @return An owning `any_resource` holding the previous resource for the current device
  */
 inline cuda::mr::any_resource<cuda::mr::device_accessible> reset_current_device_resource()
-{
-  return reset_per_device_resource(rmm::get_current_cuda_device());
-}
+{ return reset_per_device_resource(rmm::get_current_cuda_device()); }
 
 /** @} */  // end of group
 }  // namespace mr

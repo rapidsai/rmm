@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -54,9 +54,7 @@ device_async_resource_ref pool_memory_resource_impl::get_upstream_resource() con
 std::size_t pool_memory_resource_impl::pool_size() const noexcept { return current_pool_size_; }
 
 std::size_t pool_memory_resource_impl::get_maximum_allocation_size() const
-{
-  return std::numeric_limits<std::size_t>::max();
-}
+{ return std::numeric_limits<std::size_t>::max(); }
 
 pool_memory_resource_impl::block_type pool_memory_resource_impl::try_to_expand(
   std::size_t try_size, std::size_t min_size, cuda_stream_view stream)
@@ -83,7 +81,7 @@ pool_memory_resource_impl::block_type pool_memory_resource_impl::try_to_expand(
   }
 
   auto const max_size = maximum_pool_size_.value_or(std::numeric_limits<std::size_t>::max());
-  auto const msg      = std::string("Not enough room to grow, current/max/try size = ") +
+  auto const msg = std::string("Not enough room to grow, current/max/try size = ") +
                    rmm::detail::format_bytes(pool_size()) + ", " +
                    rmm::detail::format_bytes(max_size) + ", " + rmm::detail::format_bytes(min_size);
   report_error(msg.c_str());
@@ -107,9 +105,7 @@ void pool_memory_resource_impl::initialize_pool(std::size_t initial_size,
 
 pool_memory_resource_impl::block_type pool_memory_resource_impl::expand_pool(
   std::size_t size, [[maybe_unused]] free_list& blocks, cuda_stream_view stream)
-{
-  return try_to_expand(size_to_grow(size), size, stream);
-}
+{ return try_to_expand(size_to_grow(size), size, stream); }
 
 std::size_t pool_memory_resource_impl::size_to_grow(std::size_t size) const
 {

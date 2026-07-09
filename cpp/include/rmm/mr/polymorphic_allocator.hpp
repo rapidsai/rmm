@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -95,17 +95,13 @@ class polymorphic_allocator {
    * @param stream Stream on which to perform the deallocation
    */
   void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream) noexcept
-  {
-    mr_.deallocate(stream, ptr, num * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT);
-  }
+  { mr_.deallocate(stream, ptr, num * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT); }
 
   /**
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return rmm::device_async_resource_ref{mr_};
-  }
+  { return rmm::device_async_resource_ref{mr_}; }
 
  private:
   mutable cuda::mr::any_resource<cuda::mr::device_accessible> mr_{
@@ -125,9 +121,7 @@ class polymorphic_allocator {
  */
 template <typename T, typename U>
 bool operator==(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> const& rhs)
-{
-  return lhs.get_upstream_resource() == rhs.get_upstream_resource();
-}
+{ return lhs.get_upstream_resource() == rhs.get_upstream_resource(); }
 
 /**
  * @brief Compare two `polymorphic_allocator`s for inequality.
@@ -143,9 +137,7 @@ bool operator==(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> co
  */
 template <typename T, typename U>
 bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> const& rhs)
-{
-  return not(lhs == rhs);
-}
+{ return not(lhs == rhs); }
 
 /**
  * @brief Adapts a stream ordered allocator to provide a standard `Allocator` interface
@@ -236,9 +228,7 @@ class stream_allocator_adaptor {
    * @param num Number of objects originally allocated
    */
   void deallocate(value_type* ptr, std::size_t num) noexcept
-  {
-    alloc_.deallocate(ptr, num, stream());
-  }
+  { alloc_.deallocate(ptr, num, stream()); }
 
   /**
    * @briefreturn{The stream on which calls to the underlying allocator are made}
@@ -268,9 +258,7 @@ class stream_allocator_adaptor {
  */
 template <typename A, typename O>
 bool operator==(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor<O> const& rhs)
-{
-  return lhs.underlying_allocator() == rhs.underlying_allocator();
-}
+{ return lhs.underlying_allocator() == rhs.underlying_allocator(); }
 
 /**
  * @brief Compare two `stream_allocator_adaptor`s for inequality.
@@ -285,9 +273,7 @@ bool operator==(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor
  */
 template <typename A, typename O>
 bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor<O> const& rhs)
-{
-  return not(lhs == rhs);
-}
+{ return not(lhs == rhs); }
 
 /** @} */  // end of group
 }  // namespace mr

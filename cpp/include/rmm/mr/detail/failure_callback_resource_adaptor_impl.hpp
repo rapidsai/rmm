@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -45,14 +45,10 @@ class failure_callback_resource_adaptor_impl {
     delete;
 
   bool operator==(failure_callback_resource_adaptor_impl const& other) const noexcept
-  {
-    return this == std::addressof(other);
-  }
+  { return this == std::addressof(other); }
 
   bool operator!=(failure_callback_resource_adaptor_impl const& other) const noexcept
-  {
-    return !(*this == other);
-  }
+  { return !(*this == other); }
 
   [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
   {
@@ -80,21 +76,15 @@ class failure_callback_resource_adaptor_impl {
                   void* ptr,
                   std::size_t bytes,
                   std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    upstream_mr_.deallocate(stream, ptr, bytes, alignment);
-  }
+  { upstream_mr_.deallocate(stream, ptr, bytes, alignment); }
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
-  {
-    return allocate(cuda_stream_view{}, bytes, alignment);
-  }
+  { return allocate(cuda_stream_view{}, bytes, alignment); }
 
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    deallocate(cuda_stream_view{}, ptr, bytes, alignment);
-  }
+  { deallocate(cuda_stream_view{}, ptr, bytes, alignment); }
 
   RMM_CONSTEXPR_FRIEND void get_property(failure_callback_resource_adaptor_impl const&,
                                          cuda::mr::device_accessible) noexcept

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -31,9 +31,7 @@ class device_check_resource_adaptor final {
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
-  {
-    return rmm::device_async_resource_ref{upstream_};
-  }
+  { return rmm::device_async_resource_ref{upstream_}; }
 
   void* allocate(cuda::stream_ref stream,
                  std::size_t bytes,
@@ -66,19 +64,13 @@ class device_check_resource_adaptor final {
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    deallocate(rmm::cuda_stream_view{}, ptr, bytes, alignment);
-  }
+  { deallocate(rmm::cuda_stream_view{}, ptr, bytes, alignment); }
 
   bool operator==(device_check_resource_adaptor const& other) const noexcept
-  {
-    return get_upstream_resource() == other.get_upstream_resource();
-  }
+  { return get_upstream_resource() == other.get_upstream_resource(); }
 
   bool operator!=(device_check_resource_adaptor const& other) const noexcept
-  {
-    return !(*this == other);
-  }
+  { return !(*this == other); }
 
   constexpr friend void get_property(device_check_resource_adaptor const&,
                                      cuda::mr::device_accessible) noexcept

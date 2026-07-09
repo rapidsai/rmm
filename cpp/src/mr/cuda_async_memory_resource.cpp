@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -25,9 +25,7 @@ cuda_async_memory_resource::cuda_async_memory_resource(
 }
 
 cudaMemPool_t cuda_async_memory_resource::pool_handle() const noexcept
-{
-  return get().pool_handle();
-}
+{ return get().pool_handle(); }
 
 }  // namespace mr
 }  // namespace RMM_NAMESPACE

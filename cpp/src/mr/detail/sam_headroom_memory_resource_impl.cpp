@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -68,9 +68,7 @@ void sam_headroom_memory_resource_impl::deallocate(cuda::stream_ref stream,
                                                    void* ptr,
                                                    std::size_t bytes,
                                                    std::size_t /*alignment*/) noexcept
-{
-  system_mr_.deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-}
+{ system_mr_.deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT); }
 
 void* sam_headroom_memory_resource_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
@@ -82,9 +80,7 @@ void* sam_headroom_memory_resource_impl::allocate_sync(std::size_t bytes, std::s
 void sam_headroom_memory_resource_impl::deallocate_sync(void* ptr,
                                                         std::size_t bytes,
                                                         std::size_t alignment) noexcept
-{
-  deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
-}
+{ deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment); }
 
 }  // namespace detail
 }  // namespace mr

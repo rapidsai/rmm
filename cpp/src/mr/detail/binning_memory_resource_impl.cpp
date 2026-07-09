@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -64,29 +64,21 @@ device_async_resource_ref binning_memory_resource_impl::get_resource_ref(std::si
 void* binning_memory_resource_impl::allocate(cuda::stream_ref stream,
                                              std::size_t bytes,
                                              std::size_t alignment)
-{
-  return get_resource_ref(bytes).allocate(stream, bytes, alignment);
-}
+{ return get_resource_ref(bytes).allocate(stream, bytes, alignment); }
 
 void binning_memory_resource_impl::deallocate(cuda::stream_ref stream,
                                               void* ptr,
                                               std::size_t bytes,
                                               std::size_t alignment) noexcept
-{
-  get_resource_ref(bytes).deallocate(stream, ptr, bytes, alignment);
-}
+{ get_resource_ref(bytes).deallocate(stream, ptr, bytes, alignment); }
 
 void* binning_memory_resource_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
-{
-  return get_resource_ref(bytes).allocate(cuda_stream_view{}, bytes, alignment);
-}
+{ return get_resource_ref(bytes).allocate(cuda_stream_view{}, bytes, alignment); }
 
 void binning_memory_resource_impl::deallocate_sync(void* ptr,
                                                    std::size_t bytes,
                                                    std::size_t alignment) noexcept
-{
-  get_resource_ref(bytes).deallocate(cuda_stream_view{}, ptr, bytes, alignment);
-}
+{ get_resource_ref(bytes).deallocate(cuda_stream_view{}, ptr, bytes, alignment); }
 
 }  // namespace detail
 }  // namespace mr

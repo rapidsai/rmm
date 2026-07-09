@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -54,38 +54,26 @@ class mock_memory_resource_wrapper {
   explicit mock_memory_resource_wrapper(mock_memory_resource* mock) noexcept : mock_{mock} {}
 
   void* allocate(cuda::stream_ref stream, std::size_t bytes, std::size_t alignment)
-  {
-    return mock_->allocate(stream, bytes, alignment);
-  }
+  { return mock_->allocate(stream, bytes, alignment); }
 
   void deallocate(cuda::stream_ref stream,
                   void* ptr,
                   std::size_t bytes,
                   std::size_t alignment) noexcept
-  {
-    mock_->deallocate(stream, ptr, bytes, alignment);
-  }
+  { mock_->deallocate(stream, ptr, bytes, alignment); }
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
-  {
-    return mock_->allocate_sync(bytes, alignment);
-  }
+  { return mock_->allocate_sync(bytes, alignment); }
 
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    mock_->deallocate_sync(ptr, bytes, alignment);
-  }
+  { mock_->deallocate_sync(ptr, bytes, alignment); }
 
   bool operator==(mock_memory_resource_wrapper const& other) const noexcept
-  {
-    return mock_ == other.mock_;
-  }
+  { return mock_ == other.mock_; }
   bool operator!=(mock_memory_resource_wrapper const& other) const noexcept
-  {
-    return !(*this == other);
-  }
+  { return !(*this == other); }
 
   constexpr friend void get_property(mock_memory_resource_wrapper const&,
                                      cuda::mr::device_accessible) noexcept

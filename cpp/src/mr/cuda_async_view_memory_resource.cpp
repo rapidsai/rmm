@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -27,9 +27,7 @@ cuda_async_view_memory_resource::cuda_async_view_memory_resource(cudaMemPool_t p
 }
 
 cudaMemPool_t cuda_async_view_memory_resource::pool_handle() const noexcept
-{
-  return cuda_pool_handle_;
-}
+{ return cuda_pool_handle_; }
 
 void* cuda_async_view_memory_resource::allocate(cuda::stream_ref stream,
                                                 std::size_t bytes,
@@ -70,15 +68,11 @@ void cuda_async_view_memory_resource::deallocate_sync(void* ptr,
 
 bool cuda_async_view_memory_resource::operator==(
   cuda_async_view_memory_resource const& other) const noexcept
-{
-  return pool_handle() == other.pool_handle();
-}
+{ return pool_handle() == other.pool_handle(); }
 
 bool cuda_async_view_memory_resource::operator!=(
   cuda_async_view_memory_resource const& other) const noexcept
-{
-  return !operator==(other);
-}
+{ return !operator==(other); }
 
 }  // namespace mr
 }  // namespace RMM_NAMESPACE

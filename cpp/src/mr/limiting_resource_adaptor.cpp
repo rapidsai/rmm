@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -18,19 +18,13 @@ limiting_resource_adaptor::limiting_resource_adaptor(
 }
 
 device_async_resource_ref limiting_resource_adaptor::get_upstream_resource() const noexcept
-{
-  return get().get_upstream_resource();
-}
+{ return get().get_upstream_resource(); }
 
 std::size_t limiting_resource_adaptor::get_allocated_bytes() const
-{
-  return get().get_allocated_bytes();
-}
+{ return get().get_allocated_bytes(); }
 
 std::size_t limiting_resource_adaptor::get_allocation_limit() const
-{
-  return get().get_allocation_limit();
-}
+{ return get().get_allocation_limit(); }
 
 }  // namespace mr
 }  // namespace RMM_NAMESPACE

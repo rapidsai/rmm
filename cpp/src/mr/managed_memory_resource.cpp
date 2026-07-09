@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -34,9 +34,7 @@ void managed_memory_resource::deallocate([[maybe_unused]] cuda::stream_ref strea
                                          void* ptr,
                                          [[maybe_unused]] std::size_t bytes,
                                          [[maybe_unused]] std::size_t alignment) noexcept
-{
-  RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaFree(ptr));
-}
+{ RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaFree(ptr)); }
 
 void* managed_memory_resource::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
@@ -48,19 +46,13 @@ void* managed_memory_resource::allocate_sync(std::size_t bytes, std::size_t alig
 void managed_memory_resource::deallocate_sync(void* ptr,
                                               std::size_t bytes,
                                               std::size_t alignment) noexcept
-{
-  deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
-}
+{ deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment); }
 
 bool managed_memory_resource::operator==(managed_memory_resource const&) const noexcept
-{
-  return true;
-}
+{ return true; }
 
 bool managed_memory_resource::operator!=(managed_memory_resource const&) const noexcept
-{
-  return false;
-}
+{ return false; }
 
 }  // namespace mr
 }  // namespace RMM_NAMESPACE

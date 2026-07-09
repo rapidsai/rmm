@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -16,9 +16,7 @@ bool is_pow2(std::size_t value) noexcept { return (value != 0U) && ((value & (va
 bool is_supported_alignment(std::size_t alignment) noexcept { return is_pow2(alignment); }
 
 bool is_supported_base_resource_alignment(std::size_t alignment) noexcept
-{
-  return is_pow2(alignment) && alignment <= rmm::CUDA_ALLOCATION_ALIGNMENT;
-}
+{ return is_pow2(alignment) && alignment <= rmm::CUDA_ALLOCATION_ALIGNMENT; }
 
 std::size_t align_up(std::size_t value, std::size_t alignment) noexcept
 {

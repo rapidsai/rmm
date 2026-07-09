@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -33,9 +33,7 @@ void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
 
 template <typename Task, typename... Arguments>
 void spawn(Task task, Arguments&&... args)
-{
-  spawn_n(4, task, std::forward<Arguments>(args)...);
-}
+{ spawn_n(4, task, std::forward<Arguments>(args)...); }
 
 inline void async_allocate_loop(rmm::device_async_resource_ref ref,
                                 std::size_t num_allocations,

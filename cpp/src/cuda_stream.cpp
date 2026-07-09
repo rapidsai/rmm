@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -47,8 +47,6 @@ cuda_stream::operator cuda::stream_ref() const noexcept { return cuda::stream_re
 void cuda_stream::synchronize() const { RMM_CUDA_TRY(cudaStreamSynchronize(value())); }
 
 void cuda_stream::synchronize_no_throw() const noexcept
-{
-  RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(value()));
-}
+{ RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(value())); }
 
 }  // namespace rmm

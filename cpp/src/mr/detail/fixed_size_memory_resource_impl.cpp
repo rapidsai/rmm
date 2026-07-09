@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -33,9 +33,7 @@ fixed_size_memory_resource_impl::fixed_size_memory_resource_impl(
   : upstream_mr_{std::move(upstream)},
     block_size_{align_up(block_size, rmm::CUDA_ALLOCATION_ALIGNMENT)},
     upstream_chunk_size_{block_size_ * blocks_to_preallocate}
-{
-  this->insert_blocks(std::move(blocks_from_upstream(cuda_stream_legacy)), cuda_stream_legacy);
-}
+{ this->insert_blocks(std::move(blocks_from_upstream(cuda_stream_legacy)), cuda_stream_legacy); }
 
 fixed_size_memory_resource_impl::~fixed_size_memory_resource_impl() { release(); }
 
@@ -48,9 +46,7 @@ device_async_resource_ref fixed_size_memory_resource_impl::get_upstream_resource
 std::size_t fixed_size_memory_resource_impl::get_block_size() const noexcept { return block_size_; }
 
 std::size_t fixed_size_memory_resource_impl::get_maximum_allocation_size() const
-{
-  return get_block_size();
-}
+{ return get_block_size(); }
 
 fixed_size_memory_resource_impl::block_type fixed_size_memory_resource_impl::expand_pool(
   std::size_t size, free_list& blocks, cuda_stream_view stream)
@@ -79,9 +75,7 @@ fixed_size_memory_resource_impl::free_list fixed_size_memory_resource_impl::bloc
 
 fixed_size_memory_resource_impl::split_block fixed_size_memory_resource_impl::allocate_from_block(
   block_type const& block, [[maybe_unused]] std::size_t size)
-{
-  return {block, block_type{nullptr}};
-}
+{ return {block, block_type{nullptr}}; }
 
 fixed_size_memory_resource_impl::block_type fixed_size_memory_resource_impl::free_block(
   void* ptr, [[maybe_unused]] std::size_t size) noexcept

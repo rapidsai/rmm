@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -39,16 +39,12 @@ void thread_safe_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
 }
 
 void* thread_safe_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
-{
-  return allocate(cuda_stream_view{}, bytes, alignment);
-}
+{ return allocate(cuda_stream_view{}, bytes, alignment); }
 
 void thread_safe_resource_adaptor_impl::deallocate_sync(void* ptr,
                                                         std::size_t bytes,
                                                         std::size_t alignment) noexcept
-{
-  deallocate(cuda_stream_view{}, ptr, bytes, alignment);
-}
+{ deallocate(cuda_stream_view{}, ptr, bytes, alignment); }
 
 }  // namespace detail
 }  // namespace mr

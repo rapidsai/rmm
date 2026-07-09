@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -78,9 +78,7 @@ rmm::device_async_resource_ref logging_resource_adaptor_impl::get_upstream_resou
 void logging_resource_adaptor_impl::flush() { logger_->flush(); }
 
 std::string logging_resource_adaptor_impl::header() const
-{
-  return std::string{"Thread,Time,Action,Pointer,Size,Stream"};
-}
+{ return std::string{"Thread,Time,Action,Pointer,Size,Stream"}; }
 
 }  // namespace detail
 }  // namespace mr

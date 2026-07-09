@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -17,19 +17,13 @@ namespace mr {
 namespace {
 
 auto make_logger(std::ostream& stream)
-{
-  return std::make_shared<rapids_logger::logger>("RMM", stream);
-}
+{ return std::make_shared<rapids_logger::logger>("RMM", stream); }
 
 auto make_logger(std::string const& filename)
-{
-  return std::make_shared<rapids_logger::logger>("RMM", filename);
-}
+{ return std::make_shared<rapids_logger::logger>("RMM", filename); }
 
 auto make_logger(std::initializer_list<rapids_logger::sink_ptr> sinks)
-{
-  return std::make_shared<rapids_logger::logger>("RMM", sinks);
-}
+{ return std::make_shared<rapids_logger::logger>("RMM", sinks); }
 
 }  // namespace
 
@@ -61,9 +55,7 @@ logging_resource_adaptor::logging_resource_adaptor(
 }
 
 rmm::device_async_resource_ref logging_resource_adaptor::get_upstream_resource() const noexcept
-{
-  return get().get_upstream_resource();
-}
+{ return get().get_upstream_resource(); }
 
 void logging_resource_adaptor::flush() { get().flush(); }
 

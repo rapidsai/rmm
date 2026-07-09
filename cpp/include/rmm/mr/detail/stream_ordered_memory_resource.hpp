@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -181,9 +181,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
     void* ptr,
     std::size_t bytes,
     [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    deallocate(cuda_stream_view{}, ptr, bytes, alignment);
-  }
+  { deallocate(cuda_stream_view{}, ptr, bytes, alignment); }
 
  protected:
   using free_list  = FreeListType;
@@ -254,14 +252,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
    * @param stream The stream on which the memory was last used.
    */
   void insert_block(block_type const& block, cuda_stream_view stream)
-  {
-    stream_free_blocks_[get_event(stream)].insert(block);
-  }
+  { stream_free_blocks_[get_event(stream)].insert(block); }
 
   void insert_blocks(free_list&& blocks, cuda_stream_view stream)
-  {
-    stream_free_blocks_[get_event(stream)].insert(std::move(blocks));
-  }
+  { stream_free_blocks_[get_event(stream)].insert(std::move(blocks)); }
 
 #ifdef RMM_DEBUG_PRINT
   void print_free_blocks() const

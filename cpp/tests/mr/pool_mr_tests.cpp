@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -169,9 +169,7 @@ class PoolMemoryResourceTest : public ::testing::Test {
 };
 
 TEST_F(PoolMemoryResourceTest, GetUpstreamResource)
-{
-  [[maybe_unused]] auto ref = pool.get_upstream_resource();
-}
+{ [[maybe_unused]] auto ref = pool.get_upstream_resource(); }
 
 TEST_F(PoolMemoryResourceTest, AllocateDeallocate)
 {

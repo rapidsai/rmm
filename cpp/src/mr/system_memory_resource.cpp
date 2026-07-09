@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -79,19 +79,13 @@ void* system_memory_resource::allocate_sync(std::size_t bytes, std::size_t align
 void system_memory_resource::deallocate_sync(void* ptr,
                                              std::size_t bytes,
                                              std::size_t alignment) noexcept
-{
-  deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
-}
+{ deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment); }
 
 bool system_memory_resource::operator==(system_memory_resource const&) const noexcept
-{
-  return true;
-}
+{ return true; }
 
 bool system_memory_resource::operator!=(system_memory_resource const&) const noexcept
-{
-  return false;
-}
+{ return false; }
 
 }  // namespace mr
 }  // namespace RMM_NAMESPACE

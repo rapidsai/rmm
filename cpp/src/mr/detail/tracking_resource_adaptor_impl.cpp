@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -28,14 +28,10 @@ device_async_resource_ref tracking_resource_adaptor_impl::get_upstream_resource(
 
 std::map<void*, tracking_resource_adaptor_impl::allocation_info> const&
 tracking_resource_adaptor_impl::get_outstanding_allocations() const noexcept
-{
-  return allocations_;
-}
+{ return allocations_; }
 
 std::size_t tracking_resource_adaptor_impl::get_allocated_bytes() const noexcept
-{
-  return allocated_bytes_;
-}
+{ return allocated_bytes_; }
 
 std::string tracking_resource_adaptor_impl::get_outstanding_allocations_str() const
 {
@@ -102,16 +98,12 @@ void tracking_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
 }
 
 void* tracking_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
-{
-  return allocate(cuda_stream_view{}, bytes, alignment);
-}
+{ return allocate(cuda_stream_view{}, bytes, alignment); }
 
 void tracking_resource_adaptor_impl::deallocate_sync(void* ptr,
                                                      std::size_t bytes,
                                                      std::size_t alignment) noexcept
-{
-  deallocate(cuda_stream_view{}, ptr, bytes, alignment);
-}
+{ deallocate(cuda_stream_view{}, ptr, bytes, alignment); }
 
 }  // namespace detail
 }  // namespace mr

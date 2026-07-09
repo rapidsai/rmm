@@ -16,13 +16,13 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.9
+    rev: v0.15.20
     hooks:
       - id: ruff-check
         args: ["--fix"]
       - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
+    rev: v2.1.0
     hooks:
       - id: mypy
         name: mypy
@@ -30,18 +30,18 @@ repos:
         pass_filenames: false
         additional_dependencies: [pytest, numpy, packaging]
   - repo: https://github.com/PyCQA/isort
-    rev: 8.0.1
+    rev: 9.0.0a3
     hooks:
       - id: isort
         args: ["--settings-path=python/rmm/pyproject.toml"]
         files: python/.*
         types: [cython]
   - repo: https://github.com/MarcoGorelli/cython-lint
-    rev: v0.19.0
+    rev: v0.21.0
     hooks:
       - id: cython-lint
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v20.1.8
+    rev: v22.1.5
     hooks:
       - id: clang-format
         types_or: [c, c++, cuda]
@@ -97,7 +97,7 @@ repos:
         pass_filenames: false
         verbose: true
   - repo: https://github.com/rapidsai/pre-commit-hooks
-    rev: v1.4.3
+    rev: v1.6.0
     hooks:
       - id: verify-copyright
         args: [--fix, --spdx]
@@ -138,7 +138,7 @@ repos:
           (?x)
             ^pyproject[.]toml$
   - repo: https://github.com/rapidsai/dependency-file-generator
-    rev: v1.20.2
+    rev: v1.21.0
     hooks:
       - id: rapids-dependency-file-generator
         args: ["--clean", "--warn-all", "--strict"]
@@ -147,7 +147,7 @@ repos:
     hooks:
       - id: shellcheck
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.24.1
+    rev: v1.26.1
     hooks:
       - id: zizmor
 
