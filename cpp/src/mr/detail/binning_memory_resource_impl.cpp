@@ -85,7 +85,7 @@ void binning_memory_resource_impl::deallocate_sync(void* ptr,
                                                    std::size_t bytes,
                                                    std::size_t alignment) noexcept
 {
-  return get_resource_ref(bytes).deallocate_sync(ptr, bytes, alignment);
+  get_resource_ref(bytes).deallocate_sync(ptr, bytes, alignment);
 }
 
 }  // namespace detail

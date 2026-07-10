@@ -31,15 +31,8 @@ logging_resource_adaptor_impl::logging_resource_adaptor_impl(
 void* logging_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
   auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
-  void* ptr{nullptr};
-  try {
-    ptr = allocate(stream, bytes, alignment);
-    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
-  } catch (...) {
-    // TODO: Do we need this one?
-    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
-    throw;
-  }
+  void* ptr         = allocate(stream, bytes, alignment);
+  RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
   return ptr;
 }
 
