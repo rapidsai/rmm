@@ -147,6 +147,8 @@ void arena_memory_resource_impl::deallocate_sync(void* ptr,
 
 void arena_memory_resource_impl::defragment()
 {
+  // Guard map iteration against concurrent emplace in the arena getters.
+  std::shared_lock lock(map_mtx_);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
   for (auto& thread_arena : thread_arenas_) {
     thread_arena.second->clean();
