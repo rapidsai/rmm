@@ -55,18 +55,16 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
 /**
  * @brief Align up to nearest multiple of specified power of 2
  *
- * Enforces that `alignment` is a power of 2, and that the result does not overflow and wrap
- * around past the maximum representable `std::size_t`.
+ * `alignment` must be a power of 2, and the result must not overflow `std::size_t`.
+ * These invariants are checked with assertions in debug builds.
  *
  * @param[in] value value to align
  * @param[in] alignment amount, in bytes, must be a power of 2
  *
  * @return the aligned value
  *
- * @throws rmm::logic_error if `alignment` is not a power of 2, or if aligning `value` would
- * overflow `std::size_t`
  */
-[[nodiscard]] std::size_t align_up(std::size_t value, std::size_t alignment);
+[[nodiscard]] std::size_t align_up(std::size_t value, std::size_t alignment) noexcept;
 
 /**
  * @brief Align down to the nearest multiple of specified power of 2

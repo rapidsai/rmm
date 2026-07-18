@@ -4,7 +4,6 @@
  */
 
 #include <rmm/aligned.hpp>
-#include <rmm/detail/error.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -21,12 +20,11 @@ bool is_supported_base_resource_alignment(std::size_t alignment) noexcept
   return is_pow2(alignment) && alignment <= rmm::CUDA_ALLOCATION_ALIGNMENT;
 }
 
-std::size_t align_up(std::size_t value, std::size_t alignment)
+std::size_t align_up(std::size_t value, std::size_t alignment) noexcept
 {
-  RMM_EXPECTS(is_supported_alignment(alignment), "Alignment is not a power of 2");
+  assert(is_supported_alignment(alignment));
   auto const aligned_value = (value + (alignment - 1)) & ~(alignment - 1);
-  RMM_EXPECTS(aligned_value >= value,
-              "Overflow: value is too large to align without overflowing std::size_t");
+  assert(aligned_value >= value);
   return aligned_value;
 }
 
