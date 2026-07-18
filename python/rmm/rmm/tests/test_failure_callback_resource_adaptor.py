@@ -9,16 +9,17 @@ import rmm
 
 
 def test_failure_callback_resource_adaptor():
-    retried = [False]
+    allocation_calls = 0
+    callback_calls = 0
 
     def callback(nbytes: int) -> bool:
-        if retried[0]:
-            return False
-        else:
-            retried[0] = True
-            return True
+        nonlocal callback_calls
+        callback_calls += 1
+        return callback_calls == 1
 
     def allocate_func(stream, size, alignment):
+        nonlocal allocation_calls
+        allocation_calls += 1
         raise MemoryError("Intentional allocation failure")
 
     def deallocate_func(stream, ptr, size, alignment):
@@ -30,7 +31,8 @@ def test_failure_callback_resource_adaptor():
 
     with pytest.raises(MemoryError):
         rmm.DeviceBuffer(size=256)
-    assert retried[0]
+    assert allocation_calls == 2
+    assert callback_calls == 2
 
 
 def test_failure_callback_resource_adaptor_error():

@@ -626,12 +626,15 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
         which to perform the allocation, an integer representing the number
         of bytes to allocate, and an integer representing the requested
         alignment. It must return an integer representing the pointer to the
-        allocated memory.
+        allocated memory. The returned pointer must satisfy the requested
+        alignment.
     deallocate_func: callable
         The deallocation function must accept four arguments: a Stream on
         which to perform the deallocation, an integer representing the pointer
         to the memory to free, an integer representing the number of bytes to
-        free, and an integer representing the allocation alignment.
+        free, and an integer representing the allocation alignment. It must not
+        raise an exception because deallocation is ``noexcept`` and an escaping
+        exception terminates the process.
 
     Examples
     --------
@@ -639,6 +642,8 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     >>> base_mr = rmm.mr.CudaMemoryResource()
     >>> def allocate_func(stream, size, alignment):
     ...     print(f"Allocating {size} bytes")
+    ...     if alignment > 256:
+    ...         raise MemoryError("CudaMemoryResource supports up to 256-byte alignment")
     ...     return base_mr.allocate(size, stream)
     ...
     >>> def deallocate_func(stream, ptr, size, alignment):

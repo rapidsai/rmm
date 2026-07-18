@@ -48,6 +48,9 @@ using allocate_callback_t = std::function<void*(cuda_stream_view, std::size_t, s
  *   function. `alignment` must equal the value of `alignment` that was passed to the allocate
  *   callback function. The stream-ordered behavior requirements are identical to `deallocate`.
  *
+ * * The callback must not throw. An exception escaping the callback causes termination because
+ *   deallocation is `noexcept`.
+ *
  * * The `arg` is provided to the constructor of the `callback_memory_resource`
  *   and will be forwarded along to every invocation of the callback function.
  */
@@ -85,7 +88,7 @@ class RMM_EXPORT callback_memory_resource
    * `allocate_callback` for allocation and `deallocate_callback` for deallocation.
    *
    * @param allocate_callback The callback function used for allocation
-   * @param deallocate_callback The callback function used for deallocation
+   * @param deallocate_callback The callback function used for deallocation. It must not throw.
    * @param allocate_callback_arg Additional context passed to `allocate_callback`.
    * It is the caller's responsibility to maintain the lifetime of the pointed-to data
    * for the duration of the lifetime of the `callback_memory_resource`.

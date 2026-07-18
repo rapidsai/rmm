@@ -115,7 +115,12 @@ TEST(CallbackTest, RejectsInvalidAllocationAlignmentBeforeCallback)
   auto deallocate_callback = [](cuda_stream_view, void*, std::size_t, std::size_t, void*) {};
   auto mr = rmm::mr::callback_memory_resource(allocate_callback, deallocate_callback);
 
-  EXPECT_THROW((void)mr.allocate_sync(1024, 3), rmm::logic_error);
+  try {
+    (void)mr.allocate_sync(1024, 3);
+    FAIL() << "Expected invalid alignment to throw";
+  } catch (rmm::logic_error const& e) {
+    EXPECT_THAT(e.what(), testing::HasSubstr("not a power of 2"));
+  }
   EXPECT_EQ(callback_invocations, 0);
 }
 

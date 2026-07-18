@@ -12,6 +12,7 @@ import rmm
 
 
 def test_custom_mr(capsys):
+    allocation_size = 257
     base_mr = rmm.mr.CudaMemoryResource()
     allocations = []
     deallocations = []
@@ -31,14 +32,14 @@ def test_custom_mr(capsys):
         rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
     )
 
-    rmm.DeviceBuffer(size=256)
+    rmm.DeviceBuffer(size=allocation_size)
 
     captured = capsys.readouterr()
-    assert captured.out == "Allocating 256 bytes\nDeallocating 256 bytes\n"
+    assert captured.out == "Allocating 257 bytes\nDeallocating 257 bytes\n"
     assert len(allocations) == 1
+    assert allocations[0][2] == allocation_size
+    assert allocations[0][3] == 256
     assert deallocations == allocations
-    assert allocations[0][3] > 0
-    assert allocations[0][3] & (allocations[0][3] - 1) == 0
 
 
 @pytest.mark.parametrize(
