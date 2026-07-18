@@ -183,6 +183,10 @@ void arena_memory_resource_impl::deallocate_from_other_arena(cuda_stream_view st
         if (thread_arena.second->deallocate_sync(ptr, bytes)) { return; }
       }
     }
+    RMM_LOG_DEBUG("[deallocate][Stream %s][%zuB][Pointer %p] allocation not found",
+                  rmm::detail::format_stream(stream),
+                  bytes,
+                  ptr);
     return;
   }
 }

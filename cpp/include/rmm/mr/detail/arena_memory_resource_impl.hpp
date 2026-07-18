@@ -123,6 +123,10 @@ class arena_memory_resource_impl {
 
   global_arena global_arena_;
   std::map<std::thread::id, std::shared_ptr<arena>> thread_arenas_;
+  /// Arenas keyed by CUDA stream ID. Stream IDs are unique for the lifetime of the process and
+  /// entries are never erased, so this map grows by one entry per distinct stream ever used with
+  /// this resource. Applications that continually create and destroy streams will see unbounded
+  /// growth; evicting entries for destroyed streams is planned follow-up work.
   std::map<stream_id_type, arena> stream_arenas_;
   bool dump_log_on_failure_{};
   std::shared_ptr<rapids_logger::logger> logger_{};
