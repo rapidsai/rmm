@@ -280,6 +280,14 @@ TEST(AlignedTest, AlignUpAlignmentOfOneIsNoOp)
   EXPECT_EQ(rmm::align_up(12345, 1), 12345);
 }
 
+#ifndef NDEBUG
+// This test only runs in debug builds because the overflow guard is an assert.
+TEST(AlignedDeathTest, AlignUpOverflowAborts)
+{
+  EXPECT_DEATH((void)rmm::align_up(std::numeric_limits<std::size_t>::max(), std::size_t{256}), "");
+}
+#endif
+
 TEST(AlignedTest, SmallAlignmentsBumpedTo256Bytes)
 {
   // Test various small alignments
