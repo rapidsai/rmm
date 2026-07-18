@@ -62,12 +62,13 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  * @param[in] alignment amount, in bytes, must be a power of 2
  *
  * @return the aligned value
- *
  */
 [[nodiscard]] std::size_t align_up(std::size_t value, std::size_t alignment) noexcept;
 
 /**
  * @brief Align down to the nearest multiple of specified power of 2
+ *
+ * `alignment` must be a power of 2. This invariant is checked with an assertion in debug builds.
  *
  * @param[in] value value to align
  * @param[in] alignment amount, in bytes, must be a power of 2
