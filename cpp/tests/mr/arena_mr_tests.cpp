@@ -8,6 +8,7 @@
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
+#include <rmm/detail/error.hpp>
 #include <rmm/error.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
@@ -654,7 +655,7 @@ TEST(ArenaStreamIdTest, TryGetStreamIdReturnsCudaStreamId)  // NOLINT
   rmm::cuda_stream stream{};
   rmm::mr::detail::stream_id_type expected_id{};
 
-  ASSERT_EQ(cudaStreamGetId(stream.view().value(), &expected_id), cudaSuccess);
+  RMM_CUDA_TRY(cudaStreamGetId(stream.view().value(), &expected_id));
   auto const stream_id = rmm::mr::detail::try_get_stream_id(stream.view());
   ASSERT_TRUE(stream_id.has_value());
   EXPECT_EQ(*stream_id, expected_id);
