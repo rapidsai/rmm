@@ -27,6 +27,9 @@ namespace mr {
  *   `void* allocate_callback_t(cuda_stream_view stream, std::size_t bytes, std::size_t alignment,
  *                             void* arg);`
  *
+ * * The callback receives only valid power-of-two alignment values. An invalid alignment raises
+ *   `rmm::logic_error` before callback invocation.
+ *
  * * Returns a pointer to an allocation of at least `bytes` usable immediately on
  *   `stream` with the requested `alignment`. The stream-ordered behavior requirements are
  *   identical to `allocate`.

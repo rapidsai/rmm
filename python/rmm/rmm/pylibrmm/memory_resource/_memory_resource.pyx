@@ -625,16 +625,17 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
         The allocation function must accept three arguments: a Stream on
         which to perform the allocation, an integer representing the number
         of bytes to allocate, and an integer representing the requested
-        alignment. It must return an integer representing the pointer to the
-        allocated memory. The returned pointer must satisfy the requested
-        alignment.
+        alignment. The alignment is always a valid power of two because an
+        invalid request raises before callback invocation. The function must
+        return an integer representing the pointer to the allocated memory.
+        The returned pointer must satisfy the requested alignment.
     deallocate_func: callable
         The deallocation function must accept four arguments: a Stream on
         which to perform the deallocation, an integer representing the pointer
         to the memory to free, an integer representing the number of bytes to
         free, and an integer representing the allocation alignment. It must not
-        raise an exception because deallocation is ``noexcept`` and an escaping
-        exception terminates the process.
+        raise an exception because this callback boundary cannot propagate
+        Python exceptions.
 
     Examples
     --------
