@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -574,8 +574,9 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
 
 cdef void* _allocate_callback_wrapper(
-    size_t nbytes,
     cuda_stream_view stream,
+    size_t nbytes,
+    size_t alignment,
     void* ctx
     # Note that this function is specifically designed to rethrow Python
     # exceptions as C++ exceptions when called as a callback from C++, so it is
@@ -585,20 +586,27 @@ cdef void* _allocate_callback_wrapper(
     with gil:
         try:
             return <void*>(<uintptr_t>((<object>(ctx))(
+                Stream._from_cudaStream_t(stream.value()),
                 nbytes,
-                Stream._from_cudaStream_t(stream.value())
+                alignment
             )))
         except BaseException as e:
             err = translate_python_except_to_cpp(e)
     throw_cpp_except(err)
 
 cdef void _deallocate_callback_wrapper(
+    cuda_stream_view stream,
     void* ptr,
     size_t nbytes,
-    cuda_stream_view stream,
+    size_t alignment,
     void* ctx
 ) except * with gil:
-    (<object>(ctx))(<uintptr_t>(ptr), nbytes, Stream._from_cudaStream_t(stream.value()))
+    (<object>(ctx))(
+        Stream._from_cudaStream_t(stream.value()),
+        <uintptr_t>(ptr),
+        nbytes,
+        alignment
+    )
 
 
 cdef class CallbackMemoryResource(DeviceMemoryResource):
@@ -614,25 +622,26 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     Parameters
     ----------
     allocate_func: callable
-        The allocation function must accept two arguments. An integer
-        representing the number of bytes to allocate and a Stream on
-        which to perform the allocation, and return an integer
-        representing the pointer to the allocated memory.
+        The allocation function must accept three arguments: a Stream on
+        which to perform the allocation, an integer representing the number
+        of bytes to allocate, and an integer representing the requested
+        alignment. It must return an integer representing the pointer to the
+        allocated memory.
     deallocate_func: callable
-        The deallocation function must accept three arguments. an integer
-        representing the pointer to the memory to free, a second
-        integer representing the number of bytes to free, and a Stream
-        on which to perform the deallocation.
+        The deallocation function must accept four arguments: a Stream on
+        which to perform the deallocation, an integer representing the pointer
+        to the memory to free, an integer representing the number of bytes to
+        free, and an integer representing the allocation alignment.
 
     Examples
     --------
     >>> import rmm
     >>> base_mr = rmm.mr.CudaMemoryResource()
-    >>> def allocate_func(size, stream):
+    >>> def allocate_func(stream, size, alignment):
     ...     print(f"Allocating {size} bytes")
     ...     return base_mr.allocate(size, stream)
     ...
-    >>> def deallocate_func(ptr, size, stream):
+    >>> def deallocate_func(stream, ptr, size, alignment):
     ...     print(f"Deallocating {size} bytes")
     ...     return base_mr.deallocate(ptr, size, stream)
     ...

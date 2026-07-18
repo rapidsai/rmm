@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 # This import is needed for Cython typing in translate_python_except_to_cpp
@@ -266,8 +266,10 @@ cdef extern from "rmm/mr/fixed_size_memory_resource.hpp" \
 
 cdef extern from "rmm/mr/callback_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
-    ctypedef void* (*allocate_callback_t)(size_t, cuda_stream_view, void*)
-    ctypedef void (*deallocate_callback_t)(void*, size_t, cuda_stream_view, void*)
+    ctypedef void* (*allocate_callback_t)(cuda_stream_view, size_t, size_t, void*)
+    ctypedef void (*deallocate_callback_t)(
+        cuda_stream_view, void*, size_t, size_t, void*
+    )
 
     cdef cppclass callback_memory_resource:
         callback_memory_resource(
