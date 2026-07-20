@@ -38,7 +38,7 @@ def test_cuda_core_stream_to_rmm(current_device):
     rmm_stream = rmm.pylibrmm.stream.Stream(cuda_stream)
     cuda_stream_2 = current_device.create_stream(rmm_stream)
 
-    assert cuda_stream_2.__cuda_stream__() == cuda_stream_2.__cuda_stream__()
+    assert cuda_stream_2.__cuda_stream__() == cuda_stream.__cuda_stream__()
 
 
 def test_rmm_stream_from_cuda_core_default_stream(current_device):

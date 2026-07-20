@@ -5,8 +5,12 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/error.hpp>
 #include <rmm/detail/format.hpp>
 #include <rmm/mr/detail/logging_resource_adaptor_impl.hpp>
+
+#include <cuda/stream_ref>
+#include <cuda_runtime_api.h>
 
 namespace RMM_NAMESPACE {
 namespace mr {
@@ -26,24 +30,19 @@ logging_resource_adaptor_impl::logging_resource_adaptor_impl(
 
 void* logging_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  auto const stream = cuda_stream_view{};
-  try {
-    auto const ptr = upstream_mr_.allocate(stream, bytes, alignment);
-    logger_->info("allocate,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream));
-    return ptr;
-  } catch (...) {
-    logger_->info("allocate failure,%p,%zu,%s", nullptr, bytes, rmm::detail::format_stream(stream));
-    throw;
-  }
+  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+  void* ptr         = allocate(stream, bytes, alignment);
+  RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
+  return ptr;
 }
 
 void logging_resource_adaptor_impl::deallocate_sync(void* ptr,
                                                     std::size_t bytes,
                                                     std::size_t alignment) noexcept
 {
-  auto const stream = cuda_stream_view{};
-  logger_->info("free,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream));
-  upstream_mr_.deallocate(stream, ptr, bytes, alignment);
+  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+  deallocate(stream, ptr, bytes, alignment);
+  RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 }
 
 void* logging_resource_adaptor_impl::allocate(cuda::stream_ref stream,
