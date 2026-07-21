@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -67,9 +67,9 @@ class RMM_EXPORT cuda_async_view_memory_resource final {
    * @param alignment The alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate(cuda::stream_ref stream,
-                 std::size_t bytes,
-                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
+  [[nodiscard]] void* allocate(cuda::stream_ref stream,
+                               std::size_t bytes,
+                               std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   /**
    * @brief Deallocate memory pointed to by \p ptr.
@@ -92,7 +92,8 @@ class RMM_EXPORT cuda_async_view_memory_resource final {
    * @param alignment The alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
+  [[nodiscard]] void* allocate_sync(std::size_t bytes,
+                                    std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   /**
    * @brief Deallocate memory pointed to by \p ptr synchronously.

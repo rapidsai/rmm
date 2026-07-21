@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -88,7 +88,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
    * @param alignment Unused; alignment is always at least `CUDA_ALLOCATION_ALIGNMENT`
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate(cuda::stream_ref stream, std::size_t bytes, std::size_t /*alignment*/)
+  [[nodiscard]] void* allocate(cuda::stream_ref stream,
+                               std::size_t bytes,
+                               std::size_t /*alignment*/)
   {
     auto const strm = cuda_stream_view{stream};
 

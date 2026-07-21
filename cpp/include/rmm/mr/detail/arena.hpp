@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -573,7 +573,7 @@ class global_arena final {
    * @param size The size in bytes of the allocation.
    * @return void* Pointer to the newly allocated memory.
    */
-  void* allocate_sync(std::size_t size)
+  [[nodiscard]] void* allocate_sync(std::size_t size)
   {
     RMM_LOGGING_ASSERT(handles(size));
     std::lock_guard lock(mtx_);
@@ -802,7 +802,7 @@ class arena {
    * @param size The size in bytes of the allocation.
    * @return void* Pointer to the newly allocated memory.
    */
-  void* allocate_sync(std::size_t size)
+  [[nodiscard]] void* allocate_sync(std::size_t size)
   {
     if (global_arena_.handles(size)) { return global_arena_.allocate_sync(size); }
     std::lock_guard lock(mtx_);
