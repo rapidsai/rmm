@@ -9,6 +9,7 @@ from builtins import BaseException
 from collections import defaultdict
 
 cimport cython
+from cpython.exc cimport PyErr_WriteUnraisable
 from cuda.bindings cimport cyruntime
 from cython.operator cimport dereference as deref
 from libc.stddef cimport size_t
@@ -600,13 +601,16 @@ cdef void _deallocate_callback_wrapper(
     size_t nbytes,
     size_t alignment,
     void* ctx
-) except * with gil:
-    (<object>(ctx))(
-        Stream._from_cudaStream_t(stream.value()),
-        <uintptr_t>(ptr),
-        nbytes,
-        alignment
-    )
+) noexcept with gil:
+    try:
+        (<object>(ctx))(
+            Stream._from_cudaStream_t(stream.value()),
+            <uintptr_t>(ptr),
+            nbytes,
+            alignment
+        )
+    except BaseException:
+        PyErr_WriteUnraisable(<object>(ctx))
 
 
 cdef class CallbackMemoryResource(DeviceMemoryResource):
@@ -658,6 +662,9 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     Allocating 256 bytes
     >>> del dbuf
     Deallocating 256 bytes
+
+    The base resource's 256-byte default alignment satisfies every request
+    accepted by this example.
     """
     def __init__(
         self,

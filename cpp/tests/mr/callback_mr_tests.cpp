@@ -17,6 +17,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <array>
 #include <cstddef>
 #include <iostream>
 #include <string>
@@ -102,6 +103,33 @@ TEST(CallbackTest, ForwardsAllocationMetadata)
   EXPECT_EQ(deallocation_ptr, allocation_ptr);
   EXPECT_EQ(deallocation_size, allocation_size);
   EXPECT_EQ(deallocation_alignment, allocation_alignment);
+}
+
+TEST(CallbackTest, ForwardsLargeAllocationAlignments)
+{
+  auto const alignments = std::array<std::size_t, 2>{512, 4096};
+  alignas(4096) std::byte allocation{};
+
+  std::size_t allocation_alignment{};
+  std::size_t deallocation_alignment{};
+  auto allocate_callback = [&](
+                             cuda_stream_view, std::size_t, std::size_t callback_alignment, void*) {
+    allocation_alignment = callback_alignment;
+    return static_cast<void*>(&allocation);
+  };
+  auto deallocate_callback =
+    [&](cuda_stream_view, void*, std::size_t, std::size_t callback_alignment, void*) {
+      deallocation_alignment = callback_alignment;
+    };
+  auto mr = rmm::mr::callback_memory_resource(allocate_callback, deallocate_callback);
+
+  for (auto const alignment : alignments) {
+    auto* ptr = mr.allocate_sync(1, alignment);
+    mr.deallocate_sync(ptr, 1, alignment);
+
+    EXPECT_EQ(allocation_alignment, alignment);
+    EXPECT_EQ(deallocation_alignment, alignment);
+  }
 }
 
 TEST(CallbackTest, RejectsInvalidAllocationAlignmentBeforeCallback)
