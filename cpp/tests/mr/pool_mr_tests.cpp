@@ -36,7 +36,7 @@ class host_func_gate {
   void wait()
   {
     std::unique_lock<std::mutex> lock{mutex_};
-    condition_.wait(lock, [this] { return released_; });
+    EXPECT_TRUE(condition_.wait_for(lock, std::chrono::seconds{60}, [this] { return released_; }));
     complete_.store(true);
   }
 
@@ -56,6 +56,16 @@ class host_func_gate {
   std::condition_variable condition_;
   bool released_{false};
   std::atomic<bool> complete_{false};
+};
+
+class host_func_gate_release_guard {
+ public:
+  explicit host_func_gate_release_guard(host_func_gate& gate) : gate_{gate} {}
+
+  ~host_func_gate_release_guard() { gate_.release(); }
+
+ private:
+  host_func_gate& gate_;
 };
 
 class non_default_sync_resource {
@@ -232,9 +242,10 @@ TEST(PoolTest, MissingReclaimCandidateDoesNotWaitForPendingWork)
   pool_mr mr{upstream, 1024, 1024};
   auto* held_ptr = mr.allocate_sync(512);
 
-  rmm::cuda_stream source;
-  auto* source_ptr = mr.allocate(source.view(), 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
   host_func_gate prior_work;
+  rmm::cuda_stream source;
+  host_func_gate_release_guard const release_prior_work{prior_work};
+  auto* source_ptr = mr.allocate(source.view(), 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
   RMM_CUDA_TRY(cudaLaunchHostFunc(
     source.value(), [](void* data) { static_cast<host_func_gate*>(data)->wait(); }, &prior_work));
   mr.deallocate(source.view(), source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
@@ -256,6 +267,7 @@ TEST(PoolTest, MissingReclaimCandidateDoesNotWaitForPendingWork)
   mr.deallocate_sync(held_ptr, 512);
 
   EXPECT_TRUE(failed_without_waiting);
+  EXPECT_TRUE(prior_work.complete());
 }
 
 // Issue #1957: a request larger than the maximum pool size throws (and reclaim terminates).
