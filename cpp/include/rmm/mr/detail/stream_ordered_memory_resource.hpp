@@ -276,18 +276,17 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
    * a block may have last been used on a stream different from the free list it now resides in.
    *
    * It synchronizes the union of two event sets:
-   * 1. every event in `stream_events_`, which covers the provenance of blocks merged in from
-   *    non-default streams; and
+   * 1. every event in `stream_events_`, which covers non-default streams; and
    * 2. the key event of every free list in `stream_free_blocks_`, which additionally covers
-   *    per-thread-default-stream (PTDS) lists whose events live in thread-local storage and are not
-   *    in `stream_events_`. A reclaimable block is always pulled from `stream_free_blocks_`, so
-   *    syncing every list's key event guarantees its last use has completed.
+   *    per-thread-default-stream (PTDS) lists whose events live in thread-local storage.
+   *
+   * When one list is merged into another, `merge_lists` records the destination event after its
+   * wait on the source event. The destination event therefore carries the merged block's stream
+   * provenance, including when the source was a PTDS list whose entry is erased by the merge.
    *
    * An event may appear in both sets; the redundant `cudaEventSynchronize` is harmless.
    * `cudaEventSynchronize` on a resource-owned event is safe even if the underlying stream was
-   * destroyed. The sole residual limitation matches `release()`: a block already merged out of a
-   * PTDS free list (its source entry consumed by `merge_lists`) is bounded only by the destination
-   * stream's wait, so this is not a regression. The caller must hold `mtx_`.
+   * destroyed. The caller must hold `mtx_`.
    *
    * Runs on the allocate path (not the destructor), so the throwing `RMM_CUDA_TRY` is used.
    */
@@ -299,6 +298,27 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
     for (auto const& [stream_event, blocks] : stream_free_blocks_) {
       RMM_CUDA_TRY(cudaEventSynchronize(stream_event.event));
     }
+  }
+
+  /**
+   * @brief Checks whether an upstream block is entirely free in any per-stream free list.
+   *
+   * @param ptr The head pointer of the upstream allocation to find.
+   * @param size The full size in bytes of the upstream allocation to find.
+   * @return true if the block is entirely free, false otherwise.
+   */
+  [[nodiscard]] bool has_reclaimable_block(char const* ptr, std::size_t size) const
+  {
+    return std::any_of(stream_free_blocks_.cbegin(),
+                       stream_free_blocks_.cend(),
+                       [ptr, size](auto const& stream_blocks) {
+                         return std::any_of(stream_blocks.second.cbegin(),
+                                            stream_blocks.second.cend(),
+                                            [ptr, size](auto const& block) {
+                                              return block.pointer() == ptr &&
+                                                     block.size() == size && block.is_head();
+                                            });
+                       });
   }
 
   /**
@@ -531,6 +551,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
     // Since we found a block associated with a different stream, we have to insert a wait
     // on the stream's associated event into the allocating stream.
     RMM_CUDA_TRY(cudaStreamWaitEvent(stream_event.stream, other_event, 0));
+    RMM_CUDA_TRY(cudaEventRecord(stream_event.event, stream_event.stream));
 
     // Merge the two free lists
     blocks.insert(std::move(other_blocks));

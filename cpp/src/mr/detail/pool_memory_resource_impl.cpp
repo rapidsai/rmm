@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <iterator>
 #include <limits>
 #include <mutex>
 #include <optional>
@@ -131,23 +132,29 @@ void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size)
   // gain: avoid the synchronize and the destructive reclaim on a request that will fail anyway.
   if (size > max_pool_size) { return; }
 
-  // Synchronize all events before returning any memory to upstream. A block may have last been used
-  // on a stream different from the free list it now sits in (via cross-stream merging), so syncing
-  // only its current list's event is insufficient for async upstreams. This mirrors release().
+  std::vector<block_type> candidates;
+  std::copy_if(upstream_blocks_.cbegin(),
+               upstream_blocks_.cend(),
+               std::back_inserter(candidates),
+               [this](auto const& block) {
+                 return this->has_reclaimable_block(block.pointer(), block.size());
+               });
+  if (candidates.empty()) { return; }
+
+  // Synchronize only when at least one block can be returned to upstream. A block may have last
+  // been used on a stream different from the free list it now sits in (via cross-stream merging),
+  // so syncing only its current list's event is insufficient for async upstreams.
   this->synchronize_all_events();
 
-  // Snapshot the set of upstream blocks so we can erase from `upstream_blocks_` while iterating.
-  // Reclaiming a block never frees another, so a single pass reclaims all reclaimable blocks.
-  std::vector<block_type> const candidates(upstream_blocks_.cbegin(), upstream_blocks_.cend());
   for (auto const& blk : candidates) {
     // `current_pool_size_ <= max_pool_size` is an invariant, so the subtraction cannot underflow.
     if (max_pool_size - current_pool_size_ >= size) { return; }
-    if (this->try_reclaim_free_block(blk.pointer(), blk.size())) {
-      get_upstream_resource().deallocate_sync(
-        blk.pointer(), blk.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
-      upstream_blocks_.erase(blk);
-      current_pool_size_ -= blk.size();
-    }
+    get_upstream_resource().deallocate_sync(
+      blk.pointer(), blk.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
+    [[maybe_unused]] auto const erased = this->try_reclaim_free_block(blk.pointer(), blk.size());
+    RMM_LOGGING_ASSERT(erased);
+    upstream_blocks_.erase(blk);
+    current_pool_size_ -= blk.size();
   }
 }
 
