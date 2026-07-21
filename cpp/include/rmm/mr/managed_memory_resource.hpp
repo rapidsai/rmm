@@ -12,7 +12,7 @@
 
 #include <cstddef>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup memory_resources
@@ -133,4 +133,4 @@ static_assert(cuda::mr::resource_with<managed_memory_resource, cuda::mr::host_ac
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT_NAMESPACE

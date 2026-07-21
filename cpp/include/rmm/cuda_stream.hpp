@@ -14,7 +14,7 @@
 #include <functional>
 #include <memory>
 
-namespace RMM_EXPORT rmm {
+namespace RMM_EXPORT_NAMESPACE {
 /**
  * @addtogroup cuda_streams
  * @{
@@ -127,4 +127,4 @@ class cuda_stream {
 };
 
 /** @} */  // end of group
-}  // namespace RMM_EXPORT rmm
+}  // namespace RMM_EXPORT_NAMESPACE

@@ -2184,6 +2184,7 @@ PREDEFINED             = RMM_EXEC_CHECK_DISABLE \
                          RMM_EXPORT \
                          RMM_HIDDEN \
                          RMM_NAMESPACE=rmm \
+                         RMM_EXPORT_NAMESPACE=rmm \
                          DOXYGEN \
                          "RMM_CONSTEXPR_FRIEND=friend"
 

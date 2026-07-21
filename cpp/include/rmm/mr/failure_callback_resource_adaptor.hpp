@@ -15,7 +15,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup memory_resource_adaptors
@@ -91,4 +91,4 @@ static_assert(
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT_NAMESPACE

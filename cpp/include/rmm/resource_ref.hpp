@@ -9,7 +9,7 @@
 
 #include <cuda/memory_resource>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT_NAMESPACE {
 
 /**
  * @addtogroup memory_resources
@@ -85,4 +85,4 @@ static_assert(std::is_constructible_v<host_resource_ref, host_device_resource_re
               "host_resource_ref must be constructible from host_device_resource_ref");
 
 /** @} */  // end of group
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT_NAMESPACE

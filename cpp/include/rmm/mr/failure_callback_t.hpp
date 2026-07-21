@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <functional>
 
-namespace RMM_NAMESPACE {
+namespace RMM_EXPORT_NAMESPACE {
 namespace mr {
 /**
  * @addtogroup memory_resource_adaptors
@@ -35,4 +35,4 @@ using failure_callback_t = std::function<bool(std::size_t, void*)>;
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+}  // namespace RMM_EXPORT_NAMESPACE
