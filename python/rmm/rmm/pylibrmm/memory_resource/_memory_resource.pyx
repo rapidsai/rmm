@@ -9,7 +9,6 @@ from builtins import BaseException
 from collections import defaultdict
 
 cimport cython
-from cpython.exc cimport PyErr_WriteUnraisable
 from cuda.bindings cimport cyruntime
 from cython.operator cimport dereference as deref
 from libc.stddef cimport size_t
@@ -602,15 +601,12 @@ cdef void _deallocate_callback_wrapper(
     size_t alignment,
     void* ctx
 ) noexcept with gil:
-    try:
-        (<object>(ctx))(
-            Stream._from_cudaStream_t(stream.value()),
-            <uintptr_t>(ptr),
-            nbytes,
-            alignment
-        )
-    except BaseException:
-        PyErr_WriteUnraisable(<object>(ctx))
+    (<object>(ctx))(
+        Stream._from_cudaStream_t(stream.value()),
+        <uintptr_t>(ptr),
+        nbytes,
+        alignment
+    )
 
 
 cdef class CallbackMemoryResource(DeviceMemoryResource):
