@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -24,6 +24,7 @@
 #include <memory>
 #include <set>
 #include <thread>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -477,9 +478,9 @@ TEST_F(ArenaTest, ArenaDeallocate)  // NOLINT
 
 TEST_F(ArenaTest, ArenaDeallocateMergePrevious)  // NOLINT
 {
-  auto* ptr  = per_thread->allocate_sync(256);
-  auto* ptr2 = per_thread->allocate_sync(256);
-  per_thread->allocate_sync(256);
+  auto* ptr   = per_thread->allocate_sync(256);
+  auto* ptr2  = per_thread->allocate_sync(256);
+  std::ignore = per_thread->allocate_sync(256);
   per_thread->deallocate_sync(ptr, 256);
   per_thread->deallocate_sync(ptr2, 256);
   EXPECT_EQ(per_thread->allocate_sync(512), fake_address3);
@@ -487,9 +488,9 @@ TEST_F(ArenaTest, ArenaDeallocateMergePrevious)  // NOLINT
 
 TEST_F(ArenaTest, ArenaDeallocateMergeNext)  // NOLINT
 {
-  auto* ptr  = per_thread->allocate_sync(256);
-  auto* ptr2 = per_thread->allocate_sync(256);
-  per_thread->allocate_sync(256);
+  auto* ptr   = per_thread->allocate_sync(256);
+  auto* ptr2  = per_thread->allocate_sync(256);
+  std::ignore = per_thread->allocate_sync(256);
   per_thread->deallocate_sync(ptr2, 256);
   per_thread->deallocate_sync(ptr, 256);
   EXPECT_EQ(per_thread->allocate_sync(512), fake_address3);

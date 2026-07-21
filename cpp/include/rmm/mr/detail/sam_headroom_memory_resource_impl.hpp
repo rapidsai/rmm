@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -48,16 +48,17 @@ class sam_headroom_memory_resource_impl {
     return !(*this == other);
   }
 
-  void* allocate(cuda::stream_ref stream,
-                 std::size_t bytes,
-                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
+  [[nodiscard]] void* allocate(cuda::stream_ref stream,
+                               std::size_t bytes,
+                               std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   void deallocate(cuda::stream_ref stream,
                   void* ptr,
                   std::size_t bytes,
                   std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
 
-  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
+  [[nodiscard]] void* allocate_sync(std::size_t bytes,
+                                    std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   void deallocate_sync(void* ptr,
                        std::size_t bytes,

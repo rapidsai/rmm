@@ -22,7 +22,7 @@ from packaging.version import Version
 
 # -- Project information -----------------------------------------------------
 
-project = "RMM"
+project = "NVIDIA RMM"
 copyright = f"2018-{datetime.datetime.today().year}, NVIDIA Corporation"
 author = "NVIDIA Corporation"
 
@@ -128,12 +128,6 @@ html_theme_options = {
             "icon": "fa-brands fa-github",
             "type": "fontawesome",
         },
-        {
-            "name": "X",
-            "url": "https://x.com/rapidsai",
-            "icon": "fa-brands fa-x-twitter",
-            "type": "fontawesome",
-        },
     ],
     "show_toc_level": 1,
     "navbar_align": "right",
@@ -176,8 +170,8 @@ latex_documents = [
     (
         master_doc,
         "rmm.tex",
-        "RMM Documentation",
-        "NVIDIA Corporation",
+        f"{project} Documentation",
+        author,
         "manual",
     )
 ]
@@ -187,7 +181,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "rmm", "RMM Documentation", [author], 1)]
+man_pages = [(master_doc, "rmm", f"{project} Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -199,7 +193,7 @@ texinfo_documents = [
     (
         master_doc,
         "rmm",
-        "RMM Documentation",
+        f"{project} Documentation",
         author,
         "rmm",
         "One line description of project.",

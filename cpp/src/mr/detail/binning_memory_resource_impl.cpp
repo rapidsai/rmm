@@ -78,14 +78,14 @@ void binning_memory_resource_impl::deallocate(cuda::stream_ref stream,
 
 void* binning_memory_resource_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  return get_resource_ref(bytes).allocate(cuda_stream_view{}, bytes, alignment);
+  return get_resource_ref(bytes).allocate_sync(bytes, alignment);
 }
 
 void binning_memory_resource_impl::deallocate_sync(void* ptr,
                                                    std::size_t bytes,
                                                    std::size_t alignment) noexcept
 {
-  get_resource_ref(bytes).deallocate(cuda_stream_view{}, ptr, bytes, alignment);
+  get_resource_ref(bytes).deallocate_sync(ptr, bytes, alignment);
 }
 
 }  // namespace detail
