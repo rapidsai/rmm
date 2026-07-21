@@ -90,6 +90,7 @@ add_library(
   src/mr/aligned_resource_adaptor.cpp
   src/mr/arena_memory_resource.cpp
   src/mr/binning_memory_resource.cpp
+  src/mr/caching_memory_resource.cpp
   src/mr/callback_memory_resource.cpp
   src/mr/cuda_async_managed_memory_resource.cpp
   src/mr/cuda_async_memory_resource.cpp
@@ -98,6 +99,7 @@ add_library(
   src/mr/detail/aligned_resource_adaptor_impl.cpp
   src/mr/detail/arena_memory_resource_impl.cpp
   src/mr/detail/binning_memory_resource_impl.cpp
+  src/mr/detail/caching_memory_resource_impl.cpp
   src/mr/detail/callback_memory_resource_impl.cpp
   src/mr/detail/cuda_async_managed_memory_resource_impl.cpp
   src/mr/detail/cuda_async_memory_resource_impl.cpp

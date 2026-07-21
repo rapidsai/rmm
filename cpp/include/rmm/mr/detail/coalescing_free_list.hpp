@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -226,13 +226,29 @@ struct coalescing_free_list : free_list<block> {
    */
   block_type get_block(std::size_t size)
   {
+    return get_block(size, [](block_type const&) { return true; });
+  }
+
+  /**
+   * @brief Finds the smallest acceptable block in the `free_list` large enough to fit `size` bytes.
+   *
+   * @tparam Predicate Unary predicate returning true for acceptable blocks.
+   * @param size The size in bytes of the desired block.
+   * @param pred Predicate used to reject blocks that should not satisfy this request.
+   * @return A block large enough to store `size` bytes.
+   */
+  template <typename Predicate>
+  block_type get_block(std::size_t size, Predicate pred)
+  {
     // find best fit block
-    auto finder = [size](block_type const& lhs, block_type const& rhs) {
+    auto finder = [size, pred](block_type const& lhs, block_type const& rhs) {
+      if (!pred(lhs)) { return false; }
+      if (!pred(rhs)) { return lhs.fits(size); }
       return lhs.is_better_fit(size, rhs);
     };
     auto const iter = std::min_element(cbegin(), cend(), finder);
 
-    if (iter != cend() && iter->fits(size)) {
+    if (iter != cend() && iter->fits(size) && pred(*iter)) {
       // Remove the block from the free_list and return it.
       block_type const found = *iter;
       erase(iter);
@@ -240,6 +256,24 @@ struct coalescing_free_list : free_list<block> {
     }
 
     return block_type{};  // not found
+  }
+
+  /**
+   * @brief Removes the block exactly matching `block` from the free list.
+   *
+   * @param block The block to remove.
+   * @return true If an exact matching block was removed.
+   */
+  bool remove_block(block_type const& block)
+  {
+    auto const iter = std::find_if(cbegin(), cend(), [block](block_type const& candidate) {
+      return candidate.pointer() == block.pointer() && candidate.size() == block.size();
+    });
+
+    if (iter == cend()) { return false; }
+
+    erase(iter);
+    return true;
   }
 
 #ifdef RMM_DEBUG_PRINT

@@ -9,6 +9,7 @@
 #include <rmm/device_uvector.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/binning_memory_resource.hpp>
+#include <rmm/mr/caching_memory_resource.hpp>
 #include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
@@ -39,6 +40,29 @@ __global__ void compute_bound_kernel(int64_t* out)
 
 using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
 using MRFactoryFunc       = std::function<any_device_resource()>;
+
+rmm::mr::caching_memory_resource_pool_policy caching_pool_policy =
+  rmm::mr::caching_memory_resource_pool_policy::separate;
+rmm::mr::caching_memory_resource_stream_reuse_policy caching_stream_policy =
+  rmm::mr::caching_memory_resource_stream_reuse_policy::same_stream;
+
+rmm::mr::caching_memory_resource_pool_policy parse_pool_policy(std::string const& policy)
+{
+  if (policy == "separate") { return rmm::mr::caching_memory_resource_pool_policy::separate; }
+  if (policy == "unified") { return rmm::mr::caching_memory_resource_pool_policy::unified; }
+  RMM_FAIL("Invalid caching pool policy: " + policy);
+}
+
+rmm::mr::caching_memory_resource_stream_reuse_policy parse_stream_policy(std::string const& policy)
+{
+  if (policy == "same_stream") {
+    return rmm::mr::caching_memory_resource_stream_reuse_policy::same_stream;
+  }
+  if (policy == "cross_stream") {
+    return rmm::mr::caching_memory_resource_stream_reuse_policy::cross_stream;
+  }
+  RMM_FAIL("Invalid caching stream reuse policy: " + policy);
+}
 
 static void run_prewarm(rmm::cuda_stream_pool& stream_pool, rmm::device_async_resource_ref mr)
 {
@@ -90,6 +114,16 @@ inline any_device_resource make_pool()
                                        rmm::percent_of_free_device_memory(50)};
 }
 
+inline any_device_resource make_caching()
+{
+  return rmm::mr::caching_memory_resource{
+    rmm::mr::cuda_memory_resource{},
+    std::nullopt,
+    rmm::mr::caching_memory_resource_oom_fallback_policy::release_oversized_then_all,
+    caching_pool_policy,
+    caching_stream_policy};
+}
+
 inline any_device_resource make_arena()
 {
   return rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref()};
@@ -118,6 +152,7 @@ MRFactoryFunc get_mr_factory(std::string const& resource_name)
   if (resource_name == "cuda") { return &make_cuda; }
   if (resource_name == "cuda_async") { return &make_cuda_async; }
   if (resource_name == "pool") { return &make_pool; }
+  if (resource_name == "caching") { return &make_caching; }
   if (resource_name == "arena") { return &make_arena; }
   if (resource_name == "binning") { return &make_binning; }
 
@@ -140,6 +175,12 @@ void declare_benchmark(std::string const& name)
 
   if (name == "pool") {
     BENCHMARK_CAPTURE(BM_MultiStreamAllocations, pool_mr, &make_pool)  //
+      ->Apply(benchmark_range);
+    return;
+  }
+
+  if (name == "caching") {
+    BENCHMARK_CAPTURE(BM_MultiStreamAllocations, caching_mr, &make_caching)  //
       ->Apply(benchmark_range);
     return;
   }
@@ -205,8 +246,19 @@ int main(int argc, char** argv)
       "w,warm",
       "Ensure each stream has enough memory to satisfy allocations.",
       cxxopts::value<bool>()->default_value("false"));
+    options.add_options()(  //
+      "pool-policy",
+      "Caching MR pool policy: separate or unified",
+      cxxopts::value<std::string>()->default_value("separate"));
+    options.add_options()(  //
+      "stream-policy",
+      "Caching MR stream reuse policy: same_stream or cross_stream",
+      cxxopts::value<std::string>()->default_value("same_stream"));
 
     auto args = options.parse(argc, argv);
+
+    caching_pool_policy   = parse_pool_policy(args["pool-policy"].as<std::string>());
+    caching_stream_policy = parse_stream_policy(args["stream-policy"].as<std::string>());
 
     if (args.count("profile") > 0) {
       auto resource_name = args["resource"].as<std::string>();
@@ -227,6 +279,7 @@ int main(int argc, char** argv)
         resource_names.emplace_back("cuda");
         resource_names.emplace_back("cuda_async");
         resource_names.emplace_back("pool");
+        resource_names.emplace_back("caching");
         resource_names.emplace_back("arena");
         resource_names.emplace_back("binning");
       }

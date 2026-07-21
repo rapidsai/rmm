@@ -80,6 +80,7 @@ Debug
 build/
 RelWithDebInfo/
 thirdparty/googletest/
+caching-allocator-reports/
 
 ## Eclipse IDE
 .project

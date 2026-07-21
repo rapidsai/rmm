@@ -7,6 +7,7 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/binning_memory_resource.hpp>
+#include <rmm/mr/caching_memory_resource.hpp>
 #include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
@@ -151,6 +152,11 @@ void uniform_random_allocations(
 /// MR factory functions
 using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
 
+rmm::mr::caching_memory_resource_pool_policy caching_pool_policy =
+  rmm::mr::caching_memory_resource_pool_policy::separate;
+rmm::mr::caching_memory_resource_stream_reuse_policy caching_stream_policy =
+  rmm::mr::caching_memory_resource_stream_reuse_policy::same_stream;
+
 inline any_device_resource make_cuda() { return rmm::mr::cuda_memory_resource{}; }
 
 inline any_device_resource make_cuda_async() { return rmm::mr::cuda_async_memory_resource{}; }
@@ -159,6 +165,16 @@ inline any_device_resource make_pool()
 {
   return rmm::mr::pool_memory_resource{rmm::mr::cuda_memory_resource{},
                                        rmm::percent_of_free_device_memory(50)};
+}
+
+inline any_device_resource make_caching()
+{
+  return rmm::mr::caching_memory_resource{
+    rmm::mr::cuda_memory_resource{},
+    std::nullopt,
+    rmm::mr::caching_memory_resource_oom_fallback_policy::release_oversized_then_all,
+    caching_pool_policy,
+    caching_stream_policy};
 }
 
 inline any_device_resource make_arena()
@@ -222,6 +238,24 @@ static void num_size_range(benchmark::Benchmark* bench)
 int num_allocations = -1;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 int max_size        = -1;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
+rmm::mr::caching_memory_resource_pool_policy parse_pool_policy(std::string const& policy)
+{
+  if (policy == "separate") { return rmm::mr::caching_memory_resource_pool_policy::separate; }
+  if (policy == "unified") { return rmm::mr::caching_memory_resource_pool_policy::unified; }
+  RMM_FAIL("Invalid caching pool policy: " + policy);
+}
+
+rmm::mr::caching_memory_resource_stream_reuse_policy parse_stream_policy(std::string const& policy)
+{
+  if (policy == "same_stream") {
+    return rmm::mr::caching_memory_resource_stream_reuse_policy::same_stream;
+  }
+  if (policy == "cross_stream") {
+    return rmm::mr::caching_memory_resource_stream_reuse_policy::cross_stream;
+  }
+  RMM_FAIL("Invalid caching stream reuse policy: " + policy);
+}
+
 void benchmark_range(benchmark::Benchmark* bench)
 {
   if (num_allocations > 0) {
@@ -252,6 +286,9 @@ void declare_benchmark(std::string const& name)
       ->Apply(benchmark_range);
   } else if (name == "pool") {
     BENCHMARK_CAPTURE(BM_RandomAllocations, pool_mr, &make_pool)  // NOLINT
+      ->Apply(benchmark_range);
+  } else if (name == "caching") {
+    BENCHMARK_CAPTURE(BM_RandomAllocations, caching_mr, &make_caching)  // NOLINT
       ->Apply(benchmark_range);
   } else if (name == "arena") {
     BENCHMARK_CAPTURE(BM_RandomAllocations, arena_mr, &make_arena)  // NOLINT
@@ -296,14 +333,23 @@ int main(int argc, char** argv)
     options.add_options()("m,maxsize",
                           "Maximum allocation size (default of 0 tests a range)",
                           cxxopts::value<int>()->default_value("4096"));
+    options.add_options()("pool-policy",
+                          "Caching MR pool policy: separate or unified",
+                          cxxopts::value<std::string>()->default_value("separate"));
+    options.add_options()("stream-policy",
+                          "Caching MR stream reuse policy: same_stream or cross_stream",
+                          cxxopts::value<std::string>()->default_value("same_stream"));
 
-    auto args       = options.parse(argc, argv);
-    num_allocations = args["numallocs"].as<int>();
-    max_size        = args["maxsize"].as<int>();
+    auto args             = options.parse(argc, argv);
+    num_allocations       = args["numallocs"].as<int>();
+    max_size              = args["maxsize"].as<int>();
+    caching_pool_policy   = parse_pool_policy(args["pool-policy"].as<std::string>());
+    caching_stream_policy = parse_stream_policy(args["stream-policy"].as<std::string>());
 
     if (args.count("profile") > 0) {
       std::map<std::string, MRFactoryFunc> const funcs({{"arena", &make_arena},
                                                         {"binning", &make_binning},
+                                                        {"caching", &make_caching},
                                                         {"cuda", &make_cuda},
                                                         {"cuda_async", &make_cuda_async},
                                                         {"pool", &make_pool}});
@@ -329,7 +375,7 @@ int main(int argc, char** argv)
         std::string mr_name = args["resource"].as<std::string>();
         declare_benchmark(mr_name);
       } else {
-        std::vector<std::string> mrs{"pool", "binning", "arena", "cuda_async", "cuda"};
+        std::vector<std::string> mrs{"pool", "caching", "binning", "arena", "cuda_async", "cuda"};
         std::for_each(
           std::cbegin(mrs), std::cend(mrs), [](auto const& mr) { declare_benchmark(mr); });
       }
