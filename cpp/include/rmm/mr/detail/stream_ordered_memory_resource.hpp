@@ -288,6 +288,11 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
    * `cudaEventSynchronize` on a resource-owned event is safe even if the underlying stream was
    * destroyed. The caller must hold `mtx_`.
    *
+   * @note This blocks on device work while the caller holds `mtx_`. Host callbacks
+   * (`cudaLaunchHostFunc`) enqueued on tracked streams must never allocate or deallocate from this
+   * resource, or they can deadlock. This matches the pre-existing behavior of `release()`, which
+   * also synchronizes events while holding the lock.
+   *
    * Runs on the allocate path (not the destructor), so the throwing `RMM_CUDA_TRY` is used.
    */
   void synchronize_all_events()
