@@ -40,6 +40,7 @@ repos:
     rev: v0.19.0
     hooks:
       - id: cython-lint
+        # Accommodates the canonical 104-char SPDX copyright header enforced by verify-copyright.
         args: ["--max-line-length=104"]
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v20.1.8
