@@ -18,8 +18,10 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstddef>
 #include <memory>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -28,6 +30,33 @@ namespace {
 using cuda_mr     = rmm::mr::cuda_memory_resource;
 using pool_mr     = rmm::mr::pool_memory_resource;
 using limiting_mr = rmm::mr::limiting_resource_adaptor;
+
+class host_func_gate {
+ public:
+  void wait()
+  {
+    std::unique_lock<std::mutex> lock{mutex_};
+    condition_.wait(lock, [this] { return released_; });
+    complete_.store(true);
+  }
+
+  void release()
+  {
+    {
+      std::lock_guard<std::mutex> lock{mutex_};
+      released_ = true;
+    }
+    condition_.notify_one();
+  }
+
+  bool complete() const { return complete_.load(); }
+
+ private:
+  std::mutex mutex_;
+  std::condition_variable condition_;
+  bool released_{false};
+  std::atomic<bool> complete_{false};
+};
 
 class non_default_sync_resource {
  public:
@@ -205,14 +234,9 @@ TEST(PoolTest, MissingReclaimCandidateDoesNotWaitForPendingWork)
 
   rmm::cuda_stream source;
   auto* source_ptr = mr.allocate(source.view(), 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  std::atomic<bool> prior_work_complete{false};
+  host_func_gate prior_work;
   RMM_CUDA_TRY(cudaLaunchHostFunc(
-    source.value(),
-    [](void* data) {
-      std::this_thread::sleep_for(std::chrono::milliseconds{500});
-      static_cast<std::atomic<bool>*>(data)->store(true);
-    },
-    &prior_work_complete));
+    source.value(), [](void* data) { static_cast<host_func_gate*>(data)->wait(); }, &prior_work));
   mr.deallocate(source.view(), source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   rmm::cuda_stream destination;
@@ -222,10 +246,11 @@ TEST(PoolTest, MissingReclaimCandidateDoesNotWaitForPendingWork)
       mr.deallocate(destination.view(), ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
       return false;
     } catch (rmm::out_of_memory const&) {
-      return !prior_work_complete.load();
+      return !prior_work.complete();
     }
   }();
 
+  prior_work.release();
   source.synchronize();
   destination.synchronize();
   mr.deallocate_sync(held_ptr, 512);
