@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -13,7 +13,7 @@
 
 #include <type_traits>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 /**
  * @addtogroup data_containers
  * @{
@@ -268,4 +268,4 @@ class device_scalar {
 };
 
 /** @} */  // end of group
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

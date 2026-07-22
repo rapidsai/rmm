@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,7 +8,7 @@
 
 #include <cuda_runtime_api.h>
 
-namespace rmm {
+RMM_NAMESPACE_BEGIN
 
 void prefetch(void const* ptr,
               std::size_t size,
@@ -31,4 +31,4 @@ void prefetch(void const* ptr,
   if (result != cudaErrorInvalidValue && result != cudaSuccess) { RMM_CUDA_TRY(result); }
 }
 
-}  // namespace rmm
+RMM_NAMESPACE_END

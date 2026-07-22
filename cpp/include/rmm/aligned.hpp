@@ -10,7 +10,7 @@
 #include <cassert>
 #include <cstddef>
 
-namespace RMM_EXPORT rmm {
+RMM_NAMESPACE_BEGIN
 
 /**
  * @addtogroup utilities
@@ -100,4 +100,4 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
 
 /** @} */  // end of group
 
-}  // namespace RMM_EXPORT rmm
+RMM_NAMESPACE_END

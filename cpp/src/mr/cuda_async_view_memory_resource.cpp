@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -12,7 +12,7 @@
 
 #include <cstddef>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr {
 
 cuda_async_view_memory_resource::cuda_async_view_memory_resource(cudaMemPool_t pool_handle)
@@ -81,4 +81,4 @@ bool cuda_async_view_memory_resource::operator!=(
 }
 
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

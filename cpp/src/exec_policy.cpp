@@ -1,11 +1,11 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <rmm/exec_policy.hpp>
 
-namespace rmm {
+RMM_NAMESPACE_BEGIN
 
 exec_policy::exec_policy(cuda_stream_view stream,
                          cuda::mr::any_resource<cuda::mr::device_accessible> mr)
@@ -22,4 +22,4 @@ exec_policy_nosync::exec_policy_nosync(cuda_stream_view stream,
 {
 }
 
-}  // namespace rmm
+RMM_NAMESPACE_END

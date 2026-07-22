@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -13,7 +13,7 @@
 
 #include <cuda/std/span>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 
 /**
  * @addtogroup utilities
@@ -60,4 +60,4 @@ void prefetch(cuda::std::span<T const> data,
 
 /** @} */  // end of group
 
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END
