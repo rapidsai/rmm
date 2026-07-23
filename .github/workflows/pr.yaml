@@ -21,6 +21,7 @@ jobs:
       - conda-python-tests
       - conda-python-tests-integration-optional
       - docs-build
+      - publish-api-docs
       - wheel-build-cpp
       - wheel-build-python
       - wheel-tests
@@ -330,6 +331,27 @@ jobs:
       arch: "amd64"
       container_image: "rapidsai/ci-conda:26.10-latest"
       script: "ci/build_docs.sh"
+  publish-api-docs:
+    if: github.ref_type == 'branch'
+    needs: [docs-build]
+    permissions:
+      contents: read
+      id-token: write
+    secrets:
+      akamai-access-token: ${{ secrets.NVIDIA_DOCS_AKAMAI_ACCESS_TOKEN }}
+      akamai-client-token: ${{ secrets.NVIDIA_DOCS_AKAMAI_CLIENT_TOKEN }}
+      akamai-client-secret: ${{ secrets.NVIDIA_DOCS_AKAMAI_CLIENT_SECRET }}
+      akamai-emails-to-notify: ${{ secrets.NVIDIA_DOCS_AKAMAI_EMAILS_TO_NOTIFY }}
+      akamai-host: ${{ secrets.NVIDIA_DOCS_AKAMAI_HOST }}
+      target-aws-access-key-id: ${{ secrets.NVIDIA_DOCS_AWS_ACCESS_KEY_ID }}
+      target-aws-region: ${{ secrets.NVIDIA_DOCS_AWS_REGION }}
+      target-aws-secret-access-key: ${{ secrets.NVIDIA_DOCS_AWS_SECRET_ACCESS_KEY }}
+      target-s3-bucket: ${{ secrets.NVIDIA_DOCS_S3_BUCKET }}
+    uses: rapidsai/shared-workflows/.github/workflows/publish-api-docs.yaml@josephine/x-org-596-finesse-publish-api-docs
+    with:
+      docs-projects: rmm,librmm
+      dry-run: true
+      version-map: '{"26.08": "legacy", "26.10": "stable"}'
   wheel-build-cpp:
     needs: checks
     permissions:
