@@ -222,6 +222,15 @@ TEST(PoolTest, CrossStreamStealAfterMergeWaitsForDonorStream)
   // A's event behind the pending write, so any consumer that waits on A's event cannot touch X
   // before the write completes.
   std::atomic<bool> release{false};
+
+  // Unblock the callback during unwinding so resource teardown cannot wait on it indefinitely.
+  struct release_on_exit {
+    std::atomic<bool>& flag;
+
+    ~release_on_exit() { flag.store(true, std::memory_order_release); }
+  };
+
+  release_on_exit unblock{release};
   RMM_CUDA_TRY(cudaLaunchHostFunc(stream_a.value(), spin_until_released, &release));
   RMM_CUDA_TRY(cudaMemsetAsync(ptr_x, pattern_a, block_size, stream_a.value()));
   ref.deallocate(stream_a.view(), ptr_x, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
