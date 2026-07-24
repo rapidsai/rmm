@@ -24,7 +24,7 @@
 #include <iostream>
 #endif
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr::detail {
 
 /**
@@ -560,6 +560,13 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
 
     // Merge the two free lists
     blocks.insert(std::move(other_blocks));
+
+    // The merged-in blocks are now keyed by `stream_event.event`, but that event's last
+    // recorded position (if it was ever recorded) precedes the wait just enqueued above.
+    // Re-record the event so that later consumers of these blocks that synchronize on it
+    // (a cross-stream steal or merge, or `release()`) transitively wait on `other_event`,
+    // and therefore on any work still in flight on the donor stream.
+    RMM_CUDA_TRY(cudaEventRecord(stream_event.event, stream_event.stream));
   }
 
   /**
@@ -618,4 +625,4 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
 };  // namespace detail
 
 }  // namespace mr::detail
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

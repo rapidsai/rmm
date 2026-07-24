@@ -17,7 +17,7 @@
 #endif
 #include <iterator>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr::detail {
 
 /**
@@ -277,4 +277,4 @@ struct coalescing_free_list : free_list<block> {
 };  // coalescing_free_list
 
 }  // namespace mr::detail
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

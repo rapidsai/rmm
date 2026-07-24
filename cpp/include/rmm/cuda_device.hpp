@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -10,7 +10,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace RMM_EXPORT rmm {
+RMM_NAMESPACE_BEGIN
 
 struct cuda_device_id;
 cuda_device_id get_current_cuda_device();
@@ -135,4 +135,4 @@ struct cuda_set_device_raii {
 };
 
 /** @} */  // end of group
-}  // namespace RMM_EXPORT rmm
+RMM_NAMESPACE_END

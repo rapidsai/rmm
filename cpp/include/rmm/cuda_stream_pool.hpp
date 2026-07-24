@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -13,7 +13,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace RMM_EXPORT rmm {
+RMM_NAMESPACE_BEGIN
 /**
  * @addtogroup cuda_streams
  * @{
@@ -87,4 +87,4 @@ class cuda_stream_pool {
 };
 
 /** @} */  // end of group
-}  // namespace RMM_EXPORT rmm
+RMM_NAMESPACE_END

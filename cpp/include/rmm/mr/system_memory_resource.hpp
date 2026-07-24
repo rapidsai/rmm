@@ -14,7 +14,7 @@
 
 #include <cstddef>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr {
 
 namespace detail {
@@ -164,4 +164,4 @@ static_assert(cuda::mr::resource_with<system_memory_resource, cuda::mr::device_a
 static_assert(cuda::mr::resource_with<system_memory_resource, cuda::mr::host_accessible>);
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

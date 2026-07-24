@@ -2184,6 +2184,8 @@ PREDEFINED             = RMM_EXEC_CHECK_DISABLE \
                          RMM_EXPORT \
                          RMM_HIDDEN \
                          RMM_NAMESPACE=rmm \
+                         "RMM_NAMESPACE_BEGIN=namespace rmm {" \
+                         RMM_NAMESPACE_END=} \
                          DOXYGEN \
                          "RMM_CONSTEXPR_FRIEND=friend"
 

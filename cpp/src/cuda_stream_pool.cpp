@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -11,7 +11,7 @@
 #include <atomic>
 #include <cstddef>
 
-namespace rmm {
+RMM_NAMESPACE_BEGIN
 
 cuda_stream_pool::cuda_stream_pool(std::size_t pool_size, cuda_stream::flags flags)
 {
@@ -33,4 +33,4 @@ rmm::cuda_stream_view cuda_stream_pool::get_stream(std::size_t stream_id) const
 
 std::size_t cuda_stream_pool::get_pool_size() const noexcept { return streams_.size(); }
 
-}  // namespace rmm
+RMM_NAMESPACE_END

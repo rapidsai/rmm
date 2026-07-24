@@ -1,9 +1,11 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #pragma once
+
+#include <rmm/detail/export.hpp>
 
 #include <thrust/detail/config.h>  // namespace macros
 
@@ -16,8 +18,8 @@ namespace thrust {
 }
 }  // namespace THRUST_WRAPPED_NAMESPACE
 
-namespace rmm {
+RMM_NAMESPACE_BEGIN
 using namespace THRUST_WRAPPED_NAMESPACE;
-}
+RMM_NAMESPACE_END
 
 #endif

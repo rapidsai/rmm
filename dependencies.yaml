@@ -58,6 +58,13 @@ files:
       - depends_on_librmm
       - depends_on_librmm_tests
       - depends_on_librmm_example
+  test_cmake:
+    output: none
+    includes:
+      - build
+      - cuda_static
+      - cuda_version
+      - depends_on_rapids_logger
   checks:
     output: none
     includes:
@@ -238,6 +245,11 @@ dependencies:
       - output_types: conda
         packages:
           - &doxygen doxygen=1.9.1
+  cuda_static:
+    common:
+      - output_types: conda
+        packages:
+          - cuda-cudart-static
   # 'cuda_version' intentionally does not contain fallback entries... we want
   # a loud error if an unsupported 'cuda' value is passed
   cuda_version:
@@ -404,7 +416,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - cuda-core>=0.5.1
+          - cuda-core>=0.5.1,<2
           - packaging
           - pytest
           - pytest-cov
