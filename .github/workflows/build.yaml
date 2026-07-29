@@ -138,7 +138,7 @@ jobs:
     with:
       docs-projects: rmm,librmm
       dry-run: false
-      version-map: '{"26.08": "legacy", "26.10": "stable"}'
+      version-map: '{"26.06": "legacy", "26.08": "stable"}'
   wheel-build-cpp:
     needs: [telemetry-setup]
     permissions:

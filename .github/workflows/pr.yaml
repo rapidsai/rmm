@@ -351,7 +351,7 @@ jobs:
     with:
       docs-projects: rmm,librmm
       dry-run: true
-      version-map: '{"26.08": "legacy", "26.10": "stable"}'
+      version-map: '{"26.06": "legacy", "26.08": "stable"}'
   wheel-build-cpp:
     needs: checks
     permissions:
