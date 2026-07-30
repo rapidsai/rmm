@@ -1,12 +1,12 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
 #include <rmm/detail/export.hpp>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace detail {
 
 /**
@@ -19,4 +19,4 @@ namespace detail {
 RMM_EXPORT void register_process_exit_hook() noexcept;
 
 }  // namespace detail
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

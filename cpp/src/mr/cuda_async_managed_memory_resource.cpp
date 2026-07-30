@@ -1,12 +1,12 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/cuda_async_managed_memory_resource.hpp>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr {
 
 cuda_async_managed_memory_resource::cuda_async_managed_memory_resource()
@@ -21,4 +21,4 @@ cudaMemPool_t cuda_async_managed_memory_resource::pool_handle() const noexcept
 }
 
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

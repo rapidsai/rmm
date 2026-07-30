@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace rmm {
+RMM_NAMESPACE_BEGIN
 
 bool is_pow2(std::size_t value) noexcept { return (value != 0U) && ((value & (value - 1)) == 0U); }
 
@@ -44,4 +44,4 @@ bool is_pointer_aligned(void* ptr, std::size_t alignment) noexcept
   return is_aligned(reinterpret_cast<std::uintptr_t>(ptr), alignment);
 }
 
-}  // namespace rmm
+RMM_NAMESPACE_END

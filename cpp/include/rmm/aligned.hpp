@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,7 +10,7 @@
 #include <cassert>
 #include <cstddef>
 
-namespace RMM_EXPORT rmm {
+RMM_NAMESPACE_BEGIN
 
 /**
  * @addtogroup utilities
@@ -95,4 +95,4 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
 
 /** @} */  // end of group
 
-}  // namespace RMM_EXPORT rmm
+RMM_NAMESPACE_END
