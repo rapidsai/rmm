@@ -123,8 +123,7 @@ void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size,
                                                     free_list& blocks,
                                                     cuda_stream_view stream)
 {
-  // Reclaiming only makes sense when the pool is capped. The sole caller guarantees this, but
-  // guard defensively so the helper does not depend on an externally-checked precondition.
+  // Reclamation only frees headroom when the pool has a capped maximum size.
   if (!maximum_pool_size_.has_value()) { return; }
   auto const max_pool_size = maximum_pool_size_.value();
 
@@ -132,8 +131,6 @@ void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size,
   // gain: avoid the synchronize and the destructive reclaim on a request that will fail anyway.
   if (size > max_pool_size) { return; }
 
-  // The free lists were merged onto `stream`, which waits on their recorded events. Enqueueing the
-  // upstream operations on the same stream preserves those dependencies without blocking the host.
   auto free_iter              = blocks.cbegin();
   auto upstream_iter          = upstream_blocks_.cbegin();
   auto const compare_pointers = compare_blocks<block_type>{};
@@ -159,6 +156,9 @@ void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size,
     if (!candidate->is_head() || upstream->size() != candidate->size()) { continue; }
 
     auto const blk = *candidate;
+    // The free lists were merged onto `stream`, which waits on their recorded events. Enqueueing
+    // the upstream deallocation on the same stream preserves those dependencies without blocking
+    // the host.
     get_upstream_resource().deallocate(
       stream, blk.pointer(), blk.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
     blocks.erase(candidate);
