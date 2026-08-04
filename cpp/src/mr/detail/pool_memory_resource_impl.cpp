@@ -134,14 +134,29 @@ void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size,
 
   // The free lists were merged onto `stream`, which waits on their recorded events. Enqueueing the
   // upstream operations on the same stream preserves those dependencies without blocking the host.
-  for (auto iter = blocks.cbegin(); iter != blocks.cend();) {
+  auto free_iter              = blocks.cbegin();
+  auto upstream_iter          = upstream_blocks_.cbegin();
+  auto const compare_pointers = compare_blocks<block_type>{};
+
+  // This merge join requires `blocks` and `upstream_blocks_` to remain sorted by `compare_blocks`.
+  // coalescing_free_list maintains that order on insertion, and upstream_blocks_ uses the same
+  // comparator. Erasing matched entries below preserves the ordering of both collections.
+  while (free_iter != blocks.cend() && upstream_iter != upstream_blocks_.cend()) {
     // `current_pool_size_ <= max_pool_size` is an invariant, so the subtraction cannot underflow.
     if (max_pool_size - current_pool_size_ >= size) { return; }
 
-    auto const candidate = iter++;
-    if (!candidate->is_head()) { continue; }
-    auto const upstream = upstream_blocks_.find(candidate->pointer());
-    if (upstream == upstream_blocks_.cend() || upstream->size() != candidate->size()) { continue; }
+    if (compare_pointers(*free_iter, *upstream_iter)) {
+      ++free_iter;
+      continue;
+    }
+    if (compare_pointers(*upstream_iter, *free_iter)) {
+      ++upstream_iter;
+      continue;
+    }
+
+    auto const candidate = free_iter++;
+    auto const upstream  = upstream_iter++;
+    if (!candidate->is_head() || upstream->size() != candidate->size()) { continue; }
 
     auto const blk = *candidate;
     get_upstream_resource().deallocate(
