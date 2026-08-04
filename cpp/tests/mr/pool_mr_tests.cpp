@@ -9,7 +9,6 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
-#include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
@@ -253,11 +252,6 @@ TEST(PoolTest, ReclaimAcrossStreams)
 
 TEST(PoolTest, ReclaimIsStreamOrderedOnSameStream)
 {
-  if (!rmm::detail::runtime_async_alloc::is_supported()) {
-    GTEST_SKIP() << "Skipping test since cudaMallocAsync not supported with this CUDA "
-                    "driver/runtime version";
-  }
-
   rmm::mr::cuda_async_memory_resource upstream;
   pool_mr mr{upstream, 256, 1024};
   host_func_gate prior_work;
@@ -282,11 +276,6 @@ TEST(PoolTest, ReclaimIsStreamOrderedOnSameStream)
 
 TEST(PoolTest, ReclaimIsStreamOrderedWithMergedPerThreadDefaultStream)
 {
-  if (!rmm::detail::runtime_async_alloc::is_supported()) {
-    GTEST_SKIP() << "Skipping test since cudaMallocAsync not supported with this CUDA "
-                    "driver/runtime version";
-  }
-
   rmm::mr::cuda_async_memory_resource upstream;
   pool_mr mr{upstream, 256, 1024};
   host_func_gate prior_work;
@@ -313,11 +302,6 @@ TEST(PoolTest, ReclaimIsStreamOrderedWithMergedPerThreadDefaultStream)
 
 TEST(PoolTest, ReclaimsToMaximumWithCudaAsyncUpstreamAcrossStreams)
 {
-  if (!rmm::detail::runtime_async_alloc::is_supported()) {
-    GTEST_SKIP() << "Skipping test since cudaMallocAsync not supported with this CUDA "
-                    "driver/runtime version";
-  }
-
   rmm::mr::cuda_async_memory_resource upstream;
   pool_mr mr{upstream, 256, 1024};
   rmm::cuda_stream source;
