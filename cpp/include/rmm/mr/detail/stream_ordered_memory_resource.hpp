@@ -268,44 +268,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
   }
 
   /**
-   * @brief Synchronizes every event this resource may associate with pooled memory.
-   *
-   * After this returns, all asynchronous work previously ordered on any stream tracked by this
-   * resource has completed on the host. This must be called before any pooled memory is returned to
-   * an upstream resource whose deallocation is itself asynchronous (e.g. `cudaFreeAsync`), because
-   * a block may have last been used on a stream different from the free list it now resides in.
-   *
-   * It synchronizes the union of two event sets:
-   * 1. every event in `stream_events_`, which covers non-default streams; and
-   * 2. the key event of every free list in `stream_free_blocks_`, which additionally covers
-   *    per-thread-default-stream (PTDS) lists whose events live in thread-local storage.
-   *
-   * When one list is merged into another, `merge_lists` records the destination event after its
-   * wait on the source event. The destination event therefore carries the merged block's stream
-   * provenance, including when the source was a PTDS list whose entry is erased by the merge.
-   *
-   * An event may appear in both sets; the redundant `cudaEventSynchronize` is harmless.
-   * `cudaEventSynchronize` on a resource-owned event is safe even if the underlying stream was
-   * destroyed. The caller must hold `mtx_`.
-   *
-   * @note This blocks on device work while the caller holds `mtx_`. Host callbacks
-   * (`cudaLaunchHostFunc`) enqueued on tracked streams must never allocate or deallocate from this
-   * resource, or they can deadlock. This matches the pre-existing behavior of `release()`, which
-   * also synchronizes events while holding the lock.
-   *
-   * Runs on the allocate path (not the destructor), so the throwing `RMM_CUDA_TRY` is used.
-   */
-  void synchronize_all_events()
-  {
-    for (auto const& s_e : stream_events_) {
-      RMM_CUDA_TRY(cudaEventSynchronize(s_e.second.event));
-    }
-    for (auto const& [stream_event, blocks] : stream_free_blocks_) {
-      RMM_CUDA_TRY(cudaEventSynchronize(stream_event.event));
-    }
-  }
-
-  /**
    * @brief Checks whether an upstream block is entirely free in any per-stream free list.
    *
    * @param ptr The head pointer of the upstream allocation to find.
@@ -556,7 +518,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
     // Since we found a block associated with a different stream, we have to insert a wait
     // on the stream's associated event into the allocating stream.
     RMM_CUDA_TRY(cudaStreamWaitEvent(stream_event.stream, other_event, 0));
-    RMM_CUDA_TRY(cudaEventRecord(stream_event.event, stream_event.stream));
 
     // Merge the two free lists
     blocks.insert(std::move(other_blocks));

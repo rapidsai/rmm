@@ -115,13 +115,13 @@ pool_memory_resource_impl::block_type pool_memory_resource_impl::expand_pool(
   // block, try to reclaim entirely-free upstream blocks (whose budget prevents growth) back to
   // upstream, freeing headroom under `maximum_pool_size_` to grow a sufficiently large block.
   if (grow_size < size && maximum_pool_size_.has_value()) {
-    reclaim_free_blocks(size);
+    reclaim_free_blocks(size, stream);
     grow_size = size_to_grow(size);
   }
   return try_to_expand(grow_size, size, stream);
 }
 
-void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size)
+void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size, cuda_stream_view stream)
 {
   // Reclaiming only makes sense when the pool is capped. The sole caller guarantees this, but
   // guard defensively so the helper does not depend on an externally-checked precondition.
@@ -141,16 +141,13 @@ void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size)
                });
   if (candidates.empty()) { return; }
 
-  // Synchronize only when at least one block can be returned to upstream. A block may have last
-  // been used on a stream different from the free list it now sits in (via cross-stream merging),
-  // so syncing only its current list's event is insufficient for async upstreams.
-  this->synchronize_all_events();
-
+  // The free lists were merged onto `stream`, which waits on their recorded events. Enqueueing the
+  // upstream operations on the same stream preserves those dependencies without blocking the host.
   for (auto const& blk : candidates) {
     // `current_pool_size_ <= max_pool_size` is an invariant, so the subtraction cannot underflow.
     if (max_pool_size - current_pool_size_ >= size) { return; }
-    get_upstream_resource().deallocate_sync(
-      blk.pointer(), blk.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
+    get_upstream_resource().deallocate(
+      stream, blk.pointer(), blk.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
     [[maybe_unused]] auto const erased = this->try_reclaim_free_block(blk.pointer(), blk.size());
     RMM_LOGGING_ASSERT(erased);
     upstream_blocks_.erase(blk);
