@@ -75,62 +75,6 @@ class host_func_gate_release_guard {
   host_func_gate& gate_;
 };
 
-class non_default_sync_resource {
- public:
-  non_default_sync_resource(rmm::mr::cuda_async_memory_resource* upstream,
-                            rmm::cuda_stream_view sync_stream)
-    : upstream_{upstream}, sync_stream_{sync_stream}
-  {
-  }
-
-  void* allocate(cuda::stream_ref stream, std::size_t bytes, std::size_t alignment)
-  {
-    return upstream_->allocate(stream, bytes, alignment);
-  }
-
-  void deallocate(cuda::stream_ref stream,
-                  void* ptr,
-                  std::size_t bytes,
-                  std::size_t alignment) noexcept
-  {
-    upstream_->deallocate(stream, ptr, bytes, alignment);
-  }
-
-  void* allocate_sync(std::size_t bytes, std::size_t alignment)
-  {
-    auto* ptr = upstream_->allocate(sync_stream_, bytes, alignment);
-    sync_stream_.synchronize();
-    return ptr;
-  }
-
-  void deallocate_sync(void* ptr, std::size_t bytes, std::size_t alignment)
-  {
-    upstream_->deallocate(sync_stream_, ptr, bytes, alignment);
-    sync_stream_.synchronize();
-  }
-
-  bool operator==(non_default_sync_resource const& other) const noexcept
-  {
-    return upstream_ == other.upstream_ && sync_stream_ == other.sync_stream_;
-  }
-
-  bool operator!=(non_default_sync_resource const& other) const noexcept
-  {
-    return !(*this == other);
-  }
-
-  constexpr friend void get_property(non_default_sync_resource const&,
-                                     cuda::mr::device_accessible) noexcept
-  {
-  }
-
- private:
-  rmm::mr::cuda_async_memory_resource* upstream_;
-  rmm::cuda_stream_view sync_stream_;
-};
-
-static_assert(cuda::mr::resource_with<non_default_sync_resource, cuda::mr::device_accessible>);
-
 TEST(PoolTest, ThrowMaxLessThanInitial)
 {
   // Make sure first argument is enough larger than the second that alignment rounding doesn't
@@ -300,43 +244,71 @@ TEST(PoolTest, ReclaimAcrossStreams)
     // free list.
     rmm::device_buffer buf(256, stream.view(), mr);
   }
-  // Growing to 1024B requires reclaiming the entirely-free cross-stream block after syncing.
+  // Growing to 1024B requires reclaiming the entirely-free cross-stream block.
   EXPECT_NO_THROW([&]() {
     auto* ptr = mr.allocate_sync(1024);
     mr.deallocate_sync(ptr, 1024);
   }());
 }
 
-TEST(PoolTest, ReclaimWaitsForMergedPerThreadDefaultStream)
+TEST(PoolTest, ReclaimIsStreamOrderedOnSameStream)
 {
   if (!rmm::detail::runtime_async_alloc::is_supported()) {
     GTEST_SKIP() << "Skipping test since cudaMallocAsync not supported with this CUDA "
                     "driver/runtime version";
   }
 
-  rmm::mr::cuda_async_memory_resource cuda_async_upstream;
-  rmm::cuda_stream upstream_sync_stream;
-  non_default_sync_resource upstream{&cuda_async_upstream, upstream_sync_stream.view()};
+  rmm::mr::cuda_async_memory_resource upstream;
   pool_mr mr{upstream, 256, 1024};
-  std::atomic<bool> prior_work_complete{false};
+  host_func_gate prior_work;
+  host_func_gate_release_guard const release_prior_work{prior_work};
+  rmm::cuda_stream stream;
+
+  auto* source_ptr = mr.allocate(stream.view(), 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  RMM_CUDA_TRY(cudaLaunchHostFunc(
+    stream.value(), [](void* data) { static_cast<host_func_gate*>(data)->wait(); }, &prior_work));
+  mr.deallocate(stream.view(), source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+
+  auto* destination_ptr = mr.allocate(stream.view(), 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  auto const reclaim_returned_without_waiting = !prior_work.complete();
+
+  prior_work.release();
+  mr.deallocate(stream.view(), destination_ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  stream.synchronize();
+
+  EXPECT_TRUE(reclaim_returned_without_waiting);
+  EXPECT_TRUE(prior_work.complete());
+}
+
+TEST(PoolTest, ReclaimIsStreamOrderedWithMergedPerThreadDefaultStream)
+{
+  if (!rmm::detail::runtime_async_alloc::is_supported()) {
+    GTEST_SKIP() << "Skipping test since cudaMallocAsync not supported with this CUDA "
+                    "driver/runtime version";
+  }
+
+  rmm::mr::cuda_async_memory_resource upstream;
+  pool_mr mr{upstream, 256, 1024};
+  host_func_gate prior_work;
+  host_func_gate_release_guard const release_prior_work{prior_work};
 
   auto* source_ptr = mr.allocate(rmm::cuda_stream_per_thread, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
   RMM_CUDA_TRY(cudaLaunchHostFunc(
     rmm::cuda_stream_per_thread.value(),
-    [](void* data) {
-      std::this_thread::sleep_for(std::chrono::milliseconds{500});
-      static_cast<std::atomic<bool>*>(data)->store(true);
-    },
-    &prior_work_complete));
+    [](void* data) { static_cast<host_func_gate*>(data)->wait(); },
+    &prior_work));
   mr.deallocate(rmm::cuda_stream_per_thread, source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   rmm::cuda_stream destination;
   auto* destination_ptr = mr.allocate(destination.view(), 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  auto const reclaim_waited_for_prior_work = prior_work_complete.load();
+  auto const reclaim_returned_without_waiting = !prior_work.complete();
+
+  prior_work.release();
   mr.deallocate(destination.view(), destination_ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   destination.synchronize();
 
-  EXPECT_TRUE(reclaim_waited_for_prior_work);
+  EXPECT_TRUE(reclaim_returned_without_waiting);
+  EXPECT_TRUE(prior_work.complete());
 }
 
 TEST(PoolTest, ReclaimsToMaximumWithCudaAsyncUpstreamAcrossStreams)
