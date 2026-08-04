@@ -267,47 +267,6 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
     stream_free_blocks_[get_event(stream)].insert(std::move(blocks));
   }
 
-  /**
-   * @brief Checks whether an upstream block is entirely free in any per-stream free list.
-   *
-   * @param ptr The head pointer of the upstream allocation to find.
-   * @param size The full size in bytes of the upstream allocation to find.
-   * @return true if the block is entirely free, false otherwise.
-   */
-  [[nodiscard]] bool has_reclaimable_block(char const* ptr, std::size_t size) const
-  {
-    return std::any_of(stream_free_blocks_.cbegin(),
-                       stream_free_blocks_.cend(),
-                       [ptr, size](auto const& stream_blocks) {
-                         return std::any_of(stream_blocks.second.cbegin(),
-                                            stream_blocks.second.cend(),
-                                            [ptr, size](auto const& block) {
-                                              return block.pointer() == ptr &&
-                                                     block.size() == size && block.is_head();
-                                            });
-                       });
-  }
-
-  /**
-   * @brief Attempts to remove an entirely-free upstream block from the per-stream free lists.
-   *
-   * Searches every per-stream free list for an exact, entirely-free upstream block matching `ptr`
-   * and `size` and erases it if found. This is a pure find-and-erase with no CUDA calls: the caller
-   * is responsible for synchronizing outstanding work (see `synchronize_all_events`) before
-   * returning the reclaimed memory to upstream. The caller must hold `mtx_`.
-   *
-   * @param ptr The head pointer of the upstream allocation to reclaim.
-   * @param size The full size in bytes of the upstream allocation to reclaim.
-   * @return true if the block was found fully-free and erased, false otherwise.
-   */
-  bool try_reclaim_free_block(char const* ptr, std::size_t size)
-  {
-    for (auto& stream_blocks : stream_free_blocks_) {
-      if (stream_blocks.second.erase_block(ptr, size)) { return true; }
-    }
-    return false;
-  }
-
 #ifdef RMM_DEBUG_PRINT
   void print_free_blocks() const
   {

@@ -242,28 +242,6 @@ struct coalescing_free_list : free_list<block> {
     return block_type{};  // not found
   }
 
-  /**
-   * @brief Removes an exact, entirely-free upstream block from the `free_list`.
-   *
-   * Searches for a block whose pointer and size match `ptr` and `size` and which is the head of an
-   * upstream allocation. Because coalescing never merges across upstream allocations, matching the
-   * upstream head pointer with the full upstream size guarantees the entire upstream allocation is
-   * free and may be returned to the upstream resource.
-   *
-   * @param ptr The head pointer of the upstream allocation to remove.
-   * @param size The full size in bytes of the upstream allocation to remove.
-   * @return true if a matching entirely-free block was found and erased, false otherwise.
-   */
-  bool erase_block(char const* ptr, std::size_t size)
-  {
-    auto const iter = std::find_if(begin(), end(), [ptr, size](block_type const& blk) {
-      return blk.pointer() == ptr && blk.size() == size && blk.is_head();
-    });
-    if (iter == end()) { return false; }
-    erase(iter);
-    return true;
-  }
-
 #ifdef RMM_DEBUG_PRINT
   /**
    * @brief Print all blocks in the free_list.

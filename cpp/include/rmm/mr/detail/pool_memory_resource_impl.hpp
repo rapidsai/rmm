@@ -70,7 +70,7 @@ class pool_memory_resource_impl final
   block_type try_to_expand(std::size_t try_size, std::size_t min_size, cuda_stream_view stream);
   void initialize_pool(std::size_t initial_size, std::optional<std::size_t> maximum_size);
   block_type expand_pool(std::size_t size, free_list& blocks, cuda_stream_view stream);
-  void reclaim_free_blocks(std::size_t size, cuda_stream_view stream);
+  void reclaim_free_blocks(std::size_t size, free_list& blocks, cuda_stream_view stream);
   [[nodiscard]] std::size_t size_to_grow(std::size_t size) const;
   block_type block_from_upstream(std::size_t size, cuda_stream_view stream);
   split_block allocate_from_block(block_type const& block, std::size_t size);

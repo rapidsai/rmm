@@ -14,12 +14,10 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <iterator>
 #include <limits>
 #include <mutex>
 #include <optional>
 #include <string>
-#include <vector>
 
 #ifdef RMM_DEBUG_PRINT
 #include <rmm/cuda_device.hpp>
@@ -108,20 +106,22 @@ void pool_memory_resource_impl::initialize_pool(std::size_t initial_size,
 }
 
 pool_memory_resource_impl::block_type pool_memory_resource_impl::expand_pool(
-  std::size_t size, [[maybe_unused]] free_list& blocks, cuda_stream_view stream)
+  std::size_t size, free_list& blocks, cuda_stream_view stream)
 {
   auto grow_size = size_to_grow(size);
   // When the pool is capped and cannot grow enough to satisfy `size` in a single new upstream
   // block, try to reclaim entirely-free upstream blocks (whose budget prevents growth) back to
   // upstream, freeing headroom under `maximum_pool_size_` to grow a sufficiently large block.
   if (grow_size < size && maximum_pool_size_.has_value()) {
-    reclaim_free_blocks(size, stream);
+    reclaim_free_blocks(size, blocks, stream);
     grow_size = size_to_grow(size);
   }
   return try_to_expand(grow_size, size, stream);
 }
 
-void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size, cuda_stream_view stream)
+void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size,
+                                                    free_list& blocks,
+                                                    cuda_stream_view stream)
 {
   // Reclaiming only makes sense when the pool is capped. The sole caller guarantees this, but
   // guard defensively so the helper does not depend on an externally-checked precondition.
@@ -132,25 +132,22 @@ void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size, cuda_strea
   // gain: avoid the synchronize and the destructive reclaim on a request that will fail anyway.
   if (size > max_pool_size) { return; }
 
-  std::vector<block_type> candidates;
-  std::copy_if(upstream_blocks_.cbegin(),
-               upstream_blocks_.cend(),
-               std::back_inserter(candidates),
-               [this](auto const& block) {
-                 return this->has_reclaimable_block(block.pointer(), block.size());
-               });
-  if (candidates.empty()) { return; }
-
   // The free lists were merged onto `stream`, which waits on their recorded events. Enqueueing the
   // upstream operations on the same stream preserves those dependencies without blocking the host.
-  for (auto const& blk : candidates) {
+  for (auto iter = blocks.cbegin(); iter != blocks.cend();) {
     // `current_pool_size_ <= max_pool_size` is an invariant, so the subtraction cannot underflow.
     if (max_pool_size - current_pool_size_ >= size) { return; }
+
+    auto const candidate = iter++;
+    if (!candidate->is_head()) { continue; }
+    auto const upstream = upstream_blocks_.find(candidate->pointer());
+    if (upstream == upstream_blocks_.cend() || upstream->size() != candidate->size()) { continue; }
+
+    auto const blk = *candidate;
     get_upstream_resource().deallocate(
       stream, blk.pointer(), blk.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
-    [[maybe_unused]] auto const erased = this->try_reclaim_free_block(blk.pointer(), blk.size());
-    RMM_LOGGING_ASSERT(erased);
-    upstream_blocks_.erase(blk);
+    blocks.erase(candidate);
+    upstream_blocks_.erase(upstream);
     current_pool_size_ -= blk.size();
   }
 }
