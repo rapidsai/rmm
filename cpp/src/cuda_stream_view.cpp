@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -12,7 +12,7 @@
 
 #include <ostream>
 
-namespace rmm {
+RMM_NAMESPACE_BEGIN
 
 cuda_stream_view::cuda_stream_view(cudaStream_t stream) noexcept : stream_{stream} {}
 
@@ -59,4 +59,4 @@ std::ostream& operator<<(std::ostream& os, cuda_stream_view stream)
   return os;
 }
 
-}  // namespace rmm
+RMM_NAMESPACE_END

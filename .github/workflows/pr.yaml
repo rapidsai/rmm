@@ -13,6 +13,7 @@ jobs:
       - check-nightly-ci
       - changed-files
       - checks
+      - cmake-tests
       - conda-cpp-build
       - conda-cpp-tests
       - conda-cpp-debug-tests
@@ -20,6 +21,7 @@ jobs:
       - conda-python-tests
       - conda-python-tests-integration-optional
       - docs-build
+      - publish-api-docs
       - wheel-build-cpp
       - wheel-build-python
       - wheel-tests
@@ -96,6 +98,7 @@ jobs:
           - '!.github/workflows/trigger-rbeaking-change-alert.yaml'
           - '!.pre-commit-config.yaml'
           - '!.shellcheckrc'
+          - '!.yamllint.yaml'
           - '!ci/build_wheel*.sh'
           - '!ci/check_style.sh'
           - '!ci/check_symbols.sh'
@@ -118,6 +121,7 @@ jobs:
           - '!.github/workflows/trigger-rbeaking-change-alert.yaml'
           - '!.pre-commit-config.yaml'
           - '!.shellcheckrc'
+          - '!.yamllint.yaml'
           - '!CONTRIBUTING.md'
           - '!README.md'
           - '!SECURITY.md'
@@ -148,6 +152,7 @@ jobs:
           - '!.github/workflows/trigger-rbeaking-change-alert.yaml'
           - '!.pre-commit-config.yaml'
           - '!.shellcheckrc'
+          - '!.yamllint.yaml'
           - '!CONTRIBUTING.md'
           - '!README.md'
           - '!SECURITY.md'
@@ -177,6 +182,7 @@ jobs:
           - '!.github/workflows/trigger-rbeaking-change-alert.yaml'
           - '!.pre-commit-config.yaml'
           - '!.shellcheckrc'
+          - '!.yamllint.yaml'
           - '!CONTRIBUTING.md'
           - '!README.md'
           - '!SECURITY.md'
@@ -208,6 +214,22 @@ jobs:
     with:
       enable_check_generated_files: false
       ignored_pr_jobs: "telemetry-summarize conda-python-tests-integration-optional wheel-tests-integration-optional"
+  cmake-tests:
+    needs: checks
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      packages: read
+      pull-requests: read
+    secrets: inherit # zizmor: ignore[secrets-inherit]
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@main
+    with:
+      build_type: pull-request
+      node_type: cpu16
+      arch: "amd64"
+      container_image: "rapidsai/ci-conda:26.08-latest"
+      script: "ci/test_cmake.sh"
   conda-cpp-build:
     needs: checks
     permissions:
@@ -251,7 +273,7 @@ jobs:
       build_type: pull-request
       node_type: "gpu-l4-latest-1"
       arch: "amd64"
-      container_image: "rapidsai/ci-conda:26.08-latest"
+      container_image: "rapidsai/ci-conda:26.10-latest"
       script: "ci/test_cpp_debug.sh"
   conda-python-build:
     needs: conda-cpp-build
@@ -311,8 +333,29 @@ jobs:
       build_type: pull-request
       node_type: "gpu-l4-latest-1"
       arch: "amd64"
-      container_image: "rapidsai/ci-conda:26.08-latest"
+      container_image: "rapidsai/ci-conda:26.10-latest"
       script: "ci/build_docs.sh"
+  publish-api-docs:
+    if: github.ref_type == 'branch'
+    needs: [docs-build]
+    permissions:
+      contents: read
+      id-token: write
+    secrets:
+      akamai-access-token: ${{ secrets.NVIDIA_DOCS_AKAMAI_ACCESS_TOKEN }}
+      akamai-client-token: ${{ secrets.NVIDIA_DOCS_AKAMAI_CLIENT_TOKEN }}
+      akamai-client-secret: ${{ secrets.NVIDIA_DOCS_AKAMAI_CLIENT_SECRET }}
+      akamai-emails-to-notify: ${{ secrets.NVIDIA_DOCS_AKAMAI_EMAILS_TO_NOTIFY }}
+      akamai-host: ${{ secrets.NVIDIA_DOCS_AKAMAI_HOST }}
+      target-aws-access-key-id: ${{ secrets.NVIDIA_DOCS_AWS_ACCESS_KEY_ID }}
+      target-aws-region: ${{ secrets.NVIDIA_DOCS_AWS_REGION }}
+      target-aws-secret-access-key: ${{ secrets.NVIDIA_DOCS_AWS_SECRET_ACCESS_KEY }}
+      target-s3-bucket: ${{ secrets.NVIDIA_DOCS_S3_BUCKET }}
+    uses: rapidsai/shared-workflows/.github/workflows/publish-api-docs.yaml@main
+    with:
+      docs-projects: rmm,librmm
+      dry-run: true
+      version-map: '{"26.04": "legacy", "26.06": "stable"}'
   wheel-build-cpp:
     needs: checks
     permissions:

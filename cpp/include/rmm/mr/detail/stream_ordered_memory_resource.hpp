@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -24,7 +24,7 @@
 #include <iostream>
 #endif
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr::detail {
 
 /**
@@ -88,7 +88,9 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
    * @param alignment Unused; alignment is always at least `CUDA_ALLOCATION_ALIGNMENT`
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate(cuda::stream_ref stream, std::size_t bytes, std::size_t /*alignment*/)
+  [[nodiscard]] void* allocate(cuda::stream_ref stream,
+                               std::size_t bytes,
+                               std::size_t /*alignment*/)
   {
     auto const strm = cuda_stream_view{stream};
 
@@ -478,6 +480,13 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
 
     // Merge the two free lists
     blocks.insert(std::move(other_blocks));
+
+    // The merged-in blocks are now keyed by `stream_event.event`, but that event's last
+    // recorded position (if it was ever recorded) precedes the wait just enqueued above.
+    // Re-record the event so that later consumers of these blocks that synchronize on it
+    // (a cross-stream steal or merge, or `release()`) transitively wait on `other_event`,
+    // and therefore on any work still in flight on the donor stream.
+    RMM_CUDA_TRY(cudaEventRecord(stream_event.event, stream_event.stream));
   }
 
   /**
@@ -536,4 +545,4 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
 };  // namespace detail
 
 }  // namespace mr::detail
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

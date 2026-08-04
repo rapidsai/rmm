@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -13,7 +13,7 @@
 
 #include <cstddef>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr {
 
 /**
@@ -58,9 +58,9 @@ class RMM_EXPORT pinned_host_memory_resource final {
    *
    * @return Pointer to the newly allocated memory.
    */
-  void* allocate([[maybe_unused]] cuda::stream_ref stream,
-                 std::size_t bytes,
-                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
+  [[nodiscard]] void* allocate([[maybe_unused]] cuda::stream_ref stream,
+                               std::size_t bytes,
+                               std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   /**
    * @brief Deallocate memory pointed to by \p ptr.
@@ -85,7 +85,8 @@ class RMM_EXPORT pinned_host_memory_resource final {
    * @param alignment The alignment of the allocation
    * @return Pointer to the newly allocated memory.
    */
-  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
+  [[nodiscard]] void* allocate_sync(std::size_t bytes,
+                                    std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   /**
    * @brief Deallocate memory pointed to by \p ptr synchronously.
@@ -145,4 +146,4 @@ static_assert(cuda::mr::resource_with<pinned_host_memory_resource, cuda::mr::hos
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END
