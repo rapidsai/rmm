@@ -43,7 +43,7 @@ class host_func_gate {
   void wait()
   {
     std::unique_lock<std::mutex> lock{mutex_};
-    EXPECT_TRUE(condition_.wait_for(lock, std::chrono::seconds{60}, [this] { return released_; }));
+    EXPECT_TRUE(condition_.wait_for(lock, std::chrono::seconds{10}, [this] { return released_; }));
     complete_.store(true);
   }
 
