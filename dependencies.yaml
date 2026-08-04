@@ -451,16 +451,22 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - numba-cuda==0.22.1
+              - &numba_cuda_oldest numba-cuda==0.22.1
           - matrix:
             packages:
               - *numba_cuda
-      - output_types: [requirements, pyproject]
+      - output_types: requirements
         matrices:
           - matrix:
               dependencies: "oldest"
             packages:
-              - numba-cuda==0.22.1
+              # Constraint must not have extras
+              - *numba_cuda_oldest
+          - matrix:
+            packages:
+              - *numba_cuda
+      - output_types: pyproject
+        matrices:
           - matrix:
               cuda: "12.*"
               cuda_suffixed: "true"
