@@ -1,3 +1,68 @@
+# rmm 26.08.00 (5 Aug 2026)
+
+### 🚨 Breaking Changes
+* Remove deprecated resource APIs by @bdice in https://github.com/rapidsai/rmm/pull/2387
+* Remove deprecated is_resource_adaptor by @bdice in https://github.com/rapidsai/rmm/pull/2420
+* Store shared_ptr to cuda_stream_pool in python wrapper by @wence- in https://github.com/rapidsai/rmm/pull/2432
+* Remove Cython any resource helper by @bdice in https://github.com/rapidsai/rmm/pull/2440
+* Require C++20 by @bdice in https://github.com/rapidsai/rmm/pull/2410
+* Add a versioned ABI namespace to RMM by @bdice in https://github.com/rapidsai/rmm/pull/2462
+### 🐛 Bug Fixes
+* Enforce base resource alignment limits by @bdice in https://github.com/rapidsai/rmm/pull/2393
+* Forward failure callback alignment by @bdice in https://github.com/rapidsai/rmm/pull/2402
+* Avoid tracking counter underflow by @bdice in https://github.com/rapidsai/rmm/pull/2404
+* Synchronize CUDA async deallocate_sync by @bdice in https://github.com/rapidsai/rmm/pull/2401
+* Honor simulated memory resource alignment by @bdice in https://github.com/rapidsai/rmm/pull/2400
+* Route zero-byte binning allocations through bin resources by @bdice in https://github.com/rapidsai/rmm/pull/2403
+* Share simulated memory resource state by @bdice in https://github.com/rapidsai/rmm/pull/2399
+* Fix version gating for checking if hardware decompression is supported by @wence- in https://github.com/rapidsai/rmm/pull/2423
+* add default permissions block in trigger-breaking-change-alert config by @jameslamb in https://github.com/rapidsai/rmm/pull/2438
+* Fix device_buffer copy constructor exception safety by @fallintoplace in https://github.com/rapidsai/rmm/pull/2450
+* Check device_uvector allocation size overflow by @fallintoplace in https://github.com/rapidsai/rmm/pull/2451
+* Fix cuda.core stream round-trip test by @fallintoplace in https://github.com/rapidsai/rmm/pull/2475
+* Preserve memory resource in DeviceBuffer.copy by @fallintoplace in https://github.com/rapidsai/rmm/pull/2477
+* Check CUDA errors in stream pool benchmark by @fallintoplace in https://github.com/rapidsai/rmm/pull/2476
+* Correctly synchronise all _sync allocate/deallocations by @wence- in https://github.com/rapidsai/rmm/pull/2449
+* fix(pre-commit): normalize SPDX handling by @bdice in https://github.com/rapidsai/rmm/pull/2482
+* Fix missing event record in stream_ordered_memory_resource::merge_lists by @hhy3 in https://github.com/rapidsai/rmm/pull/2490
+### 📖 Documentation
+* Document thread-safety caveat for get_outstanding_allocations() by @rpathade in https://github.com/rapidsai/rmm/pull/2418
+* add SECURITY.md by @jameslamb in https://github.com/rapidsai/rmm/pull/2419
+* Forward-merge 26.06 migration guide (#2344) by @bdice in https://github.com/rapidsai/rmm/pull/2456
+* Update RMM docs to use NVIDIA theme by @bdice in https://github.com/rapidsai/rmm/pull/2443
+* Align RMM documentation branding by @bdice in https://github.com/rapidsai/rmm/pull/2461
+### 🛠️ Improvements
+* Improve devcontainer startup times by @trxcllnt in https://github.com/rapidsai/rmm/pull/2412
+* Require CMake 4.0 by @KyleFromNVIDIA in https://github.com/rapidsai/rmm/pull/2382
+* Log GPU addressing mode in CI by @bdice in https://github.com/rapidsai/rmm/pull/2391
+* Use C++20 in test and benchmark utilities by @bdice in https://github.com/rapidsai/rmm/pull/2413
+* Use explicit resources in memory resource tests by @bdice in https://github.com/rapidsai/rmm/pull/2389
+* Remove unnecessary benchmark resource swap by @bdice in https://github.com/rapidsai/rmm/pull/2398
+* Use async APIs in random MR ref tests by @bdice in https://github.com/rapidsai/rmm/pull/2405
+* Move public memory resource definitions to source files by @bdice in https://github.com/rapidsai/rmm/pull/2416
+* refactor: switch to `rapids-artifact-name` for consistent artifact naming by @gforsyth in https://github.com/rapidsai/rmm/pull/2370
+* fix(wheel): update wheel search key for publish job by @gforsyth in https://github.com/rapidsai/rmm/pull/2425
+* fix(wheel): add search key for publishing cpp wheels by @gforsyth in https://github.com/rapidsai/rmm/pull/2426
+* fix(ci): fix configuration for breaking change notification workflow by @jameslamb in https://github.com/rapidsai/rmm/pull/2435
+* Remove numba-cuda upper bound by @brandon-b-miller in https://github.com/rapidsai/rmm/pull/2433
+* Migrate Cython bindings to any_resource constructor by @bdice in https://github.com/rapidsai/rmm/pull/2436
+* Build and test with CUDA 13.3.0 by @bdice in https://github.com/rapidsai/rmm/pull/2442
+* Use main shared-workflows branch by @bdice in https://github.com/rapidsai/rmm/pull/2453
+* test changes to package-publishing workflows by @jameslamb in https://github.com/rapidsai/rmm/pull/2458
+* swap shared-workflows branch back to 'main' by @jameslamb in https://github.com/rapidsai/rmm/pull/2459
+* Update CuPy and NumPy dependency specs by @bdice in https://github.com/rapidsai/rmm/pull/2454
+* switch from 'cuda-python' to specific components (e.g. 'cuda-bindings') by @jameslamb in https://github.com/rapidsai/rmm/pull/2460
+* update step-security/harden-runner to v2.20.0 by @jameslamb in https://github.com/rapidsai/rmm/pull/2473
+* drop uses of step-security/harden-runner by @jameslamb in https://github.com/rapidsai/rmm/pull/2474
+* put a <2 ceiling on cuda-core dependency by @jameslamb in https://github.com/rapidsai/rmm/pull/2486
+
+## New Contributors
+* @rpathade made their first contribution in https://github.com/rapidsai/rmm/pull/2418
+* @fallintoplace made their first contribution in https://github.com/rapidsai/rmm/pull/2450
+* @hhy3 made their first contribution in https://github.com/rapidsai/rmm/pull/2490
+
+**Full Changelog**: https://github.com/rapidsai/rmm/compare/v26.08.00a...release/26.08
+
 # rmm 26.06.00 (3 Jun 2026)
 
 ### 🚨 Breaking Changes
