@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 set -euo pipefail
@@ -36,6 +36,7 @@ rapids-print-env
 rapids-logger "Check GPU status"
 nvidia-smi
 nvidia-smi -q | grep "Addressing Mode" || echo "Addressing Mode not reported"
+grep -o 'init_on_alloc=[^ ]*' /proc/cmdline || echo "init_on_alloc not set in /proc/cmdline"
 
 # Run librmm gtests from librmm-tests package
 rapids-logger "Run gtests"
