@@ -32,11 +32,12 @@ conda activate test
 set -u
 
 rapids-print-env
+grep -o 'init_on_alloc=[^ ]*' /proc/cmdline || echo "init_on_alloc not set in /proc/cmdline"
 
 rapids-logger "Check GPU status"
 nvidia-smi
 nvidia-smi -q | grep "Addressing Mode" || echo "Addressing Mode not reported"
-grep -o 'init_on_alloc=[^ ]*' /proc/cmdline || echo "init_on_alloc not set in /proc/cmdline"
+grep Coherent /proc/driver/nvidia/params || echo "Coherent GPU memory mode not reported"
 
 # Run librmm gtests from librmm-tests package
 rapids-logger "Run gtests"
