@@ -131,9 +131,10 @@ void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size,
   // gain: avoid the synchronize and the destructive reclaim on a request that will fail anyway.
   if (size > max_pool_size) { return; }
 
-  auto free_iter              = blocks.cbegin();
-  auto upstream_iter          = upstream_blocks_.cbegin();
-  auto const compare_pointers = compare_blocks<block_type>{};
+  auto free_iter     = blocks.cbegin();
+  auto upstream_iter = upstream_blocks_.cbegin();
+  using compare_t    = decltype(upstream_blocks_)::key_compare;
+  auto const compare = compare_t{};
 
   // This merge join requires `blocks` and `upstream_blocks_` to remain sorted by `compare_blocks`.
   // coalescing_free_list maintains that order on insertion, and upstream_blocks_ uses the same
@@ -142,11 +143,11 @@ void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size,
     // `current_pool_size_ <= max_pool_size` is an invariant, so the subtraction cannot underflow.
     if (max_pool_size - current_pool_size_ >= size) { return; }
 
-    if (compare_pointers(*free_iter, *upstream_iter)) {
+    if (compare(*free_iter, *upstream_iter)) {
       ++free_iter;
       continue;
     }
-    if (compare_pointers(*upstream_iter, *free_iter)) {
+    if (compare(*upstream_iter, *free_iter)) {
       ++upstream_iter;
       continue;
     }
