@@ -86,9 +86,9 @@ class pool_memory_resource_impl final
   cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
   std::size_t current_pool_size_{};
   std::optional<std::size_t> maximum_pool_size_{};
-  std::set<block_type, compare_blocks<block_type>> upstream_blocks_;
+  std::set<block_type, compare_blocks<block_type>> upstream_blocks_;  ///< Upstream allocations.
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
-  std::set<block_type, compare_blocks<block_type>> allocated_blocks_;
+  std::set<block_type, compare_blocks<block_type>> allocated_blocks_;  ///< Live suballocations.
 #endif
 };
 

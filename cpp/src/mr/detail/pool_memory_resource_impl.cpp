@@ -208,6 +208,8 @@ pool_memory_resource_impl::block_type pool_memory_resource_impl::free_block(
   void* ptr, std::size_t size) noexcept
 {
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
+  // Fetch the metadata recorded for this block's suballocation and validate
+  // the caller's provided size before returning the block to a free list.
   if (ptr == nullptr) return block_type{};
   auto const iter = allocated_blocks_.find(static_cast<char*>(ptr));
   RMM_LOGGING_ASSERT(iter != allocated_blocks_.end());
@@ -218,6 +220,9 @@ pool_memory_resource_impl::block_type pool_memory_resource_impl::free_block(
 
   return block;
 #else
+  // Reconstruct the block, trusting the validity of the caller's pointer and
+  // size. A pointer is a block head if and only if it is the start of an
+  // upstream allocation.
   auto const iter = upstream_blocks_.find(static_cast<char*>(ptr));
   return block_type{static_cast<char*>(ptr), size, (iter != upstream_blocks_.end())};
 #endif
