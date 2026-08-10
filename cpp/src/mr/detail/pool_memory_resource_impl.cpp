@@ -106,9 +106,66 @@ void pool_memory_resource_impl::initialize_pool(std::size_t initial_size,
 }
 
 pool_memory_resource_impl::block_type pool_memory_resource_impl::expand_pool(
-  std::size_t size, [[maybe_unused]] free_list& blocks, cuda_stream_view stream)
+  std::size_t size, free_list& blocks, cuda_stream_view stream)
 {
-  return try_to_expand(size_to_grow(size), size, stream);
+  auto grow_size = size_to_grow(size);
+  // When the pool is capped and cannot grow enough to satisfy `size` in a single new upstream
+  // block, try to reclaim entirely-free upstream blocks (whose budget prevents growth) back to
+  // upstream, freeing headroom under `maximum_pool_size_` to grow a sufficiently large block.
+  if (grow_size < size && maximum_pool_size_.has_value()) {
+    reclaim_free_blocks(size, blocks, stream);
+    grow_size = size_to_grow(size);
+  }
+  return try_to_expand(grow_size, size, stream);
+}
+
+void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size,
+                                                    free_list& blocks,
+                                                    cuda_stream_view stream)
+{
+  // Reclamation only frees headroom when the pool has a capped maximum size.
+  if (!maximum_pool_size_.has_value()) { return; }
+  auto const max_pool_size = maximum_pool_size_.value();
+
+  // If `size` can never fit under the cap even with every free block reclaimed, there is nothing to
+  // gain: avoid the synchronize and the destructive reclaim on a request that will fail anyway.
+  if (size > max_pool_size) { return; }
+
+  auto free_iter     = blocks.cbegin();
+  auto upstream_iter = upstream_blocks_.cbegin();
+  using compare_t    = decltype(upstream_blocks_)::key_compare;
+  auto const compare = compare_t{};
+
+  // This merge join requires `blocks` and `upstream_blocks_` to remain sorted by `compare_blocks`.
+  // coalescing_free_list maintains that order on insertion, and upstream_blocks_ uses the same
+  // comparator. Erasing matched entries below preserves the ordering of both collections.
+  while (free_iter != blocks.cend() && upstream_iter != upstream_blocks_.cend()) {
+    // `current_pool_size_ <= max_pool_size` is an invariant, so the subtraction cannot underflow.
+    if (max_pool_size - current_pool_size_ >= size) { return; }
+
+    if (compare(*free_iter, *upstream_iter)) {
+      ++free_iter;
+      continue;
+    }
+    if (compare(*upstream_iter, *free_iter)) {
+      ++upstream_iter;
+      continue;
+    }
+
+    auto const candidate = free_iter++;
+    auto const upstream  = upstream_iter++;
+    if (!candidate->is_head() || upstream->size() != candidate->size()) { continue; }
+
+    auto const blk = *candidate;
+    // The free lists were merged onto `stream`, which waits on their recorded events. Enqueueing
+    // the upstream deallocation on the same stream preserves those dependencies without blocking
+    // the host.
+    get_upstream_resource().deallocate(
+      stream, blk.pointer(), blk.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
+    blocks.erase(candidate);
+    upstream_blocks_.erase(upstream);
+    current_pool_size_ -= blk.size();
+  }
 }
 
 std::size_t pool_memory_resource_impl::size_to_grow(std::size_t size) const
@@ -152,6 +209,8 @@ pool_memory_resource_impl::block_type pool_memory_resource_impl::free_block(
   void* ptr, std::size_t size) noexcept
 {
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
+  // Fetch the metadata recorded for this block's suballocation and validate
+  // the caller's provided size before returning the block to a free list.
   if (ptr == nullptr) return block_type{};
   auto const iter = allocated_blocks_.find(static_cast<char*>(ptr));
   RMM_LOGGING_ASSERT(iter != allocated_blocks_.end());
@@ -162,6 +221,9 @@ pool_memory_resource_impl::block_type pool_memory_resource_impl::free_block(
 
   return block;
 #else
+  // Reconstruct the block, trusting the validity of the caller's pointer and
+  // size. A pointer is a block head if and only if it is the start of an
+  // upstream allocation.
   auto const iter = upstream_blocks_.find(static_cast<char*>(ptr));
   return block_type{static_cast<char*>(ptr), size, (iter != upstream_blocks_.end())};
 #endif
