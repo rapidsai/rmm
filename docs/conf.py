@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 # Configuration file for the Sphinx documentation builder.
@@ -131,7 +131,12 @@ html_theme_options = {
     ],
     "show_toc_level": 1,
     "navbar_align": "right",
+    "navbar_center": "navbar-nav, version-switcher, navbar-external-links",
     "navigation_with_keys": True,
+    "switcher": {
+        "json_url": "https://docs.nvidia.com/rmm/versions.json",
+        "version_match": version,
+    },
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
