@@ -64,6 +64,9 @@ endfunction(ConfigureBench)
 # random allocations benchmark
 ConfigureBench(RANDOM_ALLOCATIONS_BENCH random_allocations/random_allocations.cpp)
 
+# fragmentation-sensitive pool benchmark
+ConfigureBench(POOL_FRAGMENTATION_BENCH pool_fragmentation/pool_fragmentation_bench.cpp)
+
 # replay benchmark
 ConfigureBench(REPLAY_BENCH replay/replay.cpp)
 

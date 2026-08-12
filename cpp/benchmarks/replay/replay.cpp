@@ -10,6 +10,7 @@
 #include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/binning_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/indexed_pool_memory_resource.hpp>
 #include <rmm/mr/managed_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
@@ -50,6 +51,15 @@ inline any_device_resource make_pool(std::size_t simulated_size)
     return rmm::mr::pool_memory_resource{sim, simulated_size, simulated_size};
   }
   return rmm::mr::pool_memory_resource{rmm::mr::cuda_memory_resource{}, 0};
+}
+
+inline any_device_resource make_indexed_pool(std::size_t simulated_size)
+{
+  if (simulated_size > 0) {
+    rmm::mr::simulated_memory_resource sim{simulated_size};
+    return rmm::mr::indexed_pool_memory_resource{sim, simulated_size, simulated_size};
+  }
+  return rmm::mr::indexed_pool_memory_resource{rmm::mr::cuda_memory_resource{}, 0};
 }
 
 inline any_device_resource make_arena(std::size_t simulated_size)
@@ -317,6 +327,12 @@ void declare_benchmark(std::string const& name,
                                  replay_benchmark(&make_pool, simulated_size, per_thread_events))
       ->Unit(benchmark::kMillisecond)
       ->Threads(static_cast<int>(num_threads));
+  } else if (name == "indexed_pool") {
+    benchmark::RegisterBenchmark(
+      "Indexed Pool Resource",
+      replay_benchmark(&make_indexed_pool, simulated_size, per_thread_events))
+      ->Unit(benchmark::kMillisecond)
+      ->Threads(static_cast<int>(num_threads));
   } else if (name == "arena") {
     benchmark::RegisterBenchmark("Arena Resource",
                                  replay_benchmark(&make_arena, simulated_size, per_thread_events))
@@ -417,7 +433,7 @@ int main(int argc, char** argv)
       std::string mr_name = args["resource"].as<std::string>();
       declare_benchmark(mr_name, simulated_size, per_thread_events, num_threads);
     } else {
-      std::array<std::string, 5> mrs{"pool", "arena", "binning", "cuda", "managed"};
+      std::array<std::string, 6> mrs{"pool", "indexed_pool", "arena", "binning", "cuda", "managed"};
       std::for_each(std::cbegin(mrs),
                     std::cend(mrs),
                     [&simulated_size, &per_thread_events, &num_threads](auto const& mr) {
