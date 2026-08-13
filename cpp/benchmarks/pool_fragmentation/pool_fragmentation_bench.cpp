@@ -28,16 +28,16 @@ struct allocation {
 
 std::size_t fragment_size(std::size_t index)
 {
-  constexpr std::size_t alignment{rmm::CUDA_ALLOCATION_ALIGNMENT};
-  return ((index % 8) + 1) * alignment;
+  constexpr std::size_t ALIGNMENT{rmm::CUDA_ALLOCATION_ALIGNMENT};
+  return ((index % 8) + 1) * ALIGNMENT;
 }
 
 std::size_t fragmented_pool_size(std::size_t free_block_count)
 {
-  constexpr std::size_t separator_size{rmm::CUDA_ALLOCATION_ALIGNMENT};
+  constexpr std::size_t SEPARATOR_SIZE{rmm::CUDA_ALLOCATION_ALIGNMENT};
   std::size_t result{};
   for (std::size_t i = 0; i < free_block_count; ++i) {
-    result += fragment_size(i) + separator_size;
+    result += fragment_size(i) + SEPARATOR_SIZE;
   }
   return result;
 }
@@ -46,8 +46,8 @@ template <typename PoolResource>
 void fragmented_best_fit_stream_ordered(benchmark::State& state, rmm::cuda_stream_view stream)
 {
   auto const free_block_count = static_cast<std::size_t>(state.range(0));
-  constexpr std::size_t separator_size{rmm::CUDA_ALLOCATION_ALIGNMENT};
-  constexpr std::size_t request_size{4 * rmm::CUDA_ALLOCATION_ALIGNMENT};
+  constexpr std::size_t SEPARATOR_SIZE{rmm::CUDA_ALLOCATION_ALIGNMENT};
+  constexpr std::size_t REQUEST_SIZE{4 * rmm::CUDA_ALLOCATION_ALIGNMENT};
   auto const pool_size = fragmented_pool_size(free_block_count);
 
   rmm::mr::simulated_memory_resource upstream{pool_size};
@@ -59,16 +59,16 @@ void fragmented_best_fit_stream_ordered(benchmark::State& state, rmm::cuda_strea
   for (std::size_t i = 0; i < free_block_count; ++i) {
     auto const size = fragment_size(i);
     fragments.push_back({resource.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT), size});
-    (void)resource.allocate(stream, separator_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    (void)resource.allocate(stream, SEPARATOR_SIZE, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
   for (auto const& fragment : fragments) {
     resource.deallocate(stream, fragment.pointer, fragment.size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
-    auto* ptr = resource.allocate(stream, request_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    auto* ptr = resource.allocate(stream, REQUEST_SIZE, rmm::CUDA_ALLOCATION_ALIGNMENT);
     benchmark::DoNotOptimize(ptr);
-    resource.deallocate(stream, ptr, request_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    resource.deallocate(stream, ptr, REQUEST_SIZE, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
   state.SetItemsProcessed(state.iterations());
 }
@@ -100,8 +100,8 @@ template <typename PoolResource>
 void fragmented_best_fit_allocate_sync(benchmark::State& state)
 {
   auto const free_block_count = static_cast<std::size_t>(state.range(0));
-  constexpr std::size_t separator_size{rmm::CUDA_ALLOCATION_ALIGNMENT};
-  constexpr std::size_t request_size{4 * rmm::CUDA_ALLOCATION_ALIGNMENT};
+  constexpr std::size_t SEPARATOR_SIZE{rmm::CUDA_ALLOCATION_ALIGNMENT};
+  constexpr std::size_t REQUEST_SIZE{4 * rmm::CUDA_ALLOCATION_ALIGNMENT};
   auto const pool_size = fragmented_pool_size(free_block_count);
 
   rmm::mr::simulated_memory_resource upstream{pool_size};
@@ -112,16 +112,16 @@ void fragmented_best_fit_allocate_sync(benchmark::State& state)
   for (std::size_t i = 0; i < free_block_count; ++i) {
     auto const size = fragment_size(i);
     fragments.push_back({pool.allocate_sync(size), size});
-    (void)pool.allocate_sync(separator_size);
+    (void)pool.allocate_sync(SEPARATOR_SIZE);
   }
   for (auto const& fragment : fragments) {
     pool.deallocate_sync(fragment.pointer, fragment.size);
   }
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
-    auto* ptr = pool.allocate_sync(request_size);
+    auto* ptr = pool.allocate_sync(REQUEST_SIZE);
     benchmark::DoNotOptimize(ptr);
-    pool.deallocate_sync(ptr, request_size);
+    pool.deallocate_sync(ptr, REQUEST_SIZE);
   }
   state.SetItemsProcessed(state.iterations());
 }
@@ -135,33 +135,33 @@ void BM_FragmentedBestFitIndexedAllocateSync(benchmark::State& state)
 template <typename FreeList>
 void populate_failed_best_fit_fixture(FreeList& blocks, std::size_t free_block_count)
 {
-  constexpr std::uintptr_t base{0x40000000};
-  constexpr std::size_t block_stride{4096};
-  constexpr std::size_t block_size{2048};
+  constexpr std::uintptr_t BASE{0x40000000};
+  constexpr std::size_t BLOCK_STRIDE{4096};
+  constexpr std::size_t BLOCK_SIZE{2048};
 
   // Descending insertion preserves the final address order while avoiding quadratic fixture setup.
   for (std::size_t i = free_block_count; i > 0; --i) {
-    blocks.insert({reinterpret_cast<char*>(base + (i - 1) * block_stride), block_size, true});
+    blocks.insert({reinterpret_cast<char*>(BASE + (i - 1) * BLOCK_STRIDE), BLOCK_SIZE, true});
   }
 }
 
 template <typename FreeList>
 void repeated_warmed_failed_best_fit_lookup(benchmark::State& state)
 {
-  constexpr std::size_t request_size{4096};
+  constexpr std::size_t REQUEST_SIZE{4096};
   FreeList blocks;
   populate_failed_best_fit_fixture(blocks, static_cast<std::size_t>(state.range(0)));
 
   // Besides checking the fixture, this lookup deliberately warms the indexed free list's
   // negative-result cache. Every timed iteration therefore measures a repeated warmed miss.
-  auto const fixture_check = blocks.get_block(request_size);
+  auto const fixture_check = blocks.get_block(REQUEST_SIZE);
   if (fixture_check.is_valid()) {
     state.SkipWithError("failed-lookup fixture unexpectedly contains a fitting block");
     return;
   }
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
-    auto const block = blocks.get_block(request_size);
+    auto const block = blocks.get_block(REQUEST_SIZE);
     benchmark::DoNotOptimize(block.pointer());
   }
   state.SetItemsProcessed(state.iterations());
@@ -173,25 +173,25 @@ void BM_RepeatedWarmedFailedBestFitLegacyFreeList(benchmark::State& state)
 void BM_RepeatedWarmedFailedBestFitIndexedFreeList(benchmark::State& state)
 { repeated_warmed_failed_best_fit_lookup<rmm::mr::detail::indexed_coalescing_free_list>(state); }
 
-constexpr benchmark::IterationCount first_lookup_iterations{1000};
+constexpr benchmark::IterationCount FIRST_LOOKUP_ITERATIONS{1000};
 
 template <typename FreeList>
 void first_failed_best_fit_lookup(benchmark::State& state)
 {
-  constexpr std::size_t request_size{4096};
+  constexpr std::size_t REQUEST_SIZE{4096};
   auto const free_block_count = static_cast<std::size_t>(state.range(0));
 
   // Validate the shape using a separate list so none of the measured fixtures has been queried.
   FreeList validation_fixture;
   populate_failed_best_fit_fixture(validation_fixture, free_block_count);
-  if (validation_fixture.get_block(request_size).is_valid()) {
+  if (validation_fixture.get_block(REQUEST_SIZE).is_valid()) {
     state.SkipWithError("failed-lookup fixture unexpectedly contains a fitting block");
     return;
   }
 
   std::vector<std::unique_ptr<FreeList>> fixtures;
-  fixtures.reserve(static_cast<std::size_t>(first_lookup_iterations));
-  for (benchmark::IterationCount i = 0; i < first_lookup_iterations; ++i) {
+  fixtures.reserve(static_cast<std::size_t>(FIRST_LOOKUP_ITERATIONS));
+  for (benchmark::IterationCount i = 0; i < FIRST_LOOKUP_ITERATIONS; ++i) {
     auto blocks = std::make_unique<FreeList>();
     populate_failed_best_fit_fixture(*blocks, free_block_count);
     fixtures.push_back(std::move(blocks));
@@ -200,7 +200,7 @@ void first_failed_best_fit_lookup(benchmark::State& state)
   auto fixture = fixtures.cbegin();
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     // Each fixture is consumed once, so both real and CPU time measure a genuinely first miss.
-    auto const block = (*fixture++)->get_block(request_size);
+    auto const block = (*fixture++)->get_block(REQUEST_SIZE);
     benchmark::DoNotOptimize(block.pointer());
   }
   state.SetItemsProcessed(state.iterations());
@@ -216,11 +216,11 @@ template <typename PoolResource>
 void cross_stream_best_fit(benchmark::State& state)
 {
   auto const owner_count = static_cast<std::size_t>(state.range(0));
-  constexpr std::size_t small_size{rmm::CUDA_ALLOCATION_ALIGNMENT};
-  constexpr std::size_t request_size{8 * rmm::CUDA_ALLOCATION_ALIGNMENT};
-  constexpr std::size_t separator_size{rmm::CUDA_ALLOCATION_ALIGNMENT};
+  constexpr std::size_t SMALL_SIZE{rmm::CUDA_ALLOCATION_ALIGNMENT};
+  constexpr std::size_t REQUEST_SIZE{8 * rmm::CUDA_ALLOCATION_ALIGNMENT};
+  constexpr std::size_t SEPARATOR_SIZE{rmm::CUDA_ALLOCATION_ALIGNMENT};
   auto const pool_size =
-    (owner_count - 1) * (small_size + separator_size) + request_size + separator_size;
+    (owner_count - 1) * (SMALL_SIZE + SEPARATOR_SIZE) + REQUEST_SIZE + SEPARATOR_SIZE;
 
   rmm::mr::simulated_memory_resource upstream{pool_size};
   PoolResource pool{upstream, pool_size, pool_size};
@@ -232,11 +232,11 @@ void cross_stream_best_fit(benchmark::State& state)
   free_blocks.reserve(owner_count);
   for (std::size_t i = 0; i < owner_count; ++i) {
     owners.emplace_back();
-    auto const size = (i + 1 == owner_count) ? request_size : small_size;
+    auto const size = (i + 1 == owner_count) ? REQUEST_SIZE : SMALL_SIZE;
     free_blocks.push_back(
       {resource.allocate(rmm::cuda_stream_legacy, size, rmm::CUDA_ALLOCATION_ALIGNMENT), size});
     (void)resource.allocate(
-      rmm::cuda_stream_legacy, separator_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      rmm::cuda_stream_legacy, SEPARATOR_SIZE, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
   for (std::size_t i = 0; i < owner_count; ++i) {
     resource.deallocate(owners[i].view(),
@@ -250,20 +250,18 @@ void cross_stream_best_fit(benchmark::State& state)
   RMM_CUDA_TRY(cudaEventCreateWithFlags(&handoff, cudaEventDisableTiming));
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
-    auto* ptr = resource.allocate(requester.view(), request_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    auto* ptr = resource.allocate(requester.view(), REQUEST_SIZE, rmm::CUDA_ALLOCATION_ALIGNMENT);
     benchmark::DoNotOptimize(ptr);
 
     // Return the block to its donor owner without violating stream ordering so every iteration
     // exercises cross-stream selection rather than the same-stream fast path.
     RMM_CUDA_TRY(cudaEventRecord(handoff, requester.value()));
     RMM_CUDA_TRY(cudaStreamWaitEvent(owners.back().value(), handoff, 0));
-    resource.deallocate(owners.back().view(), ptr, request_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    resource.deallocate(owners.back().view(), ptr, REQUEST_SIZE, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
-  state.PauseTiming();
   owners.back().synchronize();
   requester.synchronize();
   RMM_CUDA_TRY(cudaEventDestroy(handoff));
-  state.ResumeTiming();
   state.SetItemsProcessed(state.iterations());
 }
 
@@ -279,9 +277,9 @@ void selective_recovery_cycle(benchmark::State& state)
   auto const owner_count       = static_cast<std::size_t>(state.range(0));
   auto const total_block_count = static_cast<std::size_t>(state.range(1));
   auto const request_blocks    = static_cast<std::size_t>(state.range(2));
-  constexpr std::size_t block_size{rmm::CUDA_ALLOCATION_ALIGNMENT};
-  auto const pool_size    = total_block_count * block_size;
-  auto const request_size = request_blocks * block_size;
+  constexpr std::size_t BLOCK_SIZE{rmm::CUDA_ALLOCATION_ALIGNMENT};
+  auto const pool_size    = total_block_count * BLOCK_SIZE;
+  auto const request_size = request_blocks * BLOCK_SIZE;
 
   rmm::mr::simulated_memory_resource upstream{pool_size};
   PoolResource pool{upstream, pool_size, pool_size};
@@ -290,11 +288,11 @@ void selective_recovery_cycle(benchmark::State& state)
   rmm::cuda_stream requester;
   std::vector<void*> blocks(total_block_count);
   for (auto& block : blocks) {
-    block = resource.allocate(rmm::cuda_stream_legacy, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    block = resource.allocate(rmm::cuda_stream_legacy, BLOCK_SIZE, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
   for (std::size_t i = 0; i < blocks.size(); ++i) {
     resource.deallocate(
-      owners[i % owner_count].view(), blocks[i], block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      owners[i % owner_count].view(), blocks[i], BLOCK_SIZE, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   std::vector<void*> rebuilt(total_block_count);
@@ -307,21 +305,19 @@ void selective_recovery_cycle(benchmark::State& state)
     state.PauseTiming();
     resource.deallocate(requester.view(), ptr, request_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     for (auto& block : rebuilt) {
-      block = resource.allocate(requester.view(), block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      block = resource.allocate(requester.view(), BLOCK_SIZE, rmm::CUDA_ALLOCATION_ALIGNMENT);
     }
     for (std::size_t i = 0; i < rebuilt.size(); ++i) {
       resource.deallocate(
-        owners[i % owner_count].view(), rebuilt[i], block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        owners[i % owner_count].view(), rebuilt[i], BLOCK_SIZE, rmm::CUDA_ALLOCATION_ALIGNMENT);
     }
     state.ResumeTiming();
   }
 
-  state.PauseTiming();
   for (auto& owner : owners) {
     owner.synchronize();
   }
   requester.synchronize();
-  state.ResumeTiming();
   state.SetItemsProcessed(state.iterations());
 }
 
@@ -369,7 +365,7 @@ void below_index_free_block_depths(benchmark::Benchmark* benchmark)
 void first_failed_lookup_depths(benchmark::Benchmark* benchmark)
 {
   below_index_free_block_depths(benchmark);
-  benchmark->Iterations(first_lookup_iterations);
+  benchmark->Iterations(FIRST_LOOKUP_ITERATIONS);
 }
 
 }  // namespace

@@ -25,6 +25,9 @@ struct indexed_coalescing_free_list : free_list<block> {
  private:
   using base_type = free_list<block>;
 
+  // Erasing through the base class would leave the indexes holding dangling list iterators.
+  using base_type::erase;
+
   struct compare_iterator_sizes {
     using is_transparent = void;
 
@@ -47,7 +50,7 @@ struct indexed_coalescing_free_list : free_list<block> {
   // Build the indexes only after fragmentation makes linear search expensive. Once enabled they
   // stay enabled for this free list's lifetime, avoiding transition churn and simplifying
   // invariants.
-  static constexpr std::size_t enable_index_threshold{1024};
+  static constexpr std::size_t ENABLE_INDEX_THRESHOLD{1024};
 
  public:
   indexed_coalescing_free_list()           = default;
@@ -67,6 +70,18 @@ struct indexed_coalescing_free_list : free_list<block> {
   };
 
   /**
+   * @brief A staged insertion whose commit cannot allocate.
+   */
+  struct prepared_insert {
+    block_type block{};
+    iterator staged{};
+    iterator next{};
+    bool merge_previous{};
+    bool merge_next{};
+    prepared_splice splice{};
+  };
+
+  /**
    * @brief A best-fit block and its optional size-index entry.
    */
   struct block_selection {
@@ -81,7 +96,7 @@ struct indexed_coalescing_free_list : free_list<block> {
    */
   void prepare_for_splice(std::size_t additional_blocks)
   {
-    if (index_active_ || size() + additional_blocks < enable_index_threshold) { return; }
+    if (index_active_ || size() + additional_blocks < ENABLE_INDEX_THRESHOLD) { return; }
 
     size_index sizes;
     address_index addresses;
@@ -165,9 +180,93 @@ struct indexed_coalescing_free_list : free_list<block> {
   }
 
   /**
+   * @brief Stages a block and all metadata needed for an allocation-free insertion.
+   *
+   * The destination and `staging` must not be modified before `commit_prepared_insert`.
+   *
+   * @param block The block to insert.
+   * @param staging Empty unindexed storage for the staged list node.
+   * @return The prepared insertion transaction.
+   */
+  [[nodiscard]] prepared_insert prepare_insert(block_type const& block,
+                                               indexed_coalescing_free_list& staging)
+  {
+    assert(staging.is_empty());
+    assert(!staging.index_active_);
+
+    auto const next = [&]() -> iterator {
+      if (!index_active_) {
+        return std::find_if(
+          begin(), end(), [block](block_type const& candidate) { return block < candidate; });
+      }
+      auto const address_iter = blocks_by_address_.lower_bound(block.pointer());
+      return (address_iter == blocks_by_address_.end()) ? end() : address_iter->second;
+    }();
+    auto const merge_previous =
+      next != begin() && std::prev(next)->is_contiguous_before(block);
+    auto const merge_next = next != end() && block.is_contiguous_before(*next);
+
+    iterator staged{};
+    prepared_splice splice;
+    if (!merge_previous && !merge_next) {
+      staging.base_type::insert(staging.cend(), block);
+      staged = staging.begin();
+      prepare_for_splice(1);
+      splice = prepare_splice(staged);
+    }
+    return prepared_insert{
+      block, staged, next, merge_previous, merge_next, std::move(splice)};
+  }
+
+  /**
+   * @brief Commits a prepared insertion without allocating.
+   *
+   * @param staging Storage containing the staged block node.
+   * @param prepared Transaction returned by `prepare_insert`.
+   * @return The size of the inserted block after any coalescing.
+   */
+  std::size_t commit_prepared_insert(indexed_coalescing_free_list& staging,
+                                     prepared_insert&& prepared) noexcept
+  {
+    assert(!staging.index_active_);
+    assert((prepared.merge_previous || prepared.merge_next) == staging.is_empty());
+
+    std::size_t inserted_size{};
+    if (prepared.merge_previous && prepared.merge_next) {
+      auto const previous                   = std::prev(prepared.next);
+      auto previous_nodes                   = extract_index_nodes(previous);
+      [[maybe_unused]] auto next_nodes       = extract_index_nodes(prepared.next);
+      *previous = previous->merge(prepared.block).merge(*prepared.next);
+      base_type::erase(prepared.next);
+      insert_index_nodes(std::move(previous_nodes), previous);
+      inserted_size = previous->size();
+    } else if (prepared.merge_previous) {
+      auto const previous = std::prev(prepared.next);
+      auto previous_nodes = extract_index_nodes(previous);
+      *previous           = previous->merge(prepared.block);
+      insert_index_nodes(std::move(previous_nodes), previous);
+      inserted_size = previous->size();
+    } else if (prepared.merge_next) {
+      auto next_nodes = extract_index_nodes(prepared.next);
+      *prepared.next  = prepared.block.merge(*prepared.next);
+      insert_index_nodes(std::move(next_nodes), prepared.next);
+      inserted_size = prepared.next->size();
+    } else {
+      auto const staged = prepared.staged;
+      assert(staged != staging.end());
+      commit_prepared_splice(staging, staged, prepared.next, std::move(prepared.splice));
+      inserted_size = staged->size();
+    }
+
+    has_failed_lookup_ = false;
+    return inserted_size;
+  }
+
+  /**
    * @brief Inserts a block in pointer order and coalesces adjacent blocks.
    *
    * @param block The block to insert.
+   * @return The size of the inserted block after any coalescing.
    */
   std::size_t insert(block_type const& block)
   {
@@ -220,18 +319,47 @@ struct indexed_coalescing_free_list : free_list<block> {
   }
 
   /**
-   * @brief Moves all blocks from `other` into this free list.
+   * @brief Moves all blocks from an unindexed `other` into this free list.
+   *
+   * A successful insertion leaves `other` empty. If an insertion throws, blocks already committed to
+   * this list have been removed from `other`, while the uncommitted suffix remains in `other`.
    *
    * @param other The free list whose blocks are inserted.
+   * @return The size of the largest inserted block after any coalescing.
    */
-  std::size_t insert(free_list&& other)
+  std::size_t insert(free_list<block>&& other)
   {
-    using std::make_move_iterator;
     std::size_t largest_inserted{};
-    auto inserter = [this, &largest_inserted](block_type&& block) {
-      largest_inserted = std::max(largest_inserted, this->insert(block));
-    };
-    std::for_each(make_move_iterator(other.begin()), make_move_iterator(other.end()), inserter);
+    while (!other.is_empty()) {
+      auto const current       = other.begin();
+      auto const inserted_size = insert(*current);
+      other.erase(current);
+      largest_inserted = std::max(largest_inserted, inserted_size);
+    }
+    return largest_inserted;
+  }
+
+  /**
+   * @brief Moves all blocks from an indexed `other` into this free list.
+   *
+   * A successful insertion leaves `other` empty and resets its indexes. If an insertion throws,
+   * blocks already committed to this list have been removed from `other`, while the uncommitted
+   * suffix and its indexes remain consistent.
+   *
+   * @param other The indexed free list whose blocks are inserted.
+   * @return The size of the largest inserted block after any coalescing.
+   */
+  std::size_t insert(indexed_coalescing_free_list&& other)
+  {
+    std::size_t largest_inserted{};
+    while (!other.is_empty()) {
+      auto const current       = other.begin();
+      auto const inserted_size = insert(*current);
+      other.erase_from_indexes(current);
+      other.base_type::erase(current);
+      largest_inserted = std::max(largest_inserted, inserted_size);
+    }
+    other.clear();
     return largest_inserted;
   }
 
@@ -331,8 +459,18 @@ struct indexed_coalescing_free_list : free_list<block> {
     return (selection.block == end()) ? block_type{} : remove_block(selection);
   }
 
+  /**
+   * @brief Reports whether the size and address indexes are active.
+   *
+   * @return `true` if both indexes are maintained for this free list.
+   */
   [[nodiscard]] bool diagnostics_index_active() const noexcept { return index_active_; }
 
+  /**
+   * @brief Checks that the indexes agree with the block list.
+   *
+   * @return `true` if both indexes are consistent with the list contents.
+   */
   [[nodiscard]] bool diagnostics_indexes_consistent() const noexcept
   {
     if (!index_active_) { return blocks_by_size_.empty() && blocks_by_address_.empty(); }
@@ -362,6 +500,9 @@ struct indexed_coalescing_free_list : free_list<block> {
       ->size();
   }
 
+  /**
+   * @brief Erases all blocks and resets the indexes and failed-lookup cache.
+   */
   void clear() noexcept
   {
     blocks_by_size_.clear();
@@ -389,7 +530,7 @@ struct indexed_coalescing_free_list : free_list<block> {
     assert(next == begin() || *std::prev(next) < block);
 
     // Below the activation threshold, std::list::insert itself has the strong guarantee.
-    if (!index_active_ && size() + 1 < enable_index_threshold) {
+    if (!index_active_ && size() + 1 < ENABLE_INDEX_THRESHOLD) {
       base_type::insert(next, block);
       has_failed_lookup_ = false;
       return;

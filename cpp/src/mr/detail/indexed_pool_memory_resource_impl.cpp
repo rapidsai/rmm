@@ -100,7 +100,12 @@ void indexed_pool_memory_resource_impl::initialize_pool(std::size_t initial_size
 
   if (initial_size > 0) {
     auto const block = try_to_expand(initial_size, initial_size, cuda_stream_legacy);
-    this->insert_block(block, cuda_stream_legacy);
+    try {
+      this->insert_block(block, cuda_stream_legacy);
+    } catch (...) {
+      release();
+      throw;
+    }
   }
 }
 
@@ -170,8 +175,9 @@ void indexed_pool_memory_resource_impl::reclaim_free_blocks(std::size_t size,
 std::size_t indexed_pool_memory_resource_impl::size_to_grow(std::size_t size) const
 {
   if (maximum_pool_size_.has_value()) {
-    auto const unaligned_remaining = maximum_pool_size_.value() - pool_size();
-    auto const remaining    = rmm::align_up(unaligned_remaining, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    auto const maximum_size       = maximum_pool_size_.value();
+    auto const unaligned_remaining = maximum_size > pool_size() ? maximum_size - pool_size() : 0;
+    auto const remaining = rmm::align_up(unaligned_remaining, rmm::CUDA_ALLOCATION_ALIGNMENT);
     auto const aligned_size = rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     return (aligned_size <= remaining) ? std::max(aligned_size, remaining / 2) : 0;
   }
@@ -186,7 +192,13 @@ indexed_pool_memory_resource_impl::block_from_upstream(std::size_t size, cuda_st
   if (size == 0) { return {}; }
 
   void* ptr = get_upstream_resource().allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  return *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first;
+  try {
+    return *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first;
+  } catch (...) {
+    get_upstream_resource().deallocate(
+      stream, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    throw;
+  }
 }
 
 indexed_pool_memory_resource_impl::split_block
@@ -225,22 +237,31 @@ void indexed_pool_memory_resource_impl::commit_allocation_tracking(
 #endif
 }
 
-indexed_pool_memory_resource_impl::block_type indexed_pool_memory_resource_impl::free_block(
-  void* ptr, std::size_t size) noexcept
+indexed_pool_memory_resource_impl::block_type
+indexed_pool_memory_resource_impl::prepare_free_block(void* ptr, std::size_t size) const noexcept
 {
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
   if (ptr == nullptr) return block_type{};
   auto const iter = allocated_blocks_.find(static_cast<char*>(ptr));
   RMM_LOGGING_ASSERT(iter != allocated_blocks_.end());
 
-  auto block = *iter;
+  auto const block = *iter;
   RMM_LOGGING_ASSERT(block.size() == rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT));
-  allocated_blocks_.erase(iter);
-
   return block;
 #else
   auto const iter = upstream_blocks_.find(static_cast<char*>(ptr));
   return block_type{static_cast<char*>(ptr), size, (iter != upstream_blocks_.end())};
+#endif
+}
+
+void indexed_pool_memory_resource_impl::commit_free_block(block_type const& block) noexcept
+{
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
+  auto const iter = allocated_blocks_.find(block.pointer());
+  RMM_LOGGING_ASSERT(iter != allocated_blocks_.end());
+  allocated_blocks_.erase(iter);
+#else
+  (void)block;
 #endif
 }
 

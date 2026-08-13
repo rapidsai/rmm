@@ -80,7 +80,7 @@ struct indexed_recovery_test_hooks {
 /**
  * @brief A CRTP helper function
  *
- * https://www.fluentcpp.com/2017/05/19/indexed_crtp-helper/
+ * https://www.fluentcpp.com/2017/05/19/crtp-helper/
  *
  * Does two things:
  * 1. Makes "indexed_crtp" explicit in the inheritance structure of a CRTP base class.
@@ -115,7 +115,8 @@ struct indexed_crtp {
  * 3. `split_block allocate_from_block(block_type const& b, std::size_t size)`
  * 4. `prepared_allocation_tracking prepare_allocation_tracking(block_type const& b)`
  * 5. `void commit_allocation_tracking(prepared_allocation_tracking&& prepared) noexcept`
- * 6. `block_type free_block(void* ptr, std::size_t size) noexcept`
+ * 6. `block_type prepare_free_block(void* ptr, std::size_t size) const noexcept`
+ * 7. `void commit_free_block(block_type const& block) noexcept`
  */
 template <typename PoolResource, typename FreeListType>
 class indexed_stream_ordered_memory_resource : public indexed_crtp<PoolResource> {
@@ -195,21 +196,31 @@ class indexed_stream_ordered_memory_resource : public indexed_crtp<PoolResource>
     lock_guard lock(mtx_);
     auto stream_event = get_event(strm);
 
-    // Register a new owner before removing allocation tracking or publishing the free block.
+    // Register the owner and stage every allocation-capable metadata operation before removing
+    // allocation tracking or publishing the free block. The transaction is protected by mtx_, so
+    // the resolved insertion position and index nodes remain valid until commit.
     auto& blocks = get_or_create_owner_blocks(stream_event);
+    activate_maximum_index_if_needed();
+    auto const maximum_entry = maximum_by_stream_.find(stream_event);
+    assert(!maximum_index_active_ || maximum_entry != maximum_by_stream_.end());
 
     bytes            = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-    auto const block = this->underlying().free_block(ptr, bytes);
+    auto const block = this->underlying().prepare_free_block(ptr, bytes);
+    free_list staging;
+    auto prepared_insert = blocks.prepare_insert(block, staging);
 
     // TODO: cudaEventRecord has significant overhead on deallocations. For the non-PTDS case
     // we may be able to delay recording the event in some situations. But using events rather
     // than streams allows stealing from deleted streams.
     RMM_ASSERT_CUDA_SUCCESS(cudaEventRecord(stream_event.event, strm.value()));
 
-    auto const inserted_size = blocks.insert(block);
+    // Everything after event publication is allocation-free and noexcept.
+    this->underlying().commit_free_block(block);
+    auto const inserted_size =
+      blocks.commit_prepared_insert(staging, std::move(prepared_insert));
     total_free_bytes_ += block.size();
     invalidate_global_failure_cache();
-    update_stream_maximum_after_insert(stream_event, blocks, inserted_size);
+    update_stream_maximum_after_deallocation_noexcept(maximum_entry, inserted_size);
 
     log_summary_trace();
   }
@@ -306,14 +317,20 @@ class indexed_stream_ordered_memory_resource : public indexed_crtp<PoolResource>
   // void commit_allocation_tracking(prepared_allocation_tracking&& prepared) noexcept
 
   /*
-   * @brief Finds, frees and returns the block associated with pointer `ptr`.
+   * @brief Finds the allocated block associated with pointer `ptr` without changing ownership.
    *
    * @param ptr The pointer to the memory to free.
    * @param size The size of the memory to free. Must be equal to the original allocation size.
-   * @return The (now freed) block associated with `ptr`. The caller is expected to return the block
-   * to the pool.
+   * @return The allocated block associated with `ptr`.
    */
-  // block_type free_block(void* ptr, std::size_t size) noexcept
+  // block_type prepare_free_block(void* ptr, std::size_t size) const noexcept
+
+  /*
+   * @brief Removes allocation tracking for a block after all free-list metadata is prepared.
+   *
+   * @param block The block returned by `prepare_free_block`.
+   */
+  // void commit_free_block(block_type const& block) noexcept
 
   /**
    * @brief Returns the block `b` (last used on stream `stream_event`) to the pool.
@@ -614,11 +631,13 @@ class indexed_stream_ordered_memory_resource : public indexed_crtp<PoolResource>
 
     auto const owner = candidate->second;
     auto owner_iter  = stream_free_blocks_.find(owner);
-    assert(owner_iter != stream_free_blocks_.end());
+    RMM_EXPECTS(owner_iter != stream_free_blocks_.end(),
+                "Shared maximum index refers to a missing free-list owner.");
 
     auto& owner_blocks      = owner_iter->second;
     auto const selection = owner_blocks.find_block(size);
-    assert(selection.block != owner_blocks.end());
+    RMM_EXPECTS(selection.block != owner_blocks.end(),
+                "Shared maximum index disagrees with its owner's free list.");
 
     // The allocated block moves to the requester, but an untouched split remainder remains owned
     // by the donor event. This avoids relabelling the remainder.
@@ -839,12 +858,12 @@ class indexed_stream_ordered_memory_resource : public indexed_crtp<PoolResource>
   // stream/event owner records, while preserving the simpler path for the common <=16-owner case.
   // Owner records are intentionally retained and the index remains active after crossing this
   // threshold, avoiding transition churn as streams become empty or are reused.
-  static constexpr std::size_t maximum_index_activation_owner_count{24};
+  static constexpr std::size_t MAXIMUM_INDEX_ACTIVATION_OWNER_COUNT{24};
 
   void activate_maximum_index_if_needed()
   {
     if (maximum_index_active_ ||
-        stream_free_blocks_.size() <= maximum_index_activation_owner_count) {
+        stream_free_blocks_.size() <= MAXIMUM_INDEX_ACTIVATION_OWNER_COUNT) {
       return;
     }
 
@@ -922,6 +941,23 @@ class indexed_stream_ordered_memory_resource : public indexed_crtp<PoolResource>
     activate_maximum_index_if_needed();
     if (!maximum_index_active_) { return; }
     set_stream_maximum(stream_event, blocks.largest_block_size());
+  }
+
+  /**
+   * @brief Updates an already-prepared owner maximum after a deallocation without allocating.
+   */
+  void update_stream_maximum_after_deallocation_noexcept(
+    typename maximum_lookup_index::iterator existing, std::size_t inserted_size) noexcept
+  {
+    if (!maximum_index_active_ || inserted_size == 0) { return; }
+    assert(existing != maximum_by_stream_.end());
+    if (existing->second->first >= inserted_size) { return; }
+
+    // The inserted/coalesced block is larger than the previous maximum, so its size is the new
+    // maximum. Rekey directly instead of scanning an unindexed owner list.
+    auto node        = streams_by_maximum_.extract(existing->second);
+    node.key()       = inserted_size;
+    existing->second = streams_by_maximum_.insert(std::move(node));
   }
 
   void update_stream_maximum_after_insert(stream_event_pair stream_event,

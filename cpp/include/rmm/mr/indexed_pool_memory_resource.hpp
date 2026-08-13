@@ -25,8 +25,14 @@ namespace mr {
  * @brief A coalescing best-fit suballocator which uses a pool of memory allocated from
  *        an upstream memory_resource.
  *
- * Allocation and deallocation are thread-safe. Also,
- * this class is compatible with CUDA per-thread default stream.
+ * Allocation and deallocation are thread-safe. Memory deallocated on a stream is immediately
+ * reusable on that stream. Reuse from another stream is ordered after the prior stream's work by
+ * synchronization performed by the resource. This class is compatible with CUDA per-thread default
+ * stream.
+ *
+ * When the pool reaches `maximum_pool_size`, the resource attempts to reclaim completely free
+ * upstream blocks before growing. If it cannot reclaim or grow enough memory for a request, it
+ * throws `rmm::out_of_memory`.
  *
  * This class is copyable and shares ownership of its internal state, allowing
  * multiple instances to safely reference the same underlying pool.

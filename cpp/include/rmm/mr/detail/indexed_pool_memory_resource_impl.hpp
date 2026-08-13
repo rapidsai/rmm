@@ -80,7 +80,8 @@ class indexed_pool_memory_resource_impl final
   split_block allocate_from_block(block_type const& block, std::size_t size);
   prepared_allocation_tracking prepare_allocation_tracking(block_type const& block);
   void commit_allocation_tracking(prepared_allocation_tracking&& prepared) noexcept;
-  block_type free_block(void* ptr, std::size_t size) noexcept;
+  block_type prepare_free_block(void* ptr, std::size_t size) const noexcept;
+  void commit_free_block(block_type const& block) noexcept;
   void release();
   std::pair<std::size_t, std::size_t> free_list_summary(free_list const& blocks);
 

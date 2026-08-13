@@ -387,6 +387,14 @@ TEST(IndexedPoolTest, AllocateMaxWithInitialPoolSize)
   EXPECT_NO_THROW(mr.deallocate_sync(ptr, 1024));
 }
 
+TEST(IndexedPoolTest, AllocateZeroBytes)
+{
+  rmm::mr::indexed_pool_memory_resource mr{
+    rmm::mr::get_current_device_resource_ref(), 256, 1024};
+  auto* ptr = mr.allocate_sync(0);
+  EXPECT_NO_THROW(mr.deallocate_sync(ptr, 0));
+}
+
 TEST(IndexedPoolTest, PartialUseBlockNotReclaimed)
 {
   rmm::mr::indexed_pool_memory_resource mr{
@@ -682,6 +690,8 @@ TEST(IndexedCoalescingFreeListTest, MergeDrainAndReuseAfterIndexActivation)
 
   destination.insert(std::move(source));
   ASSERT_EQ(destination.size(), 2 * initial_blocks);
+  EXPECT_TRUE(source.is_empty());
+  EXPECT_TRUE(source.diagnostics_indexes_consistent());
 
   while (destination.size() > 500) {
     EXPECT_TRUE(destination.get_block(1).is_valid());
@@ -910,6 +920,32 @@ cudaError_t model_recovery_record(cudaEvent_t event, cudaStream_t stream)
   captured_publication_dependencies = pending_publication_dependencies;
   return cudaSuccess;
 }
+
+class indexed_recovery_hooks_restore_guard {
+  using hooks = rmm::mr::detail::indexed_recovery_test_hooks;
+
+ public:
+  indexed_recovery_hooks_restore_guard()
+    : wait_{hooks::wait}, record_{hooks::record}, metadata_fail_after_{hooks::metadata_fail_after}
+  {
+  }
+
+  ~indexed_recovery_hooks_restore_guard()
+  {
+    hooks::wait                = wait_;
+    hooks::record              = record_;
+    hooks::metadata_fail_after = metadata_fail_after_;
+  }
+
+  indexed_recovery_hooks_restore_guard(indexed_recovery_hooks_restore_guard const&) = delete;
+  indexed_recovery_hooks_restore_guard& operator=(
+    indexed_recovery_hooks_restore_guard const&) = delete;
+
+ private:
+  hooks::wait_function wait_;
+  hooks::record_function record_;
+  int metadata_fail_after_;
+};
 }  // namespace
 
 TEST(IndexedPoolMemoryResourceTest, CrossStreamWaitFailurePreservesSingleDonorBlock)
@@ -917,6 +953,7 @@ TEST(IndexedPoolMemoryResourceTest, CrossStreamWaitFailurePreservesSingleDonorBl
   constexpr std::size_t block_size{rmm::CUDA_ALLOCATION_ALIGNMENT};
   constexpr std::size_t pool_size{2 * block_size};
   using hooks = rmm::mr::detail::indexed_recovery_test_hooks;
+  indexed_recovery_hooks_restore_guard const restore_hooks;
 
   rmm::mr::indexed_pool_memory_resource pool{
     rmm::mr::get_current_device_resource_ref(), pool_size, pool_size};
@@ -949,6 +986,7 @@ TEST(IndexedPoolMemoryResourceTest, ActiveIndexWaitFailurePreservesSingleDonorBl
   constexpr std::size_t owner_count{25};
   constexpr std::size_t pool_size{owner_count * block_size};
   using hooks = rmm::mr::detail::indexed_recovery_test_hooks;
+  indexed_recovery_hooks_restore_guard const restore_hooks;
 
   rmm::mr::indexed_pool_memory_resource pool{
     rmm::mr::get_current_device_resource_ref(), pool_size, pool_size};
@@ -1029,6 +1067,7 @@ TEST(IndexedPoolMemoryResourceTest, RecoveryPublishesAllUniqueDonorsBeforeCommit
   constexpr std::size_t block_size{rmm::CUDA_ALLOCATION_ALIGNMENT};
   constexpr std::size_t pool_size{4 * block_size};
   using hooks = rmm::mr::detail::indexed_recovery_test_hooks;
+  indexed_recovery_hooks_restore_guard const restore_hooks;
 
   rmm::mr::indexed_pool_memory_resource pool{
     rmm::mr::get_current_device_resource_ref(), pool_size, pool_size};
@@ -1085,6 +1124,7 @@ TEST(IndexedPoolMemoryResourceTest, WaitAndRecordFailuresDoNotMutateOwnership)
   using hooks = rmm::mr::detail::indexed_recovery_test_hooks;
 
   auto run_failure = [=](bool fail_record) {
+    indexed_recovery_hooks_restore_guard const restore_hooks;
     rmm::mr::indexed_pool_memory_resource pool{
       rmm::mr::get_current_device_resource_ref(), pool_size, pool_size};
     rmm::device_async_resource_ref resource{pool};
@@ -1126,6 +1166,7 @@ TEST(IndexedPoolMemoryResourceTest, MetadataFailuresPrecedePublicationAndPreserv
   constexpr std::size_t request_size{3 * rmm::CUDA_ALLOCATION_ALIGNMENT};
   constexpr std::size_t pool_size{3 * chunk_size};
   using hooks = rmm::mr::detail::indexed_recovery_test_hooks;
+  indexed_recovery_hooks_restore_guard const restore_hooks;
 
   // A partial allocation from two contiguous chunks exercises every recovery staging checkpoint,
   // including preparation of the split remainder. Advance the failure point until the first
@@ -1371,6 +1412,95 @@ TEST(IndexedPoolMemoryResourceTest, PerThreadDefaultThreeThreadTransitivePublica
   pool.deallocate_sync(recovered, request_size);
   pool.deallocate_sync(remainder, suffix_size);
   pool.deallocate_sync(blocks[2], chunk_size);
+}
+
+TEST(IndexedPoolMemoryResourceTest, ConcurrentAllocateHoldAndFree)
+{
+  constexpr std::size_t THREAD_COUNT{4};
+  constexpr std::size_t BLOCKS_PER_THREAD{8};
+  constexpr std::size_t ITERATIONS{128};
+  constexpr std::size_t BLOCK_SIZE{rmm::CUDA_ALLOCATION_ALIGNMENT};
+  constexpr std::size_t POOL_SIZE{THREAD_COUNT * BLOCKS_PER_THREAD * BLOCK_SIZE};
+
+  rmm::mr::indexed_pool_memory_resource pool{
+    rmm::mr::get_current_device_resource_ref(), POOL_SIZE, POOL_SIZE};
+  rmm::device_async_resource_ref resource{pool};
+  std::vector<rmm::cuda_stream> streams(THREAD_COUNT);
+  std::vector<void*> held;
+  held.reserve(THREAD_COUNT * BLOCKS_PER_THREAD);
+  std::mutex held_mutex;
+  std::atomic<std::size_t> ready{};
+  std::atomic<bool> start{};
+  std::atomic<bool> duplicate{};
+  std::array<std::exception_ptr, THREAD_COUNT> failures{};
+  std::vector<std::thread> workers;
+  workers.reserve(THREAD_COUNT);
+
+  for (std::size_t thread_index = 0; thread_index < THREAD_COUNT; ++thread_index) {
+    workers.emplace_back([&, thread_index] {
+      ready.fetch_add(1, std::memory_order_release);
+      try {
+        auto const stream = streams[thread_index].view();
+        std::vector<void*> local;
+        local.reserve(BLOCKS_PER_THREAD);
+        while (!start.load(std::memory_order_acquire)) {
+          std::this_thread::yield();
+        }
+
+        for (std::size_t iteration = 0; iteration < ITERATIONS; ++iteration) {
+          for (std::size_t block_index = 0; block_index < BLOCKS_PER_THREAD; ++block_index) {
+            auto* ptr = resource.allocate(stream, BLOCK_SIZE, rmm::CUDA_ALLOCATION_ALIGNMENT);
+            {
+              std::lock_guard<std::mutex> lock{held_mutex};
+              if (std::find(held.cbegin(), held.cend(), ptr) != held.cend()) {
+                duplicate.store(true, std::memory_order_relaxed);
+              }
+              held.push_back(ptr);
+            }
+            local.push_back(ptr);
+          }
+
+          std::this_thread::yield();
+          for (auto* ptr : local) {
+            {
+              std::lock_guard<std::mutex> lock{held_mutex};
+              auto const iter = std::find(held.begin(), held.end(), ptr);
+              if (iter == held.end()) {
+                duplicate.store(true, std::memory_order_relaxed);
+              } else {
+                held.erase(iter);
+              }
+            }
+            resource.deallocate(stream, ptr, BLOCK_SIZE, rmm::CUDA_ALLOCATION_ALIGNMENT);
+          }
+          local.clear();
+        }
+      } catch (...) {
+        failures[thread_index] = std::current_exception();
+      }
+    });
+  }
+
+  while (ready.load(std::memory_order_acquire) != THREAD_COUNT) {
+    std::this_thread::yield();
+  }
+  start.store(true, std::memory_order_release);
+  for (auto& worker : workers) {
+    worker.join();
+  }
+  for (auto& stream : streams) {
+    stream.synchronize();
+  }
+
+  for (auto const& failure : failures) {
+    if (failure) { std::rethrow_exception(failure); }
+  }
+  EXPECT_FALSE(duplicate.load(std::memory_order_relaxed));
+  EXPECT_TRUE(held.empty());
+
+  auto* whole_pool = pool.allocate_sync(POOL_SIZE);
+  EXPECT_NE(whole_pool, nullptr);
+  pool.deallocate_sync(whole_pool, POOL_SIZE);
 }
 
 TEST(IndexedPoolMemoryResourceTest, RepeatedAlternatingEventGenerations)
@@ -1648,10 +1778,11 @@ TEST(IndexedPoolMemoryResourceTest, ExpansionPublishesRemainderReadiness)
   struct release_guard {
     std::shared_ptr<std::atomic<bool>> flag;
     ~release_guard() { flag->store(true, std::memory_order_release); }
-  } guard{release_upstream};
+  };
 
   delayed_async_memory_resource upstream{release_upstream};
   rmm::mr::indexed_pool_memory_resource pool{upstream, 0, 4 * block_size};
+  release_guard const guard{release_upstream};
   rmm::device_async_resource_ref resource{pool};
   rmm::cuda_stream requester;
   rmm::cuda_stream third_stream;
