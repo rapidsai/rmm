@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/cuda_stream.hpp>
 #include <rmm/detail/export.hpp>
 
 #include <cuda_runtime_api.h>
@@ -18,7 +18,7 @@ namespace detail {
 [[nodiscard]] RMM_EXPORT cudaError_t memcpy_async(void* dst,
                                                   void const* src,
                                                   std::size_t count,
-                                                  cuda_stream_view stream);
+                                                  cuda::stream_ref stream);
 
 }  // namespace detail
 RMM_NAMESPACE_END
