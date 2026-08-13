@@ -4,6 +4,7 @@
  */
 
 #include <rmm/aligned.hpp>
+#include <rmm/detail/cuda_memcpy.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/error.hpp>
@@ -138,7 +139,7 @@ void device_buffer::copy_async(void const* source, std::size_t bytes)
     RMM_EXPECTS(nullptr != source, "Invalid copy from nullptr.");
     RMM_EXPECTS(nullptr != _data, "Invalid copy to nullptr.");
 
-    RMM_CUDA_TRY(cudaMemcpyAsync(_data, source, bytes, cudaMemcpyDefault, stream().value()));
+    RMM_CUDA_TRY(rmm::detail::memcpy_async(_data, source, bytes, stream()));
   }
 }
 
@@ -149,7 +150,7 @@ void device_buffer::reserve(std::size_t new_capacity, cuda_stream_view stream)
     cuda_set_device_raii dev{_device};
     auto tmp            = device_buffer{new_capacity, alignment(), stream, _mr};
     auto const old_size = size();
-    RMM_CUDA_TRY(cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, stream.value()));
+    RMM_CUDA_TRY(rmm::detail::memcpy_async(tmp.data(), data(), size(), stream));
     *this = std::move(tmp);
     _size = old_size;
   }
@@ -165,7 +166,7 @@ void device_buffer::resize(std::size_t new_size, cuda_stream_view stream)
   } else {
     cuda_set_device_raii dev{_device};
     auto tmp = device_buffer{new_size, alignment(), stream, _mr};
-    RMM_CUDA_TRY(cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, stream.value()));
+    RMM_CUDA_TRY(rmm::detail::memcpy_async(tmp.data(), data(), size(), stream));
     *this = std::move(tmp);
   }
 }

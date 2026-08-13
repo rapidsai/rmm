@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -647,6 +647,14 @@ TEST(DeviceBufferAlignmentTest, DefaultConstructedResizeLarger)
 {
   rmm::device_buffer buff;
   EXPECT_NO_THROW(buff.resize(100, rmm::cuda_stream_default));
+  EXPECT_EQ(buff.size(), 100);
+}
+
+TEST(DeviceBufferAlignmentTest, DefaultConstructedResizeLargerOnNonDefaultStream)
+{
+  rmm::cuda_stream stream;
+  rmm::device_buffer buff;
+  EXPECT_NO_THROW(buff.resize(100, stream.view()));
   EXPECT_EQ(buff.size(), 100);
 }
 
