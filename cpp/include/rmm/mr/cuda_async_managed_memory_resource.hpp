@@ -50,10 +50,10 @@ class RMM_EXPORT cuda_async_managed_memory_resource final
    * @brief Constructs a cuda_async_managed_memory_resource with the default managed memory pool for
    * the current device.
    *
-   * The default managed memory pool is the pool that is created when the device is created. If its
-   * release threshold is zero, it is set to `std::numeric_limits<std::uint64_t>::max()`. An
-   * existing nonzero release threshold is preserved. This change is visible to all users of the
-   * device's default managed pool and retains unused backing memory across synchronizations.
+   * The default managed memory pool is the pool that is created when the device is created. Its
+   * release threshold is set to `std::numeric_limits<std::uint64_t>::max()`. This change is visible
+   * to all users of the device's default managed pool and retains unused backing memory across
+   * synchronizations.
    *
    * @throws rmm::logic_error if the CUDA version does not support `cudaMallocFromPoolAsync` with
    * managed memory pool

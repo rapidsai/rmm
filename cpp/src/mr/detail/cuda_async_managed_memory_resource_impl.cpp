@@ -32,14 +32,9 @@ cuda_async_managed_memory_resource_impl::cuda_async_managed_memory_resource_impl
                            .id   = rmm::get_current_cuda_device().value()};
   RMM_CUDA_TRY(
     cudaMemGetDefaultMemPool(&managed_pool_handle, &location, cudaMemAllocationTypeManaged));
-  std::uint64_t release_threshold{};
-  RMM_CUDA_TRY(cudaMemPoolGetAttribute(
+  std::uint64_t release_threshold = std::numeric_limits<std::uint64_t>::max();
+  RMM_CUDA_TRY(cudaMemPoolSetAttribute(
     managed_pool_handle, cudaMemPoolAttrReleaseThreshold, &release_threshold));
-  if (release_threshold == 0) {
-    release_threshold = std::numeric_limits<std::uint64_t>::max();
-    RMM_CUDA_TRY(cudaMemPoolSetAttribute(
-      managed_pool_handle, cudaMemPoolAttrReleaseThreshold, &release_threshold));
-  }
   pool_ = cuda_async_view_memory_resource{managed_pool_handle};
 #endif
 }

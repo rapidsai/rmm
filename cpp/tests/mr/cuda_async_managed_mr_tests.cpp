@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <rmm/cuda_device.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/mr/cuda_async_managed_memory_resource.hpp>
@@ -29,51 +28,16 @@ class AsyncManagedMRTest : public ::testing::Test {
                    << "requires CUDA 13.0 or higher and concurrent managed "
                    << "access support.";
     }
-
-#if defined(CUDA_VERSION) && CUDA_VERSION >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION
-    cudaMemLocation location{.type = cudaMemLocationTypeDevice,
-                             .id   = rmm::get_current_cuda_device().value()};
-    RMM_CUDA_TRY(cudaMemGetDefaultMemPool(&managed_pool_, &location, cudaMemAllocationTypeManaged));
-    RMM_CUDA_TRY(cudaMemPoolGetAttribute(
-      managed_pool_, cudaMemPoolAttrReleaseThreshold, &original_release_threshold_));
-#endif
   }
-
-  void TearDown() override
-  {
-    if (managed_pool_ != nullptr) {
-      EXPECT_EQ(cudaSuccess,
-                cudaMemPoolSetAttribute(
-                  managed_pool_, cudaMemPoolAttrReleaseThreshold, &original_release_threshold_));
-    }
-  }
-
-  cudaMemPool_t managed_pool_{};
-  std::uint64_t original_release_threshold_{};
 };
 
 TEST_F(AsyncManagedMRTest, DefaultReleaseThresholdIsUint64Max)
 {
-  std::uint64_t threshold{};
-  RMM_CUDA_TRY(cudaMemPoolSetAttribute(managed_pool_, cudaMemPoolAttrReleaseThreshold, &threshold));
-
   cuda_async_managed_mr mr{};
+  std::uint64_t threshold{};
   RMM_CUDA_TRY(
     cudaMemPoolGetAttribute(mr.pool_handle(), cudaMemPoolAttrReleaseThreshold, &threshold));
   EXPECT_EQ(threshold, std::numeric_limits<std::uint64_t>::max());
-}
-
-TEST_F(AsyncManagedMRTest, NonzeroReleaseThresholdIsPreserved)
-{
-  constexpr std::uint64_t expected_threshold{1024};
-  std::uint64_t threshold{expected_threshold};
-  RMM_CUDA_TRY(cudaMemPoolSetAttribute(managed_pool_, cudaMemPoolAttrReleaseThreshold, &threshold));
-
-  cuda_async_managed_mr mr{};
-  threshold = 0;
-  RMM_CUDA_TRY(
-    cudaMemPoolGetAttribute(mr.pool_handle(), cudaMemPoolAttrReleaseThreshold, &threshold));
-  EXPECT_EQ(threshold, expected_threshold);
 }
 
 TEST_F(AsyncManagedMRTest, BasicAllocateDeallocate)
