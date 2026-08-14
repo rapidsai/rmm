@@ -13,7 +13,7 @@
 #include <rmm/mr/per_device_resource.hpp>
 
 #include <cuda/memory_resource>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include <gtest/gtest.h>
 
