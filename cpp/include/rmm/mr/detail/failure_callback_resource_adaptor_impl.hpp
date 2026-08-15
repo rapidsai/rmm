@@ -12,7 +12,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
