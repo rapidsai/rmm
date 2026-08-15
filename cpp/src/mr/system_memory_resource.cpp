@@ -8,7 +8,7 @@
 #include <rmm/detail/format.hpp>
 #include <rmm/mr/system_memory_resource.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
