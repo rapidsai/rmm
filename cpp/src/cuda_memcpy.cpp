@@ -14,9 +14,11 @@ cudaError_t memcpy_async(void* dst, void const* src, std::size_t count, cuda::st
 
 #if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
   if (!is_default_stream(stream)) {
+    constexpr std::size_t prefer_overlap_threshold = 128 * 1024;
     cudaMemcpyAttributes attrs{};
     attrs.srcAccessOrder = cudaMemcpySrcAccessOrderStream;
-    attrs.flags          = cudaMemcpyFlagPreferOverlapWithCompute;
+    attrs.flags = count <= prefer_overlap_threshold ? cudaMemcpyFlagPreferOverlapWithCompute
+                                                    : cudaMemcpyFlagDefault;
     std::size_t attr_idx = 0;
     return cudaMemcpyBatchAsync(&dst, &src, &count, 1, &attrs, &attr_idx, 1, stream.get());
   }
