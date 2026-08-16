@@ -15,39 +15,39 @@
  *
  * It is built on top of the idea of Resource acquisition is initialization
  * (RAII). In the following we show a minimal example of how to use this class.
-
-    #include <rmm/cuda_stream_view.hpp>
-
-#include <benchmark/benchmark.h>
-
-    static void sample_cuda_benchmark(benchmark::State& state) {
-
-      for (auto _ : state){
-
-        cudaStream_t stream = 0;
-
-        // Create (Construct) an object of this class. You HAVE to pass in the
-        // benchmark::State object you are using. It measures the time from its
-        // creation to its destruction that is spent on the specified CUDA stream.
-        // It also clears the L2 cache by cudaMemset'ing a device buffer that is of
-        // the size of the L2 cache (if flush_l2_cache is set to true and there is
-        // an L2 cache on the current device).
-        cuda_event_timer raii(state, true, stream); // flush_l2_cache = true
-
-        // Now perform the operations that is to be benchmarked
-        sample_kernel<<<1, 256, 0, stream>>>(); // Possibly launching a CUDA kernel
-
-      }
-    }
-
-    // Register the function as a benchmark. You will need to set the `UseManualTime()`
-    // flag in order to use the timer embedded in this class.
-    BENCHMARK(sample_cuda_benchmark)->UseManualTime();
-
-
+ *
+ * @code{.cpp}
+ * #include <rmm/cuda_stream_view.hpp>
+ *
+ * #include <benchmark/benchmark.h>
+ *
+ * static void sample_cuda_benchmark(benchmark::State& state)
+ * {
+ *   for (auto _ : state) {
+ *     auto const stream = rmm::cuda_stream_default;
+ *
+ *     // Create (Construct) an object of this class. You HAVE to pass in the
+ *     // benchmark::State object you are using. It measures the time from its
+ *     // creation to its destruction that is spent on the specified CUDA stream.
+ *     // It also clears the L2 cache by cudaMemset'ing a device buffer that is of
+ *     // the size of the L2 cache (if flush_l2_cache is set to true and there is
+ *     // an L2 cache on the current device).
+ *     cuda_event_timer raii(state, true, stream);  // flush_l2_cache = true
+ *
+ *     // Now perform the operations that are to be benchmarked.
+ *     sample_kernel<<<1, 256, 0, stream.get()>>>();  // Possibly launch a CUDA kernel
+ *   }
+ * }
+ *
+ * // Register the function as a benchmark. You will need to set the `UseManualTime()`
+ * // flag in order to use the timer embedded in this class.
+ * BENCHMARK(sample_cuda_benchmark)->UseManualTime();
+ * @endcode
  */
 
 #pragma once
+
+#include <rmm/cuda_stream_view.hpp>
 
 #include <cuda/stream>
 #include <cuda_runtime_api.h>
@@ -88,6 +88,6 @@ class cuda_event_timer {
  private:
   cudaEvent_t start{};
   cudaEvent_t stop{};
-  cuda::stream_ref stream{cudaStream_t{nullptr}};
+  cuda::stream_ref stream{rmm::cuda_stream_default};
   benchmark::State* p_state{};
 };

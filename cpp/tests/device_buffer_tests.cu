@@ -34,7 +34,7 @@ using namespace testing;
 
 namespace {
 auto const null_stream_ref  = rmm::cuda_stream_default;
-auto const null_stream_view = rmm::cuda_stream_view{cudaStream_t{nullptr}};
+auto const null_stream_view = rmm::cuda_stream_view{rmm::cuda_stream_default};
 }  // namespace
 
 template <typename MemoryResourceType>

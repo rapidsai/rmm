@@ -36,7 +36,7 @@ void prefetch_impl(void const* ptr,
 void prefetch(void const* ptr,
               std::size_t size,
               rmm::cuda_device_id device,
-              rmm::cuda_stream_view stream)
+              cuda::stream_ref stream)
 {
   prefetch_impl(ptr, size, device, stream);
 }

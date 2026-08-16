@@ -33,7 +33,7 @@ void* prefetch_resource_adaptor_impl::allocate(cuda::stream_ref stream,
                                                std::size_t alignment)
 {
   void* ptr = upstream_mr_.allocate(stream, bytes, alignment);
-  rmm::prefetch(ptr, bytes, rmm::get_current_cuda_device(), cuda_stream_view{stream});
+  rmm::prefetch(ptr, bytes, rmm::get_current_cuda_device(), stream);
   return ptr;
 }
 

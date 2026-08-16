@@ -254,7 +254,7 @@ class stream_allocator_adaptor {
  private:
   Allocator alloc_;  ///< Underlying allocator used for (de)allocation
   cuda::stream_ref stream_{
-    cudaStream_t{nullptr}};  ///< Stream on which (de)allocations are performed
+    rmm::cuda_stream_default};  ///< Stream on which (de)allocations are performed
 };
 
 /**

@@ -180,7 +180,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   }
 
  private:
-  cuda::stream_ref _stream{cudaStream_t{nullptr}};
+  cuda::stream_ref _stream{rmm::cuda_stream_default};
   mutable cuda::mr::any_resource<cuda::mr::device_accessible> _mr{
     rmm::mr::get_current_device_resource_ref()};
   cuda_device_id _device{get_current_cuda_device()};

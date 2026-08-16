@@ -129,16 +129,12 @@ static constexpr cuda::stream_ref cuda_stream_default{cudaStream_t{nullptr}};
 /**
  * @brief Static cuda::stream_ref of cudaStreamLegacy, for convenience
  */
-static const cuda::stream_ref cuda_stream_legacy{
-  cudaStreamLegacy  // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
-};
+static const cuda::stream_ref cuda_stream_legacy{cudaStream_t{cudaStreamLegacy}};
 
 /**
  * @brief Static cuda::stream_ref of cudaStreamPerThread, for convenience
  */
-static const cuda::stream_ref cuda_stream_per_thread{
-  cudaStreamPerThread  // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
-};
+static const cuda::stream_ref cuda_stream_per_thread{cudaStream_t{cudaStreamPerThread}};
 
 /**
  * @brief Equality comparison operator for streams

@@ -82,7 +82,7 @@ void* binning_memory_resource_impl::allocate_sync(std::size_t bytes, std::size_t
   if (bytes == 0) { return nullptr; }
   auto const stream = rmm::cuda_stream_default;
   auto* ptr         = get_resource_ref(bytes).allocate(stream, bytes, alignment);
-  RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
+  stream.sync();
   return ptr;
 }
 

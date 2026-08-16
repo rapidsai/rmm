@@ -37,7 +37,7 @@ TEST_P(allocator_test, defaults)
 {
   rmm::mr::set_current_device_resource(this->ref);
   rmm::mr::thrust_allocator<int> allocator(rmm::cuda_stream_default);
-  EXPECT_EQ(allocator.stream(), rmm::cuda_stream_view{cudaStream_t{nullptr}});
+  EXPECT_EQ(allocator.stream(), rmm::cuda_stream_view{rmm::cuda_stream_default});
   EXPECT_EQ(allocator.get_upstream_resource(),
             rmm::device_async_resource_ref{rmm::mr::get_current_device_resource_ref()});
 }

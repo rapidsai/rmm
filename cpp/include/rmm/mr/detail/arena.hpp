@@ -598,7 +598,7 @@ class global_arena final {
   bool deallocate(cuda::stream_ref stream, void* ptr, std::size_t size)
   {
     RMM_LOGGING_ASSERT(handles(size));
-    RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream.get()));
+    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
     return deallocate_sync(ptr, size);
   }
 

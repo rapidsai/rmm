@@ -6,7 +6,6 @@
 #pragma once
 
 #include <rmm/cuda_device.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/error.hpp>
@@ -38,7 +37,7 @@ RMM_NAMESPACE_BEGIN
 void prefetch(void const* ptr,
               std::size_t size,
               rmm::cuda_device_id device,
-              rmm::cuda_stream_view stream);
+              cuda::stream_ref stream);
 
 /**
  * @brief Prefetch a span of memory to the specified device on the specified stream.
@@ -52,9 +51,7 @@ void prefetch(void const* ptr,
  * @param stream The stream to use for the prefetch
  */
 template <typename T>
-void prefetch(cuda::std::span<T const> data,
-              rmm::cuda_device_id device,
-              rmm::cuda_stream_view stream)
+void prefetch(cuda::std::span<T const> data, rmm::cuda_device_id device, cuda::stream_ref stream)
 {
   prefetch(data.data(), data.size_bytes(), device, stream);
 }
