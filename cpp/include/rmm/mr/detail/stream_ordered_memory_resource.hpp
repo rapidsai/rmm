@@ -412,8 +412,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
     log_summary_trace();
 
     // no large enough blocks available after merging, so grow the pool
-    block_type const block =
-      this->underlying().expand_pool(size, blocks, cuda::stream_ref{stream_event.stream});
+    block_type const block = this->underlying().expand_pool(size, blocks, stream_event.stream);
 
     return allocate_and_insert_remainder(block, size, blocks);
   }

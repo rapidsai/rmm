@@ -148,15 +148,13 @@ TYPED_TEST_P(CcclMrRefTestMT, AllocFreeDifferentThreadsPerThreadDefaultStream)
 
 TYPED_TEST_P(CcclMrRefTestMT, AllocFreeDifferentThreadsSameStream)
 {
-  test_async_allocate_free_different_threads(
-    this->ref, cuda::stream_ref{this->stream}, cuda::stream_ref{this->stream});
+  test_async_allocate_free_different_threads(this->ref, this->stream, this->stream);
 }
 
 TYPED_TEST_P(CcclMrRefTestMT, AllocFreeDifferentThreadsDifferentStream)
 {
   rmm::cuda_stream stream_b;
-  test_async_allocate_free_different_threads(
-    this->ref, cuda::stream_ref{this->stream}, cuda::stream_ref{stream_b});
+  test_async_allocate_free_different_threads(this->ref, this->stream, stream_b);
   stream_b.synchronize();
 }
 

@@ -38,7 +38,7 @@ void prefetch(void const* ptr,
               rmm::cuda_device_id device,
               rmm::cuda_stream_view stream)
 {
-  prefetch_impl(ptr, size, device, cuda::stream_ref{stream});
+  prefetch_impl(ptr, size, device, stream);
 }
 
 RMM_NAMESPACE_END

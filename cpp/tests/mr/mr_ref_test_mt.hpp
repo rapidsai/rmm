@@ -148,15 +148,13 @@ TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsPerThreadDefaultStream)
 
 TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsSameStream)
 {
-  test_async_allocate_free_different_threads(
-    this->ref, cuda::stream_ref{this->stream}, cuda::stream_ref{this->stream});
+  test_async_allocate_free_different_threads(this->ref, this->stream, this->stream);
 }
 
 TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsDifferentStream)
 {
   rmm::cuda_stream streamB;
-  test_async_allocate_free_different_threads(
-    this->ref, cuda::stream_ref{this->stream}, cuda::stream_ref{streamB});
+  test_async_allocate_free_different_threads(this->ref, this->stream, streamB);
   streamB.synchronize();
 }
 

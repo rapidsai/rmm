@@ -19,7 +19,7 @@ static void BM_StreamPoolGetStream(benchmark::State& state)
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     auto stream = stream_pool.get_stream();
-    RMM_CUDA_TRY(cudaStreamQuery(cuda::stream_ref{stream}.get()));
+    RMM_CUDA_TRY(cudaStreamQuery(stream.get()));
   }
 
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));
@@ -30,7 +30,7 @@ static void BM_CudaStreamClass(benchmark::State& state)
 {
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     auto stream = rmm::cuda_stream{};
-    RMM_CUDA_TRY(cudaStreamQuery(cuda::stream_ref{stream}.get()));
+    RMM_CUDA_TRY(cudaStreamQuery(stream.value()));
   }
 
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations()));

@@ -49,7 +49,7 @@ TEST_F(CudaStreamPoolTest, ValidStreams)
   auto constexpr vector_size{100};
   auto vec1 = rmm::device_uvector<std::uint8_t>{vector_size, stream_a};
   RMM_CUDA_TRY(cudaMemsetAsync(vec1.data(), 0xcc, 100, stream_a.get()));
-  RMM_CUDA_TRY(cudaStreamSynchronize(stream_a.get()));
+  stream_a.sync();
 
   auto vec2    = rmm::device_uvector<std::uint8_t>{vec1, stream_b};
   auto element = vec2.front_element(stream_b);

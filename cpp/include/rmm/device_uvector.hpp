@@ -309,7 +309,7 @@ class device_uvector {
     value_type value;
     RMM_CUDA_TRY(
       rmm::detail::memcpy_async(&value, element_ptr(element_index), sizeof(value), stream));
-    stream.synchronize();
+    stream.sync();
     return value;
   }
 

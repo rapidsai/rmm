@@ -565,8 +565,8 @@ TEST_F(ArenaTest, Defragment)  // NOLINT
     for (std::size_t i = 0; i < num_threads; ++i) {
       threads.emplace_back(std::thread([&] {
         cuda_stream stream{};
-        void* ptr = mr.allocate(cuda::stream_ref{stream}, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
-        mr.deallocate(cuda::stream_ref{stream}, ptr, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        void* ptr = mr.allocate(stream, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        mr.deallocate(stream, ptr, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
       }));
     }
     for (auto& thread : threads) {
@@ -591,8 +591,8 @@ TEST_F(ArenaTest, PerThreadToStreamDealloc)  // NOLINT
   // Create an allocation in a stream arena to force global arena
   // to be empty
   cuda_stream stream{};
-  void* ptr = mr.allocate(cuda::stream_ref{stream}, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  mr.deallocate(cuda::stream_ref{stream}, ptr, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  void* ptr = mr.allocate(stream, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(stream, ptr, 32_KiB, rmm::CUDA_ALLOCATION_ALIGNMENT);
   // at this point the global arena doesn't have any superblocks so
   // the next allocation causes defrag. Defrag causes all superblocks
   // from the thread and stream arena allocated above to go back to

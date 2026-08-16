@@ -121,7 +121,7 @@ void vector_workflow(std::size_t num_elements,
   }
 
   for (cuda::stream_ref stream : streams) {
-    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
+    stream.sync();
   }
 }
 
