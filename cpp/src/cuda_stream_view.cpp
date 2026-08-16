@@ -4,7 +4,6 @@
  */
 
 #include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 
@@ -38,21 +37,12 @@ bool cuda_stream_view::is_per_thread_default() const noexcept
 
 bool cuda_stream_view::is_default() const noexcept
 {
-  return detail::is_default_stream(static_cast<cuda::stream_ref>(*this));
-}
-
-namespace detail {
-
-bool is_default_stream(cuda::stream_ref stream) noexcept
-{
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  return stream == cudaStreamLegacy;
+  return value() == cuda_stream_legacy.get();
 #else
-  return stream == cudaStreamLegacy || stream == cudaStream_t{};
+  return value() == cuda_stream_legacy.get() || value() == nullptr;
 #endif
 }
-
-}  // namespace detail
 
 void cuda_stream_view::synchronize() const { RMM_CUDA_TRY(cudaStreamSynchronize(stream_)); }
 

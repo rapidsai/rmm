@@ -67,14 +67,14 @@ TEST_F(CudaStreamTest, IsDefaultStream)
   rmm::cuda_stream stream;
 
   EXPECT_FALSE(rmm::detail::is_default_stream(stream));
-
-  EXPECT_EQ(rmm::cuda_stream_default.is_default(),
-            rmm::detail::is_default_stream(rmm::cuda_stream_default));
-  EXPECT_EQ(rmm::cuda_stream_legacy.is_default(),
-            rmm::detail::is_default_stream(rmm::cuda_stream_legacy));
-  EXPECT_EQ(rmm::cuda_stream_per_thread.is_default(),
-            rmm::detail::is_default_stream(rmm::cuda_stream_per_thread));
-  EXPECT_EQ(stream.view().is_default(), rmm::detail::is_default_stream(stream));
+  EXPECT_TRUE(rmm::detail::is_default_stream(rmm::cuda_stream_default));
+#ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
+  EXPECT_FALSE(rmm::detail::is_default_stream(rmm::cuda_stream_legacy));
+  EXPECT_TRUE(rmm::detail::is_default_stream(rmm::cuda_stream_per_thread));
+#else
+  EXPECT_TRUE(rmm::detail::is_default_stream(rmm::cuda_stream_legacy));
+  EXPECT_FALSE(rmm::detail::is_default_stream(rmm::cuda_stream_per_thread));
+#endif
 }
 
 TEST_F(CudaStreamTest, MoveConstructor)
