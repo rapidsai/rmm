@@ -12,7 +12,7 @@
 RMM_NAMESPACE_BEGIN
 namespace detail {
 
-[[nodiscard]] bool is_default_stream(cuda::stream_ref stream) noexcept;
+[[nodiscard]] RMM_EXPORT bool is_default_stream(cuda::stream_ref stream) noexcept;
 
 }  // namespace detail
 RMM_NAMESPACE_END
