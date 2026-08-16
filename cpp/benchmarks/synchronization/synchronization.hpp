@@ -16,7 +16,9 @@
  * It is built on top of the idea of Resource acquisition is initialization
  * (RAII). In the following we show a minimal example of how to use this class.
 
-    #include <benchmark/benchmark.h>
+    #include <rmm/cuda_stream_view.hpp>
+
+#include <benchmark/benchmark.h>
 
     static void sample_cuda_benchmark(benchmark::State& state) {
 
@@ -66,7 +68,7 @@ class cuda_event_timer {
    */
   cuda_event_timer(benchmark::State& state,
                    bool flush_l2_cache,
-                   cuda::stream_ref stream = cuda::stream_ref{cudaStream_t{nullptr}});
+                   cuda::stream_ref stream = rmm::cuda_stream_default);
 
   // The user will HAVE to provide a benchmark::State object to set
   // the timer so we disable the default c'tor.

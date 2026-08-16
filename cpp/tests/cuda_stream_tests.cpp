@@ -29,14 +29,14 @@ TEST_F(CudaStreamTest, Equality)
   EXPECT_EQ(stream_a, view_a);
   EXPECT_NE(stream_a, view_default);
   EXPECT_EQ(view_default, rmm::cuda_stream_view{});
-  EXPECT_EQ(view_default, rmm::cuda_stream_default);
+  EXPECT_EQ(view_default.value(), rmm::cuda_stream_default.get());
   EXPECT_NE(view_a, rmm::cuda_stream());
   EXPECT_NE(stream_a, rmm::cuda_stream());
 
   rmm::device_buffer buff{};
   EXPECT_EQ(buff.stream(), view_default);
 
-  EXPECT_NE(static_cast<cudaStream_t>(stream_a), rmm::cuda_stream_default.value());
+  EXPECT_NE(static_cast<cudaStream_t>(stream_a), rmm::cuda_stream_default.get());
 }
 
 TEST_F(CudaStreamTest, StreamViewCompatibilityAliases)
@@ -106,7 +106,7 @@ TEST_F(CudaStreamTest, TestStreamViewOstream)
 // Without this we don't get test coverage of ~stream_view, presumably because it is elided
 TEST_F(CudaStreamTest, TestStreamViewDestructor)
 {
-  auto view = std::make_shared<rmm::cuda_stream_view>(cuda::stream_ref{cudaStreamPerThread});
+  auto view = std::make_shared<rmm::cuda_stream_view>(rmm::cuda_stream_per_thread);
   view->synchronize();
 }
 

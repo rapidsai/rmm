@@ -6,6 +6,7 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/format.hpp>
@@ -162,7 +163,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
   [[nodiscard]] void* allocate_sync(std::size_t bytes,
                                     std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+    auto const stream = rmm::cuda_stream_default;
     void* ptr         = allocate(stream, bytes, alignment);
     RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
     return ptr;
@@ -180,7 +181,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
     std::size_t bytes,
     [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+    auto const stream = rmm::cuda_stream_default;
     deallocate(stream, ptr, bytes, alignment);
     RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
   }

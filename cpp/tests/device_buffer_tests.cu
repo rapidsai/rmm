@@ -33,7 +33,7 @@ using namespace testing;
 #include <random>
 
 namespace {
-auto const null_stream_ref  = cuda::stream_ref{cudaStream_t{nullptr}};
+auto const null_stream_ref  = rmm::cuda_stream_default;
 auto const null_stream_view = rmm::cuda_stream_view{cudaStream_t{nullptr}};
 }  // namespace
 
@@ -522,7 +522,7 @@ TYPED_TEST(DeviceBufferTest, SetGetStream)
 
   EXPECT_EQ(buff.stream(), null_stream_view);
 
-  auto const otherstream = cuda::stream_ref{cudaStreamPerThread};
+  auto const otherstream = rmm::cuda_stream_per_thread;
   buff.set_stream(otherstream);
 
   EXPECT_EQ(buff.stream(), rmm::cuda_stream_view{otherstream});

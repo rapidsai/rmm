@@ -8,6 +8,7 @@
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/cuda_async_memory_resource.hpp>
@@ -283,7 +284,7 @@ TEST(PoolTest, ReclaimIsStreamOrderedWithMergedPerThreadDefaultStream)
 
   auto* source_ptr = mr.allocate(rmm::cuda_stream_per_thread, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
   RMM_CUDA_TRY(cudaLaunchHostFunc(
-    rmm::cuda_stream_per_thread.value(),
+    rmm::cuda_stream_per_thread.get(),
     [](void* data) { static_cast<host_func_gate*>(data)->wait(); },
     &prior_work));
   mr.deallocate(rmm::cuda_stream_per_thread, source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
@@ -364,11 +365,11 @@ TEST(PoolTest, MultidevicePool)
 
     {
       RMM_CUDA_TRY(cudaSetDevice(0));
-      rmm::device_buffer buf_a(16, cuda::stream_ref{cudaStreamPerThread}, mrs[0]);
+      rmm::device_buffer buf_a(16, rmm::cuda_stream_per_thread, mrs[0]);
 
       {
         RMM_CUDA_TRY(cudaSetDevice(1));
-        rmm::device_buffer buf_b(16, cuda::stream_ref{cudaStreamPerThread}, mrs[1]);
+        rmm::device_buffer buf_b(16, rmm::cuda_stream_per_thread, mrs[1]);
       }
 
       RMM_CUDA_TRY(cudaSetDevice(0));

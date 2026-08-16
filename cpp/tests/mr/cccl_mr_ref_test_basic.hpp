@@ -7,6 +7,8 @@
 
 #include "mr_ref_test.hpp"
 
+#include <rmm/cuda_stream_view.hpp>
+
 namespace rmm::test {
 
 /**
@@ -27,28 +29,22 @@ TYPED_TEST_P(CcclMrRefTest, SetCurrentDeviceResourceRef)
   auto old = rmm::mr::set_current_device_resource(this->ref);
 
   constexpr std::size_t size{100};
-  void* ptr =
-    old.allocate(cuda::stream_ref{cudaStream_t{nullptr}}, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  void* ptr = old.allocate(rmm::cuda_stream_default, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   EXPECT_NE(ptr, nullptr);
-  old.deallocate(
-    cuda::stream_ref{cudaStream_t{nullptr}}, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  old.deallocate(rmm::cuda_stream_default, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   auto current = rmm::mr::get_current_device_resource_ref();
-  ptr =
-    current.allocate(cuda::stream_ref{cudaStream_t{nullptr}}, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  ptr          = current.allocate(rmm::cuda_stream_default, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   EXPECT_NE(ptr, nullptr);
-  current.deallocate(
-    cuda::stream_ref{cudaStream_t{nullptr}}, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  current.deallocate(rmm::cuda_stream_default, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   test_get_current_device_resource_ref();
 
   rmm::mr::reset_current_device_resource();
   current = rmm::mr::get_current_device_resource_ref();
-  ptr =
-    current.allocate(cuda::stream_ref{cudaStream_t{nullptr}}, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  ptr     = current.allocate(rmm::cuda_stream_default, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   EXPECT_NE(ptr, nullptr);
-  current.deallocate(
-    cuda::stream_ref{cudaStream_t{nullptr}}, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  current.deallocate(rmm::cuda_stream_default, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 TYPED_TEST_P(CcclMrRefTest, SelfEquality) { EXPECT_TRUE(this->ref == this->ref); }
@@ -61,7 +57,7 @@ TYPED_TEST_P(CcclMrRefTest, AllocationsAreDifferent)
 
 TYPED_TEST_P(CcclMrRefTest, AsyncAllocationsAreDifferentDefaultStream)
 {
-  concurrent_async_allocations_are_different(this->ref, cuda::stream_ref{cudaStream_t{nullptr}});
+  concurrent_async_allocations_are_different(this->ref, rmm::cuda_stream_default);
 }
 
 TYPED_TEST_P(CcclMrRefTest, AsyncAllocationsAreDifferent)

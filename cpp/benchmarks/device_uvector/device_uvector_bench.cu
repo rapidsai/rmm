@@ -7,6 +7,7 @@
 
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/device_vector.hpp>
@@ -32,7 +33,7 @@ void BM_UvectorSizeConstruction(benchmark::State& state)
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     rmm::device_uvector<std::int32_t> vec(static_cast<std::size_t>(state.range(0)),
-                                          cuda::stream_ref{cudaStream_t{nullptr}});
+                                          rmm::cuda_stream_default);
     cudaDeviceSynchronize();
   }
 

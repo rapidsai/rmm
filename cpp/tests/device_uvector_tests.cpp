@@ -29,10 +29,7 @@ template class rmm::device_uvector<int32_t>;
 
 template <typename T>
 struct TypedUVectorTest : ::testing::Test {
-  [[nodiscard]] rmm::cuda_stream_view stream() const noexcept
-  {
-    return cuda::stream_ref{cudaStream_t{nullptr}};
-  }
+  [[nodiscard]] rmm::cuda_stream_view stream() const noexcept { return rmm::cuda_stream_default; }
 };
 
 using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
@@ -283,20 +280,20 @@ TYPED_TEST(TypedUVectorTest, SetElementZeroAsync)
 
 TEST(NegativeZeroTest, PreservesFloatNegativeZero)
 {
-  rmm::device_uvector<float> vec(1, cuda::stream_ref{cudaStream_t{nullptr}});
+  rmm::device_uvector<float> vec(1, rmm::cuda_stream_default);
   float const neg_zero = -0.0f;
-  vec.set_element_async(0, neg_zero, cuda::stream_ref{cudaStream_t{nullptr}});
-  float const result = vec.element(0, cuda::stream_ref{cudaStream_t{nullptr}});
+  vec.set_element_async(0, neg_zero, rmm::cuda_stream_default);
+  float const result = vec.element(0, rmm::cuda_stream_default);
   EXPECT_TRUE(std::signbit(result)) << "sign bit of -0.0f was lost";
   EXPECT_EQ(result, 0.0f);
 }
 
 TEST(NegativeZeroTest, PreservesDoubleNegativeZero)
 {
-  rmm::device_uvector<double> vec(1, cuda::stream_ref{cudaStream_t{nullptr}});
+  rmm::device_uvector<double> vec(1, rmm::cuda_stream_default);
   double const neg_zero = -0.0;
-  vec.set_element_async(0, neg_zero, cuda::stream_ref{cudaStream_t{nullptr}});
-  double const result = vec.element(0, cuda::stream_ref{cudaStream_t{nullptr}});
+  vec.set_element_async(0, neg_zero, rmm::cuda_stream_default);
+  double const result = vec.element(0, rmm::cuda_stream_default);
   EXPECT_TRUE(std::signbit(result)) << "sign bit of -0.0 was lost";
   EXPECT_EQ(result, 0.0);
 }
@@ -322,7 +319,7 @@ TYPED_TEST(TypedUVectorTest, SetGetStream)
 
   EXPECT_EQ(vec.stream(), this->stream());
 
-  auto const otherstream = cuda::stream_ref{cudaStreamPerThread};
+  auto const otherstream = rmm::cuda_stream_per_thread;
   vec.set_stream(otherstream);
 
   EXPECT_EQ(vec.stream(), rmm::cuda_stream_view{otherstream});
@@ -422,7 +419,7 @@ TYPED_TEST(TypedUVectorTest, SpanConversionImplicit)
 
 TEST(DeviceUVectorAlignmentTest, SmallAlignment)
 {
-  auto v = rmm::device_uvector<int>(10, cuda::stream_ref{cudaStream_t{nullptr}});
+  auto v = rmm::device_uvector<int>(10, rmm::cuda_stream_default);
   EXPECT_TRUE(rmm::is_pointer_aligned(v.data(), std::alignment_of_v<decltype(v)::value_type>));
 }
 
@@ -432,7 +429,6 @@ TEST(DeviceUVectorAlignmentTest, LargeAlignment)
     int value;
   };
 
-  EXPECT_THROW(
-    std::ignore = rmm::device_uvector<OverAligned>(10, cuda::stream_ref{cudaStream_t{nullptr}}),
-    rmm::bad_alloc);
+  EXPECT_THROW(std::ignore = rmm::device_uvector<OverAligned>(10, rmm::cuda_stream_default),
+               rmm::bad_alloc);
 }

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
 
@@ -37,7 +38,7 @@ void cuda_memory_resource::deallocate([[maybe_unused]] cuda::stream_ref stream,
 
 void* cuda_memory_resource::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  auto* ptr = allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
+  auto* ptr = allocate(rmm::cuda_stream_default, bytes, alignment);
   RMM_CUDA_TRY(cudaStreamSynchronize(cudaStream_t{nullptr}));
   return ptr;
 }
@@ -46,7 +47,7 @@ void cuda_memory_resource::deallocate_sync(void* ptr,
                                            std::size_t bytes,
                                            std::size_t alignment) noexcept
 {
-  deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
+  deallocate(rmm::cuda_stream_default, ptr, bytes, alignment);
 }
 
 bool cuda_memory_resource::operator==(cuda_memory_resource const&) const noexcept { return true; }

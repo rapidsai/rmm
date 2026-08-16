@@ -25,7 +25,7 @@ RMM_NAMESPACE_BEGIN
  *
  * Provides efficient access to collection of CUDA stream objects.
  *
- * Successive calls may return a `cuda_stream_view` of identical streams. For example, a possible
+ * Successive calls may return a `cuda::stream_ref` of identical streams. For example, a possible
  * implementation is to maintain a circular buffer of `cuda_stream` objects.
  */
 class cuda_stream_pool {
@@ -49,28 +49,28 @@ class cuda_stream_pool {
   cuda_stream_pool& operator=(cuda_stream_pool const&) = delete;
 
   /**
-   * @brief Get a `cuda_stream_view` of a stream in the pool.
+   * @brief Get a `cuda::stream_ref` of a stream in the pool.
    *
    * This function is thread safe with respect to other calls to the same function.
    *
-   * @return rmm::cuda_stream_view
+   * @return cuda::stream_ref
    */
-  rmm::cuda_stream_view get_stream() const noexcept;
+  cuda::stream_ref get_stream() const noexcept;
 
   /**
-   * @brief Get a `cuda_stream_view` of the stream associated with `stream_id`.
-   * Equivalent values of `stream_id` return a stream_view to the same underlying stream.
+   * @brief Get a `cuda::stream_ref` of the stream associated with `stream_id`.
+   * Equivalent values of `stream_id` return a stream_ref to the same underlying stream.
    *
    * This function is thread safe with respect to other calls to the same function.
    *
    * @param stream_id Unique identifier for the desired stream
    *
-   * @return rmm::cuda_stream_view
+   * @return cuda::stream_ref
    *
    * @note @p stream_id is wrapped around the pool size, therefore any size_t value is
    * allowed.
    */
-  rmm::cuda_stream_view get_stream(std::size_t stream_id) const;
+  cuda::stream_ref get_stream(std::size_t stream_id) const;
 
   /**
    * @brief Get the number of streams in the pool.

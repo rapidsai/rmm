@@ -122,21 +122,21 @@ class cuda_stream_view {
 };
 
 /**
- * @brief Static cuda_stream_view of the default stream (stream 0), for convenience
+ * @brief Static cuda::stream_ref of the default stream (stream 0), for convenience
  */
-static constexpr cuda_stream_view cuda_stream_default{};
+static constexpr cuda::stream_ref cuda_stream_default{cudaStream_t{nullptr}};
 
 /**
- * @brief Static cuda_stream_view of cudaStreamLegacy, for convenience
+ * @brief Static cuda::stream_ref of cudaStreamLegacy, for convenience
  */
-static const cuda_stream_view cuda_stream_legacy{
+static const cuda::stream_ref cuda_stream_legacy{
   cudaStreamLegacy  // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
 };
 
 /**
- * @brief Static cuda_stream_view of cudaStreamPerThread, for convenience
+ * @brief Static cuda::stream_ref of cudaStreamPerThread, for convenience
  */
-static const cuda_stream_view cuda_stream_per_thread{
+static const cuda::stream_ref cuda_stream_per_thread{
   cudaStreamPerThread  // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
 };
 

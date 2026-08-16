@@ -5,6 +5,7 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_scalar.hpp>
 #include <rmm/mr/per_device_resource.hpp>
@@ -139,7 +140,7 @@ TYPED_TEST(DeviceScalarTest, SetGetStream)
 
   EXPECT_EQ(scalar.stream(), this->stream);
 
-  auto const otherstream = cuda::stream_ref{cudaStreamPerThread};
+  auto const otherstream = rmm::cuda_stream_per_thread;
   scalar.set_stream(otherstream);
 
   EXPECT_EQ(scalar.stream(), rmm::cuda_stream_view{otherstream});
@@ -147,7 +148,7 @@ TYPED_TEST(DeviceScalarTest, SetGetStream)
 
 TEST(DeviceScalarAlignmentTest, SmallAlignment)
 {
-  auto s = rmm::device_scalar<int>(cuda::stream_ref{cudaStream_t{nullptr}});
+  auto s = rmm::device_scalar<int>(rmm::cuda_stream_default);
   EXPECT_TRUE(rmm::is_pointer_aligned(s.data(), std::alignment_of_v<decltype(s)::value_type>));
 }
 
@@ -157,7 +158,6 @@ TEST(DeviceScalarAlignmentTest, LargeAlignment)
     int value;
   };
 
-  EXPECT_THROW(
-    std::ignore = rmm::device_scalar<OverAligned>(cuda::stream_ref{cudaStream_t{nullptr}}),
-    rmm::bad_alloc);
+  EXPECT_THROW(std::ignore = rmm::device_scalar<OverAligned>(rmm::cuda_stream_default),
+               rmm::bad_alloc);
 }

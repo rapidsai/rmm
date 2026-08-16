@@ -5,6 +5,7 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/format.hpp>
 
@@ -96,7 +97,7 @@ class simulated_memory_resource final {
    */
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    return allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
+    return allocate(rmm::cuda_stream_default, bytes, alignment);
   }
 
   /**
@@ -112,7 +113,7 @@ class simulated_memory_resource final {
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
+    deallocate(rmm::cuda_stream_default, ptr, bytes, alignment);
   }
 
   bool operator==(simulated_memory_resource const&) const noexcept { return true; }

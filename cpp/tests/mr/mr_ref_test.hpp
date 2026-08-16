@@ -11,6 +11,7 @@
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
@@ -118,7 +119,7 @@ inline void test_allocate(resource_ref ref, std::size_t bytes)
 
 inline void test_async_allocate(rmm::device_async_resource_ref ref,
                                 std::size_t bytes,
-                                cuda::stream_ref stream = cuda::stream_ref{cudaStream_t{nullptr}})
+                                cuda::stream_ref stream = rmm::cuda_stream_default)
 {
   try {
     void* ptr = ref.allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);

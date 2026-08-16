@@ -5,6 +5,11 @@ from cuda.bindings.cyruntime cimport cudaStream_t
 from libcpp cimport bool
 
 
+cdef extern from "<cuda/stream>" namespace "cuda" nogil:
+    cdef cppclass stream_ref:
+        cudaStream_t get()
+
+
 cdef extern from "rmm/cuda_stream_view.hpp" namespace "rmm" nogil:
     cdef cppclass cuda_stream_view:
         cuda_stream_view()
@@ -18,6 +23,6 @@ cdef extern from "rmm/cuda_stream_view.hpp" namespace "rmm" nogil:
 
     cdef bool operator==(cuda_stream_view const, cuda_stream_view const)
 
-    const cuda_stream_view cuda_stream_default
-    const cuda_stream_view cuda_stream_legacy
-    const cuda_stream_view cuda_stream_per_thread
+    const stream_ref cuda_stream_default
+    const stream_ref cuda_stream_legacy
+    const stream_ref cuda_stream_per_thread

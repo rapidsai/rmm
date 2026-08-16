@@ -30,9 +30,9 @@ cuda_stream_view::operator cuda::stream_ref() const noexcept { return value(); }
 bool cuda_stream_view::is_per_thread_default() const noexcept
 {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  return *this == cuda_stream_per_thread || value() == nullptr;
+  return value() == cuda_stream_per_thread.get() || value() == nullptr;
 #else
-  return *this == cuda_stream_per_thread;
+  return value() == cuda_stream_per_thread.get();
 #endif
 }
 

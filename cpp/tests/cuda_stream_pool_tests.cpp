@@ -1,9 +1,10 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <rmm/cuda_stream_pool.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_uvector.hpp>
 
@@ -35,8 +36,8 @@ TEST_F(CudaStreamPoolTest, Nondefault)
   auto const stream_a = this->pool.get_stream();
 
   // pool streams are explicit, non-default streams
-  EXPECT_FALSE(stream_a.is_default());
-  EXPECT_FALSE(stream_a.is_per_thread_default());
+  EXPECT_NE(stream_a, rmm::cuda_stream_default);
+  EXPECT_NE(stream_a, rmm::cuda_stream_per_thread);
 }
 
 TEST_F(CudaStreamPoolTest, ValidStreams)
@@ -47,8 +48,8 @@ TEST_F(CudaStreamPoolTest, ValidStreams)
   // Operations on the streams should work correctly and without throwing exceptions
   auto constexpr vector_size{100};
   auto vec1 = rmm::device_uvector<std::uint8_t>{vector_size, stream_a};
-  RMM_CUDA_TRY(cudaMemsetAsync(vec1.data(), 0xcc, 100, stream_a.value()));
-  stream_a.synchronize();
+  RMM_CUDA_TRY(cudaMemsetAsync(vec1.data(), 0xcc, 100, stream_a.get()));
+  RMM_CUDA_TRY(cudaStreamSynchronize(stream_a.get()));
 
   auto vec2    = rmm::device_uvector<std::uint8_t>{vec1, stream_b};
   auto element = vec2.front_element(stream_b);
@@ -76,7 +77,7 @@ TEST_F(CudaStreamPoolTest, CreateDefault)
   for (std::size_t i = 0; i < this->pool.get_pool_size(); i++) {
     auto stream = this->pool.get_stream(i);
     unsigned int flags;
-    RMM_CUDA_TRY(cudaStreamGetFlags(stream.value(), &flags));
+    RMM_CUDA_TRY(cudaStreamGetFlags(stream.get(), &flags));
     EXPECT_EQ(flags, cudaStreamDefault);
   }
 }
@@ -87,7 +88,7 @@ TEST_F(CudaStreamPoolTest, CreateNonBlocking)
   for (std::size_t i = 0; i < pool.get_pool_size(); i++) {
     auto stream = pool.get_stream(i);
     unsigned int flags;
-    RMM_CUDA_TRY(cudaStreamGetFlags(stream.value(), &flags));
+    RMM_CUDA_TRY(cudaStreamGetFlags(stream.get(), &flags));
     EXPECT_EQ(flags, cudaStreamNonBlocking);
   }
 }

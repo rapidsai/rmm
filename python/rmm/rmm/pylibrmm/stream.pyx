@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 cimport cython
@@ -195,8 +195,8 @@ cdef class Stream:
         self._cuda_stream, self._owner = stream._cuda_stream, stream._owner
 
 
-DEFAULT_STREAM = Stream._from_cudaStream_t(cuda_stream_default.value())
-LEGACY_DEFAULT_STREAM = Stream._from_cudaStream_t(cuda_stream_legacy.value())
+DEFAULT_STREAM = Stream._from_cudaStream_t(cuda_stream_default.get())
+LEGACY_DEFAULT_STREAM = Stream._from_cudaStream_t(cuda_stream_legacy.get())
 PER_THREAD_DEFAULT_STREAM = Stream._from_cudaStream_t(
-    cuda_stream_per_thread.value()
+    cuda_stream_per_thread.get()
 )

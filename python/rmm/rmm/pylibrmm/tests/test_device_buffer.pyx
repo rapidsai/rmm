@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2024, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import numpy as np
@@ -16,7 +16,7 @@ def test_release():
 
     got = DeviceBuffer.c_from_unique_ptr(
         make_unique[device_buffer](buf.c_release(),
-                                   cuda_stream_default.value())
+                                   cuda_stream_default.get())
     )
     np.testing.assert_equal(expect.copy_to_host(), got.copy_to_host())
 

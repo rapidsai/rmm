@@ -5,6 +5,7 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
+#include <rmm/cuda_stream_view.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/stream>
@@ -23,14 +24,14 @@ class mock_resource {
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    return allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
+    return allocate(rmm::cuda_stream_default, bytes, alignment);
   }
 
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
+    deallocate(rmm::cuda_stream_default, ptr, bytes, alignment);
   }
 
   bool operator==(mock_resource const&) const noexcept { return true; }

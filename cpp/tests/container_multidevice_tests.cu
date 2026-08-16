@@ -6,6 +6,7 @@
 #include "device_check_resource_adaptor.hpp"
 
 #include <rmm/cuda_stream.hpp>
+#include <rmm/cuda_stream_view.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/device_scalar.hpp>
 #include <rmm/device_uvector.hpp>
@@ -39,10 +40,10 @@ TYPED_TEST(ContainerMultiDeviceTest, CreateDestroyDifferentActiveDevice)
 
     {
       if constexpr (std::is_same_v<TypeParam, rmm::device_scalar<int>>) {
-        auto buf = TypeParam(cuda::stream_ref{cudaStream_t{nullptr}});
+        auto buf = TypeParam(rmm::cuda_stream_default);
         RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(1));  // force dtor with different active device
       } else {
-        auto buf = TypeParam(128, cuda::stream_ref{cudaStream_t{nullptr}});
+        auto buf = TypeParam(128, rmm::cuda_stream_default);
         RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(1));  // force dtor with different active device
       }
     }
@@ -66,19 +67,19 @@ TYPED_TEST(ContainerMultiDeviceTest, CreateMoveDestroyDifferentActiveDevice)
     {
       auto buf_1 = []() {
         if constexpr (std::is_same_v<TypeParam, rmm::device_scalar<int>>) {
-          return TypeParam(cuda::stream_ref{cudaStream_t{nullptr}});
+          return TypeParam(rmm::cuda_stream_default);
         } else {
-          return TypeParam(128, cuda::stream_ref{cudaStream_t{nullptr}});
+          return TypeParam(128, rmm::cuda_stream_default);
         }
       }();
 
       {
         if constexpr (std::is_same_v<TypeParam, rmm::device_scalar<int>>) {
           // device_vector does not have a constructor that takes a stream
-          auto buf_0 = TypeParam(cuda::stream_ref{cudaStream_t{nullptr}});
+          auto buf_0 = TypeParam(rmm::cuda_stream_default);
           buf_1      = std::move(buf_0);
         } else {
-          auto buf_0 = TypeParam(128, cuda::stream_ref{cudaStream_t{nullptr}});
+          auto buf_0 = TypeParam(128, rmm::cuda_stream_default);
           buf_1      = std::move(buf_0);
         }
       }
@@ -103,9 +104,9 @@ TYPED_TEST(ContainerMultiDeviceTest, ResizeDifferentActiveDevice)
     rmm::mr::set_current_device_resource(device_check_resource_adaptor{orig_mr});
 
     if constexpr (not std::is_same_v<TypeParam, rmm::device_scalar<int>>) {
-      auto buf = TypeParam(128, cuda::stream_ref{cudaStream_t{nullptr}});
+      auto buf = TypeParam(128, rmm::cuda_stream_default);
       RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(1));  // force resize with different active device
-      buf.resize(1024, cuda::stream_ref{cudaStream_t{nullptr}});
+      buf.resize(1024, rmm::cuda_stream_default);
     }
 
     RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(0));
@@ -125,10 +126,10 @@ TYPED_TEST(ContainerMultiDeviceTest, ShrinkDifferentActiveDevice)
     rmm::mr::set_current_device_resource(device_check_resource_adaptor{orig_mr});
 
     if constexpr (not std::is_same_v<TypeParam, rmm::device_scalar<int>>) {
-      auto buf = TypeParam(128, cuda::stream_ref{cudaStream_t{nullptr}});
+      auto buf = TypeParam(128, rmm::cuda_stream_default);
       RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(1));  // force resize with different active device
-      buf.resize(64, cuda::stream_ref{cudaStream_t{nullptr}});
-      buf.shrink_to_fit(cuda::stream_ref{cudaStream_t{nullptr}});
+      buf.resize(64, rmm::cuda_stream_default);
+      buf.shrink_to_fit(rmm::cuda_stream_default);
     }
 
     RMM_ASSERT_CUDA_SUCCESS(cudaSetDevice(0));
