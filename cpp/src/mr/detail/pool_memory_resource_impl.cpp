@@ -11,7 +11,7 @@
 #include <rmm/mr/detail/pool_memory_resource_impl.hpp>
 #include <rmm/process_is_exiting.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <algorithm>

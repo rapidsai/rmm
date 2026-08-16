@@ -7,7 +7,7 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/detail/aligned_resource_adaptor_impl.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <algorithm>

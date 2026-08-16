@@ -9,7 +9,7 @@
 #include <rmm/process_is_exiting.hpp>
 
 #include <cuda/iterator>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <cstddef>

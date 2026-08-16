@@ -16,7 +16,7 @@
 
 #include <cuda/std/iterator>
 #include <cuda/std/span>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include <cstddef>
 #include <limits>

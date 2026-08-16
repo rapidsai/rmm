@@ -11,7 +11,7 @@
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include <type_traits>
 
@@ -224,7 +224,7 @@ class device_scalar {
    */
   void set_value_to_zero_async(cuda::stream_ref stream)
   {
-    _storage.set_element_to_zero_async(value_type{0}, stream);
+    _storage.set_element_to_zero_async(size_type{0}, stream);
   }
 
   /**

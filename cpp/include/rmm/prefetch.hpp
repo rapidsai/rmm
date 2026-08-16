@@ -12,7 +12,7 @@
 #include <rmm/error.hpp>
 
 #include <cuda/std/span>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 RMM_NAMESPACE_BEGIN
 

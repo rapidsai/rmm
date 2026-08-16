@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -15,7 +15,7 @@
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 #include <thrust/device_vector.h>
 #include <thrust/memory.h>
@@ -91,7 +91,8 @@ Vector make_vector(std::size_t num_elements, cuda::stream_ref stream, bool zero_
   } else if constexpr (std::is_same_v<Vector, rmm_uvector>) {
     auto vec = Vector(num_elements, stream);
     if (zero_init) {
-      cudaMemsetAsync(vec.data(), 0, num_elements * sizeof(std::int32_t), stream.get());
+      RMM_CUDA_TRY(
+        cudaMemsetAsync(vec.data(), 0, num_elements * sizeof(std::int32_t), stream.get()));
     }
     return vec;
   }

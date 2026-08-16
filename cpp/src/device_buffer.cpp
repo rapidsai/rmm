@@ -9,7 +9,7 @@
 #include <rmm/device_buffer.hpp>
 #include <rmm/error.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <memory>

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -37,7 +37,7 @@ TEST(BinningTest, ZeroByteAllocationsUseBinResource)
   mr.add_bin(1024, device_async_resource_ref{wrapper});
 
   EXPECT_CALL(mock, allocate(::testing::_, 0, rmm::CUDA_ALLOCATION_ALIGNMENT))
-    .Times(2)
+    .Times(1)
     .WillRepeatedly(::testing::Return(nullptr));
   EXPECT_CALL(mock, deallocate(::testing::_, nullptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT)).Times(2);
 

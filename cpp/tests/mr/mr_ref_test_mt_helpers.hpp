@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -62,7 +62,7 @@ inline void async_allocate_loop(rmm::device_async_resource_ref ref,
   }
 
   // Work around for threads going away before cudaEvent has finished async processing
-  cudaEventSynchronize(event);
+  RMM_CUDA_TRY(cudaEventSynchronize(event));
 }
 
 inline void async_deallocate_loop(rmm::device_async_resource_ref ref,
@@ -83,7 +83,7 @@ inline void async_deallocate_loop(rmm::device_async_resource_ref ref,
   }
 
   // Work around for threads going away before cudaEvent has finished async processing
-  cudaEventSynchronize(event);
+  RMM_CUDA_TRY(cudaEventSynchronize(event));
 }
 
 inline void test_async_allocate_free_different_threads(rmm::device_async_resource_ref ref,
