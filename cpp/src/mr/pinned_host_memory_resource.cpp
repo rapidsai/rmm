@@ -7,7 +7,7 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <cstddef>

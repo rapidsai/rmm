@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for RMM initialization and reinitialization."""
@@ -22,10 +22,13 @@ def test_reinitialize_initial_pool_size_gt_max() -> None:
     assert "Initial pool size exceeds the maximum pool size" in str(e.value)
 
 
-def test_reinitialize_with_valid_str_arg_pool_size() -> None:
+@pytest.mark.parametrize("initial_pool_size", ["2kib", "0pib"])
+def test_reinitialize_with_valid_str_arg_pool_size(
+    initial_pool_size: str,
+) -> None:
     rmm.reinitialize(
         pool_allocator=True,
-        initial_pool_size="2kib",
+        initial_pool_size=initial_pool_size,
         maximum_pool_size="8kib",
     )
 
@@ -38,6 +41,11 @@ def test_reinitialize_with_invalid_str_arg_pool_size() -> None:
             maximum_pool_size="8k",
         )
     assert "Could not parse" in str(e.value)
+
+
+def test_reinitialize_with_overflowing_str_arg_pool_size() -> None:
+    with pytest.raises(ValueError, match="Could not parse"):
+        rmm.reinitialize(pool_allocator=True, initial_pool_size="1" * 400)
 
 
 @pytest.fixture

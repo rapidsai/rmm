@@ -8,7 +8,7 @@
 #include <rmm/mr/detail/prefetch_resource_adaptor_impl.hpp>
 #include <rmm/prefetch.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 RMM_NAMESPACE_BEGIN

@@ -9,7 +9,7 @@
 #include <rmm/logger.hpp>
 #include <rmm/mr/detail/arena_memory_resource_impl.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 RMM_NAMESPACE_BEGIN
