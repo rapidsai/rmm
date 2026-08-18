@@ -1,10 +1,11 @@
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <rmm/aligned.hpp>
+#include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_uvector.hpp>
@@ -256,6 +257,15 @@ TYPED_TEST(TypedUVectorTest, GetSetElementAsync)
     vec.set_element_async(i, init, this->stream());
     EXPECT_EQ(init, vec.element(i, this->stream()));
   }
+}
+
+TEST(DeviceUVectorMemcpyTest, GetSetElementOnNonDefaultStream)
+{
+  rmm::cuda_stream stream;
+  rmm::device_uvector<int> vec(1, stream.view());
+  int const value = 42;
+  vec.set_element_async(0, value, stream.view());
+  EXPECT_EQ(vec.element(0, stream.view()), value);
 }
 
 TYPED_TEST(TypedUVectorTest, SetElementZeroAsync)
