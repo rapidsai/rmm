@@ -23,7 +23,9 @@ bool is_supported_base_resource_alignment(std::size_t alignment) noexcept
 std::size_t align_up(std::size_t value, std::size_t alignment) noexcept
 {
   assert(is_supported_alignment(alignment));
-  return (value + (alignment - 1)) & ~(alignment - 1);
+  auto const aligned_value = (value + (alignment - 1)) & ~(alignment - 1);
+  assert(aligned_value >= value);
+  return aligned_value;
 }
 
 std::size_t align_down(std::size_t value, std::size_t alignment) noexcept

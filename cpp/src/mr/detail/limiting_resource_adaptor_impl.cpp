@@ -8,7 +8,7 @@
 #include <rmm/detail/format.hpp>
 #include <rmm/mr/detail/limiting_resource_adaptor_impl.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 RMM_NAMESPACE_BEGIN
