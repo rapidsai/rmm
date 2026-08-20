@@ -7,7 +7,7 @@
 
 #include <rmm/detail/export.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 RMM_NAMESPACE_BEGIN
 namespace detail {
