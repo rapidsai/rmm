@@ -29,6 +29,11 @@ namespace detail {
 #define RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION 13000
 
 /**
+ * @brief Minimum CUDA version supported by cuda_async_pinned_memory_resource
+ */
+#define RMM_MIN_ASYNC_PINNED_ALLOC_CUDA_VERSION 12090
+
+/**
  * @brief Determine at runtime if the CUDA driver supports the stream-ordered
  * memory allocator functions.
  *
@@ -152,6 +157,36 @@ struct runtime_async_managed_alloc {
              cuda_runtime_version >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION;
     }()};
     return supports_async_managed_pool;
+  }
+};
+
+/**
+ * @brief Determine whether the CUDA driver/runtime supports stream-ordered pinned host memory.
+ */
+struct runtime_async_pinned_alloc {
+  static bool is_supported()
+  {
+    static auto supports_async_pinned_pool{[] {
+      if (not runtime_async_alloc::is_supported()) { return false; }
+
+#if CUDART_VERSION >= 13000
+      int driver_version{};
+      auto const driver_result = cudaDriverGetVersion(&driver_version);
+      int runtime_version{};
+      auto const runtime_result = cudaRuntimeGetVersion(&runtime_version);
+      return driver_result == cudaSuccess and runtime_result == cudaSuccess and
+             driver_version >= 13000 and runtime_version >= 13000;
+#elif CUDART_VERSION >= RMM_MIN_ASYNC_PINNED_ALLOC_CUDA_VERSION
+      int host_numa_pool_supported{};
+      auto const result = cudaDeviceGetAttribute(&host_numa_pool_supported,
+                                                 cudaDevAttrHostNumaMemoryPoolsSupported,
+                                                 rmm::get_current_cuda_device().value());
+      return result == cudaSuccess and host_numa_pool_supported == 1;
+#else
+      return false;
+#endif
+    }()};
+    return supports_async_pinned_pool;
   }
 };
 

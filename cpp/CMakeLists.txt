@@ -1,6 +1,6 @@
 # =============================================================================
 # cmake-format: off
-# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 # cmake-format: on
 # =============================================================================
@@ -93,6 +93,7 @@ add_library(
   src/mr/callback_memory_resource.cpp
   src/mr/cuda_async_managed_memory_resource.cpp
   src/mr/cuda_async_memory_resource.cpp
+  src/mr/cuda_async_pinned_memory_resource.cpp
   src/mr/cuda_async_view_memory_resource.cpp
   src/mr/cuda_memory_resource.cpp
   src/mr/detail/aligned_resource_adaptor_impl.cpp
@@ -101,6 +102,7 @@ add_library(
   src/mr/detail/callback_memory_resource_impl.cpp
   src/mr/detail/cuda_async_managed_memory_resource_impl.cpp
   src/mr/detail/cuda_async_memory_resource_impl.cpp
+  src/mr/detail/cuda_async_pinned_memory_resource_impl.cpp
   src/mr/detail/fixed_size_memory_resource_impl.cpp
   src/mr/detail/limiting_resource_adaptor_impl.cpp
   src/mr/detail/logging_resource_adaptor_impl.cpp

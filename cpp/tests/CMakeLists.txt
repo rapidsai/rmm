@@ -1,6 +1,6 @@
 # =============================================================================
 # cmake-format: off
-# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 # cmake-format: on
 # =============================================================================
@@ -165,6 +165,9 @@ ConfigureTest(CUDA_ASYNC_MR_SHARED_CUDART_TEST mr/cuda_async_mr_tests.cpp CUDART
 
 # cuda_async managed mr tests (available with CUDA 13+ runtime/driver)
 ConfigureTest(CUDA_ASYNC_MANAGED_MR_TEST mr/cuda_async_managed_mr_tests.cpp)
+
+# cuda_async pinned mr tests (available with CUDA 12.9+ runtime/driver)
+ConfigureTest(CUDA_ASYNC_PINNED_MR_TEST mr/cuda_async_pinned_mr_tests.cpp)
 
 # thrust allocator tests
 ConfigureTest(THRUST_ALLOCATOR_TEST mr/thrust_allocator_tests.cu)

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 """Experimental memory resource features."""
@@ -8,6 +8,7 @@ from libc.stdint cimport uintptr_t
 
 from rmm.librmm.memory_resource cimport (
     cuda_async_managed_memory_resource,
+    cuda_async_pinned_memory_resource,
     make_device_async_resource_ref,
 )
 # import from the private _memory_resource to avoid a circular import
@@ -27,6 +28,33 @@ cdef class CudaAsyncManagedMemoryResource(DeviceMemoryResource):
     """
     def __cinit__(self):
         self.c_obj.reset(new cuda_async_managed_memory_resource())
+        self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
+
+    def pool_handle(self):
+        """
+        Returns the underlying CUDA memory pool handle.
+
+        Returns
+        -------
+        int
+            Handle to the underlying CUDA memory pool
+        """
+        return <uintptr_t>(deref(self.c_obj).pool_handle())
+
+
+cdef class CudaAsyncPinnedMemoryResource(DeviceMemoryResource):
+    """
+    Stream-ordered memory resource for allocating pinned host memory.
+
+    Allocations and deallocations are ordered on the supplied CUDA stream.
+    An allocation must not be accessed from the host until it reaches the
+    head of that stream, and the deallocation stream must follow all uses of
+    the allocation.
+
+    The memory is accessible from both the host and CUDA devices.
+    """
+    def __cinit__(self):
+        self.c_obj.reset(new cuda_async_pinned_memory_resource())
         self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
     def pool_handle(self):

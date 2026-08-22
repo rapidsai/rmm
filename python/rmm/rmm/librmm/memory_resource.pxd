@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 # This import is needed for Cython typing in translate_python_except_to_cpp
@@ -114,6 +114,8 @@ cdef extern from *:
     optional[device_async_resource_ref] make_device_async_resource_ref(
         cuda_async_managed_memory_resource&) except +
     optional[device_async_resource_ref] make_device_async_resource_ref(
+        cuda_async_pinned_memory_resource&) except +
+    optional[device_async_resource_ref] make_device_async_resource_ref(
         pool_memory_resource&) except +
     optional[device_async_resource_ref] make_device_async_resource_ref(
         arena_memory_resource&) except +
@@ -224,6 +226,13 @@ cdef extern from "rmm/mr/cuda_async_managed_memory_resource.hpp" \
 
     cdef cppclass cuda_async_managed_memory_resource:
         cuda_async_managed_memory_resource() except +
+        cudaMemPool_t pool_handle() const
+
+cdef extern from "rmm/mr/cuda_async_pinned_memory_resource.hpp" \
+        namespace "rmm::mr" nogil:
+
+    cdef cppclass cuda_async_pinned_memory_resource:
+        cuda_async_pinned_memory_resource() except +
         cudaMemPool_t pool_handle() const
 
 cdef extern from "rmm/mr/cuda_async_memory_resource.hpp" \

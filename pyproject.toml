@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 [tool.codespell]
@@ -10,6 +10,10 @@ ignore-regex = "\\b(.{1,4}|[A-Z]\\w*T)\\b"
 ignore-words-list = "thirdparty,couldn"
 builtin = "clear"
 quiet-level = 3
+
+[tool.cython-lint]
+# Line-too-long is ignored because canonical copyright headers exceed 88 characters.
+ignore = ["E501"]
 
 [tool.ruff]
 line-length = 79

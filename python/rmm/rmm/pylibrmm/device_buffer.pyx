@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 import numpy as np
 
@@ -506,7 +506,7 @@ cpdef void copy_ptr_to_host(uintptr_t db,
 
     with nogil:
         _copy_async(<const void*>(db), <void*>(&hb[0]), len(hb),
-                    cudaMemcpyKind.cudaMemcpyDeviceToHost, stream.view())
+                    cudaMemcpyKind.cudaMemcpyDefault, stream.view())
 
     if stream.c_is_default():
         stream.c_synchronize()
@@ -550,7 +550,7 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
 
     with nogil:
         _copy_async(<const void*>(&hb[0]), <void*>(db), len(hb),
-                    cudaMemcpyKind.cudaMemcpyHostToDevice, stream.view())
+                    cudaMemcpyKind.cudaMemcpyDefault, stream.view())
 
     if stream.c_is_default():
         stream.c_synchronize()
@@ -584,4 +584,4 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
 
     with nogil:
         _copy_async(<const void*>(d_src), <void*>(d_dst), count,
-                    cudaMemcpyKind.cudaMemcpyDeviceToDevice, stream.view())
+                    cudaMemcpyKind.cudaMemcpyDefault, stream.view())
