@@ -170,12 +170,11 @@ struct runtime_async_pinned_alloc {
       if (not runtime_async_alloc::is_supported()) { return false; }
 
 #if CUDART_VERSION >= 13000
-      int driver_version{};
-      auto const driver_result = cudaDriverGetVersion(&driver_version);
-      int runtime_version{};
-      auto const runtime_result = cudaRuntimeGetVersion(&runtime_version);
-      return driver_result == cudaSuccess and runtime_result == cudaSuccess and
-             driver_version >= 13000 and runtime_version >= 13000;
+      int host_pool_supported{};
+      auto const result = cudaDeviceGetAttribute(&host_pool_supported,
+                                                 cudaDevAttrHostMemoryPoolsSupported,
+                                                 rmm::get_current_cuda_device().value());
+      return result == cudaSuccess and host_pool_supported == 1;
 #elif CUDART_VERSION >= RMM_MIN_ASYNC_PINNED_ALLOC_CUDA_VERSION
       int host_numa_pool_supported{};
       auto const result = cudaDeviceGetAttribute(&host_numa_pool_supported,

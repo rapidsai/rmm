@@ -24,6 +24,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <future>
+#include <limits>
 #include <mutex>
 #include <optional>
 #include <vector>
@@ -174,13 +175,13 @@ TEST_F(AsyncPinnedMRTest, CopyKeepsResourceAlive)
   copy->deallocate_sync(ptr, size);
 }
 
-TEST_F(AsyncPinnedMRTest, PoolHasDefaultReleaseThreshold)
+TEST_F(AsyncPinnedMRTest, PoolRetainsUnusedMemory)
 {
   cuda_async_pinned_mr mr{};
-  std::uint64_t release_threshold{1};
+  std::uint64_t release_threshold{};
   RMM_CUDA_TRY(
     cudaMemPoolGetAttribute(mr.pool_handle(), cudaMemPoolAttrReleaseThreshold, &release_threshold));
-  EXPECT_EQ(release_threshold, std::uint64_t{0});
+  EXPECT_EQ(release_threshold, std::numeric_limits<std::size_t>::max());
 }
 
 TEST_F(AsyncPinnedMRTest, AllocationsUseExposedPool)

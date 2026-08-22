@@ -10,7 +10,7 @@
 #include <cuda/memory_resource>
 #include <cuda_runtime_api.h>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr {
 /**
  * @addtogroup memory_resources
@@ -25,10 +25,10 @@ namespace mr {
  * supplied stream and must not be accessed from the host until the allocation reaches the head of
  * that stream. Deallocations are ordered after preceding work on the supplied stream.
  *
- * With CUDA 12.x, all instances use a process-wide pinned memory pool on NUMA node 0. With CUDA
- * 13.0 and later, all instances use CUDA's default pinned host memory pool. In both cases,
- * allocations are accessible from all visible CUDA devices and pool properties such as the release
- * threshold are not modified.
+ * All instances use CCCL's process-wide default pinned memory pool. With CUDA 12.x, this pool is on
+ * NUMA node 0. With CUDA 13.0 and later, this is CUDA's default pinned host memory pool.
+ * Allocations are accessible from all visible CUDA devices. CCCL configures the pool to retain
+ * unused memory by setting its release threshold to the maximum value.
  */
 class RMM_EXPORT cuda_async_pinned_memory_resource final
   : public cuda::mr::shared_resource<detail::cuda_async_pinned_memory_resource_impl> {
@@ -55,7 +55,7 @@ class RMM_EXPORT cuda_async_pinned_memory_resource final
    * @brief Constructs a resource that uses the process-wide pinned host memory pool.
    *
    * @throws rmm::logic_error if stream-ordered pinned host allocation is unsupported
-   * @throws rmm::cuda_error if the pinned host memory pool cannot be initialized
+   * @throws cuda::cuda_error if the pinned host memory pool cannot be initialized
    */
   cuda_async_pinned_memory_resource();
 
@@ -90,4 +90,4 @@ static_assert(
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

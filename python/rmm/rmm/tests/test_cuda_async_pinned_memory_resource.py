@@ -6,6 +6,7 @@
 import ctypes
 
 import numpy as np
+import pytest
 from numba import cuda
 
 import rmm
@@ -19,8 +20,20 @@ def _increment(values):
         values[i] += 1
 
 
-def test_cuda_async_pinned_memory_resource_pool_handle():
-    mr = rmm.mr.experimental.CudaAsyncPinnedMemoryResource()
+@pytest.fixture(scope="module")
+def mr():
+    try:
+        return rmm.mr.experimental.CudaAsyncPinnedMemoryResource()
+    except RuntimeError as error:
+        if str(error).endswith(
+            "cuda_async_pinned_memory_resource is unsupported "
+            "by this CUDA driver/runtime"
+        ):
+            pytest.skip(str(error))
+        raise
+
+
+def test_cuda_async_pinned_memory_resource_pool_handle(mr):
     other = rmm.mr.experimental.CudaAsyncPinnedMemoryResource()
 
     pool_handle = mr.pool_handle()
@@ -29,8 +42,7 @@ def test_cuda_async_pinned_memory_resource_pool_handle():
     assert other.pool_handle() == pool_handle
 
 
-def test_cuda_async_pinned_memory_resource_non_default_stream():
-    mr = rmm.mr.experimental.CudaAsyncPinnedMemoryResource()
+def test_cuda_async_pinned_memory_resource_non_default_stream(mr):
     stream = Stream(flags=CudaStreamFlags.NON_BLOCKING)
 
     ptr = mr.allocate(1024, stream=stream)
@@ -39,8 +51,7 @@ def test_cuda_async_pinned_memory_resource_non_default_stream():
     stream.synchronize()
 
 
-def test_cuda_async_pinned_memory_resource_host_and_device_access():
-    mr = rmm.mr.experimental.CudaAsyncPinnedMemoryResource()
+def test_cuda_async_pinned_memory_resource_host_and_device_access(mr):
     stream = Stream(flags=CudaStreamFlags.NON_BLOCKING)
     size = 128
     buffer = rmm.DeviceBuffer(size=size, stream=stream, mr=mr)
@@ -59,15 +70,15 @@ def test_cuda_async_pinned_memory_resource_host_and_device_access():
     # asking Numba to allocate from the pinned memory resource.
     device_view = cuda.as_cuda_array(buffer)
     numba_stream = cuda.external_stream(stream.__cuda_stream__()[1])
-    _increment[1, 128, numba_stream](device_view)
+    _increment[128, 128, numba_stream](device_view)
     stream.synchronize()
 
     expected += 1
     np.testing.assert_array_equal(host_view, expected)
 
 
-def test_cuda_async_pinned_memory_resource_device_buffer_copies():
-    pinned_mr = rmm.mr.experimental.CudaAsyncPinnedMemoryResource()
+def test_cuda_async_pinned_memory_resource_device_buffer_copies(mr):
+    pinned_mr = mr
     device_mr = rmm.mr.CudaMemoryResource()
     stream = Stream(flags=CudaStreamFlags.NON_BLOCKING)
     size = 251
