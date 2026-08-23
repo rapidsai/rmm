@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,6 +8,9 @@
 #include <rmm/mr/pool_memory_resource.hpp>
 
 #include <gtest/gtest.h>
+
+#include <cstddef>
+#include <cstring>
 
 namespace rmm::test {
 namespace {
@@ -71,6 +74,25 @@ TEST(PinnedPoolTest, ThrowOutOfMemory)
   (void)mr.allocate_sync(1024);
 
   EXPECT_THROW((void)mr.allocate_sync(1024), rmm::out_of_memory);
+}
+
+TEST(PinnedPoolTest, InitializerCallback)
+{
+  constexpr std::size_t pool_size{16 * 1024 * 1024 + 256};
+  std::size_t callback_count{};
+  pool_mr mr{rmm::mr::pinned_host_memory_resource{[&](void* ptr, std::size_t bytes) {
+               ++callback_count;
+               EXPECT_EQ(pool_size, bytes);
+               std::memset(ptr, 0, bytes);
+             }},
+             pool_size,
+             pool_size};
+
+  EXPECT_EQ(1, callback_count);
+  void* ptr{nullptr};
+  EXPECT_NO_THROW(ptr = mr.allocate_sync(pool_size));
+  EXPECT_NE(nullptr, ptr);
+  EXPECT_NO_THROW(mr.deallocate_sync(ptr, pool_size));
 }
 
 }  // namespace
