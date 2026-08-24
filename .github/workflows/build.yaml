@@ -251,6 +251,7 @@ jobs:
         uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
   devcontainers:
     name: Build devcontainers
+    if: ${{ inputs.build_type != 'release-candidate' }}
     secrets: inherit  # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/build-devcontainers.yaml@main
     permissions:
