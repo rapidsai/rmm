@@ -22,6 +22,8 @@
 #include <rmm/mr/tracking_resource_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/stream_ref>
+
 #include <gtest/gtest.h>
 
 #include <type_traits>
@@ -182,17 +184,13 @@ TEST(CallbackMRAdaptorTest, EqualityAndSharedOwnership)
   cuda_mr cuda{};
   rmm::device_async_resource_ref upstream{cuda};
 
-  auto alloc_cb =
-    [](rmm::cuda_stream_view stream, std::size_t bytes, std::size_t alignment, void* arg) {
-      return static_cast<rmm::device_async_resource_ref*>(arg)->allocate(stream, bytes, alignment);
-    };
-  auto dealloc_cb = [](rmm::cuda_stream_view stream,
-                       void* ptr,
-                       std::size_t bytes,
-                       std::size_t alignment,
-                       void* arg) {
-    static_cast<rmm::device_async_resource_ref*>(arg)->deallocate(stream, ptr, bytes, alignment);
+  auto alloc_cb = [](cuda::stream_ref stream, std::size_t bytes, std::size_t alignment, void* arg) {
+    return static_cast<rmm::device_async_resource_ref*>(arg)->allocate(stream, bytes, alignment);
   };
+  auto dealloc_cb =
+    [](cuda::stream_ref stream, void* ptr, std::size_t bytes, std::size_t alignment, void* arg) {
+      static_cast<rmm::device_async_resource_ref*>(arg)->deallocate(stream, ptr, bytes, alignment);
+    };
 
   callback_memory_resource mr{alloc_cb, dealloc_cb, &upstream, &upstream};
   auto copy = mr;

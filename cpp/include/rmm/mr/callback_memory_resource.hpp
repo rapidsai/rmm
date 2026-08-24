@@ -24,7 +24,7 @@ namespace mr {
  * @brief Callback function type used by callback memory resource for allocation.
  *
  * The signature of the callback function is:
- *   `void* allocate_callback_t(cuda_stream_view stream, std::size_t bytes, std::size_t alignment,
+ *   `void* allocate_callback_t(cuda::stream_ref stream, std::size_t bytes, std::size_t alignment,
  *                             void* arg);`
  *
  * * The callback receives only valid power-of-two alignment values. An invalid alignment raises
@@ -37,13 +37,13 @@ namespace mr {
  * * The `arg` is provided to the constructor of the `callback_memory_resource`
  *   and will be forwarded along to every invocation of the callback function.
  */
-using allocate_callback_t = std::function<void*(cuda_stream_view, std::size_t, std::size_t, void*)>;
+using allocate_callback_t = std::function<void*(cuda::stream_ref, std::size_t, std::size_t, void*)>;
 
 /**
  * @brief Callback function type used by callback_memory_resource for deallocation.
  *
  * The signature of the callback function is:
- *   `void deallocate_callback_t(cuda_stream_view stream, void* ptr, std::size_t bytes,
+ *   `void deallocate_callback_t(cuda::stream_ref stream, void* ptr, std::size_t bytes,
  *                              std::size_t alignment, void* arg);`
  *
  * * Deallocates memory pointed to by `ptr`. `bytes` specifies the size of the allocation
@@ -58,7 +58,7 @@ using allocate_callback_t = std::function<void*(cuda_stream_view, std::size_t, s
  *   and will be forwarded along to every invocation of the callback function.
  */
 using deallocate_callback_t =
-  std::function<void(cuda_stream_view, void*, std::size_t, std::size_t, void*)>;
+  std::function<void(cuda::stream_ref, void*, std::size_t, std::size_t, void*)>;
 
 namespace detail {
 class callback_memory_resource_impl;

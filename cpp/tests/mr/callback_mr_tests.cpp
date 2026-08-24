@@ -8,11 +8,12 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/error.hpp>
 #include <rmm/mr/callback_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <cuda/stream_ref>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -38,12 +39,12 @@ TEST(CallbackTest, TestCallbacksAreInvoked)
   EXPECT_CALL(base_mr, deallocate(_, _, size, alignment)).Times(1);
 
   auto allocate_callback =
-    [](cuda_stream_view stream, std::size_t size, std::size_t alignment, void* arg) {
+    [](cuda::stream_ref stream, std::size_t size, std::size_t alignment, void* arg) {
       auto base_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
       return base_mr.allocate(stream, size, alignment);
     };
   auto deallocate_callback =
-    [](cuda_stream_view stream, void* ptr, std::size_t size, std::size_t alignment, void* arg) {
+    [](cuda::stream_ref stream, void* ptr, std::size_t size, std::size_t alignment, void* arg) {
       auto base_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
       base_mr.deallocate(stream, ptr, size, alignment);
     };
@@ -60,8 +61,8 @@ TEST(CallbackTest, ForwardsAllocationMetadata)
   auto const size      = std::size_t{1024};
   auto const alignment = std::size_t{128};
 
-  cuda_stream_view allocation_stream{};
-  cuda_stream_view deallocation_stream{};
+  cuda::stream_ref allocation_stream{cudaStream_t{nullptr}};
+  cuda::stream_ref deallocation_stream{cudaStream_t{nullptr}};
   void* allocation_ptr{};
   void* deallocation_ptr{};
   std::size_t allocation_size{};
@@ -69,7 +70,7 @@ TEST(CallbackTest, ForwardsAllocationMetadata)
   std::size_t allocation_alignment{};
   std::size_t deallocation_alignment{};
 
-  auto allocate_callback = [&](cuda_stream_view callback_stream,
+  auto allocate_callback = [&](cuda::stream_ref callback_stream,
                                std::size_t callback_size,
                                std::size_t callback_alignment,
                                void*) {
@@ -79,7 +80,7 @@ TEST(CallbackTest, ForwardsAllocationMetadata)
     allocation_ptr       = base_mr.allocate(callback_stream, callback_size, callback_alignment);
     return allocation_ptr;
   };
-  auto deallocate_callback = [&](cuda_stream_view callback_stream,
+  auto deallocate_callback = [&](cuda::stream_ref callback_stream,
                                  void* ptr,
                                  std::size_t callback_size,
                                  std::size_t callback_alignment,
@@ -113,12 +114,12 @@ TEST(CallbackTest, ForwardsLargeAllocationAlignments)
   std::size_t allocation_alignment{};
   std::size_t deallocation_alignment{};
   auto allocate_callback = [&](
-                             cuda_stream_view, std::size_t, std::size_t callback_alignment, void*) {
+                             cuda::stream_ref, std::size_t, std::size_t callback_alignment, void*) {
     allocation_alignment = callback_alignment;
     return static_cast<void*>(&allocation);
   };
   auto deallocate_callback =
-    [&](cuda_stream_view, void*, std::size_t, std::size_t callback_alignment, void*) {
+    [&](cuda::stream_ref, void*, std::size_t, std::size_t callback_alignment, void*) {
       deallocation_alignment = callback_alignment;
     };
   auto mr = rmm::mr::callback_memory_resource(allocate_callback, deallocate_callback);
@@ -136,11 +137,11 @@ TEST(CallbackTest, RejectsInvalidAllocationAlignmentBeforeCallback)
 {
   std::size_t callback_invocations{};
   auto allocate_callback = [&callback_invocations](
-                             cuda_stream_view, std::size_t, std::size_t, void*) {
+                             cuda::stream_ref, std::size_t, std::size_t, void*) {
     ++callback_invocations;
     return nullptr;
   };
-  auto deallocate_callback = [](cuda_stream_view, void*, std::size_t, std::size_t, void*) {};
+  auto deallocate_callback = [](cuda::stream_ref, void*, std::size_t, std::size_t, void*) {};
   auto mr = rmm::mr::callback_memory_resource(allocate_callback, deallocate_callback);
 
   try {
@@ -158,14 +159,14 @@ TEST(CallbackTest, LoggingTest)
 
   auto base_mr = rmm::mr::get_current_device_resource_ref();
   auto allocate_callback =
-    [](cuda_stream_view stream, std::size_t size, std::size_t alignment, void* arg) {
+    [](cuda::stream_ref stream, std::size_t size, std::size_t alignment, void* arg) {
       std::cout << "Allocating " << size << " bytes" << std::endl;
       auto base_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
       return base_mr.allocate(stream, size, alignment);
     };
 
   auto deallocate_callback =
-    [](cuda_stream_view stream, void* ptr, std::size_t size, std::size_t alignment, void* arg) {
+    [](cuda::stream_ref stream, void* ptr, std::size_t size, std::size_t alignment, void* arg) {
       std::cout << "Deallocating " << size << " bytes" << std::endl;
       auto base_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
       base_mr.deallocate(stream, ptr, size, alignment);

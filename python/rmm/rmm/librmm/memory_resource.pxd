@@ -5,7 +5,7 @@
 # See https://github.com/cython/cython/issues/5589
 from builtins import BaseException
 
-from cuda.bindings.cyruntime cimport cudaMemPool_t
+from cuda.bindings.cyruntime cimport cudaMemPool_t, cudaStream_t
 from libc.stddef cimport size_t
 from libc.stdint cimport int8_t, int32_t, int64_t
 from libcpp cimport bool
@@ -266,18 +266,53 @@ cdef extern from "rmm/mr/fixed_size_memory_resource.hpp" \
 
 cdef extern from "rmm/mr/callback_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
-    ctypedef void* (*allocate_callback_t)(cuda_stream_view, size_t, size_t, void*)
-    ctypedef void (*deallocate_callback_t)(
-        cuda_stream_view, void*, size_t, size_t, void*
-    )
-
     cdef cppclass callback_memory_resource:
-        callback_memory_resource(
-            allocate_callback_t allocate_callback,
-            deallocate_callback_t deallocate_callback,
-            void* allocate_callback_arg,
-            void* deallocate_callback_arg
-        ) except +
+        pass
+
+cdef extern from * nogil:
+    """
+    #include <rmm/mr/callback_memory_resource.hpp>
+
+    using cython_allocate_callback_t = void* (*)(cudaStream_t, std::size_t, std::size_t, void*);
+    using cython_deallocate_callback_t =
+      void (*)(cudaStream_t, void*, std::size_t, std::size_t, void*);
+
+    inline rmm::mr::callback_memory_resource* make_callback_memory_resource(
+      cython_allocate_callback_t allocate_callback,
+      cython_deallocate_callback_t deallocate_callback,
+      void* allocate_callback_arg,
+      void* deallocate_callback_arg)
+    {
+      return new rmm::mr::callback_memory_resource{
+        [allocate_callback](cuda::stream_ref stream,
+                            std::size_t bytes,
+                            std::size_t alignment,
+                            void* arg) {
+          return allocate_callback(stream.get(), bytes, alignment, arg);
+        },
+        [deallocate_callback](cuda::stream_ref stream,
+                              void* ptr,
+                              std::size_t bytes,
+                              std::size_t alignment,
+                              void* arg) noexcept {
+          deallocate_callback(stream.get(), ptr, bytes, alignment, arg);
+        },
+        allocate_callback_arg,
+        deallocate_callback_arg};
+    }
+    """
+    ctypedef void* (*cython_allocate_callback_t)(
+        cudaStream_t, size_t, size_t, void*
+    )
+    ctypedef void (*cython_deallocate_callback_t)(
+        cudaStream_t, void*, size_t, size_t, void*
+    )
+    callback_memory_resource* make_callback_memory_resource(
+        cython_allocate_callback_t allocate_callback,
+        cython_deallocate_callback_t deallocate_callback,
+        void* allocate_callback_arg,
+        void* deallocate_callback_arg
+    ) except +
 
 cdef extern from "rmm/mr/binning_memory_resource.hpp" \
         namespace "rmm::mr" nogil:

@@ -10,6 +10,7 @@ from collections import defaultdict
 
 cimport cython
 from cuda.bindings cimport cyruntime
+from cuda.bindings.cyruntime cimport cudaStream_t
 from cython.operator cimport dereference as deref
 from libc.stddef cimport size_t
 from libc.stdint cimport int8_t, int32_t, uintptr_t
@@ -27,7 +28,6 @@ from rmm.pylibrmm.utils cimport as_stream
 
 from rmm.pylibrmm.stream import DEFAULT_STREAM
 
-from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 from rmm.librmm.per_device_resource cimport (
     cuda_device_id,
     set_per_device_resource as cpp_set_per_device_resource,
@@ -38,17 +38,16 @@ from rmm.statistics import Statistics
 
 from rmm.librmm.memory_resource cimport (
     CppExcept,
-    allocate_callback_t,
     allocation_handle_type,
     any_resource,
     arena_memory_resource,
     available_device_memory as c_available_device_memory,
     binning_memory_resource,
-    callback_memory_resource,
     cuda_async_memory_resource,
     cuda_async_view_memory_resource,
     cuda_memory_resource,
-    deallocate_callback_t,
+    cython_allocate_callback_t,
+    cython_deallocate_callback_t,
     device_accessible,
     device_async_resource_ref,
     failure_callback_resource_adaptor_oom,
@@ -56,6 +55,7 @@ from rmm.librmm.memory_resource cimport (
     fixed_size_memory_resource,
     limiting_resource_adaptor,
     logging_resource_adaptor,
+    make_callback_memory_resource,
     make_device_async_resource_ref,
     managed_memory_resource,
     percent_of_free_device_memory as c_percent_of_free_device_memory,
@@ -574,7 +574,7 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
 
 cdef void* _allocate_callback_wrapper(
-    cuda_stream_view stream,
+    cudaStream_t stream,
     size_t nbytes,
     size_t alignment,
     void* ctx
@@ -586,7 +586,7 @@ cdef void* _allocate_callback_wrapper(
     with gil:
         try:
             return <void*>(<uintptr_t>((<object>(ctx))(
-                Stream._from_cudaStream_t(stream.value()),
+                Stream._from_cudaStream_t(stream),
                 nbytes,
                 alignment
             )))
@@ -595,14 +595,14 @@ cdef void* _allocate_callback_wrapper(
     throw_cpp_except(err)
 
 cdef void _deallocate_callback_wrapper(
-    cuda_stream_view stream,
+    cudaStream_t stream,
     void* ptr,
     size_t nbytes,
     size_t alignment,
     void* ctx
 ) noexcept with gil:
     (<object>(ctx))(
-        Stream._from_cudaStream_t(stream.value()),
+        Stream._from_cudaStream_t(stream),
         <uintptr_t>(ptr),
         nbytes,
         alignment
@@ -669,9 +669,9 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     ):
         self._allocate_func = allocate_func
         self._deallocate_func = deallocate_func
-        self.c_obj.reset(new callback_memory_resource(
-            <allocate_callback_t>(_allocate_callback_wrapper),
-            <deallocate_callback_t>(_deallocate_callback_wrapper),
+        self.c_obj.reset(make_callback_memory_resource(
+            <cython_allocate_callback_t>(_allocate_callback_wrapper),
+            <cython_deallocate_callback_t>(_deallocate_callback_wrapper),
             <void*>(allocate_func),
             <void*>(deallocate_func)
         ))

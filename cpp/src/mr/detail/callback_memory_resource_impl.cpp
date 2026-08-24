@@ -17,8 +17,8 @@ namespace mr {
 namespace detail {
 
 callback_memory_resource_impl::callback_memory_resource_impl(
-  std::function<void*(cuda_stream_view, std::size_t, std::size_t, void*)> allocate_callback,
-  std::function<void(cuda_stream_view, void*, std::size_t, std::size_t, void*)> deallocate_callback,
+  std::function<void*(cuda::stream_ref, std::size_t, std::size_t, void*)> allocate_callback,
+  std::function<void(cuda::stream_ref, void*, std::size_t, std::size_t, void*)> deallocate_callback,
   void* allocate_callback_arg,
   void* deallocate_callback_arg) noexcept
   : allocate_callback_(std::move(allocate_callback)),
@@ -33,8 +33,7 @@ void* callback_memory_resource_impl::allocate(cuda::stream_ref stream,
                                               std::size_t alignment)
 {
   RMM_EXPECTS(rmm::is_supported_alignment(alignment), "Allocation alignment is not a power of 2.");
-  return allocate_callback_(
-    cuda_stream_view{stream.get()}, bytes, alignment, allocate_callback_arg_);
+  return allocate_callback_(stream, bytes, alignment, allocate_callback_arg_);
 }
 
 void callback_memory_resource_impl::deallocate(cuda::stream_ref stream,
@@ -42,8 +41,7 @@ void callback_memory_resource_impl::deallocate(cuda::stream_ref stream,
                                                std::size_t bytes,
                                                std::size_t alignment) noexcept
 {
-  deallocate_callback_(
-    cuda_stream_view{stream.get()}, ptr, bytes, alignment, deallocate_callback_arg_);
+  deallocate_callback_(stream, ptr, bytes, alignment, deallocate_callback_arg_);
 }
 
 void* callback_memory_resource_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
