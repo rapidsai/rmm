@@ -119,10 +119,6 @@ class device_scalar {
 
   // Disallow passing literals to the constructor to avoid race conditions where the
   // memory holding the literal can be freed before the async memcpy / memset executes.
-  device_scalar(value_type&&,
-                cuda_stream_view stream,
-                cuda::mr::any_resource<cuda::mr::device_accessible> mr =
-                  mr::get_current_device_resource_ref()) = delete;
   device_scalar(value_type const&&,
                 cuda_stream_view stream,
                 cuda::mr::any_resource<cuda::mr::device_accessible> mr =
@@ -208,7 +204,6 @@ class device_scalar {
 
   // Disallow passing literals to set_value to avoid race conditions where the memory holding the
   // literal can be freed before the async memcpy / memset executes.
-  void set_value_async(value_type&&, cuda_stream_view)       = delete;
   void set_value_async(value_type const&&, cuda_stream_view) = delete;
 
   /**
@@ -277,6 +272,33 @@ class device_scalar {
  private:
   rmm::device_uvector<T> _storage;
 };
+
+static_assert(std::is_constructible_v<device_scalar<int>, int const&, cuda_stream_view>);
+static_assert(std::is_constructible_v<device_scalar<int>,
+                                      int const&,
+                                      cuda_stream_view,
+                                      cuda::mr::any_resource<cuda::mr::device_accessible>>);
+static_assert(!std::is_constructible_v<device_scalar<int>, int, cuda_stream_view>);
+static_assert(!std::is_constructible_v<device_scalar<int>, int const, cuda_stream_view>);
+static_assert(!std::is_constructible_v<device_scalar<int>,
+                                       int,
+                                       cuda_stream_view,
+                                       cuda::mr::any_resource<cuda::mr::device_accessible>>);
+static_assert(!std::is_constructible_v<device_scalar<int>,
+                                       int const,
+                                       cuda_stream_view,
+                                       cuda::mr::any_resource<cuda::mr::device_accessible>>);
+static_assert([]<typename Scalar> {
+  return requires(Scalar& scalar, int value, cuda_stream_view stream) {
+    scalar.set_value_async(value, stream);
+  } && requires(Scalar& scalar, int const value, cuda_stream_view stream) {
+    scalar.set_value_async(value, stream);
+  } && !requires(Scalar& scalar, int value, cuda_stream_view stream) {
+    scalar.set_value_async(std::move(value), stream);
+  } && !requires(Scalar& scalar, int const value, cuda_stream_view stream) {
+    scalar.set_value_async(std::move(value), stream);
+  };
+}.template operator()<device_scalar<int>>());
 
 /** @} */  // end of group
 RMM_NAMESPACE_END
