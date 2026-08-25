@@ -117,6 +117,12 @@ class device_scalar {
     set_value_async(initial_value, stream);
   }
 
+  // Disallow passing literals to the constructor to avoid race conditions where the
+  // memory holding the literal can be freed before the async memcpy / memset executes.
+  device_scalar(value_type&&,
+                cuda_stream_view stream,
+                cuda::mr::any_resource<cuda::mr::device_accessible> mr =
+                  mr::get_current_device_resource_ref()) = delete;
   /**
    * @brief Construct a new `device_scalar` by deep copying the contents of
    * another `device_scalar`, using the specified stream and memory
