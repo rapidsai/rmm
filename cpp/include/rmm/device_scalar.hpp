@@ -288,7 +288,7 @@ static_assert(!std::is_constructible_v<device_scalar<int>,
                                        int const,
                                        cuda_stream_view,
                                        cuda::mr::any_resource<cuda::mr::device_accessible>>);
-static_assert([]<typename Scalar> {
+static_assert([]<typename Scalar>(Scalar*) {
   return requires(Scalar& scalar, int value, cuda_stream_view stream) {
     scalar.set_value_async(value, stream);
   } && requires(Scalar& scalar, int const value, cuda_stream_view stream) {
@@ -298,7 +298,7 @@ static_assert([]<typename Scalar> {
   } && !requires(Scalar& scalar, int const value, cuda_stream_view stream) {
     scalar.set_value_async(std::move(value), stream);
   };
-}.template operator()<device_scalar<int>>());
+}(static_cast<device_scalar<int>*>(nullptr)));
 
 /** @} */  // end of group
 RMM_NAMESPACE_END
