@@ -121,8 +121,10 @@ class device_scalar {
   // memory holding the literal can be freed before the async memcpy / memset executes.
   device_scalar(value_type&&,
                 cuda_stream_view stream,
-                cuda::mr::any_resource<cuda::mr::device_accessible> mr =
-                  mr::get_current_device_resource_ref()) = delete;
+                cuda::mr::any_resource<cuda::mr::device_accessible> mr) = delete;
+  device_scalar(value_type const&&,
+                cuda_stream_view stream,
+                cuda::mr::any_resource<cuda::mr::device_accessible> mr) = delete;
   /**
    * @brief Construct a new `device_scalar` by deep copying the contents of
    * another `device_scalar`, using the specified stream and memory
@@ -204,7 +206,8 @@ class device_scalar {
 
   // Disallow passing literals to set_value to avoid race conditions where the memory holding the
   // literal can be freed before the async memcpy / memset executes.
-  void set_value_async(value_type&&, cuda_stream_view) = delete;
+  void set_value_async(value_type&&, cuda_stream_view)       = delete;
+  void set_value_async(value_type const&&, cuda_stream_view) = delete;
 
   /**
    * @brief Sets the value of the `device_scalar` to zero on the specified stream.
