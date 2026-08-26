@@ -427,12 +427,15 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
 
     Parameters
     ----------
-    b : ``bytes``-like data on host to copy to device
-    stream : CUDA stream to use for copying, default the default stream
+    b : buffer
+        Host data to copy to device.
+    stream : Stream, optional
+        CUDA stream to use for copying. Defaults to the default stream.
 
     Returns
     -------
-    ``DeviceBuffer`` with copy of data from host
+    DeviceBuffer
+        Device buffer containing a copy of the host data.
 
     Notes
     -----
@@ -498,9 +501,12 @@ cpdef void copy_ptr_to_host(uintptr_t db,
 
     Parameters
     ----------
-    db : pointer to data on device to copy
-    hb : ``bytes``-like buffer to write into
-    stream : CUDA stream to use for copying, default the default stream
+    db : int
+        Pointer to device data to copy.
+    hb : writable buffer
+        Host buffer to write into.
+    stream : Stream, optional
+        CUDA stream to use for copying. Defaults to the default stream.
 
     Notes
     -----
@@ -541,9 +547,12 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
 
     Parameters
     ----------
-    hb : ``bytes``-like host buffer to copy
-    db : pointer to data on device to write into
-    stream : CUDA stream to use for copying, default the default stream
+    hb : buffer
+        Host data to copy.
+    db : int
+        Pointer to device memory to write into.
+    stream : Stream, optional
+        CUDA stream to use for copying. Defaults to the default stream.
 
     Notes
     -----
@@ -587,10 +596,14 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
 
     Parameters
     ----------
-    d_src : pointer to data on device to copy from
-    d_dst : pointer to data on device to write into
-    count : the size in bytes to copy
-    stream : CUDA stream to use for copying, default the default stream
+    d_src : int
+        Pointer to device data to copy.
+    d_dst : int
+        Pointer to device memory to write into.
+    count : int
+        Number of bytes to copy.
+    stream : Stream, optional
+        CUDA stream to use for copying. Defaults to the default stream.
 
     Examples
     --------
