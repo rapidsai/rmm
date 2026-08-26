@@ -11,11 +11,17 @@ This module contains the low-level Cython bindings for RMM. Some components from
 - Logging utilities (available through `rmm`)
 - CUDA stream wrappers (documented below)
 
-## Device Buffer Functions
+## CUDA Stream
+
+The stream classes are available only through `rmm.pylibrmm` and provide low-level CUDA stream management.
+
+### rmm.pylibrmm.stream
 
 ```{eval-rst}
-.. automodule:: rmm.pylibrmm.device_buffer
-   :members: copy_device_to_ptr, copy_host_to_ptr, copy_ptr_to_host, to_device
+.. automodule:: rmm.pylibrmm.stream
+   :members:
+   :undoc-members:
+   :show-inheritance:
 ```
 
 ## CUDA Stream Pool
@@ -27,15 +33,9 @@ This module contains the low-level Cython bindings for RMM. Some components from
    :show-inheritance:
 ```
 
-## CUDA Stream Classes
-
-The stream classes are available only through `rmm.pylibrmm` and provide low-level CUDA stream management.
-
-### rmm.pylibrmm.stream
+## Device Buffer Functions
 
 ```{eval-rst}
-.. automodule:: rmm.pylibrmm.stream
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. automodule:: rmm.pylibrmm.device_buffer
+   :members: copy_device_to_ptr, copy_host_to_ptr, copy_ptr_to_host, to_device
 ```
