@@ -510,7 +510,7 @@ dependencies:
       #
       # 'torch' tightly pins wheels to a single {major}.{minor} CTK version.
       #
-      # This list only contains entries exactly matching CUDA {major}.{minor} that we test in RAPIDS CI,
+      # This list only contains entries exactly matching CUDA {major}.{minor} that we test in RMM CI,
       # to ensure a loud error alerts us to the need to update this list (or CI scripts) when new
       # CTKs are added to the support matrix.
       - output_types: requirements

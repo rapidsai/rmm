@@ -5,7 +5,7 @@
 ## Resources
 
 - [RMM Reference Documentation](https://docs.nvidia.com/rmm/): Python and C++ API references, tutorials, and topic guides.
-- [RAPIDS Installation Guide](https://docs.rapids.ai/install/): Instructions for installing RMM.
+- [Installation Guide](https://docs.rapids.ai/install/): Instructions for installing NVIDIA CUDA-X libraries for data science.
 - [GitHub Repository](https://github.com/rapidsai/rmm): Download the RMM source code.
 - [Issue Tracker](https://github.com/rapidsai/rmm/issues): Report issues or request features.
 
@@ -43,7 +43,7 @@ of our latest development branch.
 
 Note: The RMM package from conda requires building with GCC 13.3 or later. Otherwise, your application may fail to build.
 
-See the [RAPIDS Installation Guide](https://docs.rapids.ai/install/) for system requirements.
+See the [installation guide](https://docs.rapids.ai/install/) for system requirements.
 
 ## Building from Source
 
@@ -539,7 +539,7 @@ int32_t v = a.value(s); // Retrieves the value from device to host on stream `s`
 
 ## Using RMM with Thrust
 
-RAPIDS and other CUDA libraries make heavy use of Thrust. Thrust uses CUDA device memory in two
+Many RMM users also use the Thrust library. Thrust uses CUDA device memory in two
 situations:
 
  1. As the backing store for `thrust::device_vector`, and
