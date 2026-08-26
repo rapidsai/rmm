@@ -4,7 +4,7 @@
 
 **Target**: Sub-3% false positive rate. Be direct, concise, minimal.
 
-**Context**: RMM (Resource-based Memory Manager) is a C++ library providing GPU memory allocators and memory resources for CUDA applications. It provides RAII-based device memory management, memory pools, and custom allocator interfaces.
+**Context**: RMM is a library for CUDA memory management. It provides RAII-based device memory management, memory pools, and custom allocator interfaces.
 
 For general development guidance including build commands, test commands, code style, and project structure, see the top-level `AGENTS.md`.
 

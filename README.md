@@ -1,11 +1,11 @@
-# RMM: Resource-based Memory Manager
+# NVIDIA RMM
 
 **NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/main/README.md) ensure you are on the `main` branch.
 
 ## Resources
 
 - [RMM Reference Documentation](https://docs.nvidia.com/rmm/): Python and C++ API references, tutorials, and topic guides.
-- [Installation Guide](https://docs.rapids.ai/install/): Instructions for installing NVIDIA CUDA-X libraries for data science.
+- [Installation](#installation): Instructions for installing RMM.
 - [GitHub Repository](https://github.com/rapidsai/rmm): Download the RMM source code.
 - [Issue Tracker](https://github.com/rapidsai/rmm/issues): Report issues or request features.
 
@@ -18,7 +18,7 @@ dynamic device memory allocation.
 
 The goal of RMM is to provide:
 - A common interface that allows customizing memory allocation on device and host
-- A collection of [implementations](#available-resources) of the interface
+- A collection of [implementations](#available-device-resources) of the interface
 - A collection of [data structures](#device-data-structures) that use the interface for memory allocation
 
 For information on the interface RMM provides and how to use RMM in your C++ code, see
@@ -539,8 +539,8 @@ int32_t v = a.value(s); // Retrieves the value from device to host on stream `s`
 
 ## Using RMM with Thrust
 
-Many RMM users also use the Thrust library. Thrust uses CUDA device memory in two
-situations:
+[Thrust](https://github.com/NVIDIA/cccl/tree/main/thrust), part of the CUDA Core
+Compute Libraries (CCCL), uses CUDA device memory in two situations:
 
  1. As the backing store for `thrust::device_vector`, and
  2. As temporary storage inside some algorithms, such as `thrust::sort`.

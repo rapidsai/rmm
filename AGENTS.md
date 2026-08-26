@@ -1,6 +1,6 @@
 # AGENTS.md - RMM Development Guide
 
-RMM (Resource-based Memory Manager) is a CUDA memory management library providing C++ and Python APIs.
+RMM is a library for CUDA memory management.
 
 ## Safety Rules for Agents
 

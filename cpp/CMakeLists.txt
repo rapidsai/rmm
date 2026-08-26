@@ -208,7 +208,7 @@ install(FILES ${RMM_BINARY_DIR}/include/rmm/version_config.hpp
 
 set(doc_string
     [=[
-Provide targets for RMM: Resource-based Memory Manager.
+Provide targets for RMM.
 
 The goal of [RMM](https://github.com/rapidsai/rmm) is to provide:
 
