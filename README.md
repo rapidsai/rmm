@@ -30,17 +30,14 @@ For a walkthrough of the design of RMM, read [Fast, Flexible Allocation for NVID
 
 ### System Requirements
 
-Please see the [Installation Guide](https://docs.rapids.ai/install/#system-req) for NVIDIA CUDA-X
-libraries for data science for information about supported operating systems, GPU drivers, and CUDA
-versions.
+Please see the [Installation Guide](https://docs.rapids.ai/install/#system-requirements)
+for NVIDIA CUDA-X libraries for data science for information about supported operating systems,
+GPU drivers, and CUDA versions.
 
 ### pip
 
 Stable releases of `librmm` and `rmm` are available on PyPI. Match the package suffix to the
 major CUDA version supported by your installed driver.
-
-Development versions are available as nightly releases by including the
-`-i https://pypi.anaconda.org/rapidsai-wheels-nightly/simple/` index.
 
 ```bash
 # CUDA 13
@@ -52,14 +49,39 @@ pip install librmm-cu12
 pip install rmm-cu12
 ```
 
+Development versions are available as nightly releases:
+
+```bash
+# CUDA 13
+pip install --pre \
+  --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple \
+  librmm-cu13
+pip install --pre \
+  --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple \
+  rmm-cu13
+
+# CUDA 12
+pip install --pre \
+  --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple \
+  librmm-cu12
+pip install --pre \
+  --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple \
+  rmm-cu12
+```
+
 ### conda
 
 Stable releases of `librmm` and `rmm` are available from the `rapidsai` channel. Development
 versions are available from the `rapidsai-nightly` channel.
 
 ```bash
-conda install -c rapidsai librmm
-conda install -c rapidsai rmm
+# Stable
+conda install -c rapidsai -c conda-forge librmm
+conda install -c rapidsai -c conda-forge rmm
+
+# Nightly
+conda install -c rapidsai-nightly -c conda-forge librmm
+conda install -c rapidsai-nightly -c conda-forge rmm
 ```
 
 ## Building from Source
