@@ -30,8 +30,7 @@ For a walkthrough of the design of RMM, read [Fast, Flexible Allocation for NVID
 
 ### System Requirements
 
-Operating system, GPU driver, and supported CUDA version information can be found in the
-[RAPIDS Installation Guide](https://docs.rapids.ai/install/#system-req).
+Please see the [Installation Guide](https://docs.rapids.ai/install/#system-req) for NVIDIA CUDA-X libraries for data science for information about supported operating systems, GPU drivers, and CUDA versions.
 
 ### pip
 
