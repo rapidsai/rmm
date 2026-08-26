@@ -4,11 +4,10 @@
 
 ## Resources
 
-- [RMM Reference Documentation](https://docs.rapids.ai/api/rmm/stable/): Python and C++ API references, tutorials, and topic guides.
+- [RMM Reference Documentation](https://docs.nvidia.com/rmm/): Python and C++ API references, tutorials, and topic guides.
 - [RAPIDS Installation Guide](https://docs.rapids.ai/install/): Instructions for installing RMM.
 - [GitHub Repository](https://github.com/rapidsai/rmm): Download the RMM source code.
 - [Issue Tracker](https://github.com/rapidsai/rmm/issues): Report issues or request features.
-- [RAPIDS Community](https://rapids.ai/learn-more/#get-involved): Get help, contribute, and collaborate.
 
 ## Overview
 

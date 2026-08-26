@@ -230,5 +230,5 @@ buf = rmm.DeviceBuffer(size=size)
 
 ## Resources
 
-- **Documentation**: https://docs.rapids.ai/api/rmm/stable/
+- **Documentation**: https://docs.nvidia.com/rmm/
 - **GitHub Issues**: https://github.com/rapidsai/rmm/issues
