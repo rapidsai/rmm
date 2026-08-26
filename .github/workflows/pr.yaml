@@ -71,6 +71,13 @@ jobs:
         with:
           repo: ${{ github.repository }}
           target-branch: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.ref }}
+      - name: Check if link checks are passing
+        uses: rapidsai/shared-actions/check_nightly_success/dispatch@main
+        with:
+          repo: ${{ github.repository }}
+          target-branch: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.ref }}
+          workflow-id: link-checks.yaml
+          max-days-without-success: 14
   changed-files:
     needs:
       - telemetry-setup

@@ -45,10 +45,7 @@ and ask for clarifications!
 ### Seasoned developers
 
 Once you have gotten your feet wet and are more comfortable with the code, you
-can look at the prioritized issues of our next release in our [project boards](https://github.com/rapidsai/rmm/projects).
-
-> **Pro Tip:** Always look at the release board with the highest number for
-issues to work on. This is where RAPIDS developers also focus their efforts.
+can look at work in our [issue tracker](https://github.com/rapidsai/rmm/issues).
 
 Look at the unassigned issues, and find an issue you are comfortable with
 contributing to. Start with _Step 3_ from above, commenting on the issue to let
