@@ -28,22 +28,38 @@ For a walkthrough of the design of RMM, read [Fast, Flexible Allocation for NVID
 
 ## Installation
 
-### Conda
+### System Requirements
 
-RMM can be installed with conda. You can get a minimal conda installation with [miniforge](https://github.com/conda-forge/miniforge).
+Operating system, GPU driver, and supported CUDA version information can be found in the
+[RAPIDS Installation Guide](https://docs.rapids.ai/install/#system-req).
 
-Install RMM with:
+### pip
+
+Stable releases of `librmm` and `rmm` are available on PyPI. Match the package suffix to the
+major CUDA version supported by your installed driver.
+
+Development versions are available as nightly releases by including the
+`-i https://pypi.anaconda.org/rapidsai-wheels-nightly/simple/` index.
 
 ```bash
-conda install -c rapidsai -c conda-forge rmm cuda-version=13.3
+# CUDA 13
+pip install librmm-cu13
+pip install rmm-cu13
+
+# CUDA 12
+pip install librmm-cu12
+pip install rmm-cu12
 ```
 
-We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
-of our latest development branch.
+### conda
 
-Note: The RMM package from conda requires building with GCC 13.3 or later. Otherwise, your application may fail to build.
+Stable releases of `librmm` and `rmm` are available from the `rapidsai` channel. Development
+versions are available from the `rapidsai-nightly` channel.
 
-See the [installation guide](https://docs.rapids.ai/install/) for system requirements.
+```bash
+conda install -c rapidsai librmm
+conda install -c rapidsai rmm
+```
 
 ## Building from Source
 
@@ -55,7 +71,7 @@ Compiler requirements:
 * `nvcc`    version 12.9+
 * `cmake`   version 4.0+
 
-CUDA/GPU requirements:
+CUDA/GPU runtime requirements:
 
 * CUDA 12.2+. You can obtain CUDA from
   [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
