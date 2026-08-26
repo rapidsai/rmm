@@ -247,7 +247,7 @@ jobs:
       build_type: pull-request
       node_type: cpu16
       arch: "amd64"
-      container_image: "rapidsai/ci-conda:26.08-latest"
+      container_image: "rapidsai/ci-conda:26.10-latest"
       script: "ci/test_cmake.sh"
   conda-cpp-build:
     needs: [build-details, checks]
@@ -376,7 +376,7 @@ jobs:
     with:
       docs-projects: rmm,librmm
       dry-run: true
-      version-map: '{"26.04": "legacy", "26.06": "stable"}'
+      version-map: ${{ vars.VERSION_MAP }}
   wheel-build-cpp:
     needs: [build-details, checks]
     permissions:

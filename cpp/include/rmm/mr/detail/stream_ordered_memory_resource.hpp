@@ -12,7 +12,7 @@
 #include <rmm/logger.hpp>
 #include <rmm/process_is_exiting.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <algorithm>

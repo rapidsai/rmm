@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -400,7 +400,7 @@ inline auto make_system()
 
 inline auto make_arena()
 {
-  return std::make_shared<rmm::mr::arena_memory_resource>(rmm::mr::cuda_memory_resource{});
+  return std::make_shared<rmm::mr::arena_memory_resource>(rmm::mr::cuda_memory_resource{}, 8_GiB);
 }
 
 inline auto make_fixed_size()

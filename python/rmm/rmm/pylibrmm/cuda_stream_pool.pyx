@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 cimport cython
@@ -20,6 +20,14 @@ cdef class CudaStreamPool:
 
     Provides thread-safe access to a collection of CUDA stream objects.
     Successive calls may return views of identical streams.
+
+    Parameters
+    ----------
+    pool_size : int, optional
+        Number of streams in the pool. Defaults to 16.
+    flags : CudaStreamFlags, optional
+        Flags used to create each stream. Defaults to
+        ``CudaStreamFlags.SYNC_DEFAULT``.
     """
 
     def __cinit__(self, size_t pool_size = 16,

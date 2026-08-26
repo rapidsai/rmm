@@ -1,6 +1,6 @@
 # =============================================================================
 # cmake-format: off
-# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 # cmake-format: on
 # =============================================================================
@@ -80,6 +80,7 @@ add_library(
   rmm
   src/aligned.cpp
   src/cuda_device.cpp
+  src/cuda_memcpy.cpp
   src/cuda_stream.cpp
   src/cuda_stream_pool.cpp
   src/cuda_stream_view.cpp

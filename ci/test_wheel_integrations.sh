@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 set -eou pipefail
@@ -28,9 +28,7 @@ PIP_INSTALL_SHARED_ARGS=(
 
 EXITCODE=0
 
-rapids-logger "Check GPU status"
-nvidia-smi
-nvidia-smi -q | grep "Addressing Mode" || echo "Addressing Mode not reported"
+./ci/gpu_info.sh
 
 echo "::group::PyTorch Tests"
 

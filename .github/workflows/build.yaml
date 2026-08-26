@@ -29,7 +29,7 @@ on:
         default: nightly
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}-${{ inputs.build_type || 'branch' }}
   cancel-in-progress: true
 
 permissions: {}
@@ -142,7 +142,7 @@ jobs:
     with:
       docs-projects: rmm,librmm
       dry-run: false
-      version-map: '{"26.04": "legacy", "26.06": "stable"}'
+      version-map: ${{ vars.VERSION_MAP }}
   wheel-build-cpp:
     needs: [build-details, telemetry-setup]
     permissions:

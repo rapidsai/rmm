@@ -6,6 +6,7 @@
 #pragma once
 
 #include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/cuda_memcpy.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/exec_check_disable.hpp>
 #include <rmm/detail/export.hpp>
@@ -216,8 +217,8 @@ class device_uvector {
   {
     RMM_EXPECTS(
       element_index < size(), "Attempt to access out of bounds element.", rmm::out_of_range);
-    RMM_CUDA_TRY(cudaMemcpyAsync(
-      element_ptr(element_index), &value, sizeof(value), cudaMemcpyDefault, stream.value()));
+    RMM_CUDA_TRY(
+      rmm::detail::memcpy_async(element_ptr(element_index), &value, sizeof(value), stream));
   }
 
   // We delete the r-value reference overload to prevent asynchronously copying from a literal or
@@ -306,8 +307,8 @@ class device_uvector {
     RMM_EXPECTS(
       element_index < size(), "Attempt to access out of bounds element.", rmm::out_of_range);
     value_type value;
-    RMM_CUDA_TRY(cudaMemcpyAsync(
-      &value, element_ptr(element_index), sizeof(value), cudaMemcpyDefault, stream.value()));
+    RMM_CUDA_TRY(
+      rmm::detail::memcpy_async(&value, element_ptr(element_index), sizeof(value), stream));
     stream.synchronize();
     return value;
   }

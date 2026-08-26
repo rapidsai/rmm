@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <limits>
 
 namespace rmm::test {
 namespace {
@@ -247,6 +248,45 @@ TEST(AlignedTest, AlignRealPointer)
   EXPECT_TRUE(rmm::is_pointer_aligned(alloc, alignment));
   mr.deallocate_sync(alloc, threshold);
 }
+
+TEST(AlignedTest, AlignUpJustBelowOverflowBoundarySucceeds)
+{
+  auto const max_value = std::numeric_limits<std::size_t>::max();
+  auto const alignment = std::size_t{256};
+  auto const value     = max_value - alignment;
+  // The largest multiple of `alignment` representable in std::size_t is `max_value - 255`,
+  // since `max_value + 1` is the next multiple of 256 above it, which overflows. `value` is
+  // exactly one less than that multiple, so aligning up must land on it.
+  auto const expected = max_value - (alignment - 1);
+  EXPECT_EQ(rmm::align_up(value, alignment), expected);
+}
+
+TEST(AlignedTest, AlignUpAtOverflowBoundaryIsNoOp)
+{
+  auto const max_value = std::numeric_limits<std::size_t>::max();
+  auto const alignment = std::size_t{256};
+  // `max_value - 255` is the largest value that is itself already a multiple of 256, i.e. the
+  // true boundary of the safe region: aligning it up must be a no-op.
+  auto const boundary = max_value - (alignment - 1);
+  EXPECT_EQ(rmm::align_up(boundary, alignment), boundary);
+}
+
+TEST(AlignedTest, AlignUpAlignmentOfOneIsNoOp)
+{
+  // `1` is a valid power of two, so `alignment - 1 == 0` and the mask is all-ones: align_up
+  // becomes a pure no-op that can never trigger the overflow guard, even at SIZE_MAX.
+  auto const max_value = std::numeric_limits<std::size_t>::max();
+  EXPECT_EQ(rmm::align_up(max_value, std::size_t{1}), max_value);
+  EXPECT_EQ(rmm::align_up(12345, 1), 12345);
+}
+
+#ifndef NDEBUG
+// This test only runs in debug builds because the overflow guard is an assert.
+TEST(AlignedDeathTest, AlignUpOverflowAborts)
+{
+  EXPECT_DEATH((void)rmm::align_up(std::numeric_limits<std::size_t>::max(), std::size_t{256}), "");
+}
+#endif
 
 TEST(AlignedTest, SmallAlignmentsBumpedTo256Bytes)
 {

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 import numpy as np
 
@@ -41,43 +41,44 @@ from rmm.pylibrmm.memory_resource cimport (
 # See https://github.com/rapidsai/rmm/pull/931 for details.
 @cython.no_gc_clear
 cdef class DeviceBuffer:
+    """Construct a ``DeviceBuffer`` with optional size and data pointer
+
+    Parameters
+    ----------
+    ptr : int
+        pointer to some data on host or device to copy over
+    size : int
+        size of the buffer to allocate
+        (and possibly size of data to copy)
+    stream : optional
+        CUDA stream to use for construction and/or copying,
+        defaults to the CUDA default stream. A reference to the
+        stream is stored internally to ensure it doesn't go out of
+        scope while the DeviceBuffer is in use. Destroying the
+        underlying stream while the DeviceBuffer is in use will
+        result in undefined behavior.
+    mr : optional
+       DeviceMemoryResource for the allocation, if not provided
+       defaults to the current device resource.
+
+    Notes
+    -----
+    If the pointer passed is non-null and ``stream`` is the default stream,
+    the stream is synchronized after the copy. If a non-default ``stream``
+    is provided, the copy is asynchronous. The caller must keep the source
+    data valid and unmodified until the stream is synchronized.
+
+    Examples
+    --------
+    >>> import rmm
+    >>> db = rmm.DeviceBuffer(size=5)
+    """
 
     def __cinit__(self, *,
                   uintptr_t ptr=0,
                   size_t size=0,
                   Stream stream=DEFAULT_STREAM,
                   DeviceMemoryResource mr=None):
-        """Construct a ``DeviceBuffer`` with optional size and data pointer
-
-        Parameters
-        ----------
-        ptr : int
-            pointer to some data on host or device to copy over
-        size : int
-            size of the buffer to allocate
-            (and possibly size of data to copy)
-        stream : optional
-            CUDA stream to use for construction and/or copying,
-            defaults to the CUDA default stream. A reference to the
-            stream is stored internally to ensure it doesn't go out of
-            scope while the DeviceBuffer is in use. Destroying the
-            underlying stream while the DeviceBuffer is in use will
-            result in undefined behavior.
-        mr : optional
-           DeviceMemoryResource for the allocation, if not provided
-           defaults to the current device resource.
-
-        Note
-        ----
-        If the pointer passed is non-null and ``stream`` is the default stream,
-        it is synchronized after the copy. However if a non-default ``stream``
-        is provided, this function is fully asynchronous.
-
-        Examples
-        --------
-        >>> import rmm
-        >>> db = rmm.DeviceBuffer(size=5)
-        """
         cdef const void* c_ptr
         stream = as_stream(stream)
         # Save a reference to the MR and stream used for allocation
@@ -228,7 +229,13 @@ cdef class DeviceBuffer:
     @staticmethod
     def to_device(const unsigned char[::1] b,
                   Stream stream=DEFAULT_STREAM):
-        """Calls ``to_device`` function on arguments provided."""
+        """Return a new ``DeviceBuffer`` containing a copy of ``b``.
+
+        If ``stream`` is the default stream, it is synchronized after the copy.
+        If a non-default ``stream`` is provided, the copy is asynchronous. The
+        caller must keep ``b`` alive and unmodified until the stream is
+        synchronized.
+        """
         stream = as_stream(stream)
         return to_device(b, stream)
 
@@ -281,6 +288,13 @@ cdef class DeviceBuffer:
             :class:`bytes`-like buffer to copy from
         stream : optional
             CUDA stream to use for copying, defaults to the default stream
+
+        Notes
+        -----
+        If ``stream`` is the default stream, it is synchronized after the copy.
+        If a non-default ``stream`` is provided, the copy is asynchronous. The
+        caller must keep ``ary`` alive and unmodified until the stream is
+        synchronized.
 
         Examples
         --------
@@ -413,12 +427,22 @@ cpdef DeviceBuffer to_device(const unsigned char[::1] b,
 
     Parameters
     ----------
-    b : ``bytes``-like data on host to copy to device
-    stream : CUDA stream to use for copying, default the default stream
+    b : buffer
+        Host data to copy to device.
+    stream : Stream, optional
+        CUDA stream to use for copying. Defaults to the default stream.
 
     Returns
     -------
-    ``DeviceBuffer`` with copy of data from host
+    DeviceBuffer
+        Device buffer containing a copy of the host data.
+
+    Notes
+    -----
+    If ``stream`` is the default stream, it is synchronized after the copy.
+    If a non-default ``stream`` is provided, the copy is asynchronous. The
+    caller must keep ``b`` alive and unmodified until the stream is
+    synchronized.
 
     Examples
     --------
@@ -477,12 +501,15 @@ cpdef void copy_ptr_to_host(uintptr_t db,
 
     Parameters
     ----------
-    db : pointer to data on device to copy
-    hb : ``bytes``-like buffer to write into
-    stream : CUDA stream to use for copying, default the default stream
+    db : int
+        Pointer to device data to copy.
+    hb : writable buffer
+        Host buffer to write into.
+    stream : Stream, optional
+        CUDA stream to use for copying. Defaults to the default stream.
 
-    Note
-    ----
+    Notes
+    -----
     If ``stream`` is the default stream, it is synchronized after the copy.
     However if a non-default ``stream`` is provided, this function is fully
     asynchronous.
@@ -520,15 +547,19 @@ cpdef void copy_host_to_ptr(const unsigned char[::1] hb,
 
     Parameters
     ----------
-    hb : ``bytes``-like host buffer to copy
-    db : pointer to data on device to write into
-    stream : CUDA stream to use for copying, default the default stream
+    hb : buffer
+        Host data to copy.
+    db : int
+        Pointer to device memory to write into.
+    stream : Stream, optional
+        CUDA stream to use for copying. Defaults to the default stream.
 
-    Note
-    ----
+    Notes
+    -----
     If ``stream`` is the default stream, it is synchronized after the copy.
-    However if a non-default ``stream`` is provided, this function is fully
-    asynchronous.
+    If a non-default ``stream`` is provided, the copy is asynchronous. The
+    caller must keep ``hb`` alive and unmodified until the stream is
+    synchronized.
 
     Examples
     --------
@@ -565,10 +596,14 @@ cpdef void copy_device_to_ptr(uintptr_t d_src,
 
     Parameters
     ----------
-    d_src : pointer to data on device to copy from
-    d_dst : pointer to data on device to write into
-    count : the size in bytes to copy
-    stream : CUDA stream to use for copying, default the default stream
+    d_src : int
+        Pointer to device data to copy.
+    d_dst : int
+        Pointer to device memory to write into.
+    count : int
+        Number of bytes to copy.
+    stream : Stream, optional
+        CUDA stream to use for copying. Defaults to the default stream.
 
     Examples
     --------
