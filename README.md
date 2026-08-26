@@ -1,4 +1,4 @@
-# <div align="left"><img src="img/rapids_logo.png" width="90px"/>&nbsp;RMM: RAPIDS Memory Manager</div>
+# RMM: Resource-based Memory Manager
 
 **NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/main/README.md) ensure you are on the `main` branch.
 
@@ -16,7 +16,7 @@ device memory are allocated. For example, using "pinned" host memory for asynchr
 host <-> device memory transfers, or using a device memory pool sub-allocator to reduce the cost of
 dynamic device memory allocation.
 
-The goal of the RAPIDS Memory Manager (RMM) is to provide:
+The goal of RMM is to provide:
 - A common interface that allows customizing memory allocation on device and host
 - A collection of [implementations](#available-resources) of the interface
 - A collection of [data structures](#device-data-structures) that use the interface for memory allocation
@@ -24,7 +24,7 @@ The goal of the RAPIDS Memory Manager (RMM) is to provide:
 For information on the interface RMM provides and how to use RMM in your C++ code, see
 [below](#using-rmm-in-c).
 
-For a walkthrough about the design of the RAPIDS Memory Manager, read [Fast, Flexible Allocation for NVIDIA CUDA with RAPIDS Memory Manager](https://developer.nvidia.com/blog/fast-flexible-allocation-for-cuda-with-rapids-memory-manager/) on the NVIDIA Developer Blog.
+For a walkthrough of the design of RMM, read [Fast, Flexible Allocation for NVIDIA CUDA with RMM](https://developer.nvidia.com/blog/fast-flexible-allocation-for-cuda-with-rapids-memory-manager/) on the NVIDIA Developer Blog.
 
 ## Installation
 

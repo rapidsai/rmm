@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -19,7 +19,7 @@
 
 /**
  * @namespace rmm
- * @brief RAPIDS Memory Manager - The top-level namespace for all RMM functionality
+ * @brief The top-level namespace containing all RMM functionality
  *
  * The rmm namespace provides a comprehensive set of memory management
  * utilities for CUDA applications, including memory resources, CUDA stream
