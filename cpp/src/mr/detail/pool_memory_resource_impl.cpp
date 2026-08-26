@@ -29,7 +29,8 @@ RMM_NAMESPACE_BEGIN
 namespace mr {
 namespace detail {
 
-pool_memory_resource_impl::pool_memory_resource_impl(
+template <typename FreeListType>
+pool_memory_resource_impl<FreeListType>::pool_memory_resource_impl(
   cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
   std::size_t initial_pool_size,
   std::optional<std::size_t> maximum_pool_size)
@@ -43,23 +44,37 @@ pool_memory_resource_impl::pool_memory_resource_impl(
   initialize_pool(initial_pool_size, maximum_pool_size);
 }
 
-pool_memory_resource_impl::~pool_memory_resource_impl() { release(); }
+template <typename FreeListType>
+pool_memory_resource_impl<FreeListType>::~pool_memory_resource_impl()
+{
+  release();
+}
 
-device_async_resource_ref pool_memory_resource_impl::get_upstream_resource() const noexcept
+template <typename FreeListType>
+device_async_resource_ref
+pool_memory_resource_impl<FreeListType>::get_upstream_resource() const noexcept
 {
   return device_async_resource_ref{
     const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
 }
 
-std::size_t pool_memory_resource_impl::pool_size() const noexcept { return current_pool_size_; }
+template <typename FreeListType>
+std::size_t pool_memory_resource_impl<FreeListType>::pool_size() const noexcept
+{
+  return current_pool_size_;
+}
 
-std::size_t pool_memory_resource_impl::get_maximum_allocation_size() const
+template <typename FreeListType>
+std::size_t pool_memory_resource_impl<FreeListType>::get_maximum_allocation_size() const
 {
   return std::numeric_limits<std::size_t>::max();
 }
 
-pool_memory_resource_impl::block_type pool_memory_resource_impl::try_to_expand(
-  std::size_t try_size, std::size_t min_size, cuda_stream_view stream)
+template <typename FreeListType>
+typename pool_memory_resource_impl<FreeListType>::block_type
+pool_memory_resource_impl<FreeListType>::try_to_expand(std::size_t try_size,
+                                                       std::size_t min_size,
+                                                       cuda_stream_view stream)
 {
   auto report_error = [&](const char* reason) {
     RMM_LOG_ERROR("[A][Stream %s][Upstream %zuB][FAILURE maximum pool size exceeded: %s]",
@@ -90,8 +105,9 @@ pool_memory_resource_impl::block_type pool_memory_resource_impl::try_to_expand(
   return {};
 }
 
-void pool_memory_resource_impl::initialize_pool(std::size_t initial_size,
-                                                std::optional<std::size_t> maximum_size)
+template <typename FreeListType>
+void pool_memory_resource_impl<FreeListType>::initialize_pool(
+  std::size_t initial_size, std::optional<std::size_t> maximum_size)
 {
   current_pool_size_ = 0;
   maximum_pool_size_ = maximum_size;
@@ -101,17 +117,22 @@ void pool_memory_resource_impl::initialize_pool(std::size_t initial_size,
 
   if (initial_size > 0) {
     auto const block = try_to_expand(initial_size, initial_size, cuda_stream_legacy);
-    this->insert_block(block, cuda_stream_legacy);
+    try {
+      this->insert_block(block, cuda_stream_legacy);
+    } catch (...) {
+      release();
+      throw;
+    }
   }
 }
 
-pool_memory_resource_impl::block_type pool_memory_resource_impl::expand_pool(
-  std::size_t size, free_list& blocks, cuda_stream_view stream)
+template <typename FreeListType>
+typename pool_memory_resource_impl<FreeListType>::block_type
+pool_memory_resource_impl<FreeListType>::expand_pool(std::size_t size,
+                                                     free_list& blocks,
+                                                     cuda_stream_view stream)
 {
   auto grow_size = size_to_grow(size);
-  // When the pool is capped and cannot grow enough to satisfy `size` in a single new upstream
-  // block, try to reclaim entirely-free upstream blocks (whose budget prevents growth) back to
-  // upstream, freeing headroom under `maximum_pool_size_` to grow a sufficiently large block.
   if (grow_size < size && maximum_pool_size_.has_value()) {
     reclaim_free_blocks(size, blocks, stream);
     grow_size = size_to_grow(size);
@@ -119,83 +140,145 @@ pool_memory_resource_impl::block_type pool_memory_resource_impl::expand_pool(
   return try_to_expand(grow_size, size, stream);
 }
 
-void pool_memory_resource_impl::reclaim_free_blocks(std::size_t size,
-                                                    free_list& blocks,
-                                                    cuda_stream_view stream)
+template <typename FreeListType>
+void pool_memory_resource_impl<FreeListType>::reclaim_free_blocks(std::size_t size,
+                                                                  free_list& blocks,
+                                                                  cuda_stream_view stream)
 {
-  // Reclamation only frees headroom when the pool has a capped maximum size.
-  if (!maximum_pool_size_.has_value()) { return; }
-  auto const max_pool_size = maximum_pool_size_.value();
+  if constexpr (is_indexed_free_list<FreeListType>) {
+    reclaim_indexed_free_blocks(size, stream);
+  } else {
+    if (!maximum_pool_size_.has_value()) { return; }
+    auto const max_pool_size = maximum_pool_size_.value();
+    if (size > max_pool_size) { return; }
 
-  // If `size` can never fit under the cap even with every free block reclaimed, there is nothing to
-  // gain: avoid the synchronize and the destructive reclaim on a request that will fail anyway.
-  if (size > max_pool_size) { return; }
+    auto free_iter     = blocks.cbegin();
+    auto upstream_iter = upstream_blocks_.cbegin();
+    using compare_t    = decltype(upstream_blocks_)::key_compare;
+    auto const compare = compare_t{};
 
-  auto free_iter     = blocks.cbegin();
-  auto upstream_iter = upstream_blocks_.cbegin();
-  using compare_t    = decltype(upstream_blocks_)::key_compare;
-  auto const compare = compare_t{};
+    while (free_iter != blocks.cend() && upstream_iter != upstream_blocks_.cend()) {
+      if (max_pool_size - current_pool_size_ >= size) { return; }
 
-  // This merge join requires `blocks` and `upstream_blocks_` to remain sorted by `compare_blocks`.
-  // coalescing_free_list maintains that order on insertion, and upstream_blocks_ uses the same
-  // comparator. Erasing matched entries below preserves the ordering of both collections.
-  while (free_iter != blocks.cend() && upstream_iter != upstream_blocks_.cend()) {
-    // `current_pool_size_ <= max_pool_size` is an invariant, so the subtraction cannot underflow.
-    if (max_pool_size - current_pool_size_ >= size) { return; }
+      if (compare(*free_iter, *upstream_iter)) {
+        ++free_iter;
+        continue;
+      }
+      if (compare(*upstream_iter, *free_iter)) {
+        ++upstream_iter;
+        continue;
+      }
 
-    if (compare(*free_iter, *upstream_iter)) {
-      ++free_iter;
-      continue;
+      auto const candidate = free_iter++;
+      auto const upstream  = upstream_iter++;
+      if (!candidate->is_head() || upstream->size() != candidate->size()) { continue; }
+
+      auto const block = *candidate;
+      get_upstream_resource().deallocate(
+        stream, block.pointer(), block.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
+      blocks.erase(candidate);
+      upstream_blocks_.erase(upstream);
+      current_pool_size_ -= block.size();
     }
-    if (compare(*upstream_iter, *free_iter)) {
-      ++upstream_iter;
-      continue;
-    }
-
-    auto const candidate = free_iter++;
-    auto const upstream  = upstream_iter++;
-    if (!candidate->is_head() || upstream->size() != candidate->size()) { continue; }
-
-    auto const blk = *candidate;
-    // The free lists were merged onto `stream`, which waits on their recorded events. Enqueueing
-    // the upstream deallocation on the same stream preserves those dependencies without blocking
-    // the host.
-    get_upstream_resource().deallocate(
-      stream, blk.pointer(), blk.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
-    blocks.erase(candidate);
-    upstream_blocks_.erase(upstream);
-    current_pool_size_ -= blk.size();
   }
 }
 
-std::size_t pool_memory_resource_impl::size_to_grow(std::size_t size) const
+template <typename FreeListType>
+void pool_memory_resource_impl<FreeListType>::reclaim_indexed_free_blocks(
+  std::size_t size, cuda_stream_view stream)
+{
+  if constexpr (is_indexed_free_list<FreeListType>) {
+    if (!maximum_pool_size_.has_value()) { return; }
+    auto const max_pool_size = maximum_pool_size_.value();
+    if (size > max_pool_size) { return; }
+
+    this->reclaim_free_upstream_blocks(
+      stream, [&](free_list& owner_blocks, cudaEvent_t owner_event, auto requester) {
+        std::size_t reclaimed{};
+        auto free_iter     = owner_blocks.begin();
+        auto upstream_iter = upstream_blocks_.begin();
+        using compare_t    = decltype(upstream_blocks_)::key_compare;
+        auto const compare = compare_t{};
+        bool waited{};
+
+        free_list reclaimed_blocks;
+        while (free_iter != owner_blocks.end() && upstream_iter != upstream_blocks_.end()) {
+          if (max_pool_size - current_pool_size_ >= size) { break; }
+
+          if (compare(*free_iter, *upstream_iter)) {
+            ++free_iter;
+            continue;
+          }
+          if (compare(*upstream_iter, *free_iter)) {
+            ++upstream_iter;
+            continue;
+          }
+
+          auto const candidate = free_iter++;
+          auto const upstream  = upstream_iter++;
+          if (!candidate->is_head() || upstream->size() != candidate->size()) { continue; }
+
+          if (!waited && owner_event != requester.event) {
+            RMM_CUDA_TRY(cudaStreamWaitEvent(requester.stream, owner_event, 0));
+            waited = true;
+          }
+
+          auto const block = *candidate;
+          get_upstream_resource().deallocate(
+            stream, block.pointer(), block.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
+          owner_blocks.extract_exact(candidate, reclaimed_blocks);
+          upstream_blocks_.erase(upstream);
+          current_pool_size_ -= block.size();
+          reclaimed += block.size();
+        }
+        return reclaimed;
+      });
+  } else {
+    (void)size;
+    (void)stream;
+  }
+}
+
+template <typename FreeListType>
+std::size_t pool_memory_resource_impl<FreeListType>::size_to_grow(std::size_t size) const
 {
   if (maximum_pool_size_.has_value()) {
-    auto const unaligned_remaining = maximum_pool_size_.value() - pool_size();
-    auto const remaining    = rmm::align_up(unaligned_remaining, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    auto const maximum_size        = maximum_pool_size_.value();
+    auto const unaligned_remaining = maximum_size > pool_size() ? maximum_size - pool_size() : 0;
+    auto const remaining = rmm::align_up(unaligned_remaining, rmm::CUDA_ALLOCATION_ALIGNMENT);
     auto const aligned_size = rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     return (aligned_size <= remaining) ? std::max(aligned_size, remaining / 2) : 0;
   }
   return std::max(size, pool_size());
 }
 
-pool_memory_resource_impl::block_type pool_memory_resource_impl::block_from_upstream(
-  std::size_t size, cuda_stream_view stream)
+template <typename FreeListType>
+typename pool_memory_resource_impl<FreeListType>::block_type
+pool_memory_resource_impl<FreeListType>::block_from_upstream(std::size_t size,
+                                                             cuda_stream_view stream)
 {
   RMM_LOG_DEBUG("[A][Stream %s][Upstream %zuB]", rmm::detail::format_stream(stream), size);
 
   if (size == 0) { return {}; }
 
   void* ptr = get_upstream_resource().allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  return *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first;
+  try {
+    return *upstream_blocks_.emplace(static_cast<char*>(ptr), size, true).first;
+  } catch (...) {
+    get_upstream_resource().deallocate(
+      stream, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    throw;
+  }
 }
 
-pool_memory_resource_impl::split_block pool_memory_resource_impl::allocate_from_block(
-  block_type const& block, std::size_t size)
+template <typename FreeListType>
+typename pool_memory_resource_impl<FreeListType>::split_block
+pool_memory_resource_impl<FreeListType>::allocate_from_block(block_type const& block,
+                                                              std::size_t size)
 {
   block_type const alloc{block.pointer(), size, block.is_head()};
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
-  allocated_blocks_.insert(alloc);
+  if constexpr (!is_indexed_free_list<FreeListType>) { allocated_blocks_.insert(alloc); }
 #endif
 
   auto rest = (block.size() > size)
@@ -205,12 +288,39 @@ pool_memory_resource_impl::split_block pool_memory_resource_impl::allocate_from_
   return {alloc, rest};
 }
 
-pool_memory_resource_impl::block_type pool_memory_resource_impl::free_block(
-  void* ptr, std::size_t size) noexcept
+template <typename FreeListType>
+typename pool_memory_resource_impl<FreeListType>::prepared_allocation_tracking
+pool_memory_resource_impl<FreeListType>::prepare_allocation_tracking(block_type const& block)
+{
+  prepared_allocation_tracking prepared;
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
+  std::set<block_type, compare_blocks<block_type>> staging;
+  auto const iter = staging.insert(block).first;
+  prepared.node   = staging.extract(iter);
+#else
+  (void)block;
+#endif
+  return prepared;
+}
+
+template <typename FreeListType>
+void pool_memory_resource_impl<FreeListType>::commit_allocation_tracking(
+  prepared_allocation_tracking&& prepared) noexcept
 {
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
-  // Fetch the metadata recorded for this block's suballocation and validate
-  // the caller's provided size before returning the block to a free list.
+  auto const result = allocated_blocks_.insert(std::move(prepared.node));
+  RMM_LOGGING_ASSERT(result.inserted);
+#else
+  (void)prepared;
+#endif
+}
+
+template <typename FreeListType>
+typename pool_memory_resource_impl<FreeListType>::block_type
+pool_memory_resource_impl<FreeListType>::free_block(
+  void* ptr, [[maybe_unused]] std::size_t size) noexcept
+{
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
   if (ptr == nullptr) return block_type{};
   auto const iter = allocated_blocks_.find(static_cast<char*>(ptr));
   RMM_LOGGING_ASSERT(iter != allocated_blocks_.end());
@@ -218,18 +328,46 @@ pool_memory_resource_impl::block_type pool_memory_resource_impl::free_block(
   auto block = *iter;
   RMM_LOGGING_ASSERT(block.size() == rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT));
   allocated_blocks_.erase(iter);
-
   return block;
 #else
-  // Reconstruct the block, trusting the validity of the caller's pointer and
-  // size. A pointer is a block head if and only if it is the start of an
-  // upstream allocation.
   auto const iter = upstream_blocks_.find(static_cast<char*>(ptr));
   return block_type{static_cast<char*>(ptr), size, (iter != upstream_blocks_.end())};
 #endif
 }
 
-void pool_memory_resource_impl::release()
+template <typename FreeListType>
+typename pool_memory_resource_impl<FreeListType>::block_type
+pool_memory_resource_impl<FreeListType>::prepare_free_block(
+  void* ptr, [[maybe_unused]] std::size_t size) const noexcept
+{
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
+  if (ptr == nullptr) return block_type{};
+  auto const iter = allocated_blocks_.find(static_cast<char*>(ptr));
+  RMM_LOGGING_ASSERT(iter != allocated_blocks_.end());
+
+  auto const block = *iter;
+  RMM_LOGGING_ASSERT(block.size() == rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT));
+  return block;
+#else
+  auto const iter = upstream_blocks_.find(static_cast<char*>(ptr));
+  return block_type{static_cast<char*>(ptr), size, (iter != upstream_blocks_.end())};
+#endif
+}
+
+template <typename FreeListType>
+void pool_memory_resource_impl<FreeListType>::commit_free_block(block_type const& block) noexcept
+{
+#ifdef RMM_POOL_TRACK_ALLOCATIONS
+  auto const iter = allocated_blocks_.find(block.pointer());
+  RMM_LOGGING_ASSERT(iter != allocated_blocks_.end());
+  allocated_blocks_.erase(iter);
+#else
+  (void)block;
+#endif
+}
+
+template <typename FreeListType>
+void pool_memory_resource_impl<FreeListType>::release()
 {
   lock_guard lock(this->get_mutex());
 
@@ -247,8 +385,9 @@ void pool_memory_resource_impl::release()
   current_pool_size_ = 0;
 }
 
-std::pair<std::size_t, std::size_t> pool_memory_resource_impl::free_list_summary(
-  free_list const& blocks)
+template <typename FreeListType>
+std::pair<std::size_t, std::size_t>
+pool_memory_resource_impl<FreeListType>::free_list_summary(free_list const& blocks)
 {
   std::size_t largest{};
   std::size_t total{};
@@ -260,7 +399,8 @@ std::pair<std::size_t, std::size_t> pool_memory_resource_impl::free_list_summary
 }
 
 #ifdef RMM_DEBUG_PRINT
-void pool_memory_resource_impl::print()
+template <typename FreeListType>
+void pool_memory_resource_impl<FreeListType>::print()
 {
   lock_guard lock(this->get_mutex());
 
@@ -285,6 +425,9 @@ void pool_memory_resource_impl::print()
   this->print_free_blocks();
 }
 #endif
+
+template class pool_memory_resource_impl<coalescing_free_list>;
+template class pool_memory_resource_impl<indexed_coalescing_free_list>;
 
 }  // namespace detail
 }  // namespace mr

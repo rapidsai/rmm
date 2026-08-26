@@ -32,8 +32,10 @@ namespace mr {
  * multiple instances to safely reference the same underlying pool.
  */
 class RMM_EXPORT pool_memory_resource
-  : public cuda::mr::shared_resource<detail::pool_memory_resource_impl> {
-  using shared_base = cuda::mr::shared_resource<detail::pool_memory_resource_impl>;
+  : public cuda::mr::shared_resource<
+      detail::pool_memory_resource_impl<detail::coalescing_free_list>> {
+  using shared_base =
+    cuda::mr::shared_resource<detail::pool_memory_resource_impl<detail::coalescing_free_list>>;
 
  public:
   /**

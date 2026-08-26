@@ -10,7 +10,7 @@
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/format.hpp>
 #include <rmm/logger.hpp>
-#include <rmm/process_is_exiting.hpp>
+#include <rmm/mr/detail/stream_ordered_memory_resource.hpp>
 
 #include <cuda/stream_ref>
 #include <cuda_runtime_api.h>
@@ -78,24 +78,7 @@ struct indexed_recovery_test_hooks {
 #endif
 
 /**
- * @brief A CRTP helper function
- *
- * https://www.fluentcpp.com/2017/05/19/crtp-helper/
- *
- * Does two things:
- * 1. Makes "indexed_crtp" explicit in the inheritance structure of a CRTP base class.
- * 2. Avoids having to `static_cast` in a lot of places
- *
- * @tparam T The derived class in a CRTP hierarchy
- */
-template <typename T>
-struct indexed_crtp {
-  [[nodiscard]] T& underlying() { return static_cast<T&>(*this); }
-  [[nodiscard]] T const& underlying() const { return static_cast<T const&>(*this); }
-};
-
-/**
- * @brief Base class for a stream-ordered memory resource
+ * @brief Indexed recovery extension for a stream-ordered memory resource
  *
  * This base class uses CRTP (https://en.wikipedia.org/wiki/Curiously_recurring_template_pattern)
  * to provide static polymorphism to enable defining suballocator resources that maintain separate
@@ -119,60 +102,12 @@ struct indexed_crtp {
  * 7. `void commit_free_block(block_type const& block) noexcept`
  */
 template <typename PoolResource, typename FreeListType>
-class indexed_stream_ordered_memory_resource : public indexed_crtp<PoolResource> {
+class indexed_stream_ordered_memory_resource
+  : public stream_ordered_memory_resource<PoolResource, FreeListType> {
+  using base_type = stream_ordered_memory_resource<PoolResource, FreeListType>;
+  friend base_type;
+
  public:
-  ~indexed_stream_ordered_memory_resource() { release(); }
-
-  indexed_stream_ordered_memory_resource()                                              = default;
-  indexed_stream_ordered_memory_resource(indexed_stream_ordered_memory_resource const&) = delete;
-  indexed_stream_ordered_memory_resource(indexed_stream_ordered_memory_resource&&)      = delete;
-  indexed_stream_ordered_memory_resource& operator=(indexed_stream_ordered_memory_resource const&) =
-    delete;
-  indexed_stream_ordered_memory_resource& operator=(indexed_stream_ordered_memory_resource&&) =
-    delete;
-
-  /**
-   * @brief Allocates memory of size at least `bytes` bytes.
-   *
-   * The returned pointer has at least 256B alignment.
-   *
-   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled
-   *
-   * @param stream The stream in which to order this allocation
-   * @param bytes The size in bytes of the allocation
-   * @param alignment Unused; alignment is always at least `CUDA_ALLOCATION_ALIGNMENT`
-   * @return void* Pointer to the newly allocated memory
-   */
-  [[nodiscard]] void* allocate(cuda::stream_ref stream,
-                               std::size_t bytes,
-                               std::size_t /*alignment*/)
-  {
-    auto const strm = cuda_stream_view{stream};
-
-    RMM_LOG_TRACE("[A][stream %s][%zuB]", rmm::detail::format_stream(strm), bytes);
-
-    if (bytes == 0) { return nullptr; }
-
-    lock_guard lock(mtx_);
-
-    auto stream_event = get_event(strm);
-
-    bytes = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-    RMM_EXPECTS(bytes <= this->underlying().get_maximum_allocation_size(),
-                std::string("Maximum allocation size exceeded (failed to allocate ") +
-                  rmm::detail::format_bytes(bytes) + ")",
-                rmm::out_of_memory);
-    auto const block = this->underlying().get_block(bytes, stream_event);
-
-    RMM_LOG_TRACE("[A][stream %s][%zuB][%p]",
-                  rmm::detail::format_stream(stream_event.stream),
-                  bytes,
-                  block.pointer());
-
-    log_summary_trace();
-
-    return block.pointer();
-  }
 
   /**
    * @brief Deallocate memory pointed to by `ptr`.
@@ -225,47 +160,16 @@ class indexed_stream_ordered_memory_resource : public indexed_crtp<PoolResource>
     log_summary_trace();
   }
 
-  /**
-   * @brief Allocates memory of size at least `bytes` synchronously.
-   *
-   * @throws `std::bad_alloc` if the requested allocation could not be fulfilled
-   *
-   * @param bytes The size in bytes of the allocation
-   * @param alignment Alignment of the allocation
-   * @return void* Pointer to the newly allocated memory
-   */
-  [[nodiscard]] void* allocate_sync(std::size_t bytes,
-                                    std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
-  {
-    auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
-    void* ptr         = allocate(stream, bytes, alignment);
-    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
-    return ptr;
-  }
-
-  /**
-   * @brief Deallocate memory pointed to by `ptr` synchronously.
-   *
-   * @param ptr Pointer to be deallocated
-   * @param bytes The size in bytes of the allocation to deallocate
-   * @param alignment Alignment of the allocation
-   */
-  void deallocate_sync(
-    void* ptr,
-    std::size_t bytes,
-    [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  {
-    auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
-    deallocate(stream, ptr, bytes, alignment);
-    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
-  }
-
  protected:
-  using free_list  = FreeListType;
-  using block_type = typename free_list::block_type;
+  using typename base_type::block_type;
+  using typename base_type::free_list;
+  using typename base_type::split_block;
+  using typename base_type::stream_event_pair;
   using lock_guard = std::lock_guard<std::mutex>;
-
-  using stream_id_type = unsigned long long;  ///< Stream identifier returned by cudaStreamGetId
+  using base_type::get_event;
+  using base_type::get_mutex;
+  using base_type::mtx_;
+  using base_type::stream_free_blocks_;
   // Derived classes must implement these six methods
 
   /*
@@ -294,9 +198,6 @@ class indexed_stream_ordered_memory_resource : public indexed_crtp<PoolResource>
    * @return block_type a block of at least `size` bytes
    */
   // block_type expand_pool(std::size_t size, free_list& blocks, cuda_stream_view stream)
-
-  /// Pair representing a block that has been split for allocation
-  using split_block = std::pair<block_type, block_type>;
 
   /*
    * @brief Split block `b` if necessary to return a pointer to memory of `size` bytes.
@@ -365,20 +266,6 @@ class indexed_stream_ordered_memory_resource : public indexed_crtp<PoolResource>
   }
 #endif
 
-  /**
-   * @brief Get the mutex object
-   *
-   * @return std::mutex
-   */
-  std::mutex& get_mutex() { return mtx_; }
-
-  struct stream_event_pair {
-    cudaStream_t stream;
-    cudaEvent_t event;
-
-    bool operator<(stream_event_pair const& rhs) const { return event < rhs.event; }
-  };
-
   struct stream_event_hash {
     std::size_t operator()(stream_event_pair const& value) const
     { return std::hash<cudaEvent_t>{}(value.event); }
@@ -413,56 +300,6 @@ class indexed_stream_ordered_memory_resource : public indexed_crtp<PoolResource>
   }
 
  private:
-  /**
-   * @brief get a unique CUDA event (possibly new) associated with `stream`
-   *
-   * The event is created on the first call, and it is not recorded. If compiled for per-thread
-   * default stream and `stream` is the default stream, the event is created in thread local
-   * memory and is unique per CPU thread.
-   *
-   * @param stream The stream for which to get an event.
-   * @return The stream_event for `stream`.
-   */
-  stream_event_pair get_event(cuda_stream_view stream)
-  {
-    if (stream.is_per_thread_default()) {
-      // Create a thread-local event for each device. These events are
-      // deliberately leaked since the destructor needs to call into
-      // the CUDA runtime and thread_local destructors (can) run below
-      // main: it is undefined behaviour to call into the CUDA
-      // runtime below main.
-      thread_local std::vector<cudaEvent_t> events_tls(
-        static_cast<std::size_t>(rmm::get_num_cuda_devices()));
-      auto event = [device_id = this->device_id_]() {
-        auto& e = events_tls[static_cast<std::size_t>(device_id.value())];
-        if (!e) {
-          // These events are deliberately not destructed and therefore live until
-          // program exit.
-          RMM_ASSERT_CUDA_SUCCESS(cudaEventCreateWithFlags(&e, cudaEventDisableTiming));
-        }
-        return e;
-      }();
-      return stream_event_pair{stream.value(), event};
-    }
-    // We use cudaStreamLegacy as the event map key for the default stream for consistency between
-    // PTDS and non-PTDS mode. In PTDS mode, the cudaStreamLegacy map key will only exist if the
-    // user explicitly passes it, so it is used as the default location for the free list
-    // at construction. For consistency, the same key is used for null stream free lists in
-    // non-PTDS mode.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
-    auto* const stream_to_store = stream.is_default() ? cudaStreamLegacy : stream.value();
-    stream_id_type stream_id{};
-    RMM_ASSERT_CUDA_SUCCESS(cudaStreamGetId(stream_to_store, &stream_id));
-    auto const iter = stream_events_.find(stream_id);
-    return (iter != stream_events_.end()) ? iter->second : [&]() {
-      stream_event_pair stream_event{stream_to_store, nullptr};
-      RMM_ASSERT_CUDA_SUCCESS(
-        cudaEventCreateWithFlags(&stream_event.event, cudaEventDisableTiming));
-      // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-      stream_events_[stream_id] = stream_event;
-      return stream_event;
-    }();
-  }
 
   /**
    * @brief Prepares and commits an allocation from an existing selected free block.
@@ -995,29 +832,6 @@ class indexed_stream_ordered_memory_resource : public indexed_crtp<PoolResource>
     }
   }
 
-  /**
-   * @brief Clear free lists and events
-   *
-   * Note: only called by destructor.
-   */
-  void release()
-  {
-    lock_guard lock(mtx_);
-
-    if (rmm::process_is_exiting()) { return; }
-
-    for (auto s_e : stream_events_) {
-      RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaEventSynchronize(s_e.second.event));
-      RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaEventDestroy(s_e.second.event));
-    }
-
-    stream_events_.clear();
-    maximum_by_stream_.clear();
-    streams_by_maximum_.clear();
-    maximum_index_active_ = false;
-    stream_free_blocks_.clear();
-  }
-
   void log_summary_trace()
   {
 #if (RMM_LOG_ACTIVE_LEVEL <= RMM_LOG_LEVEL_TRACE)
@@ -1040,27 +854,15 @@ class indexed_stream_ordered_memory_resource : public indexed_crtp<PoolResource>
 #endif
   }
 
-  // map of stream_event_pair --> free_list
-  // Event (or associated stream) must be synced before allocating from associated free_list to a
-  // different stream
-  std::map<stream_event_pair, free_list> stream_free_blocks_;
-
   // Shared index of each owner's largest block. This makes cross-stream selection logarithmic
   // while each block remains associated with the event that makes it safe to reuse.
   maximum_index streams_by_maximum_;
   maximum_lookup_index maximum_by_stream_;
   bool maximum_index_active_{false};
 
-  // bidirectional mapping between non-default streams and events
-  std::unordered_map<stream_id_type, stream_event_pair> stream_events_;
-
   std::size_t total_free_bytes_{};
   bool global_failed_lookup_{false};
   std::size_t smallest_global_failed_request_{};
-
-  std::mutex mtx_;  // mutex for thread-safe access
-
-  rmm::cuda_device_id device_id_{rmm::get_current_cuda_device()};
 };  // namespace detail
 
 }  // namespace mr::detail

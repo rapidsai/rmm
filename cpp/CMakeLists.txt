@@ -105,7 +105,6 @@ add_library(
   src/mr/detail/limiting_resource_adaptor_impl.cpp
   src/mr/detail/logging_resource_adaptor_impl.cpp
   src/mr/detail/pool_memory_resource_impl.cpp
-  src/mr/detail/indexed_pool_memory_resource_impl.cpp
   src/mr/detail/prefetch_resource_adaptor_impl.cpp
   src/mr/detail/sam_headroom_memory_resource_impl.cpp
   src/mr/detail/statistics_resource_adaptor_impl.cpp

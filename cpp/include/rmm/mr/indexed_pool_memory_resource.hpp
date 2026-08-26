@@ -5,7 +5,7 @@
 #pragma once
 
 #include <rmm/detail/export.hpp>
-#include <rmm/mr/detail/indexed_pool_memory_resource_impl.hpp>
+#include <rmm/mr/detail/pool_memory_resource_impl.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
@@ -38,8 +38,10 @@ namespace mr {
  * multiple instances to safely reference the same underlying pool.
  */
 class RMM_EXPORT indexed_pool_memory_resource
-  : public cuda::mr::shared_resource<detail::indexed_pool_memory_resource_impl> {
-  using shared_base = cuda::mr::shared_resource<detail::indexed_pool_memory_resource_impl>;
+  : public cuda::mr::shared_resource<
+      detail::pool_memory_resource_impl<detail::indexed_coalescing_free_list>> {
+  using shared_base =
+    cuda::mr::shared_resource<detail::pool_memory_resource_impl<detail::indexed_coalescing_free_list>>;
 
  public:
   /**
