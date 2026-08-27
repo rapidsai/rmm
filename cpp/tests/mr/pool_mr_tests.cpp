@@ -108,21 +108,31 @@ class delayed_async_memory_resource {
                   void* ptr,
                   std::size_t bytes,
                   std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  { upstream_.deallocate(stream, ptr, bytes, alignment); }
+  {
+    upstream_.deallocate(stream, ptr, bytes, alignment);
+  }
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
-  { return upstream_.allocate_sync(bytes, alignment); }
+  {
+    return upstream_.allocate_sync(bytes, alignment);
+  }
 
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
-  { upstream_.deallocate_sync(ptr, bytes, alignment); }
+  {
+    upstream_.deallocate_sync(ptr, bytes, alignment);
+  }
 
   bool operator==(delayed_async_memory_resource const& other) const noexcept
-  { return release_ == other.release_; }
+  {
+    return release_ == other.release_;
+  }
 
   bool operator!=(delayed_async_memory_resource const& other) const noexcept
-  { return !(*this == other); }
+  {
+    return !(*this == other);
+  }
 
   RMM_CONSTEXPR_FRIEND void get_property(delayed_async_memory_resource const&,
                                          cuda::mr::device_accessible) noexcept
@@ -1851,7 +1861,9 @@ class PoolMemoryResourceTest : public ::testing::Test {
 };
 
 TEST_F(PoolMemoryResourceTest, GetUpstreamResource)
-{ [[maybe_unused]] auto ref = pool.get_upstream_resource(); }
+{
+  [[maybe_unused]] auto ref = pool.get_upstream_resource();
+}
 
 TEST_F(PoolMemoryResourceTest, AllocateDeallocate)
 {

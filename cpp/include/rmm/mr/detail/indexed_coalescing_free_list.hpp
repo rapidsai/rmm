@@ -38,10 +38,14 @@ struct indexed_coalescing_free_list : free_list<block> {
     }
 
     bool operator()(iterator const& lhs, std::size_t rhs) const noexcept
-    { return lhs->size() < rhs; }
+    {
+      return lhs->size() < rhs;
+    }
 
     bool operator()(std::size_t lhs, iterator const& rhs) const noexcept
-    { return lhs < rhs->size(); }
+    {
+      return lhs < rhs->size();
+    }
   };
 
   using size_index    = std::set<iterator, compare_iterator_sizes>;

@@ -127,10 +127,14 @@ void fragmented_best_fit_allocate_sync(benchmark::State& state)
 }
 
 void BM_FragmentedBestFitAllocateSync(benchmark::State& state)
-{ fragmented_best_fit_allocate_sync<rmm::mr::pool_memory_resource>(state); }
+{
+  fragmented_best_fit_allocate_sync<rmm::mr::pool_memory_resource>(state);
+}
 
 void BM_FragmentedBestFitIndexedAllocateSync(benchmark::State& state)
-{ fragmented_best_fit_allocate_sync<rmm::mr::indexed_pool_memory_resource>(state); }
+{
+  fragmented_best_fit_allocate_sync<rmm::mr::indexed_pool_memory_resource>(state);
+}
 
 template <typename FreeList>
 void populate_failed_best_fit_fixture(FreeList& blocks, std::size_t free_block_count)
@@ -168,10 +172,14 @@ void repeated_warmed_failed_best_fit_lookup(benchmark::State& state)
 }
 
 void BM_RepeatedWarmedFailedBestFitLegacyFreeList(benchmark::State& state)
-{ repeated_warmed_failed_best_fit_lookup<rmm::mr::detail::coalescing_free_list>(state); }
+{
+  repeated_warmed_failed_best_fit_lookup<rmm::mr::detail::coalescing_free_list>(state);
+}
 
 void BM_RepeatedWarmedFailedBestFitIndexedFreeList(benchmark::State& state)
-{ repeated_warmed_failed_best_fit_lookup<rmm::mr::detail::indexed_coalescing_free_list>(state); }
+{
+  repeated_warmed_failed_best_fit_lookup<rmm::mr::detail::indexed_coalescing_free_list>(state);
+}
 
 constexpr benchmark::IterationCount FIRST_LOOKUP_ITERATIONS{1000};
 
@@ -207,10 +215,14 @@ void first_failed_best_fit_lookup(benchmark::State& state)
 }
 
 void BM_FirstFailedBestFitLegacyFreeList(benchmark::State& state)
-{ first_failed_best_fit_lookup<rmm::mr::detail::coalescing_free_list>(state); }
+{
+  first_failed_best_fit_lookup<rmm::mr::detail::coalescing_free_list>(state);
+}
 
 void BM_FirstFailedBestFitIndexedFreeList(benchmark::State& state)
-{ first_failed_best_fit_lookup<rmm::mr::detail::indexed_coalescing_free_list>(state); }
+{
+  first_failed_best_fit_lookup<rmm::mr::detail::indexed_coalescing_free_list>(state);
+}
 
 template <typename PoolResource>
 void cross_stream_best_fit(benchmark::State& state)
@@ -266,10 +278,14 @@ void cross_stream_best_fit(benchmark::State& state)
 }
 
 void BM_CrossStreamBestFitLegacy(benchmark::State& state)
-{ cross_stream_best_fit<rmm::mr::pool_memory_resource>(state); }
+{
+  cross_stream_best_fit<rmm::mr::pool_memory_resource>(state);
+}
 
 void BM_CrossStreamBestFitIndexed(benchmark::State& state)
-{ cross_stream_best_fit<rmm::mr::indexed_pool_memory_resource>(state); }
+{
+  cross_stream_best_fit<rmm::mr::indexed_pool_memory_resource>(state);
+}
 
 template <typename PoolResource>
 void selective_recovery_cycle(benchmark::State& state)
@@ -322,10 +338,14 @@ void selective_recovery_cycle(benchmark::State& state)
 }
 
 void BM_WholeTreeRecovery(benchmark::State& state)
-{ selective_recovery_cycle<rmm::mr::pool_memory_resource>(state); }
+{
+  selective_recovery_cycle<rmm::mr::pool_memory_resource>(state);
+}
 
 void BM_SelectiveRecovery(benchmark::State& state)
-{ selective_recovery_cycle<rmm::mr::indexed_pool_memory_resource>(state); }
+{
+  selective_recovery_cycle<rmm::mr::indexed_pool_memory_resource>(state);
+}
 
 void recovery_shapes(benchmark::Benchmark* benchmark)
 {

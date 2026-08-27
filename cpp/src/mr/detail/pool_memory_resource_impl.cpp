@@ -46,7 +46,9 @@ pool_memory_resource_impl<FreeListType>::pool_memory_resource_impl(
 
 template <typename FreeListType>
 pool_memory_resource_impl<FreeListType>::~pool_memory_resource_impl()
-{ release(); }
+{
+  release();
+}
 
 template <typename FreeListType>
 device_async_resource_ref pool_memory_resource_impl<FreeListType>::get_upstream_resource()
@@ -58,11 +60,15 @@ device_async_resource_ref pool_memory_resource_impl<FreeListType>::get_upstream_
 
 template <typename FreeListType>
 std::size_t pool_memory_resource_impl<FreeListType>::pool_size() const noexcept
-{ return current_pool_size_; }
+{
+  return current_pool_size_;
+}
 
 template <typename FreeListType>
 std::size_t pool_memory_resource_impl<FreeListType>::get_maximum_allocation_size() const
-{ return std::numeric_limits<std::size_t>::max(); }
+{
+  return std::numeric_limits<std::size_t>::max();
+}
 
 template <typename FreeListType>
 typename pool_memory_resource_impl<FreeListType>::block_type
@@ -92,7 +98,7 @@ pool_memory_resource_impl<FreeListType>::try_to_expand(std::size_t try_size,
   }
 
   auto const max_size = maximum_pool_size_.value_or(std::numeric_limits<std::size_t>::max());
-  auto const msg = std::string("Not enough room to grow, current/max/try size = ") +
+  auto const msg      = std::string("Not enough room to grow, current/max/try size = ") +
                    rmm::detail::format_bytes(pool_size()) + ", " +
                    rmm::detail::format_bytes(max_size) + ", " + rmm::detail::format_bytes(min_size);
   report_error(msg.c_str());

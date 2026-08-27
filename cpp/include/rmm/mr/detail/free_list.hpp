@@ -143,7 +143,9 @@ class free_list {
    * @param other The free list to insert.
    */
   void splice(const_iterator pos, free_list&& other)
-  { return blocks.splice(pos, std::move(other.blocks)); }
+  {
+    return blocks.splice(pos, std::move(other.blocks));
+  }
 
   /**
    * @brief Transfers one existing node from `other` before `pos` without allocation.
@@ -158,7 +160,9 @@ class free_list {
    * @param iter Iterator to the element in `other` to transfer.
    */
   void splice(const_iterator pos, free_list& other, const_iterator iter) noexcept
-  { blocks.splice(pos, other.blocks, iter); }
+  {
+    blocks.splice(pos, other.blocks, iter);
+  }
 
   /**
    * @brief Appends the given block to the end of the free list.

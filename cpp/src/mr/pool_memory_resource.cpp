@@ -23,7 +23,9 @@ pool_memory_resource::pool_memory_resource(
 }
 
 device_async_resource_ref pool_memory_resource::get_upstream_resource() const noexcept
-{ return get().get_upstream_resource(); }
+{
+  return get().get_upstream_resource();
+}
 
 std::size_t pool_memory_resource::pool_size() const noexcept { return get().pool_size(); }
 

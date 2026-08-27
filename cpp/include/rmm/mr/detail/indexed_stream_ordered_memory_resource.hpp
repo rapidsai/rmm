@@ -40,10 +40,14 @@ namespace mr::detail {
 #ifdef RMM_INDEXED_RECOVERY_DISABLE_TEST_HOOKS
 struct indexed_recovery_test_hooks {
   static cudaError_t wait(cudaStream_t stream, cudaEvent_t event, unsigned int flags)
-  { return cudaStreamWaitEvent(stream, event, flags); }
+  {
+    return cudaStreamWaitEvent(stream, event, flags);
+  }
 
   static cudaError_t record(cudaEvent_t event, cudaStream_t stream)
-  { return cudaEventRecord(event, stream); }
+  {
+    return cudaEventRecord(event, stream);
+  }
 
   static void metadata_checkpoint() noexcept {}
 };
@@ -53,10 +57,14 @@ struct indexed_recovery_test_hooks {
   using record_function = cudaError_t (*)(cudaEvent_t, cudaStream_t);
 
   static cudaError_t default_wait(cudaStream_t stream, cudaEvent_t event, unsigned int flags)
-  { return cudaStreamWaitEvent(stream, event, flags); }
+  {
+    return cudaStreamWaitEvent(stream, event, flags);
+  }
 
   static cudaError_t default_record(cudaEvent_t event, cudaStream_t stream)
-  { return cudaEventRecord(event, stream); }
+  {
+    return cudaEventRecord(event, stream);
+  }
 
   static void metadata_checkpoint()
   {
@@ -266,12 +274,16 @@ class indexed_stream_ordered_memory_resource
 
   struct stream_event_hash {
     std::size_t operator()(stream_event_pair const& value) const
-    { return std::hash<cudaEvent_t>{}(value.event); }
+    {
+      return std::hash<cudaEvent_t>{}(value.event);
+    }
   };
 
   struct stream_event_equal {
     bool operator()(stream_event_pair const& lhs, stream_event_pair const& rhs) const
-    { return lhs.event == rhs.event; }
+    {
+      return lhs.event == rhs.event;
+    }
   };
 
   /**
@@ -766,7 +778,9 @@ class indexed_stream_ordered_memory_resource
   }
 
   void set_stream_maximum(stream_event_pair stream_event, std::size_t maximum)
-  { set_stream_maximum(maximum_by_stream_.find(stream_event), stream_event, maximum); }
+  {
+    set_stream_maximum(maximum_by_stream_.find(stream_event), stream_event, maximum);
+  }
 
   void update_stream_maximum(stream_event_pair stream_event, free_list const& blocks)
   {

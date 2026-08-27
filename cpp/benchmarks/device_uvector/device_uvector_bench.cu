@@ -43,10 +43,14 @@ void uvector_size_construction(benchmark::State& state)
 }
 
 void BM_UvectorSizeConstruction(benchmark::State& state)
-{ uvector_size_construction<rmm::mr::pool_memory_resource>(state); }
+{
+  uvector_size_construction<rmm::mr::pool_memory_resource>(state);
+}
 
 void BM_UvectorSizeConstructionIndexed(benchmark::State& state)
-{ uvector_size_construction<rmm::mr::indexed_pool_memory_resource>(state); }
+{
+  uvector_size_construction<rmm::mr::indexed_pool_memory_resource>(state);
+}
 
 BENCHMARK(BM_UvectorSizeConstruction)
   ->RangeMultiplier(10)           // NOLINT
@@ -74,10 +78,14 @@ void thrust_vector_size_construction(benchmark::State& state)
 }
 
 void BM_ThrustVectorSizeConstruction(benchmark::State& state)
-{ thrust_vector_size_construction<rmm::mr::pool_memory_resource>(state); }
+{
+  thrust_vector_size_construction<rmm::mr::pool_memory_resource>(state);
+}
 
 void BM_ThrustVectorSizeConstructionIndexed(benchmark::State& state)
-{ thrust_vector_size_construction<rmm::mr::indexed_pool_memory_resource>(state); }
+{
+  thrust_vector_size_construction<rmm::mr::indexed_pool_memory_resource>(state);
+}
 
 BENCHMARK(BM_ThrustVectorSizeConstruction)
   ->RangeMultiplier(10)           // NOLINT
@@ -121,7 +129,9 @@ Vector make_vector(std::size_t num_elements, rmm::cuda_stream_view stream, bool 
 
 template <typename Vector>
 int32_t* vector_data(Vector& vec)
-{ return thrust::raw_pointer_cast(vec.data()); }
+{
+  return thrust::raw_pointer_cast(vec.data());
+}
 
 template <typename Vector>
 void vector_workflow(std::size_t num_elements,
