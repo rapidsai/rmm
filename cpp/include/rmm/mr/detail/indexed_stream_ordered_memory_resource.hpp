@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -108,7 +108,6 @@ class indexed_stream_ordered_memory_resource
   friend base_type;
 
  public:
-
   /**
    * @brief Deallocate memory pointed to by `ptr`.
    *
@@ -151,8 +150,7 @@ class indexed_stream_ordered_memory_resource
 
     // Everything after event publication is allocation-free and noexcept.
     this->underlying().commit_free_block(block);
-    auto const inserted_size =
-      blocks.commit_prepared_insert(staging, std::move(prepared_insert));
+    auto const inserted_size = blocks.commit_prepared_insert(staging, std::move(prepared_insert));
     total_free_bytes_ += block.size();
     invalidate_global_failure_cache();
     update_stream_maximum_after_deallocation_noexcept(maximum_entry, inserted_size);
@@ -300,7 +298,6 @@ class indexed_stream_ordered_memory_resource
   }
 
  private:
-
   /**
    * @brief Prepares and commits an allocation from an existing selected free block.
    *
@@ -314,7 +311,7 @@ class indexed_stream_ordered_memory_resource
                                      stream_event_pair requester,
                                      free_list& blocks)
   {
-    block_type const block = *selection.block;
+    block_type const block            = *selection.block;
     auto const [allocated, remainder] = this->underlying().allocate_from_block(block, size);
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
     auto prepared_tracking = this->underlying().prepare_allocation_tracking(allocated);
@@ -394,8 +391,7 @@ class indexed_stream_ordered_memory_resource
     if (iter != stream_free_blocks_.end()) {
       auto const selection = iter->second.find_block(size);
       if (selection.block != iter->second.end()) {
-        return allocate_from_selection(
-          selection, size, stream_event, stream_event, iter->second);
+        return allocate_from_selection(selection, size, stream_event, stream_event, iter->second);
       }
     }
 
@@ -471,7 +467,7 @@ class indexed_stream_ordered_memory_resource
     RMM_EXPECTS(owner_iter != stream_free_blocks_.end(),
                 "Shared maximum index refers to a missing free-list owner.");
 
-    auto& owner_blocks      = owner_iter->second;
+    auto& owner_blocks   = owner_iter->second;
     auto const selection = owner_blocks.find_block(size);
     RMM_EXPECTS(selection.block != owner_blocks.end(),
                 "Shared maximum index disagrees with its owner's free list.");
@@ -487,7 +483,7 @@ class indexed_stream_ordered_memory_resource
     return allocated;
   }
 
-  using stream_blocks_map     = std::map<stream_event_pair, free_list>;
+  using stream_blocks_map    = std::map<stream_event_pair, free_list>;
   using maximum_index        = std::multimap<std::size_t, stream_event_pair>;
   using maximum_lookup_index = std::unordered_map<stream_event_pair,
                                                   typename maximum_index::iterator,
@@ -625,13 +621,12 @@ class indexed_stream_ordered_memory_resource
       return std::less<cudaEvent_t>{}(lhs.owner->first.event, rhs.owner->first.event);
     };
     std::sort(affected_owners.begin(), affected_owners.end(), owner_less);
-    affected_owners.erase(
-      std::unique(affected_owners.begin(),
-                  affected_owners.end(),
-                  [](affected_owner const& lhs, affected_owner const& rhs) {
-                    return lhs.owner->first.event == rhs.owner->first.event;
-                  }),
-      affected_owners.end());
+    affected_owners.erase(std::unique(affected_owners.begin(),
+                                      affected_owners.end(),
+                                      [](affected_owner const& lhs, affected_owner const& rhs) {
+                                        return lhs.owner->first.event == rhs.owner->first.event;
+                                      }),
+                          affected_owners.end());
 
     // Resolve shared-index iterators before CUDA publication. Recovery retains every owner record,
     // so active-index commits only rekey existing nodes and cannot allocate.

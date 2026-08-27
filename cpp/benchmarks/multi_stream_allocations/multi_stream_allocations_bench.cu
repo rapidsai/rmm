@@ -98,9 +98,7 @@ inline any_device_resource make_indexed_pool()
 }
 
 inline any_device_resource make_arena()
-{
-  return rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref()};
-}
+{ return rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref()}; }
 
 inline any_device_resource make_binning()
 {

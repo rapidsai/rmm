@@ -171,8 +171,7 @@ struct indexed_coalescing_free_list : free_list<block> {
   {
     assert(!source.index_active_);
     assert(next == end() || std::less<char*>{}(iter->pointer(), next->pointer()));
-    assert(next == begin() ||
-           std::less<char*>{}(std::prev(next)->pointer(), iter->pointer()));
+    assert(next == begin() || std::less<char*>{}(std::prev(next)->pointer(), iter->pointer()));
 
     base_type::splice(next, static_cast<base_type&>(source), iter);
     insert_index_nodes(std::move(prepared), iter);
@@ -202,9 +201,8 @@ struct indexed_coalescing_free_list : free_list<block> {
       auto const address_iter = blocks_by_address_.lower_bound(block.pointer());
       return (address_iter == blocks_by_address_.end()) ? end() : address_iter->second;
     }();
-    auto const merge_previous =
-      next != begin() && std::prev(next)->is_contiguous_before(block);
-    auto const merge_next = next != end() && block.is_contiguous_before(*next);
+    auto const merge_previous = next != begin() && std::prev(next)->is_contiguous_before(block);
+    auto const merge_next     = next != end() && block.is_contiguous_before(*next);
 
     iterator staged{};
     prepared_splice splice;
@@ -214,8 +212,7 @@ struct indexed_coalescing_free_list : free_list<block> {
       prepare_for_splice(1);
       splice = prepare_splice(staged);
     }
-    return prepared_insert{
-      block, staged, next, merge_previous, merge_next, std::move(splice)};
+    return prepared_insert{block, staged, next, merge_previous, merge_next, std::move(splice)};
   }
 
   /**
@@ -233,10 +230,10 @@ struct indexed_coalescing_free_list : free_list<block> {
 
     std::size_t inserted_size{};
     if (prepared.merge_previous && prepared.merge_next) {
-      auto const previous                   = std::prev(prepared.next);
-      auto previous_nodes                   = extract_index_nodes(previous);
-      [[maybe_unused]] auto next_nodes       = extract_index_nodes(prepared.next);
-      *previous = previous->merge(prepared.block).merge(*prepared.next);
+      auto const previous              = std::prev(prepared.next);
+      auto previous_nodes              = extract_index_nodes(previous);
+      [[maybe_unused]] auto next_nodes = extract_index_nodes(prepared.next);
+      *previous                        = previous->merge(prepared.block).merge(*prepared.next);
       base_type::erase(prepared.next);
       insert_index_nodes(std::move(previous_nodes), previous);
       inserted_size = previous->size();
@@ -292,9 +289,9 @@ struct indexed_coalescing_free_list : free_list<block> {
     if (merge_prev && merge_next) {
       // Both entries must be detached before either indexed block is changed. The surviving
       // previous block's nodes can then be re-keyed and reinserted without allocating.
-      auto previous_nodes                 = extract_index_nodes(previous);
-      [[maybe_unused]] auto next_nodes     = extract_index_nodes(next);
-      *previous                           = previous->merge(block).merge(*next);
+      auto previous_nodes              = extract_index_nodes(previous);
+      [[maybe_unused]] auto next_nodes = extract_index_nodes(next);
+      *previous                        = previous->merge(block).merge(*next);
       base_type::erase(next);
       insert_index_nodes(std::move(previous_nodes), previous);
       inserted_size = previous->size();
@@ -321,8 +318,8 @@ struct indexed_coalescing_free_list : free_list<block> {
   /**
    * @brief Moves all blocks from an unindexed `other` into this free list.
    *
-   * A successful insertion leaves `other` empty. If an insertion throws, blocks already committed to
-   * this list have been removed from `other`, while the uncommitted suffix remains in `other`.
+   * A successful insertion leaves `other` empty. If an insertion throws, blocks already committed
+   * to this list have been removed from `other`, while the uncommitted suffix remains in `other`.
    *
    * @param other The free list whose blocks are inserted.
    * @return The size of the largest inserted block after any coalescing.
@@ -538,8 +535,8 @@ struct indexed_coalescing_free_list : free_list<block> {
 
     // Stage the list node first so the iterator indexed below remains stable. Index activation does
     // not invalidate the already-resolved list position. Both live index entries are then allocated
-    // before the no-throw splice commit; if address insertion fails, removing the size entry restores
-    // the pre-insertion representation.
+    // before the no-throw splice commit; if address insertion fails, removing the size entry
+    // restores the pre-insertion representation.
     indexed_coalescing_free_list staging;
     staging.base_type::insert(staging.cend(), block);
     auto const staged = staging.begin();
@@ -547,9 +544,7 @@ struct indexed_coalescing_free_list : free_list<block> {
     assert(index_active_);
 
     auto const [size_iter, size_inserted] = blocks_by_size_.insert(staged);
-    if (!size_inserted) {
-      RMM_FAIL("Duplicate block in indexed free-list size index");
-    }
+    if (!size_inserted) { RMM_FAIL("Duplicate block in indexed free-list size index"); }
 
     auto const address_result = [&]() {
       try {
@@ -622,7 +617,7 @@ struct indexed_coalescing_free_list : free_list<block> {
     prepared.address_node.key()    = iter->pointer();
     prepared.address_node.mapped() = iter;
     auto const size_result         = blocks_by_size_.insert(std::move(prepared.size_node));
-    auto const address_result = blocks_by_address_.insert(std::move(prepared.address_node));
+    auto const address_result      = blocks_by_address_.insert(std::move(prepared.address_node));
     assert(size_result.inserted);
     assert(address_result.inserted);
     (void)size_result;

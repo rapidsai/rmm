@@ -79,7 +79,7 @@ void random_allocation_free(rmm::device_async_resource_ref mr,
     if (active_allocations > 0) {
       int chance = op_distribution(generator);
       do_alloc   = (chance < allocation_probability) && (allocation_count < num_allocations) &&
-                 (allocation_size + size < max_usage);
+                   (allocation_size + size < max_usage);
     }
 
     void* ptr = nullptr;

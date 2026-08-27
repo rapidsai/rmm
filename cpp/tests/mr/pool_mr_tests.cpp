@@ -380,8 +380,7 @@ TEST(PoolTest, ReclaimsToMaximumWithCudaAsyncUpstreamAcrossStreams)
 
 TEST(IndexedPoolTest, AllocateMaxWithInitialPoolSize)
 {
-  rmm::mr::indexed_pool_memory_resource mr{
-    rmm::mr::get_current_device_resource_ref(), 256, 1024};
+  rmm::mr::indexed_pool_memory_resource mr{rmm::mr::get_current_device_resource_ref(), 256, 1024};
   auto* ptr = mr.allocate_sync(1024);
   EXPECT_NE(ptr, nullptr);
   EXPECT_NO_THROW(mr.deallocate_sync(ptr, 1024));
@@ -389,16 +388,14 @@ TEST(IndexedPoolTest, AllocateMaxWithInitialPoolSize)
 
 TEST(IndexedPoolTest, AllocateZeroBytes)
 {
-  rmm::mr::indexed_pool_memory_resource mr{
-    rmm::mr::get_current_device_resource_ref(), 256, 1024};
+  rmm::mr::indexed_pool_memory_resource mr{rmm::mr::get_current_device_resource_ref(), 256, 1024};
   auto* ptr = mr.allocate_sync(0);
   EXPECT_NO_THROW(mr.deallocate_sync(ptr, 0));
 }
 
 TEST(IndexedPoolTest, PartialUseBlockNotReclaimed)
 {
-  rmm::mr::indexed_pool_memory_resource mr{
-    rmm::mr::get_current_device_resource_ref(), 1024, 2048};
+  rmm::mr::indexed_pool_memory_resource mr{rmm::mr::get_current_device_resource_ref(), 1024, 2048};
   auto* held = mr.allocate_sync(512);
   EXPECT_THROW((void)mr.allocate_sync(2048), rmm::out_of_memory);
   EXPECT_NO_THROW(mr.deallocate_sync(held, 512));
@@ -406,8 +403,7 @@ TEST(IndexedPoolTest, PartialUseBlockNotReclaimed)
 
 TEST(IndexedPoolTest, ReclaimAcrossStreams)
 {
-  rmm::mr::indexed_pool_memory_resource mr{
-    rmm::mr::get_current_device_resource_ref(), 256, 1024};
+  rmm::mr::indexed_pool_memory_resource mr{rmm::mr::get_current_device_resource_ref(), 256, 1024};
   rmm::cuda_stream source;
   {
     rmm::device_buffer source_block{256, source.view(), mr};
@@ -459,8 +455,7 @@ TEST(IndexedPoolTest, ReclaimWithActiveFreeListIndex)
   mr.deallocate_sync(combined, 2 * whole_block_size);
 
   // The owner-local indexes remain usable after exact extraction.
-  auto* indexed_block =
-    mr.allocate(owner.view(), block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  auto* indexed_block = mr.allocate(owner.view(), block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   mr.deallocate(owner.view(), indexed_block, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   owner.synchronize();
 
@@ -483,13 +478,11 @@ TEST(IndexedPoolTest, ReclaimIsStreamOrderedAcrossStreams)
   mr.deallocate(source.view(), source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   rmm::cuda_stream destination;
-  auto* destination_ptr =
-    mr.allocate(destination.view(), 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  auto* destination_ptr = mr.allocate(destination.view(), 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   auto const reclaim_returned_without_waiting = !prior_work.complete();
 
   prior_work.release();
-  mr.deallocate(
-    destination.view(), destination_ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(destination.view(), destination_ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   destination.synchronize();
 
   EXPECT_TRUE(reclaim_returned_without_waiting);
@@ -774,8 +767,7 @@ TEST(IndexedCoalescingFreeListTest, ActiveIndexInsertionMaintainsIndexesForEvery
 
   auto activate = [=](free_list& blocks) {
     for (std::size_t index = 0; index < filler_count; ++index) {
-      blocks.insert(
-        {reinterpret_cast<char*>(filler_base + index * 4096), 128, true});
+      blocks.insert({reinterpret_cast<char*>(filler_base + index * 4096), 128, true});
     }
     ASSERT_TRUE(blocks.diagnostics_index_active());
     ASSERT_TRUE(blocks.diagnostics_indexes_consistent());
@@ -838,8 +830,7 @@ TEST(IndexedCoalescingFreeListTest, ActiveSelectionCommitsSplitAndExactWithoutNe
   auto const split = blocks.find_block(768);
   ASSERT_NE(split.block, blocks.end());
   ASSERT_EQ(split.block->pointer(), reinterpret_cast<char*>(target_base));
-  blocks.commit_block_selection(
-    split, {reinterpret_cast<char*>(target_base + 768), 256, false});
+  blocks.commit_block_selection(split, {reinterpret_cast<char*>(target_base + 768), 256, false});
   EXPECT_EQ(blocks.size(), filler_count + 1);
   EXPECT_TRUE(blocks.diagnostics_indexes_consistent());
 
@@ -988,8 +979,8 @@ class indexed_recovery_hooks_restore_guard {
   }
 
   indexed_recovery_hooks_restore_guard(indexed_recovery_hooks_restore_guard const&) = delete;
-  indexed_recovery_hooks_restore_guard& operator=(
-    indexed_recovery_hooks_restore_guard const&) = delete;
+  indexed_recovery_hooks_restore_guard& operator=(indexed_recovery_hooks_restore_guard const&) =
+    delete;
 
  private:
   hooks::wait_function wait_;
@@ -1023,8 +1014,7 @@ TEST(IndexedPoolMemoryResourceTest, CrossStreamWaitFailurePreservesSingleDonorBl
   EXPECT_EQ(injected_wait_calls, 1);
   hooks::reset();
 
-  auto* recovered =
-    resource.allocate(requester.view(), block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  auto* recovered = resource.allocate(requester.view(), block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   EXPECT_EQ(recovered, donor);
   resource.deallocate(requester.view(), recovered, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   resource.deallocate(requester.view(), held, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
@@ -1243,8 +1233,7 @@ TEST(IndexedPoolMemoryResourceTest, MetadataFailuresPrecedePublicationAndPreserv
     void* recovered{};
     bool metadata_failed{};
     try {
-      recovered =
-        resource.allocate(requester.view(), request_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      recovered = resource.allocate(requester.view(), request_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     } catch (std::bad_alloc const&) {
       metadata_failed = true;
     }
@@ -1252,8 +1241,7 @@ TEST(IndexedPoolMemoryResourceTest, MetadataFailuresPrecedePublicationAndPreserv
 
     if (metadata_failed) {
       EXPECT_EQ(injected_wait_calls, 0);
-      recovered =
-        resource.allocate(requester.view(), request_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      recovered = resource.allocate(requester.view(), request_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     } else {
       reached_success = true;
       EXPECT_GT(injected_wait_calls, 0);
@@ -1863,9 +1851,7 @@ class PoolMemoryResourceTest : public ::testing::Test {
 };
 
 TEST_F(PoolMemoryResourceTest, GetUpstreamResource)
-{
-  [[maybe_unused]] auto ref = pool.get_upstream_resource();
-}
+{ [[maybe_unused]] auto ref = pool.get_upstream_resource(); }
 
 TEST_F(PoolMemoryResourceTest, AllocateDeallocate)
 {

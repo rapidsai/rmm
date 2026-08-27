@@ -50,7 +50,8 @@ class pool_memory_resource_impl final
   using stream_ordered_base =
     pool_stream_ordered_resource<pool_memory_resource_impl<FreeListType>, FreeListType>;
   friend stream_ordered_base;
-  friend class stream_ordered_memory_resource<pool_memory_resource_impl<FreeListType>, FreeListType>;
+  friend class stream_ordered_memory_resource<pool_memory_resource_impl<FreeListType>,
+                                              FreeListType>;
 
  public:
   pool_memory_resource_impl(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
@@ -60,14 +61,10 @@ class pool_memory_resource_impl final
   ~pool_memory_resource_impl();
 
   bool operator==(pool_memory_resource_impl const& other) const noexcept
-  {
-    return this == std::addressof(other);
-  }
+  { return this == std::addressof(other); }
 
   bool operator!=(pool_memory_resource_impl const& other) const noexcept
-  {
-    return !(*this == other);
-  }
+  { return !(*this == other); }
 
   [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
 

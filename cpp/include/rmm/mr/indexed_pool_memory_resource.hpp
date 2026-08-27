@@ -40,8 +40,8 @@ namespace mr {
 class RMM_EXPORT indexed_pool_memory_resource
   : public cuda::mr::shared_resource<
       detail::pool_memory_resource_impl<detail::indexed_coalescing_free_list>> {
-  using shared_base =
-    cuda::mr::shared_resource<detail::pool_memory_resource_impl<detail::indexed_coalescing_free_list>>;
+  using shared_base = cuda::mr::shared_resource<
+    detail::pool_memory_resource_impl<detail::indexed_coalescing_free_list>>;
 
  public:
   /**
