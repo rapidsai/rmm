@@ -419,6 +419,56 @@ TEST(IndexedPoolTest, ReclaimAcrossStreams)
   mr.deallocate_sync(ptr, 1024);
 }
 
+TEST(IndexedPoolTest, ReclaimWithActiveFreeListIndex)
+{
+  constexpr std::size_t block_size{rmm::CUDA_ALLOCATION_ALIGNMENT};
+  constexpr std::size_t fragment_count{1024};
+  constexpr std::size_t initial_pool_size{2 * fragment_count * block_size};
+  constexpr std::size_t whole_block_size{4 * block_size};
+  constexpr std::size_t maximum_pool_size{initial_pool_size + 2 * whole_block_size};
+
+  rmm::mr::indexed_pool_memory_resource mr{
+    rmm::mr::get_current_device_resource_ref(), initial_pool_size, maximum_pool_size};
+  rmm::cuda_stream owner;
+  std::vector<void*> fragments;
+  std::vector<void*> separators;
+  fragments.reserve(fragment_count);
+  separators.reserve(fragment_count);
+
+  // Alternating live separators leave 1024 non-coalescing free blocks on one owner, activating that
+  // owner's address and size indexes.
+  for (std::size_t i = 0; i < fragment_count; ++i) {
+    fragments.push_back(mr.allocate_sync(block_size));
+    separators.push_back(mr.allocate_sync(block_size));
+  }
+  for (auto* fragment : fragments) {
+    mr.deallocate(owner.view(), fragment, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  }
+
+  // Fill the remaining pool budget with two complete upstream allocations, then return both to the
+  // indexed owner list. Neither can satisfy the combined request by itself.
+  auto* first  = mr.allocate_sync(whole_block_size);
+  auto* second = mr.allocate_sync(whole_block_size);
+  mr.deallocate(owner.view(), first, whole_block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(owner.view(), second, whole_block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+
+  // Satisfying the combined request requires extracting both complete upstream blocks from an
+  // active index, returning them upstream, and growing one replacement block of the combined size.
+  auto* combined = mr.allocate_sync(2 * whole_block_size);
+  EXPECT_EQ(mr.pool_size(), maximum_pool_size);
+  mr.deallocate_sync(combined, 2 * whole_block_size);
+
+  // The owner-local indexes remain usable after exact extraction.
+  auto* indexed_block =
+    mr.allocate(owner.view(), block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(owner.view(), indexed_block, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  owner.synchronize();
+
+  for (auto* separator : separators) {
+    mr.deallocate_sync(separator, block_size);
+  }
+}
+
 TEST(IndexedPoolTest, ReclaimIsStreamOrderedAcrossStreams)
 {
   rmm::mr::cuda_async_memory_resource upstream;

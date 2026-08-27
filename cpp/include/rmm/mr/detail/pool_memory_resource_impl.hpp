@@ -89,7 +89,12 @@ class pool_memory_resource_impl final
   void initialize_pool(std::size_t initial_size, std::optional<std::size_t> maximum_size);
   block_type expand_pool(std::size_t size, free_list& blocks, cuda_stream_view stream);
   void reclaim_free_blocks(std::size_t size, free_list& blocks, cuda_stream_view stream);
-  void reclaim_indexed_free_blocks(std::size_t size, cuda_stream_view stream);
+  template <typename BeforeReclaim>
+  std::size_t reclaim_upstream_blocks_from_owner(std::size_t size,
+                                                 std::size_t max_pool_size,
+                                                 free_list& blocks,
+                                                 cuda_stream_view stream,
+                                                 BeforeReclaim&& before_reclaim);
   [[nodiscard]] std::size_t size_to_grow(std::size_t size) const;
   block_type block_from_upstream(std::size_t size, cuda_stream_view stream);
   split_block allocate_from_block(block_type const& block, std::size_t size);

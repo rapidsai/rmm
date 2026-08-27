@@ -133,6 +133,9 @@ pool_memory_resource_impl<FreeListType>::expand_pool(std::size_t size,
                                                      cuda_stream_view stream)
 {
   auto grow_size = size_to_grow(size);
+  // When the pool is capped and cannot grow enough to satisfy `size` in a single new upstream
+  // block, try to reclaim entirely-free upstream blocks (whose budget prevents growth) back to
+  // upstream, freeing headroom under `maximum_pool_size_` to grow a sufficiently large block.
   if (grow_size < size && maximum_pool_size_.has_value()) {
     reclaim_free_blocks(size, blocks, stream);
     grow_size = size_to_grow(size);
@@ -141,101 +144,94 @@ pool_memory_resource_impl<FreeListType>::expand_pool(std::size_t size,
 }
 
 template <typename FreeListType>
+template <typename BeforeReclaim>
+std::size_t pool_memory_resource_impl<FreeListType>::reclaim_upstream_blocks_from_owner(
+  std::size_t size,
+  std::size_t max_pool_size,
+  free_list& blocks,
+  cuda_stream_view stream,
+  BeforeReclaim&& before_reclaim)
+{
+  std::size_t reclaimed{};
+  auto free_iter     = blocks.begin();
+  auto upstream_iter = upstream_blocks_.begin();
+  using compare_t    = decltype(upstream_blocks_)::key_compare;
+  auto const compare = compare_t{};
+
+  // This merge join requires `blocks` and `upstream_blocks_` to remain sorted by
+  // `compare_blocks`. Both free-list implementations maintain address order on insertion, and
+  // `upstream_blocks_` uses the same comparator. Erasing matched entries below preserves the
+  // ordering of both collections.
+  free_list reclaimed_blocks;
+  while (free_iter != blocks.end() && upstream_iter != upstream_blocks_.end()) {
+    // `current_pool_size_ <= max_pool_size` is an invariant, so the subtraction cannot underflow.
+    if (max_pool_size - current_pool_size_ >= size) { break; }
+
+    if (compare(*free_iter, *upstream_iter)) {
+      ++free_iter;
+      continue;
+    }
+    if (compare(*upstream_iter, *free_iter)) {
+      ++upstream_iter;
+      continue;
+    }
+
+    auto const candidate = free_iter++;
+    auto const upstream  = upstream_iter++;
+    if (!candidate->is_head() || upstream->size() != candidate->size()) { continue; }
+
+    // The caller establishes any owner-specific stream dependency before upstream can reuse the
+    // allocation. It is invoked only for blocks that will actually be reclaimed.
+    before_reclaim();
+
+    auto const block = *candidate;
+    get_upstream_resource().deallocate(
+      stream, block.pointer(), block.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
+    if constexpr (is_indexed_free_list<FreeListType>) {
+      blocks.extract_exact(candidate, reclaimed_blocks);
+    } else {
+      blocks.erase(candidate);
+    }
+    upstream_blocks_.erase(upstream);
+    current_pool_size_ -= block.size();
+    reclaimed += block.size();
+  }
+  return reclaimed;
+}
+
+template <typename FreeListType>
 void pool_memory_resource_impl<FreeListType>::reclaim_free_blocks(std::size_t size,
                                                                   free_list& blocks,
                                                                   cuda_stream_view stream)
 {
+  // Reclamation only frees headroom when the pool has a capped maximum size.
+  if (!maximum_pool_size_.has_value()) { return; }
+  auto const max_pool_size = maximum_pool_size_.value();
+
+  // If `size` can never fit under the cap even with every free block reclaimed, there is nothing to
+  // gain: avoid the synchronization and destructive reclaim on a request that will fail anyway.
+  if (size > max_pool_size) { return; }
+
   if constexpr (is_indexed_free_list<FreeListType>) {
-    reclaim_indexed_free_blocks(size, stream);
-  } else {
-    if (!maximum_pool_size_.has_value()) { return; }
-    auto const max_pool_size = maximum_pool_size_.value();
-    if (size > max_pool_size) { return; }
-
-    auto free_iter     = blocks.cbegin();
-    auto upstream_iter = upstream_blocks_.cbegin();
-    using compare_t    = decltype(upstream_blocks_)::key_compare;
-    auto const compare = compare_t{};
-
-    while (free_iter != blocks.cend() && upstream_iter != upstream_blocks_.cend()) {
-      if (max_pool_size - current_pool_size_ >= size) { return; }
-
-      if (compare(*free_iter, *upstream_iter)) {
-        ++free_iter;
-        continue;
-      }
-      if (compare(*upstream_iter, *free_iter)) {
-        ++upstream_iter;
-        continue;
-      }
-
-      auto const candidate = free_iter++;
-      auto const upstream  = upstream_iter++;
-      if (!candidate->is_head() || upstream->size() != candidate->size()) { continue; }
-
-      auto const block = *candidate;
-      get_upstream_resource().deallocate(
-        stream, block.pointer(), block.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
-      blocks.erase(candidate);
-      upstream_blocks_.erase(upstream);
-      current_pool_size_ -= block.size();
-    }
-  }
-}
-
-template <typename FreeListType>
-void pool_memory_resource_impl<FreeListType>::reclaim_indexed_free_blocks(
-  std::size_t size, cuda_stream_view stream)
-{
-  if constexpr (is_indexed_free_list<FreeListType>) {
-    if (!maximum_pool_size_.has_value()) { return; }
-    auto const max_pool_size = maximum_pool_size_.value();
-    if (size > max_pool_size) { return; }
-
+    // Indexed recovery retains separate free lists for each stream/event owner. Visit each owner and
+    // wait only when that owner contains a complete upstream block that will actually be reclaimed.
     this->reclaim_free_upstream_blocks(
       stream, [&](free_list& owner_blocks, cudaEvent_t owner_event, auto requester) {
-        std::size_t reclaimed{};
-        auto free_iter     = owner_blocks.begin();
-        auto upstream_iter = upstream_blocks_.begin();
-        using compare_t    = decltype(upstream_blocks_)::key_compare;
-        auto const compare = compare_t{};
         bool waited{};
-
-        free_list reclaimed_blocks;
-        while (free_iter != owner_blocks.end() && upstream_iter != upstream_blocks_.end()) {
-          if (max_pool_size - current_pool_size_ >= size) { break; }
-
-          if (compare(*free_iter, *upstream_iter)) {
-            ++free_iter;
-            continue;
-          }
-          if (compare(*upstream_iter, *free_iter)) {
-            ++upstream_iter;
-            continue;
-          }
-
-          auto const candidate = free_iter++;
-          auto const upstream  = upstream_iter++;
-          if (!candidate->is_head() || upstream->size() != candidate->size()) { continue; }
-
-          if (!waited && owner_event != requester.event) {
-            RMM_CUDA_TRY(cudaStreamWaitEvent(requester.stream, owner_event, 0));
-            waited = true;
-          }
-
-          auto const block = *candidate;
-          get_upstream_resource().deallocate(
-            stream, block.pointer(), block.size(), rmm::CUDA_ALLOCATION_ALIGNMENT);
-          owner_blocks.extract_exact(candidate, reclaimed_blocks);
-          upstream_blocks_.erase(upstream);
-          current_pool_size_ -= block.size();
-          reclaimed += block.size();
-        }
-        return reclaimed;
+        return reclaim_upstream_blocks_from_owner(
+          size, max_pool_size, owner_blocks, stream, [&] {
+            if (!waited && owner_event != requester.event) {
+              RMM_CUDA_TRY(cudaStreamWaitEvent(requester.stream, owner_event, 0));
+              waited = true;
+            }
+          });
       });
   } else {
-    (void)size;
-    (void)stream;
+    // The free lists were merged onto `stream`, which waits on their recorded events. Enqueueing
+    // upstream deallocations on the same stream preserves those dependencies without blocking the
+    // host.
+    (void)reclaim_upstream_blocks_from_owner(
+      size, max_pool_size, blocks, stream, [] {});
   }
 }
 
@@ -321,6 +317,8 @@ pool_memory_resource_impl<FreeListType>::free_block(
   void* ptr, [[maybe_unused]] std::size_t size) noexcept
 {
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
+  // Fetch the metadata recorded for this block's suballocation and validate the caller's provided
+  // size before returning the block to a free list.
   if (ptr == nullptr) return block_type{};
   auto const iter = allocated_blocks_.find(static_cast<char*>(ptr));
   RMM_LOGGING_ASSERT(iter != allocated_blocks_.end());
@@ -330,6 +328,8 @@ pool_memory_resource_impl<FreeListType>::free_block(
   allocated_blocks_.erase(iter);
   return block;
 #else
+  // Reconstruct the block, trusting the validity of the caller's pointer and size. A pointer is a
+  // block head if and only if it is the start of an upstream allocation.
   auto const iter = upstream_blocks_.find(static_cast<char*>(ptr));
   return block_type{static_cast<char*>(ptr), size, (iter != upstream_blocks_.end())};
 #endif
@@ -341,6 +341,8 @@ pool_memory_resource_impl<FreeListType>::prepare_free_block(
   void* ptr, [[maybe_unused]] std::size_t size) const noexcept
 {
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
+  // Fetch and validate the recorded suballocation metadata before staging the indexed free-list
+  // update. Allocation tracking is removed only after every throwing preparation step succeeds.
   if (ptr == nullptr) return block_type{};
   auto const iter = allocated_blocks_.find(static_cast<char*>(ptr));
   RMM_LOGGING_ASSERT(iter != allocated_blocks_.end());
@@ -349,6 +351,8 @@ pool_memory_resource_impl<FreeListType>::prepare_free_block(
   RMM_LOGGING_ASSERT(block.size() == rmm::align_up(size, rmm::CUDA_ALLOCATION_ALIGNMENT));
   return block;
 #else
+  // Reconstruct the block, trusting the validity of the caller's pointer and size. A pointer is a
+  // block head if and only if it is the start of an upstream allocation.
   auto const iter = upstream_blocks_.find(static_cast<char*>(ptr));
   return block_type{static_cast<char*>(ptr), size, (iter != upstream_blocks_.end())};
 #endif
