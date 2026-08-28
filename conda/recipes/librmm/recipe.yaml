@@ -28,7 +28,7 @@ cache:
         set +x
 
         # Unset CUDAARCHS set by conda-forge's cuda-nvcc activation script
-        # so that rapids-cmake selects the default RAPIDS architectures.
+        # so that rapids-cmake selects the default supported architectures.
         unset CUDAARCHS
 
         ./build.sh -n -v clean librmm tests benchmarks
@@ -158,7 +158,7 @@ outputs:
       script:
         content: |
           # Unset CUDAARCHS set by conda-forge's cuda-nvcc activation script
-          # so that rapids-cmake selects the default RAPIDS architectures.
+          # so that rapids-cmake selects the default supported architectures.
           unset CUDAARCHS
 
           ./cpp/examples/build.sh --install

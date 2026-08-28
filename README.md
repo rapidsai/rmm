@@ -1,14 +1,13 @@
-# <div align="left"><img src="img/rapids_logo.png" width="90px"/>&nbsp;RMM: RAPIDS Memory Manager</div>
+# NVIDIA RMM
 
 **NOTE:** For the latest stable [README.md](https://github.com/rapidsai/rmm/blob/main/README.md) ensure you are on the `main` branch.
 
 ## Resources
 
-- [RMM Reference Documentation](https://docs.rapids.ai/api/rmm/stable/): Python and C++ API references, tutorials, and topic guides.
-- [RAPIDS Installation Guide](https://docs.rapids.ai/install/): Instructions for installing RMM.
+- [RMM Reference Documentation](https://docs.nvidia.com/rmm/): Python and C++ API references, tutorials, and topic guides.
+- [Installation](#installation): Instructions for installing RMM.
 - [GitHub Repository](https://github.com/rapidsai/rmm): Download the RMM source code.
 - [Issue Tracker](https://github.com/rapidsai/rmm/issues): Report issues or request features.
-- [RAPIDS Community](https://rapids.ai/learn-more/#get-involved): Get help, contribute, and collaborate.
 
 ## Overview
 
@@ -17,34 +16,73 @@ device memory are allocated. For example, using "pinned" host memory for asynchr
 host <-> device memory transfers, or using a device memory pool sub-allocator to reduce the cost of
 dynamic device memory allocation.
 
-The goal of the RAPIDS Memory Manager (RMM) is to provide:
+The goal of RMM is to provide:
 - A common interface that allows customizing memory allocation on device and host
-- A collection of [implementations](#available-resources) of the interface
+- A collection of [implementations](#available-device-resources) of the interface
 - A collection of [data structures](#device-data-structures) that use the interface for memory allocation
 
 For information on the interface RMM provides and how to use RMM in your C++ code, see
 [below](#using-rmm-in-c).
 
-For a walkthrough about the design of the RAPIDS Memory Manager, read [Fast, Flexible Allocation for NVIDIA CUDA with RAPIDS Memory Manager](https://developer.nvidia.com/blog/fast-flexible-allocation-for-cuda-with-rapids-memory-manager/) on the NVIDIA Developer Blog.
+For a walkthrough of the design of RMM, read [Fast, Flexible Allocation for NVIDIA CUDA with RMM](https://developer.nvidia.com/blog/fast-flexible-allocation-for-cuda-with-rapids-memory-manager/) on the NVIDIA Developer Blog.
 
 ## Installation
 
-### Conda
+### System Requirements
 
-RMM can be installed with conda. You can get a minimal conda installation with [miniforge](https://github.com/conda-forge/miniforge).
+Please see the [Installation Guide](https://docs.rapids.ai/install/#system-requirements)
+for NVIDIA CUDA-X libraries for data science for information about supported operating systems,
+GPU drivers, and CUDA versions.
 
-Install RMM with:
+### pip
+
+Stable releases of `librmm` and `rmm` are available on PyPI. Match the package suffix to the
+major CUDA version supported by your installed driver.
 
 ```bash
-conda install -c rapidsai -c conda-forge rmm cuda-version=13.3
+# CUDA 13
+pip install librmm-cu13
+pip install rmm-cu13
+
+# CUDA 12
+pip install librmm-cu12
+pip install rmm-cu12
 ```
 
-We also provide [nightly conda packages](https://anaconda.org/rapidsai-nightly) built from the HEAD
-of our latest development branch.
+Development versions are available as nightly releases:
 
-Note: The RMM package from conda requires building with GCC 13.3 or later. Otherwise, your application may fail to build.
+```bash
+# CUDA 13
+pip install --pre \
+  --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple \
+  librmm-cu13
+pip install --pre \
+  --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple \
+  rmm-cu13
 
-See the [RAPIDS Installation Guide](https://docs.rapids.ai/install/) for system requirements.
+# CUDA 12
+pip install --pre \
+  --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple \
+  librmm-cu12
+pip install --pre \
+  --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple \
+  rmm-cu12
+```
+
+### conda
+
+Stable releases of `librmm` and `rmm` are available from the `rapidsai` channel. Development
+versions are available from the `rapidsai-nightly` channel.
+
+```bash
+# Stable
+conda install -c rapidsai -c conda-forge librmm
+conda install -c rapidsai -c conda-forge rmm
+
+# Nightly
+conda install -c rapidsai-nightly -c conda-forge librmm
+conda install -c rapidsai-nightly -c conda-forge rmm
+```
 
 ## Building from Source
 
@@ -56,7 +94,7 @@ Compiler requirements:
 * `nvcc`    version 12.9+
 * `cmake`   version 4.0+
 
-CUDA/GPU requirements:
+CUDA/GPU runtime requirements:
 
 * CUDA 12.2+. You can obtain CUDA from
   [https://developer.nvidia.com/cuda-downloads](https://developer.nvidia.com/cuda-downloads)
@@ -540,8 +578,8 @@ int32_t v = a.value(s); // Retrieves the value from device to host on stream `s`
 
 ## Using RMM with Thrust
 
-RAPIDS and other CUDA libraries make heavy use of Thrust. Thrust uses CUDA device memory in two
-situations:
+[Thrust](https://github.com/NVIDIA/cccl/tree/main/thrust), part of the CUDA Core
+Compute Libraries (CCCL), uses CUDA device memory in two situations:
 
  1. As the backing store for `thrust::device_vector`, and
  2. As temporary storage inside some algorithms, such as `thrust::sort`.
