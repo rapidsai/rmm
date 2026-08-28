@@ -10,6 +10,7 @@
 #include <cuda/stream>
 #include <cuda_runtime_api.h>
 
+#include <concepts>
 #include <cstddef>
 #include <ostream>
 
@@ -139,20 +140,48 @@ static const cuda::stream_ref cuda_stream_per_thread{cudaStream_t{cudaStreamPerT
 /**
  * @brief Equality comparison operator for streams
  *
- * @param lhs The first stream view to compare
- * @param rhs The second stream view to compare
+ * @param lhs The first stream to compare
+ * @param rhs The second stream to compare
  * @return true if equal, false if unequal
  */
 bool operator==(cuda_stream_view lhs, cuda_stream_view rhs);
 
+/// @copydoc operator==(cuda_stream_view, cuda_stream_view)
+template <std::same_as<cuda::stream_ref> StreamRef>
+bool operator==(cuda_stream_view lhs, StreamRef const& rhs)
+{
+  return lhs.value() == rhs.get();
+}
+
+/// @copydoc operator==(cuda_stream_view, cuda_stream_view)
+template <std::same_as<cuda::stream_ref> StreamRef>
+bool operator==(StreamRef const& lhs, cuda_stream_view rhs)
+{
+  return lhs.get() == rhs.value();
+}
+
 /**
  * @brief Inequality comparison operator for streams
  *
- * @param lhs The first stream view to compare
- * @param rhs The second stream view to compare
+ * @param lhs The first stream to compare
+ * @param rhs The second stream to compare
  * @return true if unequal, false if equal
  */
 bool operator!=(cuda_stream_view lhs, cuda_stream_view rhs);
+
+/// @copydoc operator!=(cuda_stream_view, cuda_stream_view)
+template <std::same_as<cuda::stream_ref> StreamRef>
+bool operator!=(cuda_stream_view lhs, StreamRef const& rhs)
+{
+  return lhs.value() != rhs.get();
+}
+
+/// @copydoc operator!=(cuda_stream_view, cuda_stream_view)
+template <std::same_as<cuda::stream_ref> StreamRef>
+bool operator!=(StreamRef const& lhs, cuda_stream_view rhs)
+{
+  return lhs.get() != rhs.value();
+}
 
 /**
  * @brief Output stream operator for printing / logging streams

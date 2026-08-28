@@ -54,6 +54,15 @@ TEST_F(CudaStreamTest, ImplicitConversionToStreamRef)
   EXPECT_EQ(ref.get(), stream.value());
 }
 
+TEST_F(CudaStreamTest, StreamRefEquality)
+{
+  auto const view = rmm::cuda_stream_view{rmm::cuda_stream_default};
+  EXPECT_EQ(view, rmm::cuda_stream_default);
+  EXPECT_EQ(rmm::cuda_stream_default, view);
+  EXPECT_NE(view, rmm::cuda_stream_per_thread);
+  EXPECT_NE(rmm::cuda_stream_per_thread, view);
+}
+
 TEST_F(CudaStreamTest, StreamRefConsistentWithView)
 {
   rmm::cuda_stream stream;
