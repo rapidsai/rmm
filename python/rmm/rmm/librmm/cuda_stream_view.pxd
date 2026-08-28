@@ -4,10 +4,7 @@
 from cuda.bindings.cyruntime cimport cudaStream_t
 from libcpp cimport bool
 
-
-cdef extern from "<cuda/stream>" namespace "cuda" nogil:
-    cdef cppclass stream_ref:
-        cudaStream_t get()
+from rmm.librmm.cuda_stream_ref cimport stream_ref
 
 
 cdef extern from "rmm/cuda_stream_view.hpp" namespace "rmm" nogil:

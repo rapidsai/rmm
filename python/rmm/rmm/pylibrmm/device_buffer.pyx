@@ -21,6 +21,7 @@ from cuda.bindings.cyruntime cimport (
     cudaStream_t,
 )
 
+from rmm.librmm.cuda_stream_ref cimport stream_ref
 from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 from rmm.librmm.device_buffer cimport (
     cuda_device_id,
@@ -171,11 +172,12 @@ cdef class DeviceBuffer:
                                    if device is None
                                    else cuda_device_id(device))
         cdef Stream strm = self.stream if stream is None else stream
+        cdef stream_ref cpp_stream = stream_ref(strm.view().value())
         with nogil:
             prefetch(self.c_obj.get()[0].data(),
                      self.c_obj.get()[0].size(),
                      dev,
-                     strm.view())
+                     cpp_stream)
 
     def copy(self):
         """Returns a copy of this :class:`DeviceBuffer`.

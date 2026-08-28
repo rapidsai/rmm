@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from rmm.librmm.cuda_stream cimport cuda_stream_flags
-from rmm.librmm.cuda_stream_view cimport stream_ref
+from rmm.librmm.cuda_stream_ref cimport stream_ref
 
 
 cdef extern from "rmm/cuda_stream_pool.hpp" namespace "rmm" nogil:
