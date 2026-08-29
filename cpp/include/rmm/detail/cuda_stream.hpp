@@ -25,9 +25,9 @@ namespace detail {
 [[nodiscard, maybe_unused]] static bool is_default_stream(cuda::stream_ref stream) noexcept
 {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  return stream == cudaStream_t{} || stream == cudaStream_t{cudaStreamPerThread};
+  return stream.get() == cudaStream_t{} || stream.get() == cudaStream_t{cudaStreamPerThread};
 #else
-  return stream == cudaStream_t{} || stream == cudaStream_t{cudaStreamLegacy};
+  return stream.get() == cudaStream_t{} || stream.get() == cudaStream_t{cudaStreamLegacy};
 #endif
 }
 
