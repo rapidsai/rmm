@@ -37,7 +37,7 @@ TEST_P(allocator_test, defaults)
 {
   rmm::mr::set_current_device_resource(this->ref);
   rmm::mr::thrust_allocator<int> allocator(rmm::cuda_stream_default);
-  EXPECT_EQ(allocator.stream(), rmm::cuda_stream_view{rmm::cuda_stream_default});
+  EXPECT_EQ(allocator.stream(), rmm::cuda_stream_default);
   EXPECT_EQ(allocator.get_upstream_resource(),
             rmm::device_async_resource_ref{rmm::mr::get_current_device_resource_ref()});
 }
@@ -48,7 +48,7 @@ TEST_P(allocator_test, multi_device)
   cuda_set_device_raii with_device{rmm::get_current_cuda_device()};
   rmm::cuda_stream stream{};
   // make allocator on device-0
-  rmm::mr::thrust_allocator<int> allocator(stream.view(), this->ref);
+  rmm::mr::thrust_allocator<int> allocator(stream, this->ref);
   auto const size{100};
   EXPECT_NO_THROW([&]() {
     auto vec = rmm::device_vector<int>(size, allocator);
