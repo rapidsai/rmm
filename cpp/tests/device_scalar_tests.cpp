@@ -5,7 +5,6 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_scalar.hpp>
 #include <rmm/mr/per_device_resource.hpp>
@@ -19,9 +18,13 @@
 #include <cstddef>
 #include <random>
 #include <type_traits>
+#include <utility>
 
 // explicit instantiation for test coverage purposes
 template class rmm::device_scalar<int>;
+
+static_assert(
+  std::is_same_v<decltype(std::declval<rmm::device_scalar<int>>().stream()), cuda::stream_ref>);
 
 template <typename T>
 struct DeviceScalarTest : public ::testing::Test {
@@ -143,7 +146,7 @@ TYPED_TEST(DeviceScalarTest, SetGetStream)
   auto const otherstream = rmm::cuda_stream_per_thread;
   scalar.set_stream(otherstream);
 
-  EXPECT_EQ(scalar.stream(), rmm::cuda_stream_view{otherstream});
+  EXPECT_EQ(scalar.stream(), otherstream);
 }
 
 TEST(DeviceScalarAlignmentTest, SmallAlignment)

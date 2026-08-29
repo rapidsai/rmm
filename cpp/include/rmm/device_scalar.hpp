@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/mr/per_device_resource.hpp>
@@ -262,7 +261,7 @@ class device_scalar {
   /**
    * @briefreturn{Stream associated with the device memory allocation}
    */
-  [[nodiscard]] cuda_stream_view stream() const noexcept { return _storage.stream(); }
+  [[nodiscard]] cuda::stream_ref stream() const noexcept { return _storage.stream(); }
 
   /**
    * @brief Sets the stream to be used for deallocation
