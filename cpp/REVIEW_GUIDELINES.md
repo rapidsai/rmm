@@ -193,7 +193,7 @@ upstream_->deallocate(ptr, size, stream);
 - Respect stream-ordered memory semantics
 
 **Stream Management**:
-- Async allocations must accept a `cuda_stream_view`
+- Async allocations must accept a `cuda::stream_ref`
 - Synchronization must happen before memory is returned to pool
 - Document stream semantics in function documentation
 

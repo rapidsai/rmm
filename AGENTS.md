@@ -103,7 +103,7 @@ pre-commit run ruff-format --all-files   # Python formatting only
 Use `pre-commit run --all-files` to run linter and style checks. It will call clang-format, ruff, and other tools.
 
 ### Naming Conventions
-- **C++ classes**: `snake_case` (e.g., `device_buffer`, `cuda_stream_view`)
+- **C++ classes**: `snake_case` (e.g., `device_buffer`)
 - **C++ functions/methods**: `snake_case`
 - **C++ constants/macros**: `SCREAMING_SNAKE_CASE`
 - **C++ template params**: `PascalCase` with `T` suffix (e.g., `OffsetT`)
@@ -186,8 +186,8 @@ mr.deallocate_sync(ptr, bytes);
 
 ### Stream Usage (C++)
 ```cpp
-#include <rmm/cuda_stream_view.hpp>
-void func(rmm::cuda_stream_view stream) {
+#include <cuda/stream>
+void func(cuda::stream_ref stream) {
   // Use stream for async operations
 }
 ```
@@ -209,7 +209,7 @@ buf = rmm.DeviceBuffer(size=size)
 - Never use raw CUDA memory APIs for device memory - use memory resources (except in memory resource implementations)
 - Prefer `rmm::device_uvector<T>` for typed device memory
 - Prefer `rmm::device_buffer` for untyped device memory
-- All operations should be stream-ordered - accept `rmm::cuda_stream_view`
+- All operations should be stream-ordered - accept `cuda::stream_ref` from `<cuda/stream>`
 - Views (`*_view` suffix) are non-owning - don't manage their lifetime
 
 ## Key Files Reference
