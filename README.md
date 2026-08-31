@@ -446,12 +446,12 @@ with any current RMM device memory resources.
 
 ## Allocators
 
-C++ interfaces commonly allow customizable memory allocation through an [`Allocator`](https://en.cppreference.com/w/cpp/named_req/Allocator) object.
+C++ interfaces commonly allow customizable memory allocation through an [`Allocator`](https://en.cppreference.com/cpp/named_req/Allocator) object.
 RMM provides several `Allocator` and `Allocator`-like classes.
 
 ### `polymorphic_allocator`
 
-A [stream-ordered](#stream-ordered-memory-allocation) allocator similar to [`std::pmr::polymorphic_allocator`](https://en.cppreference.com/w/cpp/memory/polymorphic_allocator).
+A [stream-ordered](#stream-ordered-memory-allocation) allocator similar to [`std::pmr::polymorphic_allocator`](https://en.cppreference.com/cpp/memory/polymorphic_allocator).
 Unlike the standard C++ `Allocator` interface, the `allocate` and `deallocate` functions take a `cuda_stream_view` indicating the stream on which the (de)allocation occurs.
 
 ### `stream_allocator_adaptor`
@@ -782,7 +782,7 @@ See [here](#memory-resource-objects) for more information on changing the curren
 
 ### Using RMM with PyTorch
 
-[PyTorch](https://pytorch.org/docs/stable/notes/cuda.html) can use RMM
+[PyTorch](https://docs.pytorch.org/docs/stable/notes/cuda.html) can use RMM
 for memory allocation. For example, to configure PyTorch to use an
 RMM-managed pool:
 
