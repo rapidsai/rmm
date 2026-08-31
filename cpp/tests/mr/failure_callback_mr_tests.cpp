@@ -89,7 +89,7 @@ TEST(FailureCallbackTest, ForwardsAlignment)
   bool retried{false};
   failure_callback_adaptor<> mr{device_async_resource_ref{wrapper}, failure_handler, &retried};
 
-  cuda_stream_view stream;
+  auto const stream = rmm::cuda_stream_default;
   std::byte pointer_value{};
   void* const pointer = &pointer_value;
   auto const size{1024};

@@ -45,7 +45,7 @@ RMM_NAMESPACE_BEGIN
  * // Allocates at least 100 bytes using the custom memory resource and
  * // specified stream
  * custom_memory_resource mr;
- * cuda_stream_view stream = cuda_stream_view{};
+ * auto stream = rmm::cuda_stream_default;
  * device_buffer custom_buff(100, stream, &mr);
  *
  * // Deep copies `buff` into a new device buffer using the specified stream
@@ -101,11 +101,11 @@ class device_buffer {
    */
   explicit device_buffer(
     std::size_t size,
-    cuda_stream_view stream,
+    cuda::stream_ref stream,
     cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 
   // clang-format off
-  /// @copydoc device_buffer(std::size_t, cuda_stream_view, cuda::mr::any_resource<cuda::mr::device_accessible>)
+  /// @copydoc device_buffer(std::size_t, cuda::stream_ref, cuda::mr::any_resource<cuda::mr::device_accessible>)
   // clang-format on
   ///
   /// @throws rmm::bad_alloc If the requested alignment cannot be satisfied by the provided
@@ -117,7 +117,7 @@ class device_buffer {
   explicit device_buffer(
     std::size_t size,
     std::size_t alignment,
-    cuda_stream_view stream,
+    cuda::stream_ref stream,
     cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 
   /**
@@ -146,11 +146,11 @@ class device_buffer {
   device_buffer(
     void const* source_data,
     std::size_t size,
-    cuda_stream_view stream,
+    cuda::stream_ref stream,
     cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 
   // clang-format off
-  /// @copydoc device_buffer(void const*, std::size_t, cuda_stream_view, cuda::mr::any_resource<cuda::mr::device_accessible>)
+  /// @copydoc device_buffer(void const*, std::size_t, cuda::stream_ref, cuda::mr::any_resource<cuda::mr::device_accessible>)
   // clang-format on
   ///
   /// @throws rmm::bad_alloc If the requested alignment cannot be satisfied by the provided
@@ -163,7 +163,7 @@ class device_buffer {
     void const* source_data,
     std::size_t size,
     std::size_t alignment,
-    cuda_stream_view stream,
+    cuda::stream_ref stream,
     cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
   /**
    * @brief Construct a new `device_buffer` by deep copying the contents of
@@ -176,7 +176,7 @@ class device_buffer {
    *
    * @note The new buffer has the same alignment guarantees as the copied-from buffer. If you need
    *to control the alignment of the new buffer explicitly, use `device_buffer(void const*,
-   * std::size_t, std::size_t, cuda_stream_view,
+   * std::size_t, std::size_t, cuda::stream_ref,
    *cuda::mr::any_resource<cuda::mr::device_accessible>)`.
    *
    * @note This function does not synchronize `stream`. `other` is copied on `stream`, so the
@@ -193,7 +193,7 @@ class device_buffer {
    */
   device_buffer(
     device_buffer const& other,
-    cuda_stream_view stream,
+    cuda::stream_ref stream,
     cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 
   /**
@@ -256,7 +256,7 @@ class device_buffer {
    * @param new_capacity The requested new capacity, in bytes
    * @param stream The stream to use for allocation and copy
    */
-  void reserve(std::size_t new_capacity, cuda_stream_view stream);
+  void reserve(std::size_t new_capacity, cuda::stream_ref stream);
 
   /**
    * @brief Resize the device memory allocation
@@ -287,7 +287,7 @@ class device_buffer {
    * @param new_size The requested new size, in bytes
    * @param stream The stream to use for allocation and copy
    */
-  void resize(std::size_t new_size, cuda_stream_view stream);
+  void resize(std::size_t new_size, cuda::stream_ref stream);
 
   /**
    * @brief Forces the deallocation of unused memory.
@@ -306,7 +306,7 @@ class device_buffer {
    *
    * @param stream The stream on which the allocation and copy are performed
    */
-  void shrink_to_fit(cuda_stream_view stream);
+  void shrink_to_fit(cuda::stream_ref stream);
 
   /**
    * @briefreturn{Const pointer to the device memory allocation}
@@ -356,7 +356,7 @@ class device_buffer {
   /**
    * @briefreturn{The stream most recently specified for allocation/deallocation}
    */
-  [[nodiscard]] cuda_stream_view stream() const noexcept { return _stream; }
+  [[nodiscard]] cuda::stream_ref stream() const noexcept { return _stream; }
 
   /**
    * @brief Sets the stream to be used for deallocation
@@ -369,7 +369,7 @@ class device_buffer {
    *
    * @param stream The stream to use for deallocation
    */
-  void set_stream(cuda_stream_view stream) noexcept { _stream = stream; }
+  void set_stream(cuda::stream_ref stream) noexcept { _stream = stream; }
 
   /**
    * @briefreturn{The resource used to allocate and deallocate}

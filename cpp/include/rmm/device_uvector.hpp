@@ -43,7 +43,7 @@ RMM_NAMESPACE_BEGIN
  * Example:
  * @code{.cpp}
  * auto mr = new my_custom_resource();
- * rmm::cuda_stream_view s{};
+ * auto s = rmm::cuda_stream_default;
  *
  * // Allocates *uninitialized* device memory on stream `s` sufficient for 100 ints using the
  * // supplied resource `mr`
@@ -606,7 +606,7 @@ class device_uvector {
   /**
    * @briefreturn{Stream most recently specified for allocation/deallocation}
    */
-  [[nodiscard]] cuda_stream_view stream() const noexcept { return _storage.stream(); }
+  [[nodiscard]] cuda::stream_ref stream() const noexcept { return _storage.stream(); }
 
   /**
    * @brief Sets the stream to be used for deallocation

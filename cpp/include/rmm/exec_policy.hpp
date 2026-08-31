@@ -46,7 +46,7 @@ class exec_policy : public thrust_exec_policy_t {
    * @param mr The resource to use for allocating temporary memory
    */
   explicit exec_policy(
-    cuda_stream_view stream                                = cuda_stream_default,
+    cuda::stream_ref stream                                = cuda_stream_default,
     cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 };
 
@@ -72,7 +72,7 @@ class exec_policy_nosync : public thrust_exec_policy_nosync_t {
    * @param mr The resource to use for allocating temporary memory
    */
   explicit exec_policy_nosync(
-    cuda_stream_view stream                                = cuda_stream_default,
+    cuda::stream_ref stream                                = cuda_stream_default,
     cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
 };
 

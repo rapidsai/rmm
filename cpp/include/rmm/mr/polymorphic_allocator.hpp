@@ -79,7 +79,7 @@ class polymorphic_allocator {
    * @param stream The stream on which to perform the allocation
    * @return Pointer to the allocated storage
    */
-  value_type* allocate(std::size_t num, cuda_stream_view stream)
+  value_type* allocate(std::size_t num, cuda::stream_ref stream)
   {
     return static_cast<value_type*>(
       mr_.allocate(stream, num * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT));
@@ -95,7 +95,7 @@ class polymorphic_allocator {
    * @param num Number of objects originally allocated
    * @param stream Stream on which to perform the deallocation
    */
-  void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream) noexcept
+  void deallocate(value_type* ptr, std::size_t num, cuda::stream_ref stream) noexcept
   {
     mr_.deallocate(stream, ptr, num * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
@@ -151,7 +151,7 @@ bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> co
 /**
  * @brief Adapts a stream ordered allocator to provide a standard `Allocator` interface
  *
- * A stream-ordered allocator (i.e., `allocate/deallocate` use a `cuda_stream_view`) cannot be used
+ * A stream-ordered allocator (i.e., `allocate/deallocate` use a `cuda::stream_ref`) cannot be used
  * in an interface that expects a standard C++ `Allocator` interface. `stream_allocator_adaptor`
  * wraps a stream-ordered allocator and a stream to provide a standard `Allocator` interface. The
  * adaptor uses the wrapped stream in calls to the underlying allocator's `allocate` and
@@ -160,7 +160,7 @@ bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> co
  * Example:
  *\code{.cpp}
  * my_stream_ordered_allocator<int> a{...};
- * cuda_stream_view s = // create stream;
+ * cuda::stream_ref s = // create stream;
  *
  * auto adapted = stream_allocator_adaptor(a, s);
  *
@@ -188,7 +188,7 @@ class stream_allocator_adaptor {
    * @param allocator The stream ordered allocator to use as the underlying allocator
    * @param stream The stream used with the underlying allocator
    */
-  stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view stream)
+  stream_allocator_adaptor(Allocator const& allocator, cuda::stream_ref stream)
     : alloc_{allocator}, stream_{stream}
   {
   }
@@ -244,7 +244,7 @@ class stream_allocator_adaptor {
   /**
    * @briefreturn{The stream on which calls to the underlying allocator are made}
    */
-  [[nodiscard]] cuda_stream_view stream() const noexcept { return stream_; }
+  [[nodiscard]] cuda::stream_ref stream() const noexcept { return stream_; }
 
   /**
    * @briefreturn{The underlying allocator}

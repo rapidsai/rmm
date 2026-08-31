@@ -29,7 +29,7 @@ template class rmm::device_uvector<int32_t>;
 
 template <typename T>
 struct TypedUVectorTest : ::testing::Test {
-  [[nodiscard]] rmm::cuda_stream_view stream() const noexcept { return rmm::cuda_stream_default; }
+  [[nodiscard]] cuda::stream_ref stream() const noexcept { return rmm::cuda_stream_default; }
 };
 
 using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
@@ -68,7 +68,7 @@ TEST(DeviceUVectorOverflowTest, Constructor)
   auto constexpr overflowing_size = std::numeric_limits<std::size_t>::max() / sizeof(uint64_t) + 1;
 
   EXPECT_THROW(
-    std::ignore = rmm::device_uvector<uint64_t>(overflowing_size, rmm::cuda_stream_view{}),
+    std::ignore = rmm::device_uvector<uint64_t>(overflowing_size, rmm::cuda_stream_default),
     rmm::invalid_argument);
 }
 
@@ -170,9 +170,9 @@ TYPED_TEST(TypedUVectorTest, ReserveLarger)
 TEST(DeviceUVectorOverflowTest, Reserve)
 {
   auto constexpr overflowing_size = std::numeric_limits<std::size_t>::max() / sizeof(uint64_t) + 1;
-  rmm::device_uvector<uint64_t> vec(0, rmm::cuda_stream_view{});
+  rmm::device_uvector<uint64_t> vec(0, rmm::cuda_stream_default);
 
-  EXPECT_THROW(vec.reserve(overflowing_size, rmm::cuda_stream_view{}), rmm::invalid_argument);
+  EXPECT_THROW(vec.reserve(overflowing_size, rmm::cuda_stream_default), rmm::invalid_argument);
 }
 
 TYPED_TEST(TypedUVectorTest, ResizeToZero)
@@ -192,9 +192,9 @@ TYPED_TEST(TypedUVectorTest, ResizeToZero)
 TEST(DeviceUVectorOverflowTest, Resize)
 {
   auto constexpr overflowing_size = std::numeric_limits<std::size_t>::max() / sizeof(uint64_t) + 1;
-  rmm::device_uvector<uint64_t> vec(0, rmm::cuda_stream_view{});
+  rmm::device_uvector<uint64_t> vec(0, rmm::cuda_stream_default);
 
-  EXPECT_THROW(vec.resize(overflowing_size, rmm::cuda_stream_view{}), rmm::invalid_argument);
+  EXPECT_THROW(vec.resize(overflowing_size, rmm::cuda_stream_default), rmm::invalid_argument);
 }
 
 TYPED_TEST(TypedUVectorTest, Release)
@@ -322,7 +322,7 @@ TYPED_TEST(TypedUVectorTest, SetGetStream)
   auto const otherstream = rmm::cuda_stream_per_thread;
   vec.set_stream(otherstream);
 
-  EXPECT_EQ(vec.stream(), rmm::cuda_stream_view{otherstream});
+  EXPECT_EQ(vec.stream(), otherstream);
 }
 
 TYPED_TEST(TypedUVectorTest, Iterators)

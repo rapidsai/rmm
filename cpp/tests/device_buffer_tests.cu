@@ -133,7 +133,7 @@ TYPED_TEST(DeviceBufferTest, CopyFromRawDevicePointer)
                             static_cast<char*>(device_memory),
                             static_cast<char*>(device_memory) + buff.size(),
                             static_cast<char*>(buff.data())));
-  buff.stream().synchronize();
+  buff.stream().sync();
   EXPECT_EQ(cudaSuccess, cudaFree(device_memory));
 }
 
@@ -149,7 +149,7 @@ TYPED_TEST(DeviceBufferTest, CopyFromRawHostPointer)
   EXPECT_EQ(rmm::device_async_resource_ref{rmm::mr::get_current_device_resource_ref()},
             buff.memory_resource());
   EXPECT_EQ(rmm::cuda_stream_default, buff.stream());
-  buff.stream().synchronize();
+  buff.stream().sync();
   std::vector<uint8_t> host_copy(this->size);
   EXPECT_EQ(cudaSuccess,
             cudaMemcpy(host_copy.data(), buff.data(), this->size, cudaMemcpyDeviceToHost));
@@ -521,7 +521,7 @@ TYPED_TEST(DeviceBufferTest, SetGetStream)
   auto const otherstream = rmm::cuda_stream_per_thread;
   buff.set_stream(otherstream);
 
-  EXPECT_EQ(buff.stream(), rmm::cuda_stream_view{otherstream});
+  EXPECT_EQ(buff.stream(), otherstream);
 }
 
 TEST(DeviceBufferAlignmentTest, DefaultAlignment)

@@ -41,8 +41,8 @@ TEST(BinningTest, ZeroByteAllocationsUseBinResource)
     .WillRepeatedly(::testing::Return(nullptr));
   EXPECT_CALL(mock, deallocate(::testing::_, nullptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT)).Times(2);
 
-  EXPECT_EQ(mr.allocate(cuda_stream_view{}, 0, rmm::CUDA_ALLOCATION_ALIGNMENT), nullptr);
-  mr.deallocate(cuda_stream_view{}, nullptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  EXPECT_EQ(mr.allocate(rmm::cuda_stream_default, 0, rmm::CUDA_ALLOCATION_ALIGNMENT), nullptr);
+  mr.deallocate(rmm::cuda_stream_default, nullptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT);
   EXPECT_EQ(mr.allocate_sync(0, rmm::CUDA_ALLOCATION_ALIGNMENT), nullptr);
   mr.deallocate_sync(nullptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }

@@ -18,11 +18,11 @@ struct CallbackMRFixture : public ::testing::Test {
   rmm::device_async_resource_ref upstream{cuda};
 
   rmm::mr::callback_memory_resource mr{
-    [](std::size_t bytes, rmm::cuda_stream_view stream, void* arg) {
+    [](std::size_t bytes, cuda::stream_ref stream, void* arg) {
       return static_cast<rmm::device_async_resource_ref*>(arg)->allocate(
         stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
     },
-    [](void* ptr, std::size_t bytes, rmm::cuda_stream_view stream, void* arg) {
+    [](void* ptr, std::size_t bytes, cuda::stream_ref stream, void* arg) {
       static_cast<rmm::device_async_resource_ref*>(arg)->deallocate(
         stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
     },
