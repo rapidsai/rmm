@@ -30,16 +30,15 @@ jobs:
           path: .lycheecache
           key: lychee-${{ github.ref_name }}-${{ github.run_id }}
           restore-keys: lychee-${{ github.ref_name }}-
+      - name: List tracked files
+        run: git ls-files '*.md' '*.html' '*.rst' > "${RUNNER_TEMP}/lychee-files"
       - name: Check links
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
           args: >-
             --config .lychee.toml
             --no-progress
-            --
-            "**/*.md"
-            "**/*.html"
-            "**/*.rst"
+            --files-from "${{ runner.temp }}/lychee-files"
           fail: true
           failIfEmpty: true
       - name: Save lychee cache
