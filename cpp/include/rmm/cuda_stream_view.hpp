@@ -62,6 +62,13 @@ class cuda_stream_view {
   [[nodiscard]] cudaStream_t value() const noexcept;
 
   /**
+   * @brief Get the wrapped stream.
+   *
+   * @return cudaStream_t The underlying stream referenced by this cuda_stream_view
+   */
+  [[nodiscard]] cudaStream_t get() const noexcept;
+
+  /**
    * @brief Implicit conversion to cudaStream_t.
    *
    * @return cudaStream_t The underlying stream referenced by this cuda_stream_view
@@ -93,6 +100,15 @@ class cuda_stream_view {
    * @throw rmm::cuda_error if stream synchronization fails
    */
   void synchronize() const;
+
+  /**
+   * @brief Synchronize the viewed CUDA stream.
+   *
+   * Calls `cudaStreamSynchronize()`.
+   *
+   * @throw rmm::cuda_error if stream synchronization fails
+   */
+  void sync() const;
 
   /**
    * @brief Synchronize the viewed CUDA stream. Does not throw if there is an error.

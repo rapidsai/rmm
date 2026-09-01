@@ -39,6 +39,14 @@ TEST_F(CudaStreamTest, Equality)
   EXPECT_NE(static_cast<cudaStream_t>(stream_a), rmm::cuda_stream_default.value());
 }
 
+TEST_F(CudaStreamTest, StreamViewCompatibilityAliases)
+{
+  rmm::cuda_stream stream;
+  auto const view = stream.view();
+  EXPECT_EQ(view.get(), view.value());
+  EXPECT_NO_THROW(view.sync());
+}
+
 TEST_F(CudaStreamTest, ImplicitConversionToStreamRef)
 {
   rmm::cuda_stream stream;
