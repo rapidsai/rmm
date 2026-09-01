@@ -21,6 +21,8 @@ cuda_stream_view::cuda_stream_view(cuda::stream_ref stream) noexcept : stream_{s
 
 cudaStream_t cuda_stream_view::value() const noexcept { return stream_; }
 
+cudaStream_t cuda_stream_view::get() const noexcept { return value(); }
+
 cuda_stream_view::operator cudaStream_t() const noexcept { return value(); }
 
 cuda_stream_view::operator cuda::stream_ref() const noexcept { return value(); }
@@ -53,6 +55,8 @@ bool is_default_stream(cuda::stream_ref stream) noexcept
 }  // namespace detail
 
 void cuda_stream_view::synchronize() const { RMM_CUDA_TRY(cudaStreamSynchronize(stream_)); }
+
+void cuda_stream_view::sync() const { synchronize(); }
 
 void cuda_stream_view::synchronize_no_throw() const noexcept
 {
