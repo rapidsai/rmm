@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/mr/cuda_async_view_memory_resource.hpp>
@@ -55,7 +54,7 @@ void cuda_async_view_memory_resource::deallocate(cuda::stream_ref stream,
 
 void* cuda_async_view_memory_resource::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  auto* ptr = allocate(rmm::cuda_stream_default, bytes, alignment);
+  auto* ptr = allocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, bytes, alignment);
   RMM_CUDA_TRY(cudaStreamSynchronize(cudaStream_t{nullptr}));
   return ptr;
 }
@@ -64,7 +63,7 @@ void cuda_async_view_memory_resource::deallocate_sync(void* ptr,
                                                       std::size_t bytes,
                                                       std::size_t alignment) noexcept
 {
-  auto const stream = rmm::cuda_stream_default;
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   deallocate(stream, ptr, bytes, alignment);
   RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 }

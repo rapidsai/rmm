@@ -11,7 +11,6 @@
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
@@ -119,7 +118,8 @@ inline void test_allocate(resource_ref ref, std::size_t bytes)
 
 inline void test_async_allocate(rmm::device_async_resource_ref ref,
                                 std::size_t bytes,
-                                cuda::stream_ref stream = rmm::cuda_stream_default)
+                                cuda::stream_ref stream = cuda::stream_ref{
+                                  cudaStream_t{cudaStreamDefault}})
 {
   try {
     void* ptr = ref.allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
@@ -247,7 +247,8 @@ inline void test_random_allocations(resource_ref ref,
 inline void test_random_async_allocations(rmm::device_async_resource_ref ref,
                                           std::size_t num_allocations = default_num_allocations,
                                           size_in_bytes max_size      = default_max_size,
-                                          cuda::stream_ref stream     = rmm::cuda_stream_default)
+                                          cuda::stream_ref stream     = cuda::stream_ref{
+                                            cudaStream_t{cudaStreamDefault}})
 {
   std::vector<allocation> allocations(num_allocations);
 
@@ -321,10 +322,10 @@ inline void test_mixed_random_allocation_free(resource_ref ref,
   EXPECT_EQ(allocations.size(), active_allocations);
 }
 
-inline void test_mixed_random_async_allocation_free(
-  rmm::device_async_resource_ref ref,
-  size_in_bytes max_size  = default_max_size,
-  cuda::stream_ref stream = rmm::cuda_stream_default)
+inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_ref ref,
+                                                    size_in_bytes max_size  = default_max_size,
+                                                    cuda::stream_ref stream = cuda::stream_ref{
+                                                      cudaStream_t{cudaStreamDefault}})
 {
   std::default_random_engine generator;
   constexpr std::size_t num_allocations{100};

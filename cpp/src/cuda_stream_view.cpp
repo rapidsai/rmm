@@ -29,18 +29,18 @@ cuda_stream_view::operator cuda::stream_ref() const noexcept { return value(); }
 bool cuda_stream_view::is_per_thread_default() const noexcept
 {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  return value() == cuda_stream_per_thread.get() || value() == nullptr;
+  return value() == cudaStreamPerThread || value() == nullptr;
 #else
-  return value() == cuda_stream_per_thread.get();
+  return value() == cudaStreamPerThread;
 #endif
 }
 
 bool cuda_stream_view::is_default() const noexcept
 {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  return value() == cuda_stream_legacy.get();
+  return value() == cudaStreamLegacy;
 #else
-  return value() == cuda_stream_legacy.get() || value() == nullptr;
+  return value() == cudaStreamLegacy || value() == nullptr;
 #endif
 }
 

@@ -5,7 +5,6 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/binning_memory_resource.hpp>
 #include <rmm/mr/cuda_async_memory_resource.hpp>
@@ -58,7 +57,8 @@ void random_allocation_free(rmm::device_async_resource_ref mr,
                             SizeDistribution size_distribution,
                             std::size_t num_allocations,
                             std::size_t max_usage,  // in MiB
-                            cuda::stream_ref stream = rmm::cuda_stream_default)
+                            cuda::stream_ref stream = cuda::stream_ref{
+                              cudaStream_t{cudaStreamDefault}})
 {
   std::default_random_engine generator;
 
@@ -136,7 +136,7 @@ void uniform_random_allocations(
   std::size_t num_allocations,      // NOLINT(bugprone-easily-swappable-parameters)
   std::size_t max_allocation_size,  // size in MiB
   std::size_t max_usage,
-  cuda::stream_ref stream = rmm::cuda_stream_default)
+  cuda::stream_ref stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}})
 {
   std::uniform_int_distribution<std::size_t> size_distribution(1, max_allocation_size * size_mb);
   random_allocation_free(mr, size_distribution, num_allocations, max_usage, stream);

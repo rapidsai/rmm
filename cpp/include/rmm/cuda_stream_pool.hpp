@@ -6,8 +6,9 @@
 #pragma once
 
 #include <rmm/cuda_stream.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
+
+#include <cuda/stream>
 
 #include <atomic>
 #include <cstddef>

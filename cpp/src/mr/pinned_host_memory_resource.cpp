@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
@@ -47,7 +46,7 @@ void pinned_host_memory_resource::deallocate([[maybe_unused]] cuda::stream_ref s
 
 void* pinned_host_memory_resource::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  auto* ptr = allocate(rmm::cuda_stream_default, bytes, alignment);
+  auto* ptr = allocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, bytes, alignment);
   RMM_CUDA_TRY(cudaStreamSynchronize(cudaStream_t{nullptr}));
   return ptr;
 }
@@ -56,7 +55,7 @@ void pinned_host_memory_resource::deallocate_sync(void* ptr,
                                                   std::size_t bytes,
                                                   std::size_t alignment) noexcept
 {
-  deallocate(rmm::cuda_stream_default, ptr, bytes, alignment);
+  deallocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, ptr, bytes, alignment);
 }
 
 bool pinned_host_memory_resource::operator==(pinned_host_memory_resource const&) const noexcept

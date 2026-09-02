@@ -4,10 +4,10 @@
  */
 
 #include <rmm/cuda_stream_pool.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_uvector.hpp>
 
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
@@ -36,8 +36,8 @@ TEST_F(CudaStreamPoolTest, Nondefault)
   auto const stream_a = this->pool.get_stream();
 
   // pool streams are explicit, non-default streams
-  EXPECT_NE(stream_a, rmm::cuda_stream_default);
-  EXPECT_NE(stream_a, rmm::cuda_stream_per_thread);
+  EXPECT_NE(stream_a, cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
+  EXPECT_NE(stream_a, cuda::stream_ref{cudaStreamPerThread});
 }
 
 TEST_F(CudaStreamPoolTest, ValidStreams)

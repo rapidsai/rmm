@@ -4,9 +4,9 @@
  */
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/detail/binning_memory_resource_impl.hpp>
 
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <cassert>
@@ -80,7 +80,7 @@ void binning_memory_resource_impl::deallocate(cuda::stream_ref stream,
 void* binning_memory_resource_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
   if (bytes == 0) { return nullptr; }
-  auto const stream = rmm::cuda_stream_default;
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   auto* ptr         = get_resource_ref(bytes).allocate(stream, bytes, alignment);
   stream.sync();
   return ptr;
@@ -90,7 +90,7 @@ void binning_memory_resource_impl::deallocate_sync(void* ptr,
                                                    std::size_t bytes,
                                                    std::size_t alignment) noexcept
 {
-  auto const stream = rmm::cuda_stream_default;
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   get_resource_ref(bytes).deallocate(stream, ptr, bytes, alignment);
   RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 }

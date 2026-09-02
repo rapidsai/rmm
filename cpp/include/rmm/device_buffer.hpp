@@ -6,7 +6,6 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/per_device_resource.hpp>
@@ -45,7 +44,7 @@ RMM_NAMESPACE_BEGIN
  * // Allocates at least 100 bytes using the custom memory resource and
  * // specified stream
  * custom_memory_resource mr;
- * auto stream = rmm::cuda_stream_default;
+ * auto stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
  * device_buffer custom_buff(100, stream, &mr);
  *
  * // Deep copies `buff` into a new device buffer using the specified stream
@@ -381,8 +380,8 @@ class device_buffer {
   std::size_t _size{};   ///< Requested size of the device memory allocation
   std::size_t _alignment{rmm::CUDA_ALLOCATION_ALIGNMENT};  ///< The alignment of the allocation
   std::size_t _capacity{};  ///< The actual size of the device memory allocation
-  cuda::stream_ref _stream{
-    rmm::cuda_stream_default};  ///< Stream to use for device memory deallocation
+  cuda::stream_ref _stream{cuda::stream_ref{
+    cudaStream_t{cudaStreamDefault}}};  ///< Stream to use for device memory deallocation
 
   cuda::mr::any_resource<cuda::mr::device_accessible> _mr;  ///< The memory resource used to
                                                             ///< allocate/deallocate device memory

@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/cuda_memcpy.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/exec_check_disable.hpp>
@@ -43,7 +42,7 @@ RMM_NAMESPACE_BEGIN
  * Example:
  * @code{.cpp}
  * auto mr = new my_custom_resource();
- * auto s = rmm::cuda_stream_default;
+ * auto s = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
  *
  * // Allocates *uninitialized* device memory on stream `s` sufficient for 100 ints using the
  * // supplied resource `mr`

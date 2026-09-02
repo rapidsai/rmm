@@ -6,7 +6,6 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
@@ -253,8 +252,8 @@ class stream_allocator_adaptor {
 
  private:
   Allocator alloc_;  ///< Underlying allocator used for (de)allocation
-  cuda::stream_ref stream_{
-    rmm::cuda_stream_default};  ///< Stream on which (de)allocations are performed
+  cuda::stream_ref stream_{cuda::stream_ref{
+    cudaStream_t{cudaStreamDefault}}};  ///< Stream on which (de)allocations are performed
 };
 
 /**

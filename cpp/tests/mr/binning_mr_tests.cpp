@@ -9,6 +9,8 @@
 #include <rmm/mr/binning_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
 
+#include <cuda/stream>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -41,8 +43,11 @@ TEST(BinningTest, ZeroByteAllocationsUseBinResource)
     .WillRepeatedly(::testing::Return(nullptr));
   EXPECT_CALL(mock, deallocate(::testing::_, nullptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT)).Times(2);
 
-  EXPECT_EQ(mr.allocate(rmm::cuda_stream_default, 0, rmm::CUDA_ALLOCATION_ALIGNMENT), nullptr);
-  mr.deallocate(rmm::cuda_stream_default, nullptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  EXPECT_EQ(mr.allocate(
+              cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, 0, rmm::CUDA_ALLOCATION_ALIGNMENT),
+            nullptr);
+  mr.deallocate(
+    cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, nullptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT);
   EXPECT_EQ(mr.allocate_sync(0, rmm::CUDA_ALLOCATION_ALIGNMENT), nullptr);
   mr.deallocate_sync(nullptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }

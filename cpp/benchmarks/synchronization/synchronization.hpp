@@ -17,14 +17,13 @@
  * (RAII). In the following we show a minimal example of how to use this class.
  *
  * @code{.cpp}
- * #include <rmm/cuda_stream_view.hpp>
- *
  * #include <benchmark/benchmark.h>
+ * #include <cuda/stream>
  *
  * static void sample_cuda_benchmark(benchmark::State& state)
  * {
  *   for (auto _ : state) {
- *     auto const stream = rmm::cuda_stream_default;
+ *     auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
  *
  *     // Create (Construct) an object of this class. You HAVE to pass in the
  *     // benchmark::State object you are using. It measures the time from its
@@ -47,8 +46,6 @@
 
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
-
 #include <cuda/stream>
 #include <cuda_runtime_api.h>
 
@@ -68,7 +65,7 @@ class cuda_event_timer {
    */
   cuda_event_timer(benchmark::State& state,
                    bool flush_l2_cache,
-                   cuda::stream_ref stream = rmm::cuda_stream_default);
+                   cuda::stream_ref stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
 
   // The user will HAVE to provide a benchmark::State object to set
   // the timer so we disable the default c'tor.
@@ -88,6 +85,6 @@ class cuda_event_timer {
  private:
   cudaEvent_t start{};
   cudaEvent_t stop{};
-  cuda::stream_ref stream{rmm::cuda_stream_default};
+  cuda::stream_ref stream{cuda::stream_ref{cudaStream_t{cudaStreamDefault}}};
   benchmark::State* p_state{};
 };

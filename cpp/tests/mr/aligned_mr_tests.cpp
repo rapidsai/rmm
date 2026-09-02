@@ -12,6 +12,8 @@
 #include <rmm/mr/aligned_resource_adaptor.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 
+#include <cuda/stream>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -102,7 +104,7 @@ TEST(AlignedTest, DefaultAllocationAlignmentPassthrough)
   mock_resource_wrapper wrapper{&mock};
   aligned_adaptor mr{device_async_resource_ref{wrapper}};
 
-  auto const stream   = rmm::cuda_stream_default;
+  auto const stream   = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   void* const pointer = int_to_address(123);
 
   {
@@ -126,7 +128,7 @@ TEST(AlignedTest, BelowAlignmentThresholdPassthrough)
   auto const threshold{65536};
   aligned_adaptor mr{device_async_resource_ref{wrapper}, alignment, threshold};
 
-  auto const stream   = rmm::cuda_stream_default;
+  auto const stream   = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   void* const pointer = int_to_address(123);
   {
     auto const size{3};
@@ -158,7 +160,7 @@ TEST(AlignedTest, UpstreamAddressAlreadyAligned)
   auto const threshold{65536};
   aligned_adaptor mr{device_async_resource_ref{wrapper}, alignment, threshold};
 
-  auto const stream   = rmm::cuda_stream_default;
+  auto const stream   = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   void* const pointer = int_to_address(4096);
 
   {
@@ -182,7 +184,7 @@ TEST(AlignedTest, AlignUpstreamAddress)
   auto const threshold{65536};
   aligned_adaptor mr{device_async_resource_ref{wrapper}, alignment, threshold};
 
-  auto const stream = rmm::cuda_stream_default;
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   {
     void* const pointer = int_to_address(256);
     auto const size{69376};
@@ -206,7 +208,7 @@ TEST(AlignedTest, AlignMultiple)
   auto const threshold{65536};
   aligned_adaptor mr{device_async_resource_ref{wrapper}, alignment, threshold};
 
-  auto const stream = rmm::cuda_stream_default;
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
 
   {
     void* const pointer1 = int_to_address(256);

@@ -6,13 +6,13 @@
 #include "mr_ref_test.hpp"
 
 #include <rmm/cuda_device.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_vector.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/thrust_allocator_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/stream>
 #include <thrust/reduce.h>
 
 #include <gtest/gtest.h>
@@ -36,8 +36,8 @@ TEST_P(allocator_test, first)
 TEST_P(allocator_test, defaults)
 {
   rmm::mr::set_current_device_resource(this->ref);
-  rmm::mr::thrust_allocator<int> allocator(rmm::cuda_stream_default);
-  EXPECT_EQ(allocator.stream(), rmm::cuda_stream_default);
+  rmm::mr::thrust_allocator<int> allocator(cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
+  EXPECT_EQ(allocator.stream(), cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
   EXPECT_EQ(allocator.get_upstream_resource(),
             rmm::device_async_resource_ref{rmm::mr::get_current_device_resource_ref()});
 }

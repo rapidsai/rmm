@@ -29,14 +29,15 @@ TEST_F(CudaStreamTest, Equality)
   EXPECT_EQ(stream_a, view_a);
   EXPECT_NE(stream_a, view_default);
   EXPECT_EQ(view_default, rmm::cuda_stream_view{});
-  EXPECT_EQ(view_default.value(), rmm::cuda_stream_default.get());
+  EXPECT_EQ(view_default.value(), cuda::stream_ref{cudaStream_t{cudaStreamDefault}}.get());
   EXPECT_NE(view_a, rmm::cuda_stream());
   EXPECT_NE(stream_a, rmm::cuda_stream());
 
   rmm::device_buffer buff{};
   EXPECT_EQ(buff.stream(), view_default);
 
-  EXPECT_NE(static_cast<cudaStream_t>(stream_a), rmm::cuda_stream_default.get());
+  EXPECT_NE(static_cast<cudaStream_t>(stream_a),
+            cuda::stream_ref{cudaStream_t{cudaStreamDefault}}.get());
 }
 
 TEST_F(CudaStreamTest, StreamViewCompatibilityAliases)
@@ -56,11 +57,11 @@ TEST_F(CudaStreamTest, ImplicitConversionToStreamRef)
 
 TEST_F(CudaStreamTest, StreamRefEquality)
 {
-  auto const view = rmm::cuda_stream_view{rmm::cuda_stream_default};
-  EXPECT_EQ(view, rmm::cuda_stream_default);
-  EXPECT_EQ(rmm::cuda_stream_default, view);
-  EXPECT_NE(view, rmm::cuda_stream_per_thread);
-  EXPECT_NE(rmm::cuda_stream_per_thread, view);
+  auto const view = rmm::cuda_stream_view{cuda::stream_ref{cudaStream_t{cudaStreamDefault}}};
+  EXPECT_EQ(view, cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
+  EXPECT_EQ(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, view);
+  EXPECT_NE(view, cuda::stream_ref{cudaStreamPerThread});
+  EXPECT_NE(cuda::stream_ref{cudaStreamPerThread}, view);
 }
 
 TEST_F(CudaStreamTest, StreamRefConsistentWithView)
@@ -76,13 +77,13 @@ TEST_F(CudaStreamTest, IsDefaultStream)
   rmm::cuda_stream stream;
 
   EXPECT_FALSE(rmm::detail::is_default_stream(stream));
-  EXPECT_TRUE(rmm::detail::is_default_stream(rmm::cuda_stream_default));
+  EXPECT_TRUE(rmm::detail::is_default_stream(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}));
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  EXPECT_FALSE(rmm::detail::is_default_stream(rmm::cuda_stream_legacy));
-  EXPECT_TRUE(rmm::detail::is_default_stream(rmm::cuda_stream_per_thread));
+  EXPECT_FALSE(rmm::detail::is_default_stream(cuda::stream_ref{cudaStreamLegacy}));
+  EXPECT_TRUE(rmm::detail::is_default_stream(cuda::stream_ref{cudaStreamPerThread}));
 #else
-  EXPECT_TRUE(rmm::detail::is_default_stream(rmm::cuda_stream_legacy));
-  EXPECT_FALSE(rmm::detail::is_default_stream(rmm::cuda_stream_per_thread));
+  EXPECT_TRUE(rmm::detail::is_default_stream(cuda::stream_ref{cudaStreamLegacy}));
+  EXPECT_FALSE(rmm::detail::is_default_stream(cuda::stream_ref{cudaStreamPerThread}));
 #endif
 }
 
@@ -115,7 +116,7 @@ TEST_F(CudaStreamTest, TestStreamViewOstream)
 // Without this we don't get test coverage of ~stream_view, presumably because it is elided
 TEST_F(CudaStreamTest, TestStreamViewDestructor)
 {
-  auto view = std::make_shared<rmm::cuda_stream_view>(rmm::cuda_stream_per_thread);
+  auto view = std::make_shared<rmm::cuda_stream_view>(cuda::stream_ref{cudaStreamPerThread});
   view->synchronize();
 }
 
