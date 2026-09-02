@@ -53,12 +53,16 @@ extensions = [
     "nbsphinx",
     "numpydoc",
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosectionlabel",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx_copybutton",
     "sphinx_markdown_tables",
     "sphinxcontrib.jquery",
 ]
+
+# Disambiguate section anchors across documents
+autosectionlabel_prefix_document = True
 
 # Breathe Configuration
 breathe_projects = {"librmm": "../cpp/doxygen/xml"}
