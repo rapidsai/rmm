@@ -18,7 +18,11 @@ import os
 import re
 
 import rmm
+from docutils import nodes
+from docutils.nodes import Node
 from packaging.version import Version
+from sphinx.application import Sphinx
+from sphinx.util.nodes import clean_astext
 
 # -- Project information -----------------------------------------------------
 
@@ -320,5 +324,32 @@ def on_missing_reference(app, env, node, contnode):
     return None
 
 
+def register_sections_as_label(app: Sphinx, document: Node) -> None:
+    """
+    Turn all sections in documents into labels for intersphinx.
+
+    Unlike the autosectionlabel extension this uses the perfectly good,
+    document-unique, section label name. So repeated sections with the same
+    name do not produce duplicate label warnings.
+    """
+    domain = app.env.domains.standard_domain
+    docname = app.env.docname
+
+    for node in document.findall(nodes.section):
+        labelid = node["ids"][0]
+        name = nodes.fully_normalize_name(f"{docname}:{labelid}")
+        title = clean_astext(node[0])
+
+        domain.anonlabels[name] = docname, labelid
+        domain.labels[name] = docname, labelid, title
+
+
+def use_slugged_duplicate_ids(app):
+    # Use default docutils deduplication scheme for duplicate node ids.
+    app.env.settings["auto_id_prefix"] = "%"
+
+
 def setup(app):
+    app.connect("builder-inited", use_slugged_duplicate_ids)
+    app.connect("doctree-read", register_sections_as_label)
     app.connect("missing-reference", on_missing_reference)
