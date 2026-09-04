@@ -12,6 +12,7 @@
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
+#include <functional>
 
 RMM_NAMESPACE_BEGIN
 namespace mr {
@@ -23,15 +24,43 @@ namespace mr {
  */
 
 /**
+ * @brief Callback invoked to initialize host memory before it is registered with CUDA.
+ *
+ * The callback receives the allocation pointer and size in bytes. It must return only after all
+ * initialization is complete and must not deallocate or register the allocation. If the callback
+ * throws, the host allocation is released and the exception is propagated.
+ *
+ * If the same callback is used by multiple threads, it is the caller's responsibility to ensure
+ * that concurrent invocations are safe.
+ */
+using host_memory_initializer_t = std::function<void(void*, std::size_t)>;
+
+/**
  * @brief Memory resource class for allocating pinned host memory.
  *
- * This class uses CUDA's `cudaHostAlloc` to allocate pinned host memory. It satisfies the
- * `cuda::mr::resource` and `cuda::mr::synchronous_resource` concepts, and
+ * By default, this class uses CUDA's `cudaHostAlloc` to allocate pinned host memory. An optional
+ * host memory initializer can instead be provided to initialize an ordinary host allocation before
+ * it is pinned with `cudaHostRegister`. This lets callers control policies such as parallel page
+ * touching and NUMA placement without the resource owning process-level policy.
+ *
+ * This class satisfies the `cuda::mr::resource` and `cuda::mr::synchronous_resource` concepts, and
  * the `cuda::mr::host_accessible` and `cuda::mr::device_accessible` properties.
  */
 class RMM_EXPORT pinned_host_memory_resource final {
  public:
-  pinned_host_memory_resource()  = default;
+  pinned_host_memory_resource() = default;
+
+  /**
+   * @brief Constructs a pinned host memory resource using \p initializer.
+   *
+   * For each non-empty allocation, the resource allocates 256-byte-aligned host memory, invokes
+   * `initializer` with the allocation pointer and requested size, and then registers the allocation
+   * with `cudaHostRegister`. An empty initializer retains the default `cudaHostAlloc` behavior.
+   *
+   * @param initializer Callback invoked after host allocation and before CUDA registration
+   */
+  explicit pinned_host_memory_resource(host_memory_initializer_t initializer);
+
   ~pinned_host_memory_resource() = default;
   pinned_host_memory_resource(pinned_host_memory_resource const&) =
     default;  ///< @default_copy_constructor
@@ -122,9 +151,10 @@ class RMM_EXPORT pinned_host_memory_resource final {
   /**
    * @brief Compare this resource to another.
    *
-   * All instances of pinned_host_memory_resource are equivalent.
+   * Resources are equivalent when both use `cudaHostAlloc`, or both use an initializer followed by
+   * `cudaHostRegister`. The initializer itself does not participate in deallocation.
    *
-   * @return true Always
+   * @return true if allocations from either resource can be deallocated by the other
    */
   [[nodiscard]] bool operator==(pinned_host_memory_resource const&) const noexcept;
 
@@ -132,6 +162,9 @@ class RMM_EXPORT pinned_host_memory_resource final {
    * @copydoc operator==
    */
   [[nodiscard]] bool operator!=(pinned_host_memory_resource const&) const noexcept;
+
+ private:
+  host_memory_initializer_t initializer_{};
 };
 
 // static property checks

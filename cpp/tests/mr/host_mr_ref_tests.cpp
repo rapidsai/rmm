@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -14,9 +14,14 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
+#include <cstring>
 #include <deque>
+#include <exception>
 #include <random>
+#include <stdexcept>
+#include <thread>
 
 namespace rmm::test {
 namespace {
@@ -239,5 +244,104 @@ TEST(PinnedHostResource, isPinned)
   EXPECT_NO_THROW(ptr = ref.allocate_sync(100, rmm::CUDA_ALLOCATION_ALIGNMENT));
   EXPECT_TRUE(is_pinned_memory(ptr));
   EXPECT_NO_THROW(ref.deallocate_sync(ptr, 100, rmm::CUDA_ALLOCATION_ALIGNMENT));
+}
+
+TEST(PinnedHostResource, InitializerRunsBeforeRegistration)
+{
+  constexpr std::size_t bytes{size_mb + 256};
+  std::size_t callback_count{};
+  rmm::mr::pinned_host_memory_resource mr{[&](void* ptr, std::size_t callback_bytes) {
+    ++callback_count;
+    EXPECT_NE(nullptr, ptr);
+    EXPECT_EQ(bytes, callback_bytes);
+    std::memset(ptr, 0x5a, callback_bytes);
+  }};
+
+  void* ptr{nullptr};
+  EXPECT_NO_THROW(ptr = mr.allocate_sync(bytes));
+  EXPECT_EQ(1, callback_count);
+  EXPECT_TRUE(is_aligned(ptr, rmm::CUDA_ALLOCATION_ALIGNMENT));
+  EXPECT_TRUE(is_pinned_memory(ptr));
+  auto const* data = static_cast<unsigned char const*>(ptr);
+  EXPECT_EQ(0x5a, data[0]);
+  EXPECT_EQ(0x5a, data[bytes - 1]);
+  EXPECT_NO_THROW(mr.deallocate_sync(ptr, bytes));
+}
+
+TEST(PinnedHostResource, InitializerExceptionRollsBackAllocation)
+{
+  std::size_t callback_count{};
+  rmm::mr::pinned_host_memory_resource mr{[&](void* ptr, std::size_t bytes) {
+    if (callback_count++ == 0) { throw std::runtime_error{"injected initializer failure"}; }
+    std::memset(ptr, 0, bytes);
+  }};
+
+  EXPECT_THROW((void)mr.allocate_sync(size_kb), std::runtime_error);
+  void* ptr{nullptr};
+  EXPECT_NO_THROW(ptr = mr.allocate_sync(size_kb));
+  EXPECT_EQ(2, callback_count);
+  EXPECT_TRUE(is_pinned_memory(ptr));
+  EXPECT_NO_THROW(mr.deallocate_sync(ptr, size_kb));
+}
+
+TEST(PinnedHostResource, InitializerSkipsUnallocatedMemory)
+{
+  bool callback_called{false};
+  rmm::mr::pinned_host_memory_resource mr{[&](void*, std::size_t) { callback_called = true; }};
+
+  EXPECT_EQ(nullptr, mr.allocate_sync(0));
+  EXPECT_FALSE(callback_called);
+  void* ptr{nullptr};
+  EXPECT_THROW(ptr = mr.allocate_sync(size_pb), std::bad_alloc);
+  EXPECT_EQ(nullptr, ptr);
+  EXPECT_FALSE(callback_called);
+}
+
+TEST(PinnedHostResource, InitializerSupportsConcurrentAllocations)
+{
+  std::atomic<std::size_t> callback_count{};
+  rmm::mr::pinned_host_memory_resource mr{[&](void* ptr, std::size_t bytes) {
+    callback_count.fetch_add(1, std::memory_order_relaxed);
+    std::memset(ptr, 0, bytes);
+  }};
+
+  constexpr std::size_t thread_count{8};
+  std::vector<std::exception_ptr> errors(thread_count);
+  std::vector<std::thread> threads;
+  threads.reserve(thread_count);
+  for (std::size_t index = 0; index < thread_count; ++index) {
+    threads.emplace_back([&, index] {
+      try {
+        auto* ptr = mr.allocate_sync(size_mb);
+        mr.deallocate_sync(ptr, size_mb);
+      } catch (...) {
+        errors[index] = std::current_exception();
+      }
+    });
+  }
+  for (auto& thread : threads) {
+    thread.join();
+  }
+
+  EXPECT_EQ(thread_count, callback_count.load(std::memory_order_relaxed));
+  EXPECT_TRUE(std::all_of(
+    errors.cbegin(), errors.cend(), [](auto const& error) { return error == nullptr; }));
+}
+
+TEST(PinnedHostResource, EqualityReflectsAllocationStrategy)
+{
+  rmm::mr::pinned_host_memory_resource default_mr;
+  rmm::mr::host_memory_initializer_t empty_initializer;
+  rmm::mr::pinned_host_memory_resource empty_mr{empty_initializer};
+  rmm::mr::pinned_host_memory_resource registered_a{[](void*, std::size_t) {}};
+  rmm::mr::pinned_host_memory_resource registered_b{[](void*, std::size_t) {}};
+
+  EXPECT_EQ(default_mr, empty_mr);
+  EXPECT_NE(default_mr, registered_a);
+  EXPECT_EQ(registered_a, registered_b);
+
+  void* ptr{nullptr};
+  EXPECT_NO_THROW(ptr = registered_a.allocate_sync(size_kb));
+  EXPECT_NO_THROW(registered_b.deallocate_sync(ptr, size_kb));
 }
 }  // namespace rmm::test
