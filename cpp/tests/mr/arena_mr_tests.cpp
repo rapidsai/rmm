@@ -8,6 +8,7 @@
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
+#include <rmm/detail/error.hpp>
 #include <rmm/error.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
@@ -636,6 +637,80 @@ TEST_F(ArenaTest, DumpLogOnFailure)  // NOLINT
   struct stat file_status{};
   EXPECT_EQ(stat("rmm_arena_memory_dump.log", &file_status), 0);
   EXPECT_GE(file_status.st_size, 0);
+}
+
+// Distinct live streams get distinct IDs, and a stream's ID is stable across calls.
+TEST(ArenaStreamIdTest, DistinctStreamsHaveDistinctStableIds)  // NOLINT
+{
+  rmm::cuda_stream stream_a{};
+  rmm::cuda_stream stream_b{};
+
+  EXPECT_NE(rmm::mr::detail::get_stream_id(stream_a.view()),
+            rmm::mr::detail::get_stream_id(stream_b.view()));
+  EXPECT_EQ(rmm::mr::detail::get_stream_id(stream_a.view()),
+            rmm::mr::detail::get_stream_id(stream_a.view()));
+}
+
+TEST(ArenaStreamIdTest, TryGetStreamIdReturnsCudaStreamId)  // NOLINT
+{
+  rmm::cuda_stream stream{};
+  rmm::mr::detail::stream_id_type expected_id{};
+
+  RMM_CUDA_TRY(cudaStreamGetId(stream.view().value(), &expected_id));
+  auto const stream_id = rmm::mr::detail::try_get_stream_id(stream.view());
+  ASSERT_TRUE(stream_id.has_value());
+  EXPECT_EQ(*stream_id, expected_id);
+}
+
+// The default stream is normalized via cudaStreamLegacy, so it maps to one consistent key.
+TEST(ArenaStreamIdTest, DefaultStreamNormalizesToLegacyId)  // NOLINT
+{
+  auto const id = rmm::mr::detail::get_stream_id(rmm::cuda_stream_view{});
+  EXPECT_EQ(id, rmm::mr::detail::get_stream_id(rmm::cuda_stream_view{}));
+
+#ifndef CUDA_API_PER_THREAD_DEFAULT_STREAM
+  // Non-PTDS: the default stream normalizes to cudaStreamLegacy, so it keys to the legacy id.
+  EXPECT_EQ(rmm::mr::detail::get_stream_id(rmm::cuda_stream_view{}),
+            rmm::mr::detail::get_stream_id(rmm::cuda_stream_legacy));
+#endif
+
+  // In both modes, a real created stream must never collide with the legacy key. This catches a
+  // regression that collapses every stream to a single key.
+  rmm::cuda_stream stream{};
+  EXPECT_NE(rmm::mr::detail::get_stream_id(stream.view()),
+            rmm::mr::detail::get_stream_id(rmm::cuda_stream_legacy));
+}
+
+// Regression for #2394: CUDA can hand a destroyed stream's raw handle value to a new stream (ABA
+// reuse). Keying arenas by the raw handle would let the new stream inherit stale arena state.
+// Keying by cudaStreamGetId prevents this: a reused handle yields a distinct ID.
+//
+// This test cannot force reuse deterministically because CUDA does not guarantee handle-reuse
+// timing (see the issue's own caveat), so it probes up to a bounded number of iterations and
+// skips if reuse is never observed. It either proves the property or skips, never falsely fails.
+TEST(ArenaStreamIdTest, ReusedRawHandleYieldsDistinctId)  // NOLINT
+{
+  cudaStream_t raw{};
+  rmm::mr::detail::stream_id_type id{};
+  {
+    rmm::cuda_stream original{};
+    raw = original.view().value();
+    id  = rmm::mr::detail::get_stream_id(original.view());
+  }  // original destroyed here, freeing its raw handle for potential reuse
+
+  constexpr int max_iterations = 2048;
+  bool observed_reuse          = false;
+  for (int i = 0; i < max_iterations; ++i) {
+    rmm::cuda_stream candidate{};
+    if (candidate.view().value() == raw) {
+      // Same raw handle, but the ID must differ so no stale arena is inherited.
+      EXPECT_NE(rmm::mr::detail::get_stream_id(candidate.view()), id);
+      observed_reuse = true;
+      break;
+    }
+  }
+
+  if (!observed_reuse) { GTEST_SKIP() << "CUDA did not reuse the stream handle within the bound"; }
 }
 
 }  // namespace
