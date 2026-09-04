@@ -115,6 +115,7 @@ add_library(
   src/mr/limiting_resource_adaptor.cpp
   src/mr/logging_resource_adaptor.cpp
   src/mr/managed_memory_resource.cpp
+  src/mr/indexed_pool_memory_resource.cpp
   src/mr/pool_memory_resource.cpp
   src/mr/prefetch_resource_adaptor.cpp
   src/mr/pinned_host_memory_resource.cpp
