@@ -24,32 +24,41 @@ namespace mr {
  * @brief Callback function type used by callback memory resource for allocation.
  *
  * The signature of the callback function is:
- *   `void* allocate_callback_t(std::size_t bytes, cuda_stream_view stream, void* arg);`
+ *   `void* allocate_callback_t(cuda::stream_ref stream, std::size_t bytes, std::size_t alignment,
+ *                             void* arg);`
+ *
+ * * The callback receives only valid power-of-two alignment values. An invalid alignment raises
+ *   `rmm::logic_error` before callback invocation.
  *
  * * Returns a pointer to an allocation of at least `bytes` usable immediately on
- *   `stream`. The stream-ordered behavior requirements are identical to
- *   `allocate`.
+ *   `stream` with the requested `alignment`. The stream-ordered behavior requirements are
+ *   identical to `allocate`.
  *
  * * The `arg` is provided to the constructor of the `callback_memory_resource`
  *   and will be forwarded along to every invocation of the callback function.
  */
-using allocate_callback_t = std::function<void*(std::size_t, cuda_stream_view, void*)>;
+using allocate_callback_t = std::function<void*(cuda::stream_ref, std::size_t, std::size_t, void*)>;
 
 /**
  * @brief Callback function type used by callback_memory_resource for deallocation.
  *
  * The signature of the callback function is:
- *   `void deallocate_callback_t(void* ptr, std::size_t bytes, cuda_stream_view stream, void* arg);`
+ *   `void deallocate_callback_t(cuda::stream_ref stream, void* ptr, std::size_t bytes,
+ *                              std::size_t alignment, void* arg);`
  *
  * * Deallocates memory pointed to by `ptr`. `bytes` specifies the size of the allocation
  *   in bytes, and must equal the value of `bytes` that was passed to the allocate callback
- *   function. The stream-ordered behavior requirements are identical to
- *   `deallocate`.
+ *   function. `alignment` must equal the value of `alignment` that was passed to the allocate
+ *   callback function. The stream-ordered behavior requirements are identical to `deallocate`.
+ *
+ * * The callback must not throw. An exception escaping the callback causes termination because
+ *   deallocation is `noexcept`.
  *
  * * The `arg` is provided to the constructor of the `callback_memory_resource`
  *   and will be forwarded along to every invocation of the callback function.
  */
-using deallocate_callback_t = std::function<void(void*, std::size_t, cuda_stream_view, void*)>;
+using deallocate_callback_t =
+  std::function<void(cuda::stream_ref, void*, std::size_t, std::size_t, void*)>;
 
 namespace detail {
 class callback_memory_resource_impl;
@@ -82,7 +91,7 @@ class RMM_EXPORT callback_memory_resource
    * `allocate_callback` for allocation and `deallocate_callback` for deallocation.
    *
    * @param allocate_callback The callback function used for allocation
-   * @param deallocate_callback The callback function used for deallocation
+   * @param deallocate_callback The callback function used for deallocation. It must not throw.
    * @param allocate_callback_arg Additional context passed to `allocate_callback`.
    * It is the caller's responsibility to maintain the lifetime of the pointed-to data
    * for the duration of the lifetime of the `callback_memory_resource`.

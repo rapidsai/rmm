@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -10,6 +10,7 @@ from collections import defaultdict
 
 cimport cython
 from cuda.bindings cimport cyruntime
+from cuda.bindings.cyruntime cimport cudaStream_t
 from cython.operator cimport dereference as deref
 from libc.stddef cimport size_t
 from libc.stdint cimport int8_t, int32_t, uintptr_t
@@ -27,7 +28,6 @@ from rmm.pylibrmm.utils cimport as_stream
 
 from rmm.pylibrmm.stream import DEFAULT_STREAM
 
-from rmm.librmm.cuda_stream_view cimport cuda_stream_view
 from rmm.librmm.per_device_resource cimport (
     cuda_device_id,
     set_per_device_resource as cpp_set_per_device_resource,
@@ -38,17 +38,16 @@ from rmm.statistics import Statistics
 
 from rmm.librmm.memory_resource cimport (
     CppExcept,
-    allocate_callback_t,
     allocation_handle_type,
     any_resource,
     arena_memory_resource,
     available_device_memory as c_available_device_memory,
     binning_memory_resource,
-    callback_memory_resource,
     cuda_async_memory_resource,
     cuda_async_view_memory_resource,
     cuda_memory_resource,
-    deallocate_callback_t,
+    cython_allocate_callback_t,
+    cython_deallocate_callback_t,
     device_accessible,
     device_async_resource_ref,
     failure_callback_resource_adaptor_oom,
@@ -56,6 +55,7 @@ from rmm.librmm.memory_resource cimport (
     fixed_size_memory_resource,
     limiting_resource_adaptor,
     logging_resource_adaptor,
+    make_callback_memory_resource,
     make_device_async_resource_ref,
     managed_memory_resource,
     percent_of_free_device_memory as c_percent_of_free_device_memory,
@@ -574,8 +574,9 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
 
 cdef void* _allocate_callback_wrapper(
+    cudaStream_t stream,
     size_t nbytes,
-    cuda_stream_view stream,
+    size_t alignment,
     void* ctx
     # Note that this function is specifically designed to rethrow Python
     # exceptions as C++ exceptions when called as a callback from C++, so it is
@@ -585,20 +586,27 @@ cdef void* _allocate_callback_wrapper(
     with gil:
         try:
             return <void*>(<uintptr_t>((<object>(ctx))(
+                Stream._from_cudaStream_t(stream),
                 nbytes,
-                Stream._from_cudaStream_t(stream.value())
+                alignment
             )))
         except BaseException as e:
             err = translate_python_except_to_cpp(e)
     throw_cpp_except(err)
 
 cdef void _deallocate_callback_wrapper(
+    cudaStream_t stream,
     void* ptr,
     size_t nbytes,
-    cuda_stream_view stream,
+    size_t alignment,
     void* ctx
-) except * with gil:
-    (<object>(ctx))(<uintptr_t>(ptr), nbytes, Stream._from_cudaStream_t(stream.value()))
+) noexcept with gil:
+    (<object>(ctx))(
+        Stream._from_cudaStream_t(stream),
+        <uintptr_t>(ptr),
+        nbytes,
+        alignment
+    )
 
 
 cdef class CallbackMemoryResource(DeviceMemoryResource):
@@ -614,25 +622,32 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     Parameters
     ----------
     allocate_func: callable
-        The allocation function must accept two arguments. An integer
-        representing the number of bytes to allocate and a Stream on
-        which to perform the allocation, and return an integer
-        representing the pointer to the allocated memory.
+        The allocation function must accept three arguments: a Stream on
+        which to perform the allocation, an integer representing the number
+        of bytes to allocate, and an integer representing the requested
+        alignment. The alignment is always a valid power of two because an
+        invalid request raises before callback invocation. The function must
+        return an integer representing the pointer to the allocated memory.
+        The returned pointer must satisfy the requested alignment.
     deallocate_func: callable
-        The deallocation function must accept three arguments. an integer
-        representing the pointer to the memory to free, a second
-        integer representing the number of bytes to free, and a Stream
-        on which to perform the deallocation.
+        The deallocation function must accept four arguments: a Stream on
+        which to perform the deallocation, an integer representing the pointer
+        to the memory to free, an integer representing the number of bytes to
+        free, and an integer representing the allocation alignment. It must not
+        raise an exception because this callback boundary cannot propagate
+        Python exceptions.
 
     Examples
     --------
     >>> import rmm
     >>> base_mr = rmm.mr.CudaMemoryResource()
-    >>> def allocate_func(size, stream):
+    >>> def allocate_func(stream, size, alignment):
     ...     print(f"Allocating {size} bytes")
+    ...     if alignment > 256:
+    ...         raise MemoryError("CudaMemoryResource supports up to 256-byte alignment")
     ...     return base_mr.allocate(size, stream)
     ...
-    >>> def deallocate_func(ptr, size, stream):
+    >>> def deallocate_func(stream, ptr, size, alignment):
     ...     print(f"Deallocating {size} bytes")
     ...     return base_mr.deallocate(ptr, size, stream)
     ...
@@ -643,6 +658,9 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     Allocating 256 bytes
     >>> del dbuf
     Deallocating 256 bytes
+
+    The base resource's 256-byte default alignment satisfies every request
+    accepted by this example.
     """
     def __init__(
         self,
@@ -651,9 +669,9 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     ):
         self._allocate_func = allocate_func
         self._deallocate_func = deallocate_func
-        self.c_obj.reset(new callback_memory_resource(
-            <allocate_callback_t>(_allocate_callback_wrapper),
-            <deallocate_callback_t>(_deallocate_callback_wrapper),
+        self.c_obj.reset(make_callback_memory_resource(
+            <cython_allocate_callback_t>(_allocate_callback_wrapper),
+            <cython_deallocate_callback_t>(_deallocate_callback_wrapper),
             <void*>(allocate_func),
             <void*>(deallocate_func)
         ))
