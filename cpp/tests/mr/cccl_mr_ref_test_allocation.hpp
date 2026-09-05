@@ -7,6 +7,8 @@
 
 #include "mr_ref_test.hpp"
 
+#include <cuda/stream>
+
 namespace rmm::test {
 
 /**
@@ -25,7 +27,7 @@ TYPED_TEST_P(CcclMrRefAllocationTest, AllocateDefault) { test_various_allocation
 
 TYPED_TEST_P(CcclMrRefAllocationTest, AllocateDefaultStream)
 {
-  test_various_async_allocations(this->ref, cuda_stream_view{});
+  test_various_async_allocations(this->ref, cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
 }
 
 TYPED_TEST_P(CcclMrRefAllocationTest, AllocateOnStream)
@@ -37,8 +39,10 @@ TYPED_TEST_P(CcclMrRefAllocationTest, RandomAllocations) { test_random_allocatio
 
 TYPED_TEST_P(CcclMrRefAllocationTest, RandomAllocationsDefaultStream)
 {
-  test_random_async_allocations(
-    this->ref, default_num_allocations, default_max_size, cuda_stream_view{});
+  test_random_async_allocations(this->ref,
+                                default_num_allocations,
+                                default_max_size,
+                                cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
 }
 
 TYPED_TEST_P(CcclMrRefAllocationTest, RandomAllocationsStream)
@@ -53,7 +57,8 @@ TYPED_TEST_P(CcclMrRefAllocationTest, MixedRandomAllocationFree)
 
 TYPED_TEST_P(CcclMrRefAllocationTest, MixedRandomAllocationFreeDefaultStream)
 {
-  test_mixed_random_async_allocation_free(this->ref, default_max_size, cuda_stream_view{});
+  test_mixed_random_async_allocation_free(
+    this->ref, default_max_size, cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
 }
 
 TYPED_TEST_P(CcclMrRefAllocationTest, MixedRandomAllocationFreeStream)

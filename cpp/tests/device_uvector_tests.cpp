@@ -6,13 +6,13 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/std/span>
+#include <cuda/stream>
 
 #include <gtest/gtest.h>
 #include <gtest/internal/gtest-type-util.h>
@@ -29,7 +29,10 @@ template class rmm::device_uvector<int32_t>;
 
 template <typename T>
 struct TypedUVectorTest : ::testing::Test {
-  [[nodiscard]] rmm::cuda_stream_view stream() const noexcept { return rmm::cuda_stream_view{}; }
+  [[nodiscard]] cuda::stream_ref stream() const noexcept
+  {
+    return cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
+  }
 };
 
 using TestTypes = ::testing::Types<int8_t, int32_t, uint64_t, float, double>;
@@ -67,9 +70,9 @@ TEST(DeviceUVectorOverflowTest, Constructor)
 {
   auto constexpr overflowing_size = std::numeric_limits<std::size_t>::max() / sizeof(uint64_t) + 1;
 
-  EXPECT_THROW(
-    std::ignore = rmm::device_uvector<uint64_t>(overflowing_size, rmm::cuda_stream_view{}),
-    rmm::invalid_argument);
+  EXPECT_THROW(std::ignore = rmm::device_uvector<uint64_t>(
+                 overflowing_size, cuda::stream_ref{cudaStream_t{cudaStreamDefault}}),
+               rmm::invalid_argument);
 }
 
 TYPED_TEST(TypedUVectorTest, CopyConstructor)
@@ -170,9 +173,10 @@ TYPED_TEST(TypedUVectorTest, ReserveLarger)
 TEST(DeviceUVectorOverflowTest, Reserve)
 {
   auto constexpr overflowing_size = std::numeric_limits<std::size_t>::max() / sizeof(uint64_t) + 1;
-  rmm::device_uvector<uint64_t> vec(0, rmm::cuda_stream_view{});
+  rmm::device_uvector<uint64_t> vec(0, cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
 
-  EXPECT_THROW(vec.reserve(overflowing_size, rmm::cuda_stream_view{}), rmm::invalid_argument);
+  EXPECT_THROW(vec.reserve(overflowing_size, cuda::stream_ref{cudaStream_t{cudaStreamDefault}}),
+               rmm::invalid_argument);
 }
 
 TYPED_TEST(TypedUVectorTest, ResizeToZero)
@@ -192,9 +196,10 @@ TYPED_TEST(TypedUVectorTest, ResizeToZero)
 TEST(DeviceUVectorOverflowTest, Resize)
 {
   auto constexpr overflowing_size = std::numeric_limits<std::size_t>::max() / sizeof(uint64_t) + 1;
-  rmm::device_uvector<uint64_t> vec(0, rmm::cuda_stream_view{});
+  rmm::device_uvector<uint64_t> vec(0, cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
 
-  EXPECT_THROW(vec.resize(overflowing_size, rmm::cuda_stream_view{}), rmm::invalid_argument);
+  EXPECT_THROW(vec.resize(overflowing_size, cuda::stream_ref{cudaStream_t{cudaStreamDefault}}),
+               rmm::invalid_argument);
 }
 
 TYPED_TEST(TypedUVectorTest, Release)
@@ -280,20 +285,20 @@ TYPED_TEST(TypedUVectorTest, SetElementZeroAsync)
 
 TEST(NegativeZeroTest, PreservesFloatNegativeZero)
 {
-  rmm::device_uvector<float> vec(1, rmm::cuda_stream_view{});
+  rmm::device_uvector<float> vec(1, cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
   float const neg_zero = -0.0f;
-  vec.set_element_async(0, neg_zero, rmm::cuda_stream_view{});
-  float const result = vec.element(0, rmm::cuda_stream_view{});
+  vec.set_element_async(0, neg_zero, cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
+  float const result = vec.element(0, cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
   EXPECT_TRUE(std::signbit(result)) << "sign bit of -0.0f was lost";
   EXPECT_EQ(result, 0.0f);
 }
 
 TEST(NegativeZeroTest, PreservesDoubleNegativeZero)
 {
-  rmm::device_uvector<double> vec(1, rmm::cuda_stream_view{});
+  rmm::device_uvector<double> vec(1, cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
   double const neg_zero = -0.0;
-  vec.set_element_async(0, neg_zero, rmm::cuda_stream_view{});
-  double const result = vec.element(0, rmm::cuda_stream_view{});
+  vec.set_element_async(0, neg_zero, cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
+  double const result = vec.element(0, cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
   EXPECT_TRUE(std::signbit(result)) << "sign bit of -0.0 was lost";
   EXPECT_EQ(result, 0.0);
 }
@@ -319,7 +324,7 @@ TYPED_TEST(TypedUVectorTest, SetGetStream)
 
   EXPECT_EQ(vec.stream(), this->stream());
 
-  rmm::cuda_stream_view const otherstream{cudaStreamPerThread};
+  auto const otherstream = cuda::stream_ref{cudaStreamPerThread};
   vec.set_stream(otherstream);
 
   EXPECT_EQ(vec.stream(), otherstream);
@@ -419,7 +424,7 @@ TYPED_TEST(TypedUVectorTest, SpanConversionImplicit)
 
 TEST(DeviceUVectorAlignmentTest, SmallAlignment)
 {
-  auto v = rmm::device_uvector<int>(10, rmm::cuda_stream_view{});
+  auto v = rmm::device_uvector<int>(10, cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
   EXPECT_TRUE(rmm::is_pointer_aligned(v.data(), std::alignment_of_v<decltype(v)::value_type>));
 }
 
@@ -429,6 +434,7 @@ TEST(DeviceUVectorAlignmentTest, LargeAlignment)
     int value;
   };
 
-  EXPECT_THROW(std::ignore = rmm::device_uvector<OverAligned>(10, rmm::cuda_stream_view{}),
+  EXPECT_THROW(std::ignore = rmm::device_uvector<OverAligned>(
+                 10, cuda::stream_ref{cudaStream_t{cudaStreamDefault}}),
                rmm::bad_alloc);
 }

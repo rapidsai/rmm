@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -43,7 +43,7 @@ inline void async_allocate_loop(rmm::device_async_resource_ref ref,
                                 std::mutex& mtx,
                                 std::condition_variable& allocations_ready,
                                 cudaEvent_t& event,
-                                rmm::cuda_stream_view stream)
+                                cuda::stream_ref stream)
 {
   constexpr std::size_t max_size{1_MiB};
 
@@ -55,14 +55,14 @@ inline void async_allocate_loop(rmm::device_async_resource_ref ref,
     void* ptr        = ref.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
     {
       std::lock_guard<std::mutex> lock(mtx);
-      RMM_CUDA_TRY(cudaEventRecord(event, stream.value()));
+      RMM_CUDA_TRY(cudaEventRecord(event, stream.get()));
       allocations.emplace_back(ptr, size);
     }
     allocations_ready.notify_one();
   }
 
   // Work around for threads going away before cudaEvent has finished async processing
-  cudaEventSynchronize(event);
+  RMM_CUDA_TRY(cudaEventSynchronize(event));
 }
 
 inline void async_deallocate_loop(rmm::device_async_resource_ref ref,
@@ -71,24 +71,24 @@ inline void async_deallocate_loop(rmm::device_async_resource_ref ref,
                                   std::mutex& mtx,
                                   std::condition_variable& allocations_ready,
                                   cudaEvent_t& event,
-                                  rmm::cuda_stream_view stream)
+                                  cuda::stream_ref stream)
 {
   for (std::size_t i = 0; i < num_allocations; i++) {
     std::unique_lock lock(mtx);
     allocations_ready.wait(lock, [&allocations] { return !allocations.empty(); });
-    RMM_CUDA_TRY(cudaStreamWaitEvent(stream.value(), event));
+    RMM_CUDA_TRY(cudaStreamWaitEvent(stream.get(), event));
     allocation alloc = allocations.front();
     allocations.pop_front();
     ref.deallocate(stream, alloc.ptr, alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   // Work around for threads going away before cudaEvent has finished async processing
-  cudaEventSynchronize(event);
+  RMM_CUDA_TRY(cudaEventSynchronize(event));
 }
 
 inline void test_async_allocate_free_different_threads(rmm::device_async_resource_ref ref,
-                                                       rmm::cuda_stream_view streamA,
-                                                       rmm::cuda_stream_view streamB)
+                                                       cuda::stream_ref streamA,
+                                                       cuda::stream_ref streamB)
 {
   constexpr std::size_t num_allocations{100};
 

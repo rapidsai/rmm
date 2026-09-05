@@ -5,7 +5,6 @@
 #pragma once
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/failure_callback_t.hpp>
@@ -90,7 +89,7 @@ class failure_callback_resource_adaptor_impl {
   [[nodiscard]] void* allocate_sync(std::size_t bytes,
                                     std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+    auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
     auto* ptr         = allocate(stream, bytes, alignment);
     RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
     return ptr;
@@ -100,7 +99,7 @@ class failure_callback_resource_adaptor_impl {
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+    auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
     deallocate(stream, ptr, bytes, alignment);
     RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
   }

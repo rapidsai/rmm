@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 cimport cython
@@ -8,11 +8,11 @@ from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
 from rmm.librmm.cuda_stream cimport cuda_stream, cuda_stream_flags
+from rmm.librmm.cuda_stream_ref cimport is_default_stream, stream_ref
 from rmm.librmm.cuda_stream_view cimport (
     cuda_stream_default,
     cuda_stream_legacy,
     cuda_stream_per_thread,
-    cuda_stream_view,
 )
 
 
@@ -106,11 +106,11 @@ cdef class Stream:
         # https://nvidia.github.io/cuda-python/cuda-core/latest/interoperability.html#cuda-stream-protocol
         return (0, int(<uintptr_t>(self._cuda_stream)))
 
-    cdef cuda_stream_view view(self) noexcept nogil:
+    cdef stream_ref view(self) noexcept nogil:
         """
-        Generate a rmm::cuda_stream_view from this Stream instance
+        Generate a cuda::stream_ref from this Stream instance
         """
-        return cuda_stream_view(<cudaStream_t>(<uintptr_t>(self._cuda_stream)))
+        return stream_ref(<cudaStream_t>(<uintptr_t>(self._cuda_stream)))
 
     cdef void c_synchronize(self) except * nogil:
         """
@@ -118,7 +118,7 @@ cdef class Stream:
         This function *must* be called in a `with nogil` block
         """
         with nogil:
-            self.view().synchronize()
+            self.view().sync()
 
     def synchronize(self):
         """
@@ -131,7 +131,7 @@ cdef class Stream:
         """
         Check if we are the default CUDA stream
         """
-        return self.view().is_default()
+        return is_default_stream(self.view())
 
     def is_default(self):
         """
@@ -178,7 +178,7 @@ cdef class Stream:
 
     def __eq__(self, other):
         if isinstance(other, Stream):
-            return self.view() == (<Stream>(other)).view()
+            return self.view().get() == (<Stream>(other)).view().get()
         return False
 
     def __hash__(self):
@@ -195,8 +195,8 @@ cdef class Stream:
         self._cuda_stream, self._owner = stream._cuda_stream, stream._owner
 
 
-DEFAULT_STREAM = Stream._from_cudaStream_t(cuda_stream_default.value())
-LEGACY_DEFAULT_STREAM = Stream._from_cudaStream_t(cuda_stream_legacy.value())
+DEFAULT_STREAM = Stream._from_cudaStream_t(cuda_stream_default.get())
+LEGACY_DEFAULT_STREAM = Stream._from_cudaStream_t(cuda_stream_legacy.get())
 PER_THREAD_DEFAULT_STREAM = Stream._from_cudaStream_t(
-    cuda_stream_per_thread.value()
+    cuda_stream_per_thread.get()
 )

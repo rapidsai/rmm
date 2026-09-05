@@ -5,11 +5,11 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/mr/detail/cuda_async_managed_memory_resource_impl.hpp>
 
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
@@ -67,7 +67,7 @@ void cuda_async_managed_memory_resource_impl::deallocate(cuda::stream_ref stream
 void* cuda_async_managed_memory_resource_impl::allocate_sync(std::size_t bytes,
                                                              std::size_t alignment)
 {
-  auto* ptr = allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
+  auto* ptr = allocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, bytes, alignment);
   RMM_CUDA_TRY(cudaStreamSynchronize(cudaStream_t{nullptr}));
   return ptr;
 }
@@ -76,7 +76,7 @@ void cuda_async_managed_memory_resource_impl::deallocate_sync(void* ptr,
                                                               std::size_t bytes,
                                                               std::size_t alignment) noexcept
 {
-  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   deallocate(stream, ptr, bytes, alignment);
   RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 }
