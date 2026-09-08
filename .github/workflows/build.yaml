@@ -120,7 +120,7 @@ jobs:
       date: ${{ inputs.date }}
       node_type: "gpu-l4-latest-1"
       arch: "amd64"
-      container_image: "rapidsai/ci-conda:26.10-latest"
+      container_image: "rapidsai/ci-conda:26.12-latest"
       script: ci/build_docs.sh
   publish-api-docs:
     if: github.ref_type == 'branch'
