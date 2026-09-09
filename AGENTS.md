@@ -221,7 +221,7 @@ buf = rmm.DeviceBuffer(size=size)
 | C++ public headers | `cpp/include/rmm/` |
 | Memory resources | `cpp/include/rmm/mr/` |
 | Device containers | `cpp/include/rmm/device_uvector.hpp`, `device_buffer.hpp` |
-| Stream utilities | `cpp/include/rmm/cuda_stream.hpp`, `cuda_stream_view.hpp` |
+| Stream utilities | `<cuda/stream>`, `cpp/include/rmm/cuda_stream.hpp` (`cuda_stream_view.hpp` is deprecated) |
 | Error handling | `cpp/include/rmm/error.hpp` |
 | Python bindings | `python/rmm/rmm/` |
 | C++ tests | `cpp/tests/` |

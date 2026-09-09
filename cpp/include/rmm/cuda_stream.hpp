@@ -93,12 +93,16 @@ class cuda_stream {
   /**
    * @brief Creates an immutable, non-owning view of the wrapped CUDA stream.
    *
+   * `rmm::cuda_stream_view` is deprecated. Convert this stream to `cuda::stream_ref` instead.
+   *
    * @return rmm::cuda_stream_view The view of the CUDA stream
    */
   [[nodiscard]] cuda_stream_view view() const;
 
   /**
    * @brief Implicit conversion to cuda_stream_view
+   *
+   * `rmm::cuda_stream_view` is deprecated. Use the conversion to `cuda::stream_ref` instead.
    *
    * @return A view of the owned stream
    */

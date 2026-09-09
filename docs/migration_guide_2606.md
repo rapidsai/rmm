@@ -233,7 +233,8 @@ Key differences:
 - **Stream is the first parameter** (was second for `allocate`, third for `deallocate`).
 - **`alignment` parameter** is new (has a default value).
 - **`cuda::stream_ref`** replaces `rmm::cuda_stream_view` in the resource interface.
-  `rmm::cuda_stream_view` is implicitly convertible to `cuda::stream_ref`.
+  `rmm::cuda_stream_view` is implicitly convertible to `cuda::stream_ref`, but is deprecated as of
+  26.10. Use `cuda::stream_ref` in new and migrated code.
 - **`deallocate` is `noexcept`**.
 
 Resources also provide synchronous methods `allocate_sync(bytes, alignment)` and
