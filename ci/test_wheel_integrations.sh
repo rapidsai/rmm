@@ -40,7 +40,7 @@ CUDA_MINOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f2)
 # See notes in 'dependencies.yaml' for details on supported versions.
 if \
     { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR}" -eq 9 ]; } \
-    || { [ "${CUDA_MAJOR}" -eq 13 ] && [ "${CUDA_MINOR}" -eq 0 ]; }; \
+    || { [ "${CUDA_MAJOR}" -eq 13 ]; }; \
 then
 
     # ensure a CUDA variant of 'torch' is used
