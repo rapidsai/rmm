@@ -3,6 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// Suppress deprecation warnings while testing the deprecated API.
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/cuda_stream.hpp>
@@ -155,4 +161,8 @@ TEST_F(CudaStreamDeathTest, TestSyncNoThrow)
   };
   EXPECT_DEATH(test(), "");
 }
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
 #endif

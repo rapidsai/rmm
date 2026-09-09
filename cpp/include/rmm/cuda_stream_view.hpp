@@ -25,8 +25,10 @@ RMM_NAMESPACE_BEGIN
  * @brief Strongly-typed non-owning wrapper for CUDA streams with default constructor.
  *
  * This wrapper is simply a "view": it does not own the lifetime of the stream it wraps.
+ *
+ * @deprecated Use cuda::stream_ref instead.
  */
-class cuda_stream_view {
+class [[deprecated("Use cuda::stream_ref instead.")]] cuda_stream_view {
  public:
   cuda_stream_view()                        = default;
   ~cuda_stream_view()                       = default;
@@ -137,6 +139,11 @@ static const cuda::stream_ref cuda_stream_legacy{cudaStream_t{cudaStreamLegacy}}
  */
 static const cuda::stream_ref cuda_stream_per_thread{cudaStream_t{cudaStreamPerThread}};
 
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 /**
  * @brief Equality comparison operator for streams
  *
@@ -191,6 +198,10 @@ bool operator!=(StreamRef const& lhs, cuda_stream_view rhs)
  * @return std::ostream& The output ostream
  */
 std::ostream& operator<<(std::ostream& os, cuda_stream_view stream);
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 /** @} */  // end of group
 RMM_NAMESPACE_END
