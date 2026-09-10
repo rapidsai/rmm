@@ -5,7 +5,6 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/detail/format.hpp>
-#include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/detail/arena_memory_resource_impl.hpp>
 
@@ -15,6 +14,37 @@
 RMM_NAMESPACE_BEGIN
 namespace mr {
 namespace detail {
+
+namespace {
+
+cudaStream_t normalize_arena_stream(cuda_stream_view stream)
+{
+  // Use cudaStreamLegacy as the arena map key for the default stream so PTDS and non-PTDS agree.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
+  return stream.is_default() ? cudaStreamLegacy : stream.value();
+}
+
+}  // namespace
+
+stream_id_type get_stream_id(cuda_stream_view stream)
+{
+  // The default stream normalizes to cudaStreamLegacy, and its ID prevents stale arena state if
+  // CUDA reuses a destroyed stream handle value (ABA reuse).
+  stream_id_type stream_id{};
+  RMM_CUDA_TRY(cudaStreamGetId(normalize_arena_stream(stream), &stream_id));
+  return stream_id;
+}
+
+std::optional<stream_id_type> try_get_stream_id(cuda_stream_view stream) noexcept
+{
+  // The default stream normalizes to cudaStreamLegacy, and its ID prevents stale arena state if
+  // CUDA reuses a destroyed stream handle value (ABA reuse).
+  stream_id_type stream_id{};
+  if (cudaStreamGetId(normalize_arena_stream(stream), &stream_id) != cudaSuccess) {
+    return std::nullopt;
+  }
+  return stream_id;
+}
 
 arena_memory_resource_impl::arena_memory_resource_impl(
   cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr,
@@ -74,13 +104,23 @@ void arena_memory_resource_impl::deallocate(cuda::stream_ref stream,
 #else
   bytes = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
 #endif
-  auto& arena = get_arena(sv);
-
-  {
-    std::shared_lock lock(mtx_);
-    if (arena.deallocate(sv, ptr, bytes)) { return; }
+  arena* arena = nullptr;
+  if (use_per_thread_arena(sv)) {
+    std::shared_lock lock(map_mtx_);
+    auto const iter = thread_arenas_.find(std::this_thread::get_id());
+    if (iter != thread_arenas_.end()) { arena = iter->second.get(); }
+  } else if (auto const stream_id = try_get_stream_id(sv); stream_id.has_value()) {
+    std::shared_lock lock(map_mtx_);
+    auto const iter = stream_arenas_.find(*stream_id);
+    if (iter != stream_arenas_.end()) { arena = std::addressof(iter->second); }
   }
 
+  if (arena != nullptr) {
+    std::shared_lock lock(mtx_);
+    if (arena->deallocate(sv, ptr, bytes)) { return; }
+  }
+
+  // A failed stream-ID lookup leaves `arena` null, so search all arenas to avoid leaking it.
   {
     sv.synchronize_no_throw();
     std::unique_lock lock(mtx_);
@@ -107,6 +147,8 @@ void arena_memory_resource_impl::deallocate_sync(void* ptr,
 
 void arena_memory_resource_impl::defragment()
 {
+  // Guard map iteration against concurrent emplace in the arena getters.
+  std::shared_lock lock(map_mtx_);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
   for (auto& thread_arena : thread_arenas_) {
     thread_arena.second->clean();
@@ -118,8 +160,9 @@ void arena_memory_resource_impl::defragment()
 
 void arena_memory_resource_impl::deallocate_from_other_arena(cuda_stream_view stream,
                                                              void* ptr,
-                                                             std::size_t bytes)
+                                                             std::size_t bytes) noexcept
 {
+  std::shared_lock map_lock(map_mtx_);
   if (use_per_thread_arena(stream)) {
     for (auto const& thread_arena : thread_arenas_) {
       if (thread_arena.second->deallocate_sync(ptr, bytes)) { return; }
@@ -140,14 +183,18 @@ void arena_memory_resource_impl::deallocate_from_other_arena(cuda_stream_view st
         if (thread_arena.second->deallocate_sync(ptr, bytes)) { return; }
       }
     }
-    RMM_FAIL("allocation not found");
+    RMM_LOG_DEBUG("[deallocate][Stream %s][%zuB][Pointer %p] allocation not found",
+                  rmm::detail::format_stream(stream),
+                  bytes,
+                  ptr);
+    return;
   }
 }
 
 arena_memory_resource_impl::arena& arena_memory_resource_impl::get_arena(cuda_stream_view stream)
 {
   if (use_per_thread_arena(stream)) { return get_thread_arena(); }
-  return get_stream_arena(stream);
+  return get_stream_arena(get_stream_id(stream));
 }
 
 arena_memory_resource_impl::arena& arena_memory_resource_impl::get_thread_arena()
@@ -168,18 +215,17 @@ arena_memory_resource_impl::arena& arena_memory_resource_impl::get_thread_arena(
 }
 
 arena_memory_resource_impl::arena& arena_memory_resource_impl::get_stream_arena(
-  cuda_stream_view stream)
+  stream_id_type stream_id)
 {
-  RMM_LOGGING_ASSERT(!use_per_thread_arena(stream));
   {
     std::shared_lock lock(map_mtx_);
-    auto const iter = stream_arenas_.find(stream.value());
+    auto const iter = stream_arenas_.find(stream_id);
     if (iter != stream_arenas_.end()) { return iter->second; }
   }
   {
     std::unique_lock lock(map_mtx_);
-    stream_arenas_.emplace(stream.value(), global_arena_);
-    return stream_arenas_.at(stream.value());
+    stream_arenas_.emplace(stream_id, global_arena_);
+    return stream_arenas_.at(stream_id);
   }
 }
 
