@@ -4,11 +4,11 @@
  */
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/stream_ref>
 
 #include <cstddef>
 #include <functional>
@@ -28,8 +28,9 @@ namespace detail {
 class callback_memory_resource_impl {
  public:
   callback_memory_resource_impl(
-    std::function<void*(std::size_t, cuda_stream_view, void*)> allocate_callback,
-    std::function<void(void*, std::size_t, cuda_stream_view, void*)> deallocate_callback,
+    std::function<void*(cuda::stream_ref, std::size_t, std::size_t, void*)> allocate_callback,
+    std::function<void(cuda::stream_ref, void*, std::size_t, std::size_t, void*)>
+      deallocate_callback,
     void* allocate_callback_arg,
     void* deallocate_callback_arg) noexcept;
 
@@ -72,8 +73,9 @@ class callback_memory_resource_impl {
   }
 
  private:
-  std::function<void*(std::size_t, cuda_stream_view, void*)> allocate_callback_;
-  std::function<void(void*, std::size_t, cuda_stream_view, void*)> deallocate_callback_;
+  std::function<void*(cuda::stream_ref, std::size_t, std::size_t, void*)> allocate_callback_;
+  std::function<void(cuda::stream_ref, void*, std::size_t, std::size_t, void*)>
+    deallocate_callback_;
   void* allocate_callback_arg_;
   void* deallocate_callback_arg_;
 };
