@@ -532,20 +532,32 @@ dependencies:
               require_gpu: "true"
             packages:
               - *torch_cu129_index
-              - torch==2.10.0+cu129
+              - torch==2.13.0+cu129
           - matrix:
               cuda: "13.0"
               dependencies: "oldest"
               require_gpu: "true"
             packages:
-              - &torch_index_cu13 --extra-index-url=https://download.pytorch.org/whl/cu130
+              - &torch_cu130_index --extra-index-url=https://download.pytorch.org/whl/cu130
               - torch==2.9.0+cu130
           - matrix:
               cuda: "13.0"
               require_gpu: "true"
             packages:
-              - *torch_index_cu13
-              - torch==2.10.0+cu130
+              - *torch_cu130_index
+              - torch==2.14.0+cu130
+          - matrix:
+              cuda: "13.1"
+              require_gpu: "true"
+            packages:
+              - *torch_cu130_index
+              - torch==2.13.0+cu130
+          - matrix:
+              cuda: "13.*"
+              require_gpu: "true"
+            packages:
+              - --extra-index-url=https://download.pytorch.org/whl/cu132
+              - torch==2.14.0+cu132
           - matrix:
               require_gpu: "false"
             packages:
