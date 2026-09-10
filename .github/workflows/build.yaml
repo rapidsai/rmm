@@ -24,9 +24,17 @@ on:
         required: true
         type: string
       build_type:
-        description: "build_type: one of [branch, nightly, pull-request]"
+        description: "build_type: one of [branch, nightly, pull-request, release-candidate]"
         type: string
         default: nightly
+      candidate_train_sha256:
+        description: "Canonical release-train digest for a release-candidate build."
+        type: string
+        default: ""
+      candidate_release_tag:
+        description: "Final source tag created locally for a release-candidate build."
+        type: string
+        default: "v26.10.00"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}-${{ inputs.build_type || 'branch' }}
@@ -59,7 +67,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@main
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@codex/release-build-output-manifests
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       build-datetime: ${{ needs.build-details.outputs.build-datetime }}
@@ -68,6 +76,8 @@ jobs:
       node_type: cpu8
       script: ci/build_cpp.sh
       sha: ${{ inputs.sha }}
+      candidate-train-sha256: ${{ inputs.candidate_train_sha256 }}
+      release-candidate-tag: ${{ inputs.candidate_release_tag }}
   python-build:
     needs: [build-details, telemetry-setup, cpp-build]
     permissions:
@@ -77,7 +87,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@main
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@codex/release-build-output-manifests
     with:
       # Build a conda package for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
@@ -87,6 +97,8 @@ jobs:
       date: ${{ inputs.date }}
       script: ci/build_python.sh
       sha: ${{ inputs.sha }}
+      candidate-train-sha256: ${{ inputs.candidate_train_sha256 }}
+      release-candidate-tag: ${{ inputs.candidate_release_tag }}
   upload-conda:
     needs: [cpp-build, python-build]
     permissions:
@@ -152,7 +164,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@main
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@codex/release-build-output-manifests
     with:
       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
       build_type: ${{ inputs.build_type || 'branch' }}
@@ -164,6 +176,8 @@ jobs:
       script: ci/build_wheel_cpp.sh
       package-name: librmm
       package-type: cpp
+      candidate-train-sha256: ${{ inputs.candidate_train_sha256 }}
+      release-candidate-tag: ${{ inputs.candidate_release_tag }}
   wheel-build-python:
     needs: [build-details, telemetry-setup, wheel-build-cpp]
     permissions:
@@ -173,7 +187,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@main
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@codex/release-build-output-manifests
     with:
       # Build a wheel for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
@@ -186,6 +200,8 @@ jobs:
       script: ci/build_wheel_python.sh
       package-name: rmm
       package-type: python
+      candidate-train-sha256: ${{ inputs.candidate_train_sha256 }}
+      release-candidate-tag: ${{ inputs.candidate_release_tag }}
   wheel-publish-cpp:
     needs: wheel-build-cpp
     permissions:
