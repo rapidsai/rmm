@@ -148,6 +148,23 @@ class free_list {
   }
 
   /**
+   * @brief Transfers one existing node from `other` before `pos` without allocation.
+   *
+   * Iterators and references to the transferred element remain valid.
+   *
+   * @note `ListType` must provide a non-allocating three-argument node-transfer `splice`,
+   * which makes this operation `noexcept`.
+   *
+   * @param pos Iterator before which the element is inserted. May be `end()`.
+   * @param other The free list that currently owns the element.
+   * @param iter Iterator to the element in `other` to transfer.
+   */
+  void splice(const_iterator pos, free_list& other, const_iterator iter) noexcept
+  {
+    blocks.splice(pos, other.blocks, iter);
+  }
+
+  /**
    * @brief Appends the given block to the end of the free list.
    *
    * @param block The block to append.

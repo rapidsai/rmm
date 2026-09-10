@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -12,6 +12,7 @@
 #include <rmm/device_vector.hpp>
 #include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/indexed_pool_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 
@@ -24,10 +25,11 @@
 #include <cstdio>
 #include <type_traits>
 
-void BM_UvectorSizeConstruction(benchmark::State& state)
+template <typename PoolResource>
+void uvector_size_construction(benchmark::State& state)
 {
-  rmm::mr::set_current_device_resource(rmm::mr::pool_memory_resource{
-    rmm::mr::cuda_memory_resource{}, rmm::percent_of_free_device_memory(50)});
+  rmm::mr::set_current_device_resource(
+    PoolResource{rmm::mr::cuda_memory_resource{}, rmm::percent_of_free_device_memory(50)});
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     rmm::device_uvector<std::int32_t> vec(static_cast<std::size_t>(state.range(0)),
@@ -40,15 +42,30 @@ void BM_UvectorSizeConstruction(benchmark::State& state)
   rmm::mr::reset_current_device_resource();
 }
 
+void BM_UvectorSizeConstruction(benchmark::State& state)
+{
+  uvector_size_construction<rmm::mr::pool_memory_resource>(state);
+}
+
+void BM_UvectorSizeConstructionIndexed(benchmark::State& state)
+{
+  uvector_size_construction<rmm::mr::indexed_pool_memory_resource>(state);
+}
+
 BENCHMARK(BM_UvectorSizeConstruction)
   ->RangeMultiplier(10)           // NOLINT
   ->Range(10'000, 1'000'000'000)  // NOLINT
   ->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_UvectorSizeConstructionIndexed)
+  ->RangeMultiplier(10)           // NOLINT
+  ->Range(10'000, 1'000'000'000)  // NOLINT
+  ->Unit(benchmark::kMicrosecond);
 
-void BM_ThrustVectorSizeConstruction(benchmark::State& state)
+template <typename PoolResource>
+void thrust_vector_size_construction(benchmark::State& state)
 {
-  rmm::mr::set_current_device_resource(rmm::mr::pool_memory_resource{
-    rmm::mr::cuda_memory_resource{}, rmm::percent_of_free_device_memory(50)});
+  rmm::mr::set_current_device_resource(
+    PoolResource{rmm::mr::cuda_memory_resource{}, rmm::percent_of_free_device_memory(50)});
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     rmm::device_vector<std::int32_t> vec(static_cast<std::size_t>(state.range(0)));
@@ -60,7 +77,21 @@ void BM_ThrustVectorSizeConstruction(benchmark::State& state)
   rmm::mr::reset_current_device_resource();
 }
 
+void BM_ThrustVectorSizeConstruction(benchmark::State& state)
+{
+  thrust_vector_size_construction<rmm::mr::pool_memory_resource>(state);
+}
+
+void BM_ThrustVectorSizeConstructionIndexed(benchmark::State& state)
+{
+  thrust_vector_size_construction<rmm::mr::indexed_pool_memory_resource>(state);
+}
+
 BENCHMARK(BM_ThrustVectorSizeConstruction)
+  ->RangeMultiplier(10)           // NOLINT
+  ->Range(10'000, 1'000'000'000)  // NOLINT
+  ->Unit(benchmark::kMicrosecond);
+BENCHMARK(BM_ThrustVectorSizeConstructionIndexed)
   ->RangeMultiplier(10)           // NOLINT
   ->Range(10'000, 1'000'000'000)  // NOLINT
   ->Unit(benchmark::kMicrosecond);

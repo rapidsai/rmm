@@ -185,7 +185,7 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
     [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
     auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
-    deallocate(stream, ptr, bytes, alignment);
+    this->underlying().deallocate(stream, ptr, bytes, alignment);
     RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
   }
 
@@ -293,9 +293,10 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
     cudaEvent_t event;
 
     bool operator<(stream_event_pair const& rhs) const { return event < rhs.event; }
+    bool operator==(stream_event_pair const& rhs) const { return event == rhs.event; }
   };
 
- private:
+ protected:
   /**
    * @brief get a unique CUDA event (possibly new) associated with `stream`
    *

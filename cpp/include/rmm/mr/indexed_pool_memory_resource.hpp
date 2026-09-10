@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -25,32 +25,38 @@ namespace mr {
  * @brief A coalescing best-fit suballocator which uses a pool of memory allocated from
  *        an upstream memory_resource.
  *
- * Allocation and deallocation are thread-safe. Also,
- * this class is compatible with CUDA per-thread default stream.
+ * Allocation and deallocation are thread-safe. Memory deallocated on a stream is immediately
+ * reusable on that stream. Reuse from another stream is ordered after the prior stream's work by
+ * synchronization performed by the resource. This class is compatible with CUDA per-thread default
+ * stream.
+ *
+ * When the pool reaches `maximum_pool_size`, the resource attempts to reclaim completely free
+ * upstream blocks before growing. If it cannot reclaim or grow enough memory for a request, it
+ * throws `rmm::out_of_memory`.
  *
  * This class is copyable and shares ownership of its internal state, allowing
  * multiple instances to safely reference the same underlying pool.
  */
-class RMM_EXPORT pool_memory_resource
+class RMM_EXPORT indexed_pool_memory_resource
   : public cuda::mr::shared_resource<
-      detail::pool_memory_resource_impl<detail::coalescing_free_list>> {
-  using shared_base =
-    cuda::mr::shared_resource<detail::pool_memory_resource_impl<detail::coalescing_free_list>>;
+      detail::pool_memory_resource_impl<detail::indexed_coalescing_free_list>> {
+  using shared_base = cuda::mr::shared_resource<
+    detail::pool_memory_resource_impl<detail::indexed_coalescing_free_list>>;
 
  public:
   /**
    * @brief Enables the `cuda::mr::device_accessible` property
    *
-   * This property declares that a `pool_memory_resource` provides device accessible memory
+   * This property declares that an `indexed_pool_memory_resource` provides device accessible memory
    */
-  RMM_CONSTEXPR_FRIEND void get_property(pool_memory_resource const&,
+  RMM_CONSTEXPR_FRIEND void get_property(indexed_pool_memory_resource const&,
                                          cuda::mr::device_accessible) noexcept
   {
   }
 
   /**
-   * @brief Construct a `pool_memory_resource` and allocate the initial device memory pool using
-   * `upstream`.
+   * @brief Construct an `indexed_pool_memory_resource` and allocate the initial device memory pool
+   * using `upstream`.
    *
    * @throws rmm::logic_error if `initial_pool_size` is not aligned to a multiple of 256 bytes.
    * @throws rmm::logic_error if `maximum_pool_size` is neither the default nor aligned to a
@@ -61,9 +67,10 @@ class RMM_EXPORT pool_memory_resource
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
    * of the available memory from the upstream resource.
    */
-  explicit pool_memory_resource(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
-                                std::size_t initial_pool_size,
-                                std::optional<std::size_t> maximum_pool_size = std::nullopt);
+  explicit indexed_pool_memory_resource(
+    cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+    std::size_t initial_pool_size,
+    std::optional<std::size_t> maximum_pool_size = std::nullopt);
 
   /**
    * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
@@ -80,8 +87,8 @@ class RMM_EXPORT pool_memory_resource
   [[nodiscard]] std::size_t pool_size() const noexcept;
 };
 
-static_assert(cuda::mr::resource_with<pool_memory_resource, cuda::mr::device_accessible>,
-              "pool_memory_resource does not satisfy the cuda::mr::resource concept");
+static_assert(cuda::mr::resource_with<indexed_pool_memory_resource, cuda::mr::device_accessible>,
+              "indexed_pool_memory_resource does not satisfy the cuda::mr::resource concept");
 
 /** @} */  // end of group
 }  // namespace mr
