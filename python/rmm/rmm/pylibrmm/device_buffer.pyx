@@ -18,10 +18,9 @@ from cuda.bindings.cyruntime cimport (
     cudaError_t,
     cudaMemcpyAsync,
     cudaMemcpyKind,
-    cudaStream_t,
 )
 
-from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.cuda_stream_ref cimport stream_ref
 from rmm.librmm.device_buffer cimport (
     cuda_device_id,
     device_buffer,
@@ -171,11 +170,12 @@ cdef class DeviceBuffer:
                                    if device is None
                                    else cuda_device_id(device))
         cdef Stream strm = self.stream if stream is None else stream
+        cdef stream_ref cpp_stream = strm.view()
         with nogil:
             prefetch(self.c_obj.get()[0].data(),
                      self.c_obj.get()[0].size(),
                      dev,
-                     strm.view())
+                     cpp_stream)
 
     def copy(self):
         """Returns a copy of this :class:`DeviceBuffer`.
@@ -469,7 +469,7 @@ cdef void _copy_async(const void* src,
                       void* dst,
                       size_t count,
                       cudaMemcpyKind kind,
-                      cuda_stream_view stream) except * nogil:
+                      stream_ref stream) except * nogil:
     """
     Asynchronously copy data between host and/or device pointers.
 
@@ -486,8 +486,7 @@ cdef void _copy_async(const void* src,
     """
     cdef cudaError_t err
     with nogil:
-        err = cudaMemcpyAsync(dst, src, count, kind,
-                              <cudaStream_t>(stream))
+        err = cudaMemcpyAsync(dst, src, count, kind, stream.get())
 
     if err != cudaError.cudaSuccess:
         raise RuntimeError(f"Memcpy failed with error: {err}")

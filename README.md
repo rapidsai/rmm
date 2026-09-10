@@ -452,11 +452,11 @@ For example, recapitulating the previous example using `rmm::device_vector`:
 > initialize new elements: the user must arrange for this kernel launch to occur with the correct
 > device for the memory resource active.
 
-## `cuda_stream_view` and `cuda_stream`
+## `cuda::stream_ref`, `cuda_stream_view`, and `cuda_stream`
 
-`rmm::cuda_stream_view` is a simple non-owning wrapper around a CUDA `cudaStream_t`. New code should
-prefer `cuda::stream_ref` for compatibility with CCCL. `rmm::cuda_stream_view` can be converted
-to/from `cuda::stream_ref`.
+`cuda::stream_ref`, provided by `<cuda/stream>`, is the preferred non-owning CUDA stream wrapper.
+`rmm::cuda_stream_view` is deprecated; migrate existing code to `cuda::stream_ref`. The deprecated
+wrapper remains convertible to and from `cuda::stream_ref` for compatibility.
 
 `rmm::cuda_stream` is a simple owning wrapper around a CUDA `cudaStream_t`. This class provides
 RAII semantics (constructor creates the CUDA stream, destructor destroys it). An `rmm::cuda_stream`
@@ -468,8 +468,8 @@ a single non-default stream. `rmm::cuda_stream` cannot be copied, but can be mov
 `rmm::cuda_stream_pool` provides fast access to a pool of CUDA streams. This class can be used to
 create a set of `cuda_stream` objects whose lifetime is equal to the `cuda_stream_pool`. Using the
 stream pool can be faster than creating the streams on the fly. The size of the pool is configurable.
-Depending on this size, multiple calls to `cuda_stream_pool::get_stream()` may return instances of
-`rmm::cuda_stream_view` that represent identical CUDA streams.
+Depending on this size, multiple calls to `cuda_stream_pool::get_stream()` may return
+`cuda::stream_ref` instances that represent identical CUDA streams.
 
 ## Thread Safety
 
@@ -490,7 +490,8 @@ RMM provides several `Allocator` and `Allocator`-like classes.
 ### `polymorphic_allocator`
 
 A [stream-ordered](#stream-ordered-memory-allocation) allocator similar to [`std::pmr::polymorphic_allocator`](https://en.cppreference.com/w/cpp/memory/polymorphic_allocator).
-Unlike the standard C++ `Allocator` interface, the `allocate` and `deallocate` functions take a `cuda_stream_view` indicating the stream on which the (de)allocation occurs.
+Unlike the standard C++ `Allocator` interface, the `allocate` and `deallocate` functions take a
+`cuda::stream_ref` indicating the stream on which the (de)allocation occurs.
 
 ### `stream_allocator_adaptor`
 
@@ -527,12 +528,12 @@ An untyped, uninitialized RAII class for stream ordered device memory allocation
 #### Example
 
 ```c++
-cuda_stream_view s{...};
+cuda::stream_ref s{...};
 // Allocates at least 100 bytes on stream `s` using the *default* resource
 rmm::device_buffer b{100, s};
 void* p = b.data();                   // Raw, untyped pointer to underlying device memory
 
-kernel<<<..., s.value()>>>(b.data()); // `b` is only safe to use on `s`
+kernel<<<..., s.get()>>>(b.data());   // `b` is only safe to use on `s`
 
 rmm::mr::cuda_memory_resource mr;
 // Allocates at least 100 bytes on stream `s` using the resource `mr`
@@ -547,12 +548,12 @@ contained elements. This optimization restricts the types `T` to trivially copya
 #### Example
 
 ```c++
-cuda_stream_view s{...};
+cuda::stream_ref s{...};
 // Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the
 // default resource
 rmm::device_uvector<int32_t> v(100, s);
 // Initializes the elements to 0
-thrust::uninitialized_fill(thrust::cuda::par.on(s.value()), v.begin(), v.end(), int32_t{0});
+thrust::uninitialized_fill(thrust::cuda::par.on(s.get()), v.begin(), v.end(), int32_t{0});
 
 rmm::mr::cuda_memory_resource mr;
 // Allocates uninitialized storage for 100 `int32_t` elements on stream `s` using the resource `mr`
@@ -566,12 +567,12 @@ modifying the value in device memory from the host, or retrieving the value from
 
 #### Example
 ```c++
-cuda_stream_view s{...};
+cuda::stream_ref s{...};
 // Allocates uninitialized storage for a single `int32_t` in device memory
 rmm::device_scalar<int32_t> a{s};
 a.set_value(42, s); // Updates the value in device memory to `42` on stream `s`
 
-kernel<<<..., s.value()>>>(a.data()); // Pass raw pointer to underlying element in device memory
+kernel<<<..., s.get()>>>(a.data());   // Pass raw pointer to underlying element in device memory
 
 int32_t v = a.value(s); // Retrieves the value from device to host on stream `s`
 ```

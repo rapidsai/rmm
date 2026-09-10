@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,13 +8,14 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/tracking_resource_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <cuda/stream>
 
 #include <gtest/gtest.h>
 
@@ -152,8 +153,8 @@ TEST(TrackingTest, MultiTracking)
 
   std::vector<std::shared_ptr<rmm::device_buffer>> allocations;
   for (std::size_t i = 0; i < num_allocations; ++i) {
-    allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, mr));
+    allocations.emplace_back(std::make_shared<rmm::device_buffer>(
+      ten_MiB, cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, mr));
   }
 
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations);
@@ -162,8 +163,8 @@ TEST(TrackingTest, MultiTracking)
 
   rmm::device_async_resource_ref inner_ref{inner_mr};
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
-    allocations.emplace_back(
-      std::make_shared<rmm::device_buffer>(ten_MiB, rmm::cuda_stream_default, inner_ref));
+    allocations.emplace_back(std::make_shared<rmm::device_buffer>(
+      ten_MiB, cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, inner_ref));
   }
 
   // Check the allocated bytes for both MRs

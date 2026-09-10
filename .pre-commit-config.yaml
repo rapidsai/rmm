@@ -40,6 +40,7 @@ repos:
     rev: v0.21.1
     hooks:
       - id: cython-lint
+        args: ["--max-line-length=120"]
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v20.1.8
     hooks:

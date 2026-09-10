@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -134,7 +134,7 @@ class host_allocator {
   host_allocator() = delete;
 
   template <typename ResourceType>
-  host_allocator(ResourceType mr, rmm::cuda_stream_view stream) : mr_(mr), stream_(stream)
+  host_allocator(ResourceType mr, cuda::stream_ref stream) : mr_(mr), stream_(stream)
   {
   }
 
@@ -144,7 +144,7 @@ class host_allocator {
   T* allocate(std::size_t n)
   {
     auto const result = mr_.allocate(stream_, n * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT);
-    stream_.synchronize();
+    stream_.sync();
     return static_cast<T*>(result);
   }
 
@@ -158,7 +158,7 @@ class host_allocator {
 
  private:
   rmm::host_async_resource_ref mr_;
-  rmm::cuda_stream_view stream_;
+  cuda::stream_ref stream_;
 };
 
 // Function that returns host_device_async_resource_ref (like cudf::get_pinned_memory_resource)
@@ -171,7 +171,7 @@ rmm::host_device_async_resource_ref get_pinned_resource()
 // Helper to create a pinned vector (similar to cudf's make_pinned_vector_async)
 template <typename T>
 thrust::host_vector<T, host_allocator<T>> make_pinned_vector(std::size_t size,
-                                                             rmm::cuda_stream_view stream)
+                                                             cuda::stream_ref stream)
 {
   return thrust::host_vector<T, host_allocator<T>>(size, {get_pinned_resource(), stream});
 }

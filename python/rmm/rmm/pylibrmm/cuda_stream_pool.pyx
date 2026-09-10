@@ -57,11 +57,11 @@ cdef class CudaStreamPool:
         cdef size_t c_stream_id
         if stream_id is None:
             return Stream._from_cudaStream_t(
-                deref(self.c_obj).get_stream().value(), owner=self)
+                deref(self.c_obj).get_stream().get(), owner=self)
         else:
             c_stream_id = <size_t>(stream_id)
             return Stream._from_cudaStream_t(
-                deref(self.c_obj).get_stream(c_stream_id).value(), owner=self)
+                deref(self.c_obj).get_stream(c_stream_id).get(), owner=self)
 
     def get_pool_size(self) -> int:
         """

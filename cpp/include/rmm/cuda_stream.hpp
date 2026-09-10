@@ -85,8 +85,15 @@ class cuda_stream {
    */
   explicit operator cudaStream_t() const noexcept;
 
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
   /**
    * @brief Creates an immutable, non-owning view of the wrapped CUDA stream.
+   *
+   * `rmm::cuda_stream_view` is deprecated. Convert this stream to `cuda::stream_ref` instead.
    *
    * @return rmm::cuda_stream_view The view of the CUDA stream
    */
@@ -95,9 +102,15 @@ class cuda_stream {
   /**
    * @brief Implicit conversion to cuda_stream_view
    *
+   * `rmm::cuda_stream_view` is deprecated. Use the conversion to `cuda::stream_ref` instead.
+   *
    * @return A view of the owned stream
    */
   operator cuda_stream_view() const;
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
   /**
    * @brief Implicit conversion to cuda::stream_ref

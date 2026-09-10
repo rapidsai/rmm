@@ -182,11 +182,11 @@ TEST(CallbackMRAdaptorTest, EqualityAndSharedOwnership)
   cuda_mr cuda{};
   rmm::device_async_resource_ref upstream{cuda};
 
-  auto alloc_cb = [](std::size_t bytes, rmm::cuda_stream_view stream, void* arg) {
+  auto alloc_cb = [](std::size_t bytes, cuda::stream_ref stream, void* arg) {
     return static_cast<rmm::device_async_resource_ref*>(arg)->allocate(
       stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   };
-  auto dealloc_cb = [](void* ptr, std::size_t bytes, rmm::cuda_stream_view stream, void* arg) {
+  auto dealloc_cb = [](void* ptr, std::size_t bytes, cuda::stream_ref stream, void* arg) {
     static_cast<rmm::device_async_resource_ref*>(arg)->deallocate(
       stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   };

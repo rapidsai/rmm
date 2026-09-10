@@ -1,12 +1,12 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <rmm/cuda_device.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 // These signatures must match those required by CUDAPluggableAllocator in
@@ -30,7 +30,7 @@ extern "C" void* allocate(std::size_t size, int device, void* stream)
   rmm::cuda_set_device_raii with_device{device_id};
   auto mr = rmm::mr::get_per_device_resource_ref(device_id);
   return mr.allocate(
-    rmm::cuda_stream_view{static_cast<cudaStream_t>(stream)}, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    cuda::stream_ref{static_cast<cudaStream_t>(stream)}, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 /**
@@ -46,8 +46,6 @@ extern "C" void deallocate(void* ptr, std::size_t size, int device, void* stream
   rmm::cuda_device_id const device_id{device};
   rmm::cuda_set_device_raii with_device{device_id};
   auto mr = rmm::mr::get_per_device_resource_ref(device_id);
-  mr.deallocate(rmm::cuda_stream_view{static_cast<cudaStream_t>(stream)},
-                ptr,
-                size,
-                rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(
+    cuda::stream_ref{static_cast<cudaStream_t>(stream)}, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }

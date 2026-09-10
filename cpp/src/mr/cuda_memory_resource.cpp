@@ -37,7 +37,7 @@ void cuda_memory_resource::deallocate([[maybe_unused]] cuda::stream_ref stream,
 
 void* cuda_memory_resource::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  auto* ptr = allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
+  auto* ptr = allocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, bytes, alignment);
   RMM_CUDA_TRY(cudaStreamSynchronize(cudaStream_t{nullptr}));
   return ptr;
 }
@@ -46,7 +46,7 @@ void cuda_memory_resource::deallocate_sync(void* ptr,
                                            std::size_t bytes,
                                            std::size_t alignment) noexcept
 {
-  deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
+  deallocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, ptr, bytes, alignment);
 }
 
 bool cuda_memory_resource::operator==(cuda_memory_resource const&) const noexcept { return true; }

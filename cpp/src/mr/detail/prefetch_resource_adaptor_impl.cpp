@@ -32,7 +32,7 @@ void* prefetch_resource_adaptor_impl::allocate(cuda::stream_ref stream,
                                                std::size_t alignment)
 {
   void* ptr = upstream_mr_.allocate(stream, bytes, alignment);
-  rmm::prefetch(ptr, bytes, rmm::get_current_cuda_device(), cuda_stream_view{stream.get()});
+  rmm::prefetch(ptr, bytes, rmm::get_current_cuda_device(), stream);
   return ptr;
 }
 
@@ -46,7 +46,7 @@ void prefetch_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
 
 void* prefetch_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   auto* ptr         = allocate(stream, bytes, alignment);
   RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
   return ptr;
@@ -56,7 +56,7 @@ void prefetch_resource_adaptor_impl::deallocate_sync(void* ptr,
                                                      std::size_t bytes,
                                                      std::size_t alignment) noexcept
 {
-  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   deallocate(stream, ptr, bytes, alignment);
   RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 }

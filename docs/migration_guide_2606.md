@@ -233,7 +233,8 @@ Key differences:
 - **Stream is the first parameter** (was second for `allocate`, third for `deallocate`).
 - **`alignment` parameter** is new (has a default value).
 - **`cuda::stream_ref`** replaces `rmm::cuda_stream_view` in the resource interface.
-  `rmm::cuda_stream_view` is implicitly convertible to `cuda::stream_ref`.
+  `rmm::cuda_stream_view` is implicitly convertible to `cuda::stream_ref`, but is deprecated as of
+  26.10. Use `cuda::stream_ref` in new and migrated code.
 - **`deallocate` is `noexcept`**.
 
 Resources also provide synchronous methods `allocate_sync(bytes, alignment)` and
@@ -506,7 +507,7 @@ resource has a different concrete type, including a derived or wrapped type.
 ### `cuda::stream_ref{}` Default Constructor Is Deprecated
 
 The default constructor `cuda::stream_ref{}` is deprecated in CCCL. Use
-`cuda::stream_ref{cudaStream_t{nullptr}}` when you need a null/default
+`rmm::cuda_stream_default` when you need a null/default
 stream reference (e.g., in `allocate_sync`/`deallocate_sync` implementations
 that delegate to the async methods):
 
@@ -518,7 +519,7 @@ void* allocate_sync(std::size_t bytes, std::size_t alignment) {
 
 // Fix
 void* allocate_sync(std::size_t bytes, std::size_t alignment) {
-  return allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);  // OK
+  return allocate(rmm::cuda_stream_default, bytes, alignment);  // OK
 }
 ```
 
