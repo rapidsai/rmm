@@ -1,14 +1,14 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/stream>
 
 #include <chrono>
 #include <cstddef>
@@ -39,11 +39,11 @@ class delayed_memory_resource {
     upstream_.deallocate_sync(ptr, bytes, alignment);
     std::this_thread::sleep_for(delay_);
   }
-  void* allocate(rmm::cuda_stream_view stream, std::size_t bytes, std::size_t alignment)
+  void* allocate(cuda::stream_ref stream, std::size_t bytes, std::size_t alignment)
   {
     return upstream_.allocate(stream, bytes, alignment);
   }
-  void deallocate(rmm::cuda_stream_view stream, void* ptr, std::size_t bytes, std::size_t alignment)
+  void deallocate(cuda::stream_ref stream, void* ptr, std::size_t bytes, std::size_t alignment)
   {
     upstream_.deallocate(stream, ptr, bytes, alignment);
     std::this_thread::sleep_for(delay_);

@@ -17,6 +17,7 @@
 #include <rmm/mr/pool_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
@@ -140,7 +141,7 @@ TEST(PoolTest, DeletedStream)
   cudaStream_t stream{};  // we don't use rmm::cuda_stream here to make destruction more explicit
   const int size = 10000;
   EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream));
-  EXPECT_NO_THROW(rmm::device_buffer buff(size, cuda_stream_view{stream}, mr));
+  EXPECT_NO_THROW(rmm::device_buffer buff(size, cuda::stream_ref{stream}, mr));
   EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream));
   EXPECT_NO_THROW((void)mr.allocate_sync(size));
 }
@@ -195,16 +196,16 @@ TEST(PoolTest, MissingReclaimCandidateDoesNotWaitForPendingWork)
   host_func_gate prior_work;
   rmm::cuda_stream source;
   host_func_gate_release_guard const release_prior_work{prior_work};
-  auto* source_ptr = mr.allocate(source.view(), 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  auto* source_ptr = mr.allocate(source, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
   RMM_CUDA_TRY(cudaLaunchHostFunc(
     source.value(), [](void* data) { static_cast<host_func_gate*>(data)->wait(); }, &prior_work));
-  mr.deallocate(source.view(), source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(source, source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   rmm::cuda_stream destination;
   auto const failed_without_waiting = [&]() {
     try {
-      auto* ptr = mr.allocate(destination.view(), 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
-      mr.deallocate(destination.view(), ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      auto* ptr = mr.allocate(destination, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      mr.deallocate(destination, ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
       return false;
     } catch (rmm::out_of_memory const&) {
       return !prior_work.complete();
@@ -241,7 +242,7 @@ TEST(PoolTest, ReclaimAcrossStreams)
   {
     // Allocate and free 256B on a non-default stream so the freed block lands in that stream's
     // free list.
-    rmm::device_buffer buf(256, stream.view(), mr);
+    rmm::device_buffer buf(256, stream, mr);
   }
   // Growing to 1024B requires reclaiming the entirely-free cross-stream block.
   EXPECT_NO_THROW([&]() {
@@ -258,16 +259,16 @@ TEST(PoolTest, ReclaimIsStreamOrderedOnSameStream)
   host_func_gate_release_guard const release_prior_work{prior_work};
   rmm::cuda_stream stream;
 
-  auto* source_ptr = mr.allocate(stream.view(), 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  auto* source_ptr = mr.allocate(stream, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
   RMM_CUDA_TRY(cudaLaunchHostFunc(
     stream.value(), [](void* data) { static_cast<host_func_gate*>(data)->wait(); }, &prior_work));
-  mr.deallocate(stream.view(), source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(stream, source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
-  auto* destination_ptr = mr.allocate(stream.view(), 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  auto* destination_ptr = mr.allocate(stream, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   auto const reclaim_returned_without_waiting = !prior_work.complete();
 
   prior_work.release();
-  mr.deallocate(stream.view(), destination_ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(stream, destination_ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   stream.synchronize();
 
   EXPECT_TRUE(reclaim_returned_without_waiting);
@@ -281,19 +282,21 @@ TEST(PoolTest, ReclaimIsStreamOrderedWithMergedPerThreadDefaultStream)
   host_func_gate prior_work;
   host_func_gate_release_guard const release_prior_work{prior_work};
 
-  auto* source_ptr = mr.allocate(rmm::cuda_stream_per_thread, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  auto* source_ptr =
+    mr.allocate(cuda::stream_ref{cudaStreamPerThread}, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
   RMM_CUDA_TRY(cudaLaunchHostFunc(
-    rmm::cuda_stream_per_thread.value(),
+    cuda::stream_ref{cudaStreamPerThread}.get(),
     [](void* data) { static_cast<host_func_gate*>(data)->wait(); },
     &prior_work));
-  mr.deallocate(rmm::cuda_stream_per_thread, source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(
+    cuda::stream_ref{cudaStreamPerThread}, source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   rmm::cuda_stream destination;
-  auto* destination_ptr = mr.allocate(destination.view(), 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  auto* destination_ptr = mr.allocate(destination, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   auto const reclaim_returned_without_waiting = !prior_work.complete();
 
   prior_work.release();
-  mr.deallocate(destination.view(), destination_ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(destination, destination_ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   destination.synchronize();
 
   EXPECT_TRUE(reclaim_returned_without_waiting);
@@ -306,7 +309,7 @@ TEST(PoolTest, ReclaimsToMaximumWithCudaAsyncUpstreamAcrossStreams)
   pool_mr mr{upstream, 256, 1024};
   rmm::cuda_stream source;
   {
-    rmm::device_buffer source_block{256, source.view(), mr};
+    rmm::device_buffer source_block{256, source, mr};
   }
 
   auto* ptr                      = mr.allocate_sync(1024);
@@ -364,11 +367,11 @@ TEST(PoolTest, MultidevicePool)
 
     {
       RMM_CUDA_TRY(cudaSetDevice(0));
-      rmm::device_buffer buf_a(16, rmm::cuda_stream_per_thread, mrs[0]);
+      rmm::device_buffer buf_a(16, cuda::stream_ref{cudaStreamPerThread}, mrs[0]);
 
       {
         RMM_CUDA_TRY(cudaSetDevice(1));
-        rmm::device_buffer buf_b(16, rmm::cuda_stream_per_thread, mrs[1]);
+        rmm::device_buffer buf_b(16, cuda::stream_ref{cudaStreamPerThread}, mrs[1]);
       }
 
       RMM_CUDA_TRY(cudaSetDevice(0));
@@ -417,8 +420,8 @@ TEST(PoolTest, CrossStreamStealAfterMergeWaitsForDonorStream)
 
   // X is carved from the front of the pool. The separator, allocated right behind it and held
   // for the whole test, prevents X from coalescing with the rest of the pool's free memory.
-  void* ptr_x     = ref.allocate(stream_a.view(), block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  void* separator = ref.allocate(stream_b.view(), block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  void* ptr_x     = ref.allocate(stream_a, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  void* separator = ref.allocate(stream_b, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   // Stall stream A, enqueue a write to X behind the stall, then free X on A. The pool records
   // A's event behind the pending write, so any consumer that waits on A's event cannot touch X
@@ -435,18 +438,18 @@ TEST(PoolTest, CrossStreamStealAfterMergeWaitsForDonorStream)
   release_on_exit unblock{release};
   RMM_CUDA_TRY(cudaLaunchHostFunc(stream_a.value(), spin_until_released, &release));
   RMM_CUDA_TRY(cudaMemsetAsync(ptr_x, pattern_a, block_size, stream_a.value()));
-  ref.deallocate(stream_a.view(), ptr_x, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  ref.deallocate(stream_a, ptr_x, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   // 6.5 MiB exceeds every individual free block (X: 1 MiB, rest of the pool: 6 MiB) and, since
   // the separator prevents coalescing, the merged list too; the pool is at its maximum size, so
   // this throws -- but only after merging A's free list (with X in it) into B's.
   constexpr auto unsatisfiable = 6_MiB + block_size / 2;
-  EXPECT_THROW((void)ref.allocate(stream_b.view(), unsatisfiable, rmm::CUDA_ALLOCATION_ALIGNMENT),
+  EXPECT_THROW((void)ref.allocate(stream_b, unsatisfiable, rmm::CUDA_ALLOCATION_ALIGNMENT),
                rmm::out_of_memory);
 
   // Steal X from B's free list on a third stream and overwrite it. This waits only on B's
   // event, which must have been recorded behind the wait on A's event during the merge above.
-  void* ptr_c = ref.allocate(stream_c.view(), block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  void* ptr_c = ref.allocate(stream_c, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   EXPECT_EQ(ptr_c, ptr_x);  // best fit: the stolen block is exactly X
   RMM_CUDA_TRY(cudaMemsetAsync(ptr_c, pattern_c, block_size, stream_c.value()));
 
@@ -478,8 +481,8 @@ TEST(PoolTest, CrossStreamStealAfterMergeWaitsForDonorStream)
   EXPECT_TRUE(
     std::all_of(host.cbegin(), host.cend(), [](unsigned char byte) { return byte == pattern_c; }));
 
-  ref.deallocate(stream_c.view(), ptr_c, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
-  ref.deallocate(stream_b.view(), separator, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  ref.deallocate(stream_c, ptr_c, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  ref.deallocate(stream_b, separator, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 class PoolMemoryResourceTest : public ::testing::Test {

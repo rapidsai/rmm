@@ -13,7 +13,7 @@ RMM_NAMESPACE_BEGIN
 void prefetch(void const* ptr,
               std::size_t size,
               rmm::cuda_device_id device,
-              rmm::cuda_stream_view stream)
+              cuda::stream_ref stream)
 {
   if (!rmm::detail::concurrent_managed_access::is_supported()) { return; }
 
@@ -22,9 +22,9 @@ void prefetch(void const* ptr,
     (device.value() == cudaCpuDeviceId) ? cudaMemLocationTypeHost : cudaMemLocationTypeDevice,
     device.value()};
   constexpr int flags = 0;
-  cudaError_t result  = cudaMemPrefetchAsync(ptr, size, location, flags, stream.value());
+  cudaError_t result  = cudaMemPrefetchAsync(ptr, size, location, flags, stream.get());
 #else
-  cudaError_t result = cudaMemPrefetchAsync(ptr, size, device.value(), stream.value());
+  cudaError_t result = cudaMemPrefetchAsync(ptr, size, device.value(), stream.get());
 #endif
   // cudaErrorInvalidValue is returned when non-managed memory is passed to
   // cudaMemPrefetchAsync. We treat this as a no-op.

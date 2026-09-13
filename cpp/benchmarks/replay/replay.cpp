@@ -1,10 +1,10 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
+#include <rmm/detail/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
@@ -16,6 +16,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/iterator>
+#include <cuda/stream>
 #include <thrust/execution_policy.h>
 #include <thrust/reduce.h>
 
@@ -253,8 +254,8 @@ std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string
                           [](auto const& event) {
                             cudaStream_t custream;
                             memcpy(&custream, &event.stream, sizeof(cudaStream_t));
-                            auto stream = rmm::cuda_stream_view{custream};
-                            return stream.is_default() or stream.is_per_thread_default();
+                            auto const stream = cuda::stream_ref{custream};
+                            return rmm::detail::is_default_stream(stream);
                           }),
               "Non-default streams not currently supported.");
 

@@ -4,7 +4,6 @@
  */
 
 #include <rmm/cuda_stream_pool.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 
 #include <algorithm>
@@ -21,14 +20,14 @@ cuda_stream_pool::cuda_stream_pool(std::size_t pool_size, cuda_stream::flags fla
     std::back_inserter(streams_), pool_size, [flags]() { return cuda_stream(flags); });
 }
 
-rmm::cuda_stream_view cuda_stream_pool::get_stream() const noexcept
+cuda::stream_ref cuda_stream_pool::get_stream() const noexcept
 {
-  return streams_[(next_stream.fetch_add(1, std::memory_order_relaxed)) % streams_.size()].view();
+  return streams_[(next_stream.fetch_add(1, std::memory_order_relaxed)) % streams_.size()];
 }
 
-rmm::cuda_stream_view cuda_stream_pool::get_stream(std::size_t stream_id) const
+cuda::stream_ref cuda_stream_pool::get_stream(std::size_t stream_id) const
 {
-  return streams_[stream_id % streams_.size()].view();
+  return streams_[stream_id % streams_.size()];
 }
 
 std::size_t cuda_stream_pool::get_pool_size() const noexcept { return streams_.size(); }

@@ -16,8 +16,8 @@ namespace mr {
 namespace detail {
 
 callback_memory_resource_impl::callback_memory_resource_impl(
-  std::function<void*(std::size_t, cuda_stream_view, void*)> allocate_callback,
-  std::function<void(void*, std::size_t, cuda_stream_view, void*)> deallocate_callback,
+  std::function<void*(std::size_t, cuda::stream_ref, void*)> allocate_callback,
+  std::function<void(void*, std::size_t, cuda::stream_ref, void*)> deallocate_callback,
   void* allocate_callback_arg,
   void* deallocate_callback_arg) noexcept
   : allocate_callback_(std::move(allocate_callback)),
@@ -31,7 +31,7 @@ void* callback_memory_resource_impl::allocate(cuda::stream_ref stream,
                                               std::size_t bytes,
                                               std::size_t /*alignment*/)
 {
-  return allocate_callback_(bytes, cuda_stream_view{stream.get()}, allocate_callback_arg_);
+  return allocate_callback_(bytes, stream, allocate_callback_arg_);
 }
 
 void callback_memory_resource_impl::deallocate(cuda::stream_ref stream,
@@ -39,12 +39,12 @@ void callback_memory_resource_impl::deallocate(cuda::stream_ref stream,
                                                std::size_t bytes,
                                                std::size_t /*alignment*/) noexcept
 {
-  deallocate_callback_(ptr, bytes, cuda_stream_view{stream.get()}, deallocate_callback_arg_);
+  deallocate_callback_(ptr, bytes, stream, deallocate_callback_arg_);
 }
 
 void* callback_memory_resource_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   auto* ptr         = allocate(stream, bytes, alignment);
   RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
   return ptr;
@@ -54,7 +54,7 @@ void callback_memory_resource_impl::deallocate_sync(void* ptr,
                                                     std::size_t bytes,
                                                     std::size_t alignment) noexcept
 {
-  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   deallocate(stream, ptr, bytes, alignment);
   RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 }
