@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -15,6 +15,7 @@
 #include <rmm/mr/pool_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <benchmark/benchmark.h>
@@ -56,7 +57,7 @@ static void run_test(std::size_t num_kernels,
   for (std::size_t i = 0; i < num_kernels; i++) {
     auto stream = stream_pool.get_stream(i);
     auto buffer = rmm::device_uvector<int64_t>(1, stream, mr);
-    compute_bound_kernel<<<1, 1, 0, stream.value()>>>(buffer.data());
+    compute_bound_kernel<<<1, 1, 0, stream.get()>>>(buffer.data());
   }
 }
 
