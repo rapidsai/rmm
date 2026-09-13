@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -11,8 +11,10 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cstdint>
 #include <limits>
+#include <thread>
 
 namespace rmm::test {
 namespace {
@@ -41,6 +43,19 @@ TEST_F(AsyncMRTest, ExplicitInitialPoolSize)
   void* ptr = mr.allocate_sync(pool_init_size);
   mr.deallocate_sync(ptr, pool_init_size);
   RMM_CUDA_TRY(cudaDeviceSynchronize());
+}
+
+TEST_F(AsyncMRTest, InitialPoolPrimingSynchronizes)
+{
+  RMM_CUDA_TRY(cudaLaunchHostFunc(
+    cudaStreamLegacy,
+    [](void*) { std::this_thread::sleep_for(std::chrono::milliseconds{100}); },
+    nullptr));
+  auto const pool_init_size{1 << 20};
+  cuda_async_mr mr{pool_init_size};
+  auto const status = cudaStreamQuery(cudaStreamLegacy);
+  RMM_CUDA_TRY(cudaStreamSynchronize(cudaStreamLegacy));
+  EXPECT_EQ(status, cudaSuccess);
 }
 
 TEST_F(AsyncMRTest, ExplicitReleaseThreshold)

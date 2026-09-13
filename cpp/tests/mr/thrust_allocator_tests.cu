@@ -8,6 +8,7 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_vector.hpp>
+#include <rmm/exec_policy.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/thrust_allocator_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
@@ -17,8 +18,15 @@
 
 #include <gtest/gtest.h>
 
+#include <type_traits>
+
 // explicit instantiation for test coverage purposes
 template class rmm::mr::thrust_allocator<int>;
+
+static_assert(!std::is_default_constructible_v<rmm::exec_policy>);
+static_assert(!std::is_default_constructible_v<rmm::exec_policy_nosync>);
+static_assert(std::is_constructible_v<rmm::exec_policy, cuda::stream_ref>);
+static_assert(std::is_constructible_v<rmm::exec_policy_nosync, cuda::stream_ref>);
 
 namespace rmm::test {
 namespace {
@@ -31,6 +39,17 @@ TEST_P(allocator_test, first)
   auto const num_ints{100};
   rmm::device_vector<int> ints(num_ints, 1);
   EXPECT_EQ(num_ints, thrust::reduce(ints.begin(), ints.end()));
+}
+
+TEST_P(allocator_test, execution_policies)
+{
+  rmm::cuda_stream stream;
+  auto const num_ints{100};
+  rmm::device_vector<int> ints(num_ints, 1);
+  EXPECT_EQ(num_ints,
+            thrust::reduce(rmm::exec_policy(stream, this->ref), ints.begin(), ints.end()));
+  EXPECT_EQ(num_ints,
+            thrust::reduce(rmm::exec_policy_nosync(stream, this->ref), ints.begin(), ints.end()));
 }
 
 TEST_P(allocator_test, defaults)
