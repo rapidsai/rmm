@@ -24,13 +24,12 @@
  * @param stream CUDA stream to perform allocation on
  * @return Pointer to the newly allocated memory
  */
-extern "C" void* allocate(std::size_t size, int device, void* stream)
+extern "C" void* allocate(std::size_t size, int device, cudaStream_t stream)
 {
   rmm::cuda_device_id const device_id{device};
   rmm::cuda_set_device_raii with_device{device_id};
   auto mr = rmm::mr::get_per_device_resource_ref(device_id);
-  return mr.allocate(
-    cuda::stream_ref{static_cast<cudaStream_t>(stream)}, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  return mr.allocate(cuda::stream_ref{stream}, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 /**
@@ -41,11 +40,10 @@ extern "C" void* allocate(std::size_t size, int device, void* stream)
  * @param device The device whose memory resource one should use
  * @param stream CUDA stream to perform deallocation on
  */
-extern "C" void deallocate(void* ptr, std::size_t size, int device, void* stream)
+extern "C" void deallocate(void* ptr, std::size_t size, int device, cudaStream_t stream)
 {
   rmm::cuda_device_id const device_id{device};
   rmm::cuda_set_device_raii with_device{device_id};
   auto mr = rmm::mr::get_per_device_resource_ref(device_id);
-  mr.deallocate(
-    cuda::stream_ref{static_cast<cudaStream_t>(stream)}, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  mr.deallocate(cuda::stream_ref{stream}, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }

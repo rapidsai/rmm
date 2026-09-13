@@ -2,18 +2,20 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cimport cython
+
 from enum import IntEnum
-from cuda.bindings.cyruntime cimport cudaStream_t
+
+from cuda.bindings.cyruntime cimport (
+    cudaStream_t,
+    cudaStreamDefault,
+    cudaStreamLegacy,
+    cudaStreamPerThread,
+)
 from libc.stdint cimport uintptr_t
 from libcpp cimport bool
 
 from rmm.librmm.cuda_stream cimport cuda_stream, cuda_stream_flags
 from rmm.librmm.cuda_stream_ref cimport is_default_stream, stream_ref
-from rmm.librmm.cuda_stream_view cimport (
-    cuda_stream_default,
-    cuda_stream_legacy,
-    cuda_stream_per_thread,
-)
 
 
 class CudaStreamFlags(IntEnum):
@@ -110,7 +112,7 @@ cdef class Stream:
         """
         Generate a cuda::stream_ref from this Stream instance
         """
-        return stream_ref(<cudaStream_t>(<uintptr_t>(self._cuda_stream)))
+        return stream_ref(self._cuda_stream)
 
     cdef void c_synchronize(self) except * nogil:
         """
@@ -195,8 +197,8 @@ cdef class Stream:
         self._cuda_stream, self._owner = stream._cuda_stream, stream._owner
 
 
-DEFAULT_STREAM = Stream._from_cudaStream_t(cuda_stream_default.get())
-LEGACY_DEFAULT_STREAM = Stream._from_cudaStream_t(cuda_stream_legacy.get())
+DEFAULT_STREAM = Stream._from_cudaStream_t(<cudaStream_t>cudaStreamDefault)
+LEGACY_DEFAULT_STREAM = Stream._from_cudaStream_t(<cudaStream_t>cudaStreamLegacy)
 PER_THREAD_DEFAULT_STREAM = Stream._from_cudaStream_t(
-    cuda_stream_per_thread.get()
+    <cudaStream_t>cudaStreamPerThread
 )

@@ -30,15 +30,9 @@ logging_resource_adaptor_impl::logging_resource_adaptor_impl(
 void* logging_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
   auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
-  try {
-    auto const ptr = upstream_mr_.allocate(stream, bytes, alignment);
-    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
-    logger_->info("allocate,%p,%zu,%s", ptr, bytes, rmm::detail::format_stream(stream));
-    return ptr;
-  } catch (...) {
-    logger_->info("allocate failure,%p,%zu,%s", nullptr, bytes, rmm::detail::format_stream(stream));
-    throw;
-  }
+  void* ptr         = allocate(stream, bytes, alignment);
+  stream.sync();
+  return ptr;
 }
 
 void logging_resource_adaptor_impl::deallocate_sync(void* ptr,

@@ -10,11 +10,10 @@
 
 RMM_NAMESPACE_BEGIN
 
-namespace {
-void prefetch_impl(void const* ptr,
-                   std::size_t size,
-                   rmm::cuda_device_id device,
-                   cuda::stream_ref stream)
+void prefetch(void const* ptr,
+              std::size_t size,
+              rmm::cuda_device_id device,
+              cuda::stream_ref stream)
 {
   if (!rmm::detail::concurrent_managed_access::is_supported()) { return; }
 
@@ -30,15 +29,6 @@ void prefetch_impl(void const* ptr,
   // cudaErrorInvalidValue is returned when non-managed memory is passed to
   // cudaMemPrefetchAsync. We treat this as a no-op.
   if (result != cudaErrorInvalidValue && result != cudaSuccess) { RMM_CUDA_TRY(result); }
-}
-}  // namespace
-
-void prefetch(void const* ptr,
-              std::size_t size,
-              rmm::cuda_device_id device,
-              cuda::stream_ref stream)
-{
-  prefetch_impl(ptr, size, device, stream);
 }
 
 RMM_NAMESPACE_END

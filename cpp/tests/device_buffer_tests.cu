@@ -678,7 +678,7 @@ TEST(DeviceBufferAlignmentTest, DefaultConstructedResizeLargerOnNonDefaultStream
 {
   rmm::cuda_stream stream;
   rmm::device_buffer buff;
-  EXPECT_NO_THROW(buff.resize(100, stream.view()));
+  EXPECT_NO_THROW(buff.resize(100, stream));
   EXPECT_EQ(buff.size(), 100);
 }
 

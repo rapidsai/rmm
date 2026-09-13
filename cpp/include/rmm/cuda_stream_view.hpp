@@ -126,17 +126,26 @@ class [[deprecated("Use cuda::stream_ref instead.")]] cuda_stream_view {
 
 /**
  * @brief Static cuda::stream_ref of the default stream (stream 0), for convenience
+ *
+ * @deprecated Use cuda::stream_ref{cudaStream_t{cudaStreamDefault}} instead.
  */
+[[deprecated("Use cuda::stream_ref{cudaStream_t{cudaStreamDefault}} instead.")]]
 static constexpr cuda::stream_ref cuda_stream_default{cudaStream_t{nullptr}};
 
 /**
  * @brief Static cuda::stream_ref of cudaStreamLegacy, for convenience
+ *
+ * @deprecated Use cuda::stream_ref{cudaStreamLegacy} instead.
  */
+[[deprecated("Use cuda::stream_ref{cudaStreamLegacy} instead.")]]
 static const cuda::stream_ref cuda_stream_legacy{cudaStream_t{cudaStreamLegacy}};
 
 /**
  * @brief Static cuda::stream_ref of cudaStreamPerThread, for convenience
+ *
+ * @deprecated Use cuda::stream_ref{cudaStreamPerThread} instead.
  */
+[[deprecated("Use cuda::stream_ref{cudaStreamPerThread} instead.")]]
 static const cuda::stream_ref cuda_stream_per_thread{cudaStream_t{cudaStreamPerThread}};
 
 #if defined(__GNUC__) || defined(__clang__)

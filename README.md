@@ -401,7 +401,7 @@ allocate a `device_buffer` on device `1`:
   {
     RMM_CUDA_TRY(cudaSetDevice(1));
     // Invalid, current device is 1, but MR is only valid for device 0
-    rmm::device_buffer buf(16, rmm::cuda_stream_default, mr);
+    rmm::device_buffer buf(16, cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, mr);
   }
 }
 ```
@@ -414,7 +414,7 @@ this code is correct:
 {
   RMM_CUDA_TRY(cudaSetDevice(0));
   auto mr = rmm::mr::cuda_memory_resource{};
-  rmm::device_buffer buf(16, rmm::cuda_stream_default, mr);
+  rmm::device_buffer buf(16, cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, mr);
   RMM_CUDA_TRY(cudaSetDevice(1));
   ...
   // No need to switch back to device 0 before ~buf runs
@@ -438,7 +438,8 @@ For example, recapitulating the previous example using `rmm::device_vector`:
 {
   RMM_CUDA_TRY(cudaSetDevice(0));
   auto mr = rmm::mr::cuda_memory_resource{};
-  rmm::device_vector<int> vec(16, rmm::mr::thrust_allocator<int>(rmm::cuda_stream_default, mr));
+  rmm::device_vector<int> vec(
+    16, rmm::mr::thrust_allocator<int>(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, mr));
   RMM_CUDA_TRY(cudaSetDevice(1));
   ...
   // No need to switch back to device 0 before ~vec runs
@@ -882,7 +883,8 @@ std::unique_ptr<rmm::device_buffer> allocate(
   cuda::mr::any_resource<cuda::mr::device_accessible> mr =
     rmm::mr::get_current_device_resource_ref())
 {
-    return std::make_unique<rmm::device_buffer>(size, rmm::cuda_stream_default, std::move(mr));
+    return std::make_unique<rmm::device_buffer>(
+      size, cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, std::move(mr));
 }
 ```
 

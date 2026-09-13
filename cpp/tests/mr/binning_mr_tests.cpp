@@ -39,7 +39,7 @@ TEST(BinningTest, ZeroByteAllocationsUseBinResource)
   mr.add_bin(1024, device_async_resource_ref{wrapper});
 
   EXPECT_CALL(mock, allocate(::testing::_, 0, rmm::CUDA_ALLOCATION_ALIGNMENT))
-    .Times(1)
+    .Times(2)
     .WillRepeatedly(::testing::Return(nullptr));
   EXPECT_CALL(mock, deallocate(::testing::_, nullptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT)).Times(2);
 

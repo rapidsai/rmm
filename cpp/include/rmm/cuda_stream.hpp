@@ -97,7 +97,8 @@ class cuda_stream {
    *
    * @return rmm::cuda_stream_view The view of the CUDA stream
    */
-  [[nodiscard]] cuda_stream_view view() const;
+  [[nodiscard, deprecated("Use conversion to cuda::stream_ref instead.")]] cuda_stream_view view()
+    const;
 
   /**
    * @brief Implicit conversion to cuda_stream_view
@@ -106,7 +107,7 @@ class cuda_stream {
    *
    * @return A view of the owned stream
    */
-  operator cuda_stream_view() const;
+  [[deprecated("Use conversion to cuda::stream_ref instead.")]] operator cuda_stream_view() const;
 
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic pop

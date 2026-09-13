@@ -267,10 +267,10 @@ TYPED_TEST(TypedUVectorTest, GetSetElementAsync)
 TEST(DeviceUVectorMemcpyTest, GetSetElementOnNonDefaultStream)
 {
   rmm::cuda_stream stream;
-  rmm::device_uvector<int> vec(1, stream.view());
+  rmm::device_uvector<int> vec(1, stream);
   int const value = 42;
-  vec.set_element_async(0, value, stream.view());
-  EXPECT_EQ(vec.element(0, stream.view()), value);
+  vec.set_element_async(0, value, stream);
+  EXPECT_EQ(vec.element(0, stream), value);
 }
 
 TYPED_TEST(TypedUVectorTest, SetElementZeroAsync)
