@@ -62,7 +62,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * resource and default stream.
    */
   RMM_EXEC_CHECK_DISABLE
-  thrust_allocator() {}
+  thrust_allocator() : _stream{cuda::stream_ref{cudaStream_t{cudaStreamDefault}}} {}
 
   /**
    * @brief Constructs a `thrust_allocator` using the default device memory
@@ -180,7 +180,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   }
 
  private:
-  cuda::stream_ref _stream{cuda::stream_ref{cudaStream_t{cudaStreamDefault}}};
+  cuda::stream_ref _stream{cuda::invalid_stream_t{}};
   mutable cuda::mr::any_resource<cuda::mr::device_accessible> _mr{
     rmm::mr::get_current_device_resource_ref()};
   cuda_device_id _device{get_current_cuda_device()};
