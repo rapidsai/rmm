@@ -21,6 +21,7 @@ See the project [README](https://github.com/rapidsai/rmm) for how to install RMM
 ```{toctree}
 :maxdepth: 1
 
+../migration_guide_2612
 ../migration_guide_2606
 ```
 
