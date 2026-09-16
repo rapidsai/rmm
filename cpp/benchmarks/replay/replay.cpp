@@ -6,6 +6,7 @@
 #include <rmm/aligned.hpp>
 #include <rmm/detail/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/format.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/binning_memory_resource.hpp>
@@ -31,13 +32,10 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
-#include <fstream>
-#include <iomanip>
 #include <iterator>
 #include <memory>
 #include <numeric>
 #include <optional>
-#include <sstream>
 #include <string>
 #include <thread>
 
@@ -302,25 +300,10 @@ std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string
   return per_thread_events;
 }
 
-/// Format bytes as "10.371 GiB (11136000000 B)"
-std::string format_bytes(std::size_t bytes)
+/// Format bytes as "10.371208 GiB (11136000000 B)"
+std::string format_size(std::size_t bytes)
 {
-  constexpr double bytes_per_gib{static_cast<double>(1ULL << 30U)};
-  std::ostringstream out;
-  out << std::fixed << std::setprecision(3) << static_cast<double>(bytes) / bytes_per_gib
-      << " GiB (" << bytes << " B)";
-  return out.str();
-}
-
-/// Format the simulated limit as "78.000 GiB", or "not set" when it is 0
-std::string format_limit(std::size_t simulated_size)
-{
-  if (simulated_size == 0) { return "not set"; }
-  constexpr double bytes_per_gib{static_cast<double>(1ULL << 30U)};
-  std::ostringstream out;
-  out << std::fixed << std::setprecision(3) << static_cast<double>(simulated_size) / bytes_per_gib
-      << " GiB";
-  return out.str();
+  return rmm::detail::format_bytes(bytes) + " (" + std::to_string(bytes) + " B)";
 }
 
 /// One row of the memory resource table: -r name, benchmark title, factory
@@ -358,7 +341,8 @@ int reproduce(std::string const& name,
   }
 
   // cuda and managed ignore -s
-  auto const limit = (name == "cuda" || name == "managed") ? std::size_t{0} : simulated_size;
+  auto const limit      = (name == "cuda" || name == "managed") ? std::size_t{0} : simulated_size;
+  auto const limit_text = limit == 0 ? std::string{"not set"} : rmm::detail::format_bytes(limit);
 
   std::vector<event> events;
   for (auto const& thread_events : per_thread_events) {
@@ -389,9 +373,9 @@ int reproduce(std::string const& name,
       try {
         ptr = mr.allocate_sync(log_event.size, rmm::CUDA_ALLOCATION_ALIGNMENT);
       } catch (std::exception const& e) {
-        std::cout << "event " << log_event.index << ": allocate " << format_bytes(log_event.size)
-                  << " failed. live " << format_bytes(live_bytes) << " in " << allocation_map.size()
-                  << " allocations. limit " << format_limit(limit) << ".\n";
+        std::cout << "event " << log_event.index << ": allocate " << format_size(log_event.size)
+                  << " failed. live " << format_size(live_bytes) << " in " << allocation_map.size()
+                  << " allocations. limit " << limit_text << ".\n";
         std::cout << "Exception caught: " << e.what() << std::endl;
         release_live();
         return 1;
@@ -411,8 +395,8 @@ int reproduce(std::string const& name,
   }
 
   release_live();
-  std::cout << "replayed " << events.size() << " events. peak live "
-            << format_bytes(peak_live_bytes) << ". limit " << format_limit(limit) << ".\n";
+  std::cout << "replayed " << events.size() << " events. peak live " << format_size(peak_live_bytes)
+            << ". limit " << limit_text << ".\n";
   return 0;
 }
 
@@ -479,30 +463,6 @@ int main(int argc, char** argv)
     auto const simulated_size =
       static_cast<std::size_t>(args["size"].as<float>() * static_cast<float>(1U << 30U));
 
-    if (args["reproduce"].as<bool>()) {
-      if (args.count("resource") == 0) {
-        std::cout << "Error: --reproduce requires -r/--resource.\n";
-        return 1;
-      }
-      if (!std::ifstream{filename}.good()) {
-        std::cout << "Error: cannot open log file: " << filename << "\n";
-        return 1;
-      }
-      try {
-        auto const events = parse_per_thread_events(filename);
-        if (std::all_of(events.begin(), events.end(), [](auto const& thread_events) {
-              return thread_events.empty();
-            })) {
-          std::cout << "Error: log has no events: " << filename << "\n";
-          return 1;
-        }
-        return reproduce(args["resource"].as<std::string>(), simulated_size, events);
-      } catch (std::exception const& e) {
-        std::cout << "Error: " << e.what() << std::endl;
-        return 1;
-      }
-    }
-
     auto per_thread_events = [filename]() {
       try {
         auto events = parse_per_thread_events(filename);
@@ -512,6 +472,25 @@ int main(int argc, char** argv)
         return std::vector<std::vector<rmm::detail::event>>{};
       }
     }();
+
+    if (args["reproduce"].as<bool>()) {
+      if (args.count("resource") == 0) {
+        std::cout << "Error: --reproduce requires -r/--resource.\n";
+        return 1;
+      }
+      if (std::all_of(per_thread_events.begin(),
+                      per_thread_events.end(),
+                      [](auto const& thread_events) { return thread_events.empty(); })) {
+        std::cout << "Error: log has no events: " << filename << "\n";
+        return 1;
+      }
+      try {
+        return reproduce(args["resource"].as<std::string>(), simulated_size, per_thread_events);
+      } catch (std::exception const& e) {
+        std::cout << "Error: " << e.what() << std::endl;
+        return 1;
+      }
+    }
 
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     std::cout << "Using CUDA per-thread default stream.\n";
