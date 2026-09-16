@@ -75,8 +75,11 @@ The key is the device ordinal and the value is the full path.
 
 ### Environment variable
 
-When no file name is provided, RMM reads the file name from the `RMM_LOG_FILE`
-environment variable.
+`RMM_LOG_FILE` supplies only the file name. It does not turn logging on. When
+no file name is provided, RMM reads the file name from `RMM_LOG_FILE`.
+Logging must still be enabled separately. In Python, use
+`rmm.reinitialize(logging=True)` and omit `log_file_name`. In C++, construct
+`logging_resource_adaptor` without a file name.
 
 ```bash
 RMM_LOG_FILE=mylog.csv python my_workload.py
@@ -94,10 +97,17 @@ The log is buffered. If the process exits or crashes before the buffer is
 written, the end of the log is lost. The end of the log is usually the required
 part.
 
-Call `flush()` before the process exits and on every crash path:
+Call `flush()` before normal exit and in every handled error path:
 
 - C++: `log_mr.flush()`
 - Python: `rmm.mr.get_current_device_resource().flush()`
+
+An abrupt crash, such as a segfault or abort, kills the process before any
+flush call runs. The buffered tail is still lost.
+
+C++ has an `auto_flush` constructor argument. When enabled, it writes every
+event at once at a performance cost. The Python API does not expose
+`auto_flush`.
 
 ### The CSV columns
 
