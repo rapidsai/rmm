@@ -254,7 +254,7 @@ dependencies:
           - identify>=2.5.20
       - output_types: conda
         packages:
-          - &doxygen doxygen=1.9.1
+          - &doxygen doxygen=1.18.0
   cuda_static:
     common:
       - output_types: conda

@@ -16,7 +16,7 @@ dependencies:
 - cuda-version=12.9
 - cxx-compiler
 - cython>=3.2.2
-- doxygen=1.9.1
+- doxygen=1.18.0
 - gcc_linux-aarch64=14.*
 - gcovr>=5.0
 - identify>=2.5.20
