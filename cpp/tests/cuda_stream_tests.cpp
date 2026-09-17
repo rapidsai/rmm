@@ -40,7 +40,7 @@ TEST_F(CudaStreamTest, Equality)
   EXPECT_NE(stream_a, rmm::cuda_stream());
 
   rmm::device_buffer buff{};
-  EXPECT_EQ(buff.stream(), view_default);
+  EXPECT_EQ(buff.stream(), cuda::invalid_stream_t{});
 
   EXPECT_NE(static_cast<cudaStream_t>(stream_a),
             cuda::stream_ref{cudaStream_t{cudaStreamDefault}}.get());
