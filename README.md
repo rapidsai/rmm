@@ -30,7 +30,7 @@ For a walkthrough of the design of RMM, read [Fast, Flexible Allocation for NVID
 
 ### System Requirements
 
-Please see the [Installation Guide](https://docs.rapids.ai/install/#system-requirements)
+Please see the [Installation Guide](https://docs.nvidia.com/datascience/install/#system-requirements)
 for NVIDIA CUDA-X libraries for data science for information about supported operating systems,
 GPU drivers, and CUDA versions.
 
@@ -822,7 +822,7 @@ See [here](#memory-resource-objects) for more information on changing the curren
 
 ### Using RMM with PyTorch
 
-[PyTorch](https://pytorch.org/docs/stable/notes/cuda.html) can use RMM
+[PyTorch](https://docs.pytorch.org/docs/stable/notes/cuda.html) can use RMM
 for memory allocation. For example, to configure PyTorch to use an
 RMM-managed pool:
 

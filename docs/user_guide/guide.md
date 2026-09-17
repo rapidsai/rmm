@@ -227,7 +227,7 @@ $ NUMBA_CUDA_MEMORY_MANAGER=rmm.allocators.numba python (args)
 
 ### Using RMM with PyTorch
 
-You can configure [PyTorch](https://pytorch.org/docs/stable/notes/cuda.html) to use RMM for memory
+You can configure [PyTorch](https://docs.pytorch.org/docs/stable/notes/cuda.html) to use RMM for memory
 allocations by configuring the current allocator.
 
 ```python
