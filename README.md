@@ -615,9 +615,11 @@ wrapper around any other device memory resource.
 Each row in the log represents either an allocation or a deallocation. The columns of the file are
 "Thread, Time, Action, Pointer, Size, Stream".
 
-The CSV output files of the `logging_resource_adaptor` can be used as input to `REPLAY_BENCHMARK`,
-which is available when building RMM from source, in the `gbenchmarks` folder in the build directory.
+The CSV output files of the `logging_resource_adaptor` can be used as input to `REPLAY_BENCH`,
+which is available when building RMM from source in the `gbenchmarks` folder in the build directory.
 This log replayer can be useful for profiling and debugging allocator issues.
+For a step-by-step guide to recording and replaying a log to reproduce an allocator failure, see
+[Record and Replay Memory Events](docs/user_guide/record_replay.md).
 
 The following C++ example creates a logging version of a `cuda_memory_resource` that outputs the log
 to the file "logs/test1.csv".
