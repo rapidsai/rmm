@@ -1,0 +1,102 @@
+name: Nightly failure fixer
+
+on:
+  workflow_call:
+    inputs:
+      failure-id:
+        type: string
+        required: true
+      runner:
+        type: string
+        required: true
+      fork-owner:
+        type: string
+        required: true
+      model-config:
+        type: string
+        required: true
+      inference-url:
+        type: string
+        required: true
+      inference-api:
+        type: string
+        required: true
+      app-id:
+        type: string
+        required: true
+    secrets:
+      inference-api-key:
+        required: true
+      app-private-key:
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  fix:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 120
+    container:
+      image: rapidsai/ci-conda:26.12-latest
+      env:
+        NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: nightly-analysis
+          path: artifacts
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: Install pi and Python dependencies
+        run: |
+          npm install --ignore-scripts --prefix "$RUNNER_TEMP/pi" @earendil-works/pi-coding-agent@0.85.1
+          echo "$RUNNER_TEMP/pi/node_modules/.bin" >> "$GITHUB_PATH"
+          python -m pip install -r ci/nightly-remediation/requirements.txt
+      - name: Investigate, edit, build, and test with pi
+        id: fix
+        env:
+          FAILURE_ID: ${{ inputs.failure-id }}
+          MODEL_CONFIG: ${{ inputs.model-config }}
+          INFERENCE_URL: ${{ inputs.inference-url }}
+          INFERENCE_API: ${{ inputs.inference-api }}
+          INFERENCE_API_KEY: ${{ secrets.inference-api-key }}
+        run: |
+          python ci/nightly-remediation/remediate.py fix --failure-id "$FAILURE_ID"
+      - name: Create fork-scoped GitHub App token
+        if: steps.fix.outputs.proposed == 'true'
+        id: token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          app-id: ${{ inputs.app-id }}
+          private-key: ${{ secrets.app-private-key }}
+          owner: ${{ inputs.fork-owner }}
+          repositories: ${{ steps.fix.outputs.repository }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-workflows: write
+      - name: Publish draft PR in the fork
+        if: steps.fix.outputs.proposed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          FORK_OWNER: ${{ inputs.fork-owner }}
+          FAILURE_ID: ${{ inputs.failure-id }}
+        run: |
+          python ci/nightly-remediation/remediate.py publish --failure-id "$FAILURE_ID"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: nightly-fix-${{ inputs.failure-id }}
+          path: results/*.json
+          if-no-files-found: warn
+          retention-days: 7
