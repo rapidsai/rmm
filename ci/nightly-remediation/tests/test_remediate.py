@@ -201,25 +201,59 @@ class AgentTests(unittest.TestCase):
         self.assertIn("--no-tools", agent.command(False))
         self.assertIn("--tools", agent.command(True))
 
-    @patch.dict(os.environ, {"MODEL_CONFIG": '{"id":"model"}'})
-    def test_container_mounts_and_credentials(self):
-        cpu = r.docker_command(Path("/source"), Path("/config"), "test", False)
-        gpu = r.docker_command(Path("/source"), Path("/config"), "test", True)
-        self.assertNotIn("--gpus", cpu)
-        self.assertIn("--gpus", gpu)
-        self.assertIn(
-            "type=bind,source=/source/.git,target=/workspace/.git,readonly",
-            gpu,
-        )
-        self.assertIn("INFERENCE_API_KEY", gpu)
-        for forbidden in (
-            "GH_TOKEN",
-            "SLACK_WEBHOOK_URL",
-            "/var/run/docker.sock",
-            "--privileged",
-            "--network=host",
-        ):
-            self.assertNotIn(forbidden, " ".join(gpu))
+    @patch.dict(
+        os.environ,
+        {
+            "MODEL_CONFIG": '{"id":"model"}',
+            "INFERENCE_URL": "https://example.com/v1",
+            "INFERENCE_API": "openai-completions",
+            "INFERENCE_API_KEY": "private-key",
+            "RAPIDS_CUDA_VERSION": "13.3.0",
+            "NVIDIA_VISIBLE_DEVICES": "GPU-test",
+            "LD_LIBRARY_PATH": "/usr/local/nvidia/lib64",
+            "GH_TOKEN": "github-secret",
+            "SLACK_WEBHOOK_URL": "slack-secret",
+            "ACTIONS_RUNTIME_TOKEN": "runtime-secret",
+        },
+    )
+    @patch("agent.response", return_value={})
+    @patch("agent.subprocess.run")
+    def test_invocation_preserves_build_environment_without_service_tokens(
+        self, run, response
+    ):
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            for tools in (False, True):
+                with self.subTest(tools=tools):
+                    agent.invoke(
+                        "prompt",
+                        directory,
+                        directory / "events.jsonl",
+                        cwd=Path("/source"),
+                        tools=tools,
+                        timeout=5400,
+                    )
+                    args, kwargs = run.call_args
+                    self.assertEqual(args[0][0], "pi")
+                    self.assertIn(
+                        "--tools" if tools else "--no-tools", args[0]
+                    )
+                    self.assertEqual(kwargs["cwd"], Path("/source"))
+                    self.assertEqual(kwargs["timeout"], 5400)
+                    env = kwargs["env"]
+                    for name in (
+                        "RAPIDS_CUDA_VERSION",
+                        "NVIDIA_VISIBLE_DEVICES",
+                        "LD_LIBRARY_PATH",
+                        "INFERENCE_API_KEY",
+                    ):
+                        self.assertEqual(env[name], os.environ[name])
+                    for name in (
+                        "GH_TOKEN",
+                        "SLACK_WEBHOOK_URL",
+                        "ACTIONS_RUNTIME_TOKEN",
+                    ):
+                        self.assertNotIn(name, env)
 
 
 class PipelineTests(unittest.TestCase):
@@ -320,6 +354,24 @@ class PipelineTests(unittest.TestCase):
         )
         self.assertEqual(result["outcome"], "unresolved")
         self.assertIn("proposed=false", (self.root / "outputs").read_text())
+
+    @patch("remediate.agent.invoke", return_value=PROPOSAL)
+    @patch("remediate.run", return_value="changed-file")
+    def test_fixer_runs_pi_directly_in_the_source_checkout(self, run, invoke):
+        source = self.root / "source"
+        with patch.dict(
+            os.environ, {"GITHUB_OUTPUT": str(self.root / "outputs")}
+        ):
+            r.fix(self.root, self.root, self.failure["id"], source)
+        self.assertEqual(
+            invoke.call_args.kwargs,
+            {"cwd": source, "tools": True, "timeout": 5400},
+        )
+        result = json.loads(
+            (self.root / f"{self.failure['id']}.json").read_text()
+        )
+        self.assertEqual(result["outcome"], "proposed")
+        self.assertIn("proposed=true", (self.root / "outputs").read_text())
 
     @patch("remediate.agent.invoke")
     @patch("remediate.collect", return_value=([], JOBS))

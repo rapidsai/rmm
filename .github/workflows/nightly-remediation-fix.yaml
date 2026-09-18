@@ -9,9 +9,6 @@ on:
       runner:
         type: string
         required: true
-      fixer-image:
-        type: string
-        required: true
       fork-owner:
         type: string
         required: true
@@ -45,6 +42,10 @@ jobs:
   fix:
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 120
+    container:
+      image: rapidsai/ci-conda:26.12-latest
+      env:
+        NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -54,13 +55,14 @@ jobs:
         with:
           name: nightly-analysis
           path: artifacts
-      - name: Prepare isolated development image
-        env:
-          BUILD_IMAGE: ${{ inputs.fixer-image }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: Install pi and Python dependencies
         run: |
-          docker build --build-arg "BUILD_IMAGE=$BUILD_IMAGE" -t nightly-remediation:local ci/nightly-remediation
-          python3 -m venv "$RUNNER_TEMP/remediation-venv"
-          "$RUNNER_TEMP/remediation-venv/bin/pip" install -r ci/nightly-remediation/requirements.txt
+          npm install --ignore-scripts --prefix "$RUNNER_TEMP/pi" @earendil-works/pi-coding-agent@0.85.1
+          echo "$RUNNER_TEMP/pi/node_modules/.bin" >> "$GITHUB_PATH"
+          python -m pip install -r ci/nightly-remediation/requirements.txt
       - name: Investigate, edit, build, and test with pi
         id: fix
         env:
@@ -70,7 +72,7 @@ jobs:
           INFERENCE_API: ${{ inputs.inference-api }}
           INFERENCE_API_KEY: ${{ secrets.inference-api-key }}
         run: |
-          "$RUNNER_TEMP/remediation-venv/bin/python" ci/nightly-remediation/remediate.py fix --failure-id "$FAILURE_ID"
+          python ci/nightly-remediation/remediate.py fix --failure-id "$FAILURE_ID"
       - name: Create fork-scoped GitHub App token
         if: steps.fix.outputs.proposed == 'true'
         id: token
@@ -90,7 +92,7 @@ jobs:
           FORK_OWNER: ${{ inputs.fork-owner }}
           FAILURE_ID: ${{ inputs.failure-id }}
         run: |
-          "$RUNNER_TEMP/remediation-venv/bin/python" ci/nightly-remediation/remediate.py publish --failure-id "$FAILURE_ID"
+          python ci/nightly-remediation/remediate.py publish --failure-id "$FAILURE_ID"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:

@@ -9,10 +9,10 @@ for this pilot; it does not depend on an unmerged shared workflow.
 1. **Analyze (CPU):** fetch the selected runs' latest-attempt job logs and ask a
    tool-free pi session for independent root causes. Validate the JSON schema,
    coverage of all failed jobs, and CPU routing for build/dependency failures.
-2. **Fix (CPU/GPU matrices):** one isolated pi session per root cause. GPU fixers
+2. **Fix (CPU/GPU matrices):** one pi session per root cause. GPU fixers
    have `max-parallel: 4`; workflow-level concurrency prevents overlapping runs
    in this repository. Each agent investigates, edits, builds, and tests. A
-   separate trusted step creates a draft PR whose head and base are both in
+   separate publication step creates a draft PR whose head and base are both in
    `bdice-bot/rmm`, or the fork selected by `fork-owner`.
 3. **Report (CPU):** collect structured results, including unresolved failures
    and missing fixer results, and post problems and PR links to Slack. Reports
@@ -62,28 +62,31 @@ at the same source SHA and base branch reuses an existing PR, including a closed
 changing it. Semantic deduplication across different signatures or source SHAs
 is not implemented.
 
-CPU and GPU runner labels and the RMM development image are configured in
-`.github/workflows/nightly-remediation.yaml`. Runners need Docker, GitHub CLI,
-Git, and Python with venv support. GPU runners also need NVIDIA Container Toolkit.
-The pilot uses an amd64 CUDA 13.3 environment; architecture- or version-specific
-failures that cannot be reproduced there must be reported as blocked rather
-than claimed fixed. No build-cluster credentials are supplied.
+All jobs use `rapidsai/ci-conda:26.12-latest` as their GitHub Actions job image.
+Node.js, pi, and Python dependencies are installed directly in that environment;
+there is no custom Dockerfile or nested Docker invocation. CPU and GPU runner
+labels are configured in `.github/workflows/nightly-remediation.yaml`. The fixer
+job forwards the runner's `NVIDIA_VISIBLE_DEVICES` into its job container.
+The pilot uses amd64 and the CUDA/toolchain versions supplied by the CI image;
+failures requiring another architecture or version must be reported as blocked
+rather than claimed fixed. No build-cluster credentials are supplied.
 
 ### Runner safety
 
 Use only runners approved for agent workloads, with ephemeral machines and
 network policy preventing access to instance metadata, internal services, and
-other workloads. A Docker container is defense in depth, **not** proof that an
-existing CI runner is sufficiently isolated. Confirm that policy before a live
-run. The agent still has internet access and its inference credential.
+other workloads. The job container is **not** an agent sandbox. Confirm runner
+isolation policy before a live run. The agent has internet access, its inference
+credential, and access to the job filesystem, including writable git metadata
+and workflow helpers.
 
-The fixer container runs as the runner's non-root UID, drops Linux capabilities,
-and cannot acquire new privileges. Only the source tree and disposable pi
-configuration are mounted; `.git` is read-only. GitHub/Slack credentials, the
-host Docker socket, runner workspace, and cloud credentials are not passed in.
-The fork App token is minted only after the container exits. Pi's extensions,
-project settings, automatic context files, skills, and startup network traffic
-are disabled; the fixer may explicitly read relevant repository guidance.
+Pi receives a disposable configuration directory and a limited environment that
+preserves CUDA/build settings without deliberately passing GitHub or Slack
+credentials. The fork App token is minted after pi returns, but subsequent steps
+share the job environment: this is not a security boundary against agent code.
+Pi's extensions, project settings, automatic context files, skills, and startup
+network traffic are disabled; the fixer may explicitly read relevant repository
+guidance.
 
 Only structured analysis, results, and Slack payloads are uploaded, for seven
 days. Raw pi transcripts are temporary and are not uploaded. Treat all proposed
@@ -116,17 +119,16 @@ python -m pip install -r ci/nightly-remediation/requirements.txt
 python -m unittest discover -s ci/nightly-remediation/tests -v
 ```
 
-To exercise the actual pi CLI and container against a local mock inference API,
-without calling InferenceHub, GitHub, or Slack:
+To exercise the actual pi CLI against a local mock inference API, without
+calling InferenceHub, GitHub, or Slack:
 
 ```bash
 npm install --ignore-scripts --prefix /tmp/nightly-pi @earendil-works/pi-coding-agent@0.85.1
 export PATH="/tmp/nightly-pi/node_modules/.bin:$PATH"
-docker build --build-arg BUILD_IMAGE=node:24-bookworm-slim \
-  -t nightly-remediation:local ci/nightly-remediation
 python ci/nightly-remediation/test_pi_integration.py -v
 ```
 
-These tests cover protocol handling and container mounts, not RMM compilation,
-GPU execution, InferenceHub compatibility, GitHub App permissions, or Slack
-delivery. Those require an approved, configured end-to-end pilot run.
+These tests cover protocol handling, source edits, and environment propagation,
+not RMM compilation, GPU execution, InferenceHub compatibility, GitHub App
+permissions, or Slack delivery. Those require an approved, configured end-to-end
+pilot run.

@@ -36,6 +36,8 @@ jobs:
   analyze:
     runs-on: linux-amd64-cpu4
     timeout-minutes: 30
+    container:
+      image: rapidsai/ci-conda:26.12-latest
     outputs:
       cpu: ${{ steps.analyze.outputs.cpu }}
       gpu: ${{ steps.analyze.outputs.gpu }}
@@ -53,8 +55,7 @@ jobs:
         run: |
           npm install --ignore-scripts --prefix "$RUNNER_TEMP/pi" @earendil-works/pi-coding-agent@0.85.1
           echo "$RUNNER_TEMP/pi/node_modules/.bin" >> "$GITHUB_PATH"
-          python3 -m venv "$RUNNER_TEMP/remediation-venv"
-          "$RUNNER_TEMP/remediation-venv/bin/pip" install -r ci/nightly-remediation/requirements.txt
+          python -m pip install -r ci/nightly-remediation/requirements.txt
       - name: Analyze failed jobs
         id: analyze
         env:
@@ -68,7 +69,7 @@ jobs:
           INFERENCE_API: ${{ vars.NIGHTLY_REMEDIATION_INFERENCE_API }}
           INFERENCE_API_KEY: ${{ secrets.NIGHTLY_REMEDIATION_INFERENCE_API_KEY }}
         run: |
-          "$RUNNER_TEMP/remediation-venv/bin/python" ci/nightly-remediation/remediate.py analyze --output analysis
+          python ci/nightly-remediation/remediate.py analyze --output analysis
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: nightly-analysis
@@ -86,7 +87,6 @@ jobs:
     with:
       failure-id: ${{ matrix.id }}
       runner: linux-amd64-cpu32
-      fixer-image: ghcr.io/rapidsai/rmm/devcontainer:26.12-cuda13.3-conda
       fork-owner: ${{ inputs.fork-owner }}
       model-config: ${{ vars.NIGHTLY_REMEDIATION_MODEL_CONFIG }}
       inference-url: ${{ vars.NIGHTLY_REMEDIATION_INFERENCE_URL }}
@@ -107,7 +107,6 @@ jobs:
     with:
       failure-id: ${{ matrix.id }}
       runner: linux-amd64-gpu-rtxpro6000-latest-1
-      fixer-image: ghcr.io/rapidsai/rmm/devcontainer:26.12-cuda13.3-conda
       fork-owner: ${{ inputs.fork-owner }}
       model-config: ${{ vars.NIGHTLY_REMEDIATION_MODEL_CONFIG }}
       inference-url: ${{ vars.NIGHTLY_REMEDIATION_INFERENCE_URL }}
@@ -122,6 +121,8 @@ jobs:
     if: always()
     runs-on: linux-amd64-cpu4
     timeout-minutes: 10
+    container:
+      image: rapidsai/ci-conda:26.12-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -138,9 +139,8 @@ jobs:
           JOB_STATUSES: ${{ toJSON(needs) }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_STATUS_URL }}
         run: |
-          python3 -m venv "$RUNNER_TEMP/remediation-venv"
-          "$RUNNER_TEMP/remediation-venv/bin/pip" install -r ci/nightly-remediation/requirements.txt
-          "$RUNNER_TEMP/remediation-venv/bin/python" ci/nightly-remediation/remediate.py report
+          python -m pip install -r ci/nightly-remediation/requirements.txt
+          python ci/nightly-remediation/remediate.py report
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:

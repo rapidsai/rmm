@@ -3,7 +3,6 @@
 
 import json
 import os
-import subprocess
 import tempfile
 import threading
 import unittest
@@ -35,8 +34,8 @@ class PiIntegrationTests(unittest.TestCase):
                 if request.get("tools") and not tool_results:
                     command = (
                         'test -z "$GH_TOKEN" && test -z "$SLACK_WEBHOOK_URL" && '
-                        "test ! -S /var/run/docker.sock && "
-                        "! touch .git/agent-wrote-here && printf fixed > repaired.txt"
+                        'test "$RAPIDS_CUDA_VERSION" = "test-cuda" && '
+                        "printf fixed > repaired.txt"
                     )
                     delta = {
                         "role": "assistant",
@@ -82,7 +81,7 @@ class PiIntegrationTests(unittest.TestCase):
             def log_message(self, *args):
                 pass
 
-        self.server = ThreadingHTTPServer(("0.0.0.0", 0), Handler)
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         self.thread = threading.Thread(
             target=self.server.serve_forever, daemon=True
         )
@@ -95,6 +94,7 @@ class PiIntegrationTests(unittest.TestCase):
             "INFERENCE_API": "openai-completions",
             "INFERENCE_URL": f"http://127.0.0.1:{self.port}/v1",
             "INFERENCE_API_KEY": "fake-test-key",
+            "RAPIDS_CUDA_VERSION": "test-cuda",
             "GH_TOKEN": "must-not-reach-agent",
             "SLACK_WEBHOOK_URL": "must-not-reach-agent",
         }
@@ -113,7 +113,7 @@ class PiIntegrationTests(unittest.TestCase):
         self.assertEqual(len(self.requests), 1)
         self.assertFalse(self.requests[0].get("tools"))
 
-    def test_real_pi_container_can_edit_but_not_git_metadata_or_host_credentials(
+    def test_real_pi_fixer_edits_source_without_inheriting_service_tokens(
         self,
     ):
         with (
@@ -124,28 +124,16 @@ class PiIntegrationTests(unittest.TestCase):
             source = root / "source"
             source.mkdir()
             remediate.run("git", "init", str(source))
-            config = root / "config"
-            os.environ["INFERENCE_URL"] = (
-                f"http://host.docker.internal:{self.port}/v1"
+            result = agent.invoke(
+                "Fix repaired.txt.",
+                root / "config",
+                root / "events.jsonl",
+                cwd=source,
+                tools=True,
+                timeout=120,
             )
-            agent.configure(config)
-            command = remediate.docker_command(
-                source, config, "nightly-remediation-integration", False
-            )
-            command[2:2] = ["--add-host", "host.docker.internal:host-gateway"]
-            transcript = root / "events.jsonl"
-            with transcript.open("w") as stream:
-                subprocess.run(
-                    command,
-                    input="Fix repaired.txt.",
-                    text=True,
-                    stdout=stream,
-                    check=True,
-                    timeout=120,
-                )
-            self.assertEqual(agent.response(transcript), {"failures": []})
+            self.assertEqual(result, {"failures": []})
             self.assertEqual((source / "repaired.txt").read_text(), "fixed")
-            self.assertFalse((source / ".git/agent-wrote-here").exists())
         self.assertEqual(len(self.requests), 2)
         self.assertIn(
             "bash",

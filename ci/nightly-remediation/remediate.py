@@ -216,45 +216,6 @@ def load_failure(artifacts: Path, failure_id: str) -> dict:
     return next(f for f in data["failures"] if f["id"] == failure_id)
 
 
-def docker_command(
-    source: Path, config: Path, name: str, gpu: bool
-) -> list[str]:
-    args = [
-        "docker",
-        "run",
-        "--rm",
-        "--init",
-        "--interactive",
-        "--name",
-        name,
-        "--cap-drop=ALL",
-        "--security-opt=no-new-privileges",
-        "--user",
-        f"{os.getuid()}:{os.getgid()}",
-        "--mount",
-        f"type=bind,source={source},target=/workspace",
-        "--mount",
-        f"type=bind,source={source / '.git'},target=/workspace/.git,readonly",
-        "--mount",
-        f"type=bind,source={config},target=/pi-config",
-        "--workdir",
-        "/workspace",
-        "--env",
-        "INFERENCE_API_KEY",
-        "--env",
-        "PI_CODING_AGENT_DIR=/pi-config",
-        "--env",
-        "HOME=/tmp/pi-home",
-        "--env",
-        "DEVCONTAINER_UTILS_ENABLE_SCCACHE_DIST=0",
-        "--entrypoint",
-        "/opt/pi/node_modules/.bin/pi",
-    ]
-    if gpu:
-        args.extend(["--gpus", "all"])
-    return [*args, "nightly-remediation:local", *agent.command(True)[1:]]
-
-
 def fix(artifacts: Path, output: Path, failure_id: str, source: Path) -> None:
     failure = load_failure(artifacts, failure_id)
     output.mkdir(parents=True, exist_ok=True)
@@ -282,34 +243,19 @@ def fix(artifacts: Path, output: Path, failure_id: str, source: Path) -> None:
             cwd=source,
         )
         with tempfile.TemporaryDirectory() as temp:
-            config = Path(temp) / "config"
-            agent.configure(config)
-            name = f"nightly-fix-{failure_id}"
-            transcript = Path(temp) / "transcript.jsonl"
             prompt = (
                 (ROOT / "prompts/fix.md").read_text()
                 + "\n"
                 + json.dumps(failure)
             )
-            with transcript.open("w") as stream:
-                try:
-                    subprocess.run(
-                        docker_command(
-                            source, config, name, failure["runner"] == "gpu"
-                        ),
-                        input=prompt,
-                        text=True,
-                        stdout=stream,
-                        check=True,
-                        timeout=5400,
-                    )
-                finally:
-                    subprocess.run(
-                        ["docker", "rm", "--force", name],
-                        capture_output=True,
-                        timeout=30,
-                    )
-            proposal = agent.response(transcript)
+            proposal = agent.invoke(
+                prompt,
+                Path(temp),
+                Path(temp) / "transcript.jsonl",
+                cwd=source,
+                tools=True,
+                timeout=5400,
+            )
             validate(proposal, "result")
             result.update(proposal)
         if result["outcome"] == "proposed":
