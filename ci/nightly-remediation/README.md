@@ -111,24 +111,3 @@ gh workflow run nightly-remediation.yaml -R rapidsai/rmm \
 Replace the run ID placeholders with integers and the SHA with the nightly
 source commit. This is a live operation: it can consume model/GPU resources,
 create draft PRs, and post to the configured Slack channel.
-
-## Local tests
-
-```bash
-python -m pip install -r ci/nightly-remediation/requirements.txt
-python -m unittest discover -s ci/nightly-remediation/tests -v
-```
-
-To exercise the actual pi CLI against a local mock inference API, without
-calling InferenceHub, GitHub, or Slack:
-
-```bash
-npm install --ignore-scripts --prefix /tmp/nightly-pi @earendil-works/pi-coding-agent@0.85.1
-export PATH="/tmp/nightly-pi/node_modules/.bin:$PATH"
-python ci/nightly-remediation/test_pi_integration.py -v
-```
-
-These tests cover protocol handling, source edits, and environment propagation,
-not RMM compilation, GPU execution, InferenceHub compatibility, GitHub App
-permissions, or Slack delivery. Those require an approved, configured end-to-end
-pilot run.
