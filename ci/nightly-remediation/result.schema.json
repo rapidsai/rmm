@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["outcome", "summary", "validation"],
+  "properties": {
+    "outcome": {"enum": ["proposed", "unresolved"]},
+    "summary": {"type": "string", "minLength": 1, "maxLength": 4000},
+    "validation": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "status", "details"],
+        "properties": {
+          "command": {"type": "string", "minLength": 1, "maxLength": 4000},
+          "status": {"enum": ["passed", "failed", "not_run"]},
+          "details": {"type": "string", "minLength": 1, "maxLength": 4000}
+        }
+      }
+    }
+  }
+}

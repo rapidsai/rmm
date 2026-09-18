@@ -72,6 +72,13 @@ repos:
           )
   - repo: local
     hooks:
+      - id: nightly-remediation-tests
+        name: Nightly remediation tests
+        entry: python -m unittest discover -s ci/nightly-remediation/tests
+        language: python
+        additional_dependencies: [jsonschema==4.26.0]
+        files: ^(ci/nightly-remediation/|\.github/workflows/nightly-remediation)
+        pass_filenames: false
       - id: cmake-format
         name: cmake-format
         entry: ./cpp/scripts/run-cmake-format.sh cmake-format

@@ -1,0 +1,132 @@
+# Nightly remediation with pi
+
+Investigate RMM nightly failures, attempt independent fixes on CPU or GPU, and
+send draft proposals to a fork for human review. The implementation lives in RMM
+for this pilot; it does not depend on an unmerged shared workflow.
+
+## Workflow
+
+1. **Analyze (CPU):** fetch the selected runs' latest-attempt job logs and ask a
+   tool-free pi session for independent root causes. Validate the JSON schema,
+   coverage of all failed jobs, and CPU routing for build/dependency failures.
+2. **Fix (CPU/GPU matrices):** one isolated pi session per root cause. GPU fixers
+   have `max-parallel: 4`; workflow-level concurrency prevents overlapping runs
+   in this repository. Each agent investigates, edits, builds, and tests. A
+   separate trusted step creates a draft PR whose head and base are both in
+   `bdice-bot/rmm`, or the fork selected by `fork-owner`.
+3. **Report (CPU):** collect structured results, including unresolved failures
+   and missing fixer results, and post problems and PR links to Slack. Reports
+   explicitly label validation as **agent-reported**, not independently verified.
+
+The initial workflow is manual-only. It requires run IDs and the actual tested
+source SHA because RMM's nightly `workflow_dispatch` input `sha` can differ from
+GitHub's workflow run `head_sha`. Select runs that tested the same source SHA.
+Automatic nightly discovery and scheduling are intentionally not enabled yet.
+
+## Configure before dispatching
+
+Repository variables:
+
+| Variable | Value |
+| --- | --- |
+| `NIGHTLY_REMEDIATION_MODEL_CONFIG` | A pi model JSON object, including `id`, with the context window, reasoning, and compatibility settings required by your InferenceHub model |
+| `NIGHTLY_REMEDIATION_INFERENCE_URL` | InferenceHub API base URL; use the URL appropriate for the chosen API, not a full request endpoint |
+| `NIGHTLY_REMEDIATION_INFERENCE_API` | Pi API type, such as `openai-completions` or `openai-responses` |
+| `NIGHTLY_REMEDIATION_APP_ID` | GitHub App ID |
+
+Repository secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `NIGHTLY_REMEDIATION_INFERENCE_API_KEY` | InferenceHub service credential |
+| `NIGHTLY_REMEDIATION_APP_PRIVATE_KEY` | GitHub App private key |
+| `SLACK_WEBHOOK_NIGHTLY_STATUS_URL` | Incoming webhook for the nightly Slack channel |
+
+Pi 0.85.1 is installed from `@earendil-works/pi-coding-agent` with npm lifecycle
+scripts disabled. Its generated `models.json` references the inference credential
+through an environment variable; the credential is not written to that file.
+Provider configuration is independent of the agent harness.
+
+Create the destination fork in advance. Install the App on that fork with
+**Contents**, **Pull requests**, and **Workflows** write permissions. The last
+permission allows proposed fixes to CI workflow files. Do not grant the App
+write access to the upstream repository. The workflow also checks that the
+configured destination is a fork of `rapidsai/rmm`, not upstream itself.
+Publishing with an App can trigger workflows in the fork: do not give that fork
+privileged runners or secrets that unreviewed proposals could access.
+
+The fork must have the selected base branch and contain the tested source SHA
+on that branch. Synchronize it before dispatching. The workflow never rewrites
+the fork's base branch and never force-pushes a fix branch. A repeated signature
+at the same source SHA and base branch reuses an existing PR, including a closed PR, without
+changing it. Semantic deduplication across different signatures or source SHAs
+is not implemented.
+
+CPU and GPU runner labels and the RMM development image are configured in
+`.github/workflows/nightly-remediation.yaml`. Runners need Docker, GitHub CLI,
+Git, and Python with venv support. GPU runners also need NVIDIA Container Toolkit.
+The pilot uses an amd64 CUDA 13.3 environment; architecture- or version-specific
+failures that cannot be reproduced there must be reported as blocked rather
+than claimed fixed. No build-cluster credentials are supplied.
+
+### Runner safety
+
+Use only runners approved for agent workloads, with ephemeral machines and
+network policy preventing access to instance metadata, internal services, and
+other workloads. A Docker container is defense in depth, **not** proof that an
+existing CI runner is sufficiently isolated. Confirm that policy before a live
+run. The agent still has internet access and its inference credential.
+
+The fixer container runs as the runner's non-root UID, drops Linux capabilities,
+and cannot acquire new privileges. Only the source tree and disposable pi
+configuration are mounted; `.git` is read-only. GitHub/Slack credentials, the
+host Docker socket, runner workspace, and cloud credentials are not passed in.
+The fork App token is minted only after the container exits. Pi's extensions,
+project settings, automatic context files, skills, and startup network traffic
+are disabled; the fixer may explicitly read relevant repository guidance.
+
+Only structured analysis, results, and Slack payloads are uploaded, for seven
+days. Raw pi transcripts are temporary and are not uploaded. Treat all proposed
+patches, diagnoses, and validation claims as untrusted until human review.
+
+## Run manually
+
+The workflow must exist on the repository's default branch before GitHub will
+accept `workflow_dispatch`. A PR that only adds the workflow cannot itself be
+manually dispatched. Bootstrap the reviewed manual-only workflow on the default
+branch, or test in a fork where it exists on the default branch and separately
+configure that fork's runners and secrets.
+
+```bash
+gh workflow run nightly-remediation.yaml -R rapidsai/rmm \
+  -f run-ids='[BUILD_RUN_ID,TEST_RUN_ID]' \
+  -f source-sha=FULL_TESTED_SOURCE_SHA \
+  -f target-branch=main \
+  -f fork-owner=bdice-bot
+```
+
+Replace the run ID placeholders with integers and the SHA with the nightly
+source commit. This is a live operation: it can consume model/GPU resources,
+create draft PRs, and post to the configured Slack channel.
+
+## Local tests
+
+```bash
+python -m pip install -r ci/nightly-remediation/requirements.txt
+python -m unittest discover -s ci/nightly-remediation/tests -v
+```
+
+To exercise the actual pi CLI and container against a local mock inference API,
+without calling InferenceHub, GitHub, or Slack:
+
+```bash
+npm install --ignore-scripts --prefix /tmp/nightly-pi @earendil-works/pi-coding-agent@0.85.1
+export PATH="/tmp/nightly-pi/node_modules/.bin:$PATH"
+docker build --build-arg BUILD_IMAGE=node:24-bookworm-slim \
+  -t nightly-remediation:local ci/nightly-remediation
+python ci/nightly-remediation/test_pi_integration.py -v
+```
+
+These tests cover protocol handling and container mounts, not RMM compilation,
+GPU execution, InferenceHub compatibility, GitHub App permissions, or Slack
+delivery. Those require an approved, configured end-to-end pilot run.

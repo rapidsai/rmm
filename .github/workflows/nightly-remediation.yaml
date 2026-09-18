@@ -1,0 +1,149 @@
+name: Nightly remediation
+
+on:
+  workflow_dispatch:
+    inputs:
+      run-ids:
+        description: JSON array of completed rapidsai/rmm nightly run IDs
+        type: string
+        required: true
+      source-sha:
+        description: Full source commit tested by these runs (the nightly sha input)
+        type: string
+        required: true
+      target-branch:
+        description: Source branch and matching PR base branch in the fork
+        type: string
+        default: main
+      fork-owner:
+        description: Destination fork owner
+        type: string
+        default: bdice-bot
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nightly-remediation
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  analyze:
+    runs-on: linux-amd64-cpu4
+    timeout-minutes: 30
+    outputs:
+      cpu: ${{ steps.analyze.outputs.cpu }}
+      gpu: ${{ steps.analyze.outputs.gpu }}
+      has-cpu: ${{ steps.analyze.outputs.has-cpu }}
+      has-gpu: ${{ steps.analyze.outputs.has-gpu }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+      - name: Install pi and Python dependencies
+        run: |
+          npm install --ignore-scripts --prefix "$RUNNER_TEMP/pi" @earendil-works/pi-coding-agent@0.85.1
+          echo "$RUNNER_TEMP/pi/node_modules/.bin" >> "$GITHUB_PATH"
+          python3 -m venv "$RUNNER_TEMP/remediation-venv"
+          "$RUNNER_TEMP/remediation-venv/bin/pip" install -r ci/nightly-remediation/requirements.txt
+      - name: Analyze failed jobs
+        id: analyze
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_REPO: rapidsai/rmm
+          SOURCE_SHA: ${{ inputs.source-sha }}
+          TARGET_BRANCH: ${{ inputs.target-branch }}
+          RUN_IDS: ${{ inputs.run-ids }}
+          MODEL_CONFIG: ${{ vars.NIGHTLY_REMEDIATION_MODEL_CONFIG }}
+          INFERENCE_URL: ${{ vars.NIGHTLY_REMEDIATION_INFERENCE_URL }}
+          INFERENCE_API: ${{ vars.NIGHTLY_REMEDIATION_INFERENCE_API }}
+          INFERENCE_API_KEY: ${{ secrets.NIGHTLY_REMEDIATION_INFERENCE_API_KEY }}
+        run: |
+          "$RUNNER_TEMP/remediation-venv/bin/python" ci/nightly-remediation/remediate.py analyze --output analysis
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nightly-analysis
+          path: analysis/analysis.json
+          if-no-files-found: error
+          retention-days: 7
+
+  fix-cpu:
+    needs: analyze
+    if: needs.analyze.outputs.has-cpu == 'true'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.analyze.outputs.cpu) }}
+    uses: ./.github/workflows/nightly-remediation-fix.yaml
+    with:
+      failure-id: ${{ matrix.id }}
+      runner: linux-amd64-cpu32
+      fixer-image: ghcr.io/rapidsai/rmm/devcontainer:26.12-cuda13.3-conda
+      fork-owner: ${{ inputs.fork-owner }}
+      model-config: ${{ vars.NIGHTLY_REMEDIATION_MODEL_CONFIG }}
+      inference-url: ${{ vars.NIGHTLY_REMEDIATION_INFERENCE_URL }}
+      inference-api: ${{ vars.NIGHTLY_REMEDIATION_INFERENCE_API }}
+      app-id: ${{ vars.NIGHTLY_REMEDIATION_APP_ID }}
+    secrets:
+      inference-api-key: ${{ secrets.NIGHTLY_REMEDIATION_INFERENCE_API_KEY }}
+      app-private-key: ${{ secrets.NIGHTLY_REMEDIATION_APP_PRIVATE_KEY }}
+
+  fix-gpu:
+    needs: analyze
+    if: needs.analyze.outputs.has-gpu == 'true'
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.analyze.outputs.gpu) }}
+    uses: ./.github/workflows/nightly-remediation-fix.yaml
+    with:
+      failure-id: ${{ matrix.id }}
+      runner: linux-amd64-gpu-rtxpro6000-latest-1
+      fixer-image: ghcr.io/rapidsai/rmm/devcontainer:26.12-cuda13.3-conda
+      fork-owner: ${{ inputs.fork-owner }}
+      model-config: ${{ vars.NIGHTLY_REMEDIATION_MODEL_CONFIG }}
+      inference-url: ${{ vars.NIGHTLY_REMEDIATION_INFERENCE_URL }}
+      inference-api: ${{ vars.NIGHTLY_REMEDIATION_INFERENCE_API }}
+      app-id: ${{ vars.NIGHTLY_REMEDIATION_APP_ID }}
+    secrets:
+      inference-api-key: ${{ secrets.NIGHTLY_REMEDIATION_INFERENCE_API_KEY }}
+      app-private-key: ${{ secrets.NIGHTLY_REMEDIATION_APP_PRIVATE_KEY }}
+
+  report:
+    needs: [analyze, fix-cpu, fix-gpu]
+    if: always()
+    runs-on: linux-amd64-cpu4
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: nightly-*
+          path: artifacts
+          merge-multiple: true
+      - name: Report results to Slack
+        if: always()
+        env:
+          JOB_STATUSES: ${{ toJSON(needs) }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NIGHTLY_STATUS_URL }}
+        run: |
+          python3 -m venv "$RUNNER_TEMP/remediation-venv"
+          "$RUNNER_TEMP/remediation-venv/bin/pip" install -r ci/nightly-remediation/requirements.txt
+          "$RUNNER_TEMP/remediation-venv/bin/python" ci/nightly-remediation/remediate.py report
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: remediation-slack-report
+          path: results/slack-*.json
+          retention-days: 7
