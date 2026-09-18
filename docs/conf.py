@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 # Configuration file for the Sphinx documentation builder.
@@ -18,7 +18,11 @@ import os
 import re
 
 import rmm
+from docutils import nodes
+from docutils.nodes import Node
 from packaging.version import Version
+from sphinx.application import Sphinx
+from sphinx.util.nodes import clean_astext
 
 # -- Project information -----------------------------------------------------
 
@@ -120,6 +124,7 @@ todo_include_todos = False
 html_theme = "nvidia_sphinx_theme"
 
 html_theme_options = {
+    "public_docs_features": os.environ.get("CI") == "true",
     "external_links": [],
     "icon_links": [
         {
@@ -131,13 +136,18 @@ html_theme_options = {
     ],
     "show_toc_level": 1,
     "navbar_align": "right",
+    "navbar_center": "navbar-nav, version-switcher, navbar-external-links",
     "navigation_with_keys": True,
+    "switcher": {
+        "json_url": "https://docs.nvidia.com/rmm/versions.json",
+        "version_match": version,
+    },
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
+html_static_path = []
 
 
 # -- Options for HTMLHelp output ------------------------------------------
@@ -314,5 +324,32 @@ def on_missing_reference(app, env, node, contnode):
     return None
 
 
+def register_sections_as_label(app: Sphinx, document: Node) -> None:
+    """
+    Turn all sections in documents into labels for intersphinx.
+
+    Unlike the autosectionlabel extension this uses the perfectly good,
+    document-unique, section label name. So repeated sections with the same
+    name do not produce duplicate label warnings.
+    """
+    domain = app.env.domains.standard_domain
+    docname = app.env.docname
+
+    for node in document.findall(nodes.section):
+        labelid = node["ids"][0]
+        name = nodes.fully_normalize_name(f"{docname}:{labelid}")
+        title = clean_astext(node[0])
+
+        domain.anonlabels[name] = docname, labelid
+        domain.labels[name] = docname, labelid, title
+
+
+def use_slugged_duplicate_ids(app):
+    # Use default docutils deduplication scheme for duplicate node ids.
+    app.env.settings["auto_id_prefix"] = "%"
+
+
 def setup(app):
+    app.connect("builder-inited", use_slugged_duplicate_ids)
+    app.connect("doctree-read", register_sections_as_label)
     app.connect("missing-reference", on_missing_reference)

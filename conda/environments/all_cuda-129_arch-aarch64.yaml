@@ -11,7 +11,7 @@ dependencies:
 - clang==20.1.8
 - cmake>=4.0
 - cuda-bindings>=12.9.2,<13.0
-- cuda-core>=0.5.1
+- cuda-core>=0.5.1,<2
 - cuda-nvcc
 - cuda-version=12.9
 - cxx-compiler
@@ -35,7 +35,7 @@ dependencies:
 - pytest-cov
 - python>=3.11
 - rapids-build-backend>=0.4.0,<0.5.0
-- rapids-logger==0.2.*,>=0.0.0a0
+- rapids-logger==0.3.*
 - scikit-build-core>=0.11.0
 - sphinx
 - sphinx-copybutton

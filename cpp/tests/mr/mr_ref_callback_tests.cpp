@@ -11,7 +11,7 @@
 #include <rmm/mr/callback_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 namespace rmm::test {
 

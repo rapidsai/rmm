@@ -6,7 +6,7 @@ ci:
   autoupdate_branch: ""
   autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
   autoupdate_schedule: quarterly
-  skip: ["verify-alpha-spec"]
+  skip: ["verify-alpha-spec", "verify-dependencies"]
   submodules: false
 
 repos:
@@ -37,11 +37,10 @@ repos:
         files: python/.*
         types: [cython]
   - repo: https://github.com/MarcoGorelli/cython-lint
-    rev: v0.19.0
+    rev: v0.21.1
     hooks:
       - id: cython-lint
-        # Accommodates the canonical 104-char SPDX copyright header enforced by verify-copyright.
-        args: ["--max-line-length=104"]
+        args: ["--max-line-length=120"]
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v20.1.8
     hooks:
@@ -81,7 +80,7 @@ repos:
         # Note that pre-commit autoupdate does not update the versions
         # of dependencies, so we'll have to update this manually.
         additional_dependencies:
-        - cmakelang==0.6.13
+          - cmakelang==0.6.13
       - id: cmake-lint
         name: cmake-lint
         entry: ./cpp/scripts/run-cmake-format.sh cmake-lint
@@ -90,7 +89,7 @@ repos:
         # Note that pre-commit autoupdate does not update the versions
         # of dependencies, so we'll have to update this manually.
         additional_dependencies:
-        - cmakelang==0.6.13
+          - cmakelang==0.6.13
       - id: doxygen-check
         name: doxygen-check
         entry: ./cpp/scripts/doxygen.sh
@@ -99,8 +98,9 @@ repos:
         pass_filenames: false
         verbose: true
   - repo: https://github.com/rapidsai/pre-commit-hooks
-    rev: v1.6.0
+    rev: v1.7.0
     hooks:
+      - id: verify-dependencies
       - id: verify-copyright
         args: [--fix, --spdx]
         files: |
@@ -148,6 +148,18 @@ repos:
     rev: v0.11.0.1
     hooks:
       - id: shellcheck
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        additional_dependencies: [pyyaml]
+        exclude: |
+          (?x)^(
+            [.]clang-format$|
+            [.]github/workflows/labeler[.]yml$|
+            conda/environments/.*|
+            cpp/[.]clang-tidy$
+          )
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     rev: v1.24.1
     hooks:

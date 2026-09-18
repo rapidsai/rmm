@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,13 +8,13 @@
 #include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <functional>
 #include <memory>
 
-namespace RMM_EXPORT rmm {
+RMM_NAMESPACE_BEGIN
 /**
  * @addtogroup cuda_streams
  * @{
@@ -85,19 +85,33 @@ class cuda_stream {
    */
   explicit operator cudaStream_t() const noexcept;
 
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
   /**
    * @brief Creates an immutable, non-owning view of the wrapped CUDA stream.
    *
+   * `rmm::cuda_stream_view` is deprecated. Convert this stream to `cuda::stream_ref` instead.
+   *
    * @return rmm::cuda_stream_view The view of the CUDA stream
    */
-  [[nodiscard]] cuda_stream_view view() const;
+  [[nodiscard, deprecated("Use conversion to cuda::stream_ref instead.")]] cuda_stream_view view()
+    const;
 
   /**
    * @brief Implicit conversion to cuda_stream_view
    *
+   * `rmm::cuda_stream_view` is deprecated. Use the conversion to `cuda::stream_ref` instead.
+   *
    * @return A view of the owned stream
    */
-  operator cuda_stream_view() const;
+  [[deprecated("Use conversion to cuda::stream_ref instead.")]] operator cuda_stream_view() const;
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
   /**
    * @brief Implicit conversion to cuda::stream_ref
@@ -127,4 +141,4 @@ class cuda_stream {
 };
 
 /** @} */  // end of group
-}  // namespace RMM_EXPORT rmm
+RMM_NAMESPACE_END

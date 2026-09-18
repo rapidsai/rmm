@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 set -eou pipefail
@@ -28,9 +28,7 @@ PIP_INSTALL_SHARED_ARGS=(
 
 EXITCODE=0
 
-rapids-logger "Check GPU status"
-nvidia-smi
-nvidia-smi -q | grep "Addressing Mode" || echo "Addressing Mode not reported"
+./ci/gpu_info.sh
 
 echo "::group::PyTorch Tests"
 
@@ -42,7 +40,7 @@ CUDA_MINOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f2)
 # See notes in 'dependencies.yaml' for details on supported versions.
 if \
     { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR}" -eq 9 ]; } \
-    || { [ "${CUDA_MAJOR}" -eq 13 ] && [ "${CUDA_MINOR}" -eq 0 ]; }; \
+    || { [ "${CUDA_MAJOR}" -eq 13 ] && [ "${CUDA_MINOR}" -lt 3 ]; }; \
 then
 
     # ensure a CUDA variant of 'torch' is used
@@ -63,7 +61,7 @@ then
         EXITCODE="${EXITCODE_PYTORCH}"
     fi
 else
-    rapids-logger "Skipping PyTorch tests (requires CUDA 12.9 or 13.0, found ${RAPIDS_CUDA_VERSION})"
+    rapids-logger "Skipping PyTorch tests (requires CUDA 12.9 or <13.3, found ${RAPIDS_CUDA_VERSION})"
 fi
 
 echo "::endgroup::"

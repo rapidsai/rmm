@@ -1,6 +1,6 @@
 # =============================================================================
 # cmake-format: off
-# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 # cmake-format: on
 # =============================================================================
@@ -80,6 +80,7 @@ add_library(
   rmm
   src/aligned.cpp
   src/cuda_device.cpp
+  src/cuda_memcpy.cpp
   src/cuda_stream.cpp
   src/cuda_stream_pool.cpp
   src/cuda_stream_view.cpp
@@ -207,9 +208,9 @@ install(FILES ${RMM_BINARY_DIR}/include/rmm/version_config.hpp
 
 set(doc_string
     [=[
-Provide targets for RMM: RAPIDS Memory Manager.
+Provide targets for RMM.
 
-The goal of the [RMM](https://github.com/rapidsai/rmm) is to provide:
+The goal of [RMM](https://github.com/rapidsai/rmm) is to provide:
 
   A common interface that allows customizing device and host memory allocation
   A collection of implementations of the interface

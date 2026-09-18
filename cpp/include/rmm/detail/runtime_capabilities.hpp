@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -12,7 +12,7 @@
 
 #include <dlfcn.h>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace detail {
 
 /**
@@ -174,4 +174,4 @@ struct device_integrated_memory {
 };
 
 }  // namespace detail
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

@@ -58,6 +58,13 @@ files:
       - depends_on_librmm
       - depends_on_librmm_tests
       - depends_on_librmm_example
+  test_cmake:
+    output: none
+    includes:
+      - build
+      - cuda_static
+      - cuda_version
+      - depends_on_rapids_logger
   checks:
     output: none
     includes:
@@ -104,6 +111,9 @@ files:
   py_rapids_build:
     output: pyproject
     pyproject_dir: python/rmm
+    matrix:
+      cuda_suffixed: ["false"]
+      use_cuda_wheels: ["true"]
     extras:
       table: tool.rapids-build-backend
       key: requires
@@ -114,6 +124,9 @@ files:
   py_run:
     output: pyproject
     pyproject_dir: python/rmm
+    matrix:
+      cuda_suffixed: ["false"]
+      use_cuda_wheels: ["true"]
     extras:
       table: project
     includes:
@@ -122,6 +135,9 @@ files:
   py_optional_test:
     output: pyproject
     pyproject_dir: python/rmm
+    matrix:
+      cuda_suffixed: ["false"]
+      use_cuda_wheels: ["true"]
     extras:
       table: project.optional-dependencies
       key: test
@@ -190,7 +206,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &librmm_unsuffixed librmm==26.10.*,>=0.0.0a0
+          - &librmm_unsuffixed librmm==26.12.*,>=0.0.0a0
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -202,30 +218,31 @@ dependencies:
               cuda: "12.*"
               cuda_suffixed: "true"
             packages:
-              - librmm-cu12==26.10.*,>=0.0.0a0
+              - librmm-cu12==26.12.*,>=0.0.0a0
           - matrix:
               cuda: "13.*"
               cuda_suffixed: "true"
             packages:
-              - librmm-cu13==26.10.*,>=0.0.0a0
+              - librmm-cu13==26.12.*,>=0.0.0a0
           - matrix:
+              cuda_suffixed: "false"
             packages:
               - *librmm_unsuffixed
   depends_on_rmm:
     common:
       - output_types: conda
         packages:
-          - rmm==26.10.*,>=0.0.0a0
+          - rmm==26.12.*,>=0.0.0a0
   depends_on_librmm_tests:
     common:
       - output_types: conda
         packages:
-          - librmm-tests==26.10.*,>=0.0.0a0
+          - librmm-tests==26.12.*,>=0.0.0a0
   depends_on_librmm_example:
     common:
       - output_types: conda
         packages:
-          - librmm-example==26.10.*,>=0.0.0a0
+          - librmm-example==26.12.*,>=0.0.0a0
   checks:
     common:
       - output_types: [conda, requirements]
@@ -238,6 +255,11 @@ dependencies:
       - output_types: conda
         packages:
           - &doxygen doxygen=1.9.1
+  cuda_static:
+    common:
+      - output_types: conda
+        packages:
+          - cuda-cudart-static
   # 'cuda_version' intentionally does not contain fallback entries... we want
   # a loud error if an unsupported 'cuda' value is passed
   cuda_version:
@@ -404,7 +426,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - cuda-core>=0.5.1
+          - cuda-core>=0.5.1,<2
           - packaging
           - pytest
           - pytest-cov
@@ -439,26 +461,32 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - numba-cuda==0.22.1
+              - &numba_cuda_oldest numba-cuda==0.22.1
           - matrix:
             packages:
               - *numba_cuda
-      - output_types: [requirements, pyproject]
+      - output_types: requirements
         matrices:
           - matrix:
               dependencies: "oldest"
             packages:
-              - numba-cuda==0.22.1
+              # Constraint must not have extras
+              - *numba_cuda_oldest
+          - matrix:
+            packages:
+              - *numba_cuda
+      - output_types: pyproject
+        matrices:
           - matrix:
               cuda: "12.*"
               cuda_suffixed: "true"
             packages:
-              - &numba_cuda_cu12 numba-cuda[cu12]>=0.22.1
+              - numba-cuda[cu12]>=0.22.1
           - matrix:
               cuda: "13.*"
               cuda_suffixed: "true"
             packages:
-              - &numba_cuda_cu13 numba-cuda[cu13]>=0.22.1
+              - numba-cuda[cu13]>=0.22.1
           # fallback to numba-cuda with no extra CUDA packages if 'cuda_suffixed' isn't true
           - matrix:
             packages:
@@ -468,7 +496,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - rapids-logger==0.2.*,>=0.0.0a0
+          - rapids-logger==0.3.*
       - output_types: requirements
         packages:
           # pip recognizes the index as a global option for the requirements.txt file
@@ -492,7 +520,7 @@ dependencies:
       #
       # 'torch' tightly pins wheels to a single {major}.{minor} CTK version.
       #
-      # This list only contains entries exactly matching CUDA {major}.{minor} that we test in RAPIDS CI,
+      # This list only contains entries exactly matching CUDA {major}.{minor} that we test in RMM CI,
       # to ensure a loud error alerts us to the need to update this list (or CI scripts) when new
       # CTKs are added to the support matrix.
       - output_types: requirements
@@ -514,20 +542,32 @@ dependencies:
               require_gpu: "true"
             packages:
               - *torch_cu129_index
-              - torch==2.10.0+cu129
+              - torch==2.13.0+cu129
           - matrix:
               cuda: "13.0"
               dependencies: "oldest"
               require_gpu: "true"
             packages:
-              - &torch_index_cu13 --extra-index-url=https://download.pytorch.org/whl/cu130
+              - &torch_cu130_index --extra-index-url=https://download.pytorch.org/whl/cu130
               - torch==2.9.0+cu130
           - matrix:
               cuda: "13.0"
               require_gpu: "true"
             packages:
-              - *torch_index_cu13
-              - torch==2.10.0+cu130
+              - *torch_cu130_index
+              - torch==2.14.0+cu130
+          - matrix:
+              cuda: "13.1"
+              require_gpu: "true"
+            packages:
+              - *torch_cu130_index
+              - torch==2.13.0+cu130
+          - matrix:
+              cuda: "13.*"
+              require_gpu: "true"
+            packages:
+              - --extra-index-url=https://download.pytorch.org/whl/cu132
+              - torch==2.14.0+cu132
           - matrix:
               require_gpu: "false"
             packages:
@@ -561,9 +601,11 @@ dependencies:
               - *cupy_cu13
           - matrix:
               cuda: "12.*"
+              use_cuda_wheels: "true"
             packages:
               - cupy-cuda12x[ctk]>=14.0.1,!=14.1.0
           # fallback to CUDA 13 versions if 'cuda' is '13.*' or not provided
           - matrix:
+              use_cuda_wheels: "true"
             packages:
               - cupy-cuda13x[ctk]>=14.0.1,!=14.1.0

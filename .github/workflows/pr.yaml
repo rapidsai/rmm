@@ -10,9 +10,11 @@ permissions: {}
 jobs:
   pr-builder:
     needs:
+      - build-details
       - check-nightly-ci
       - changed-files
       - checks
+      - cmake-tests
       - conda-cpp-build
       - conda-cpp-tests
       - conda-cpp-debug-tests
@@ -20,6 +22,8 @@ jobs:
       - conda-python-tests
       - conda-python-tests-integration-optional
       - docs-build
+      - docs-build-matrix
+      - publish-api-docs
       - wheel-build-cpp
       - wheel-build-python
       - wheel-tests
@@ -50,6 +54,8 @@ jobs:
         # since other jobs depend on it.
         if: ${{ vars.TELEMETRY_ENABLED == 'true' }}
         uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
+  build-details:
+    uses: rapidsai/shared-workflows/.github/workflows/compute-build-details.yaml@main
   check-nightly-ci:
     runs-on: ubuntu-latest
     permissions:
@@ -92,10 +98,15 @@ jobs:
           - '!.github/ops-bot.yaml'
           - '!.github/PULL_REQUEST_TEMPLATE.md'
           - '!.github/release.yml'
+          - '!.github/workflows/build.yaml'
+          - '!.github/workflows/labeler.yml'
           - '!.github/workflows/new-issues-to-triage-projects.yml'
-          - '!.github/workflows/trigger-rbeaking-change-alert.yaml'
+          - '!.github/workflows/test.yaml'
+          - '!.github/workflows/trigger-breaking-change-alert.yaml'
+          - '!.github/zizmor.yml'
           - '!.pre-commit-config.yaml'
           - '!.shellcheckrc'
+          - '!.yamllint.yaml'
           - '!ci/build_wheel*.sh'
           - '!ci/check_style.sh'
           - '!ci/check_symbols.sh'
@@ -114,10 +125,15 @@ jobs:
           - '!.github/ops-bot.yaml'
           - '!.github/PULL_REQUEST_TEMPLATE.md'
           - '!.github/release.yml'
+          - '!.github/workflows/build.yaml'
+          - '!.github/workflows/labeler.yml'
           - '!.github/workflows/new-issues-to-triage-projects.yml'
-          - '!.github/workflows/trigger-rbeaking-change-alert.yaml'
+          - '!.github/workflows/test.yaml'
+          - '!.github/workflows/trigger-breaking-change-alert.yaml'
+          - '!.github/zizmor.yml'
           - '!.pre-commit-config.yaml'
           - '!.shellcheckrc'
+          - '!.yamllint.yaml'
           - '!CONTRIBUTING.md'
           - '!README.md'
           - '!SECURITY.md'
@@ -144,10 +160,15 @@ jobs:
           - '!.github/ops-bot.yaml'
           - '!.github/PULL_REQUEST_TEMPLATE.md'
           - '!.github/release.yml'
+          - '!.github/workflows/build.yaml'
+          - '!.github/workflows/labeler.yml'
           - '!.github/workflows/new-issues-to-triage-projects.yml'
-          - '!.github/workflows/trigger-rbeaking-change-alert.yaml'
+          - '!.github/workflows/test.yaml'
+          - '!.github/workflows/trigger-breaking-change-alert.yaml'
+          - '!.github/zizmor.yml'
           - '!.pre-commit-config.yaml'
           - '!.shellcheckrc'
+          - '!.yamllint.yaml'
           - '!CONTRIBUTING.md'
           - '!README.md'
           - '!SECURITY.md'
@@ -173,10 +194,15 @@ jobs:
           - '!.github/ops-bot.yaml'
           - '!.github/PULL_REQUEST_TEMPLATE.md'
           - '!.github/release.yml'
+          - '!.github/workflows/build.yaml'
+          - '!.github/workflows/labeler.yml'
           - '!.github/workflows/new-issues-to-triage-projects.yml'
-          - '!.github/workflows/trigger-rbeaking-change-alert.yaml'
+          - '!.github/workflows/test.yaml'
+          - '!.github/workflows/trigger-breaking-change-alert.yaml'
+          - '!.github/zizmor.yml'
           - '!.pre-commit-config.yaml'
           - '!.shellcheckrc'
+          - '!.yamllint.yaml'
           - '!CONTRIBUTING.md'
           - '!README.md'
           - '!SECURITY.md'
@@ -208,8 +234,24 @@ jobs:
     with:
       enable_check_generated_files: false
       ignored_pr_jobs: "telemetry-summarize conda-python-tests-integration-optional wheel-tests-integration-optional"
-  conda-cpp-build:
+  cmake-tests:
     needs: checks
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      packages: read
+      pull-requests: read
+    secrets: inherit # zizmor: ignore[secrets-inherit]
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@main
+    with:
+      build_type: pull-request
+      node_type: cpu16
+      arch: "amd64"
+      container_image: "rapidsai/ci-conda:26.12-latest"
+      script: "ci/test_cmake.sh"
+  conda-cpp-build:
+    needs: [build-details, checks]
     permissions:
       actions: read
       contents: read
@@ -220,6 +262,7 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@main
     with:
       build_type: pull-request
+      build-datetime: ${{ needs.build-details.outputs.build-datetime }}
       node_type: cpu8
       script: ci/build_cpp.sh
   conda-cpp-tests:
@@ -249,12 +292,12 @@ jobs:
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_cpp
     with:
       build_type: pull-request
-      node_type: "gpu-l4-latest-1"
+      node_type: "gpu-rtxpro6000-latest-1"
       arch: "amd64"
-      container_image: "rapidsai/ci-conda:26.10-latest"
+      container_image: "rapidsai/ci-conda:26.12-latest"
       script: "ci/test_cpp_debug.sh"
   conda-python-build:
-    needs: conda-cpp-build
+    needs: [build-details, conda-cpp-build]
     permissions:
       actions: read
       contents: read
@@ -265,6 +308,7 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@main
     with:
       build_type: pull-request
+      build-datetime: ${{ needs.build-details.outputs.build-datetime }}
       script: ci/build_python.sh
       # Build a conda package for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
@@ -296,8 +340,15 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_python_integrations.sh
+  docs-build-matrix:
+    permissions:
+      contents: read
+    uses: rapidsai/shared-workflows/.github/workflows/compute-matrix.yaml@main
+    with:
+      build_type: pull-request
+      matrix_name: docs-build
   docs-build:
-    needs: [conda-python-build, changed-files]
+    needs: [docs-build-matrix, conda-python-build, changed-files]
     permissions:
       actions: read
       contents: read
@@ -306,15 +357,38 @@ jobs:
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@main
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.docs-build-matrix.outputs.matrix) }}
     if: fromJSON(needs.changed-files.outputs.changed_file_groups).build_docs
     with:
       build_type: pull-request
-      node_type: "gpu-l4-latest-1"
-      arch: "amd64"
-      container_image: "rapidsai/ci-conda:26.10-latest"
+      node_type: "gpu-${{ matrix.GPU }}-${{ matrix.DRIVER }}-1"
+      arch: "${{ matrix.arch }}"
+      container_image: "rapidsai/ci-conda:26.12-cuda${{ matrix.CUDA_VER }}-${{ matrix.LINUX_VER }}-py${{ matrix.PY_VER }}"
       script: "ci/build_docs.sh"
+  publish-api-docs:
+    if: github.ref_type == 'branch'
+    needs: [docs-build]
+    permissions:
+      contents: read
+      id-token: write
+    secrets:
+      akamai-access-token: ${{ secrets.NVIDIA_DOCS_AKAMAI_ACCESS_TOKEN }}
+      akamai-client-token: ${{ secrets.NVIDIA_DOCS_AKAMAI_CLIENT_TOKEN }}
+      akamai-client-secret: ${{ secrets.NVIDIA_DOCS_AKAMAI_CLIENT_SECRET }}
+      akamai-emails-to-notify: ${{ secrets.NVIDIA_DOCS_AKAMAI_EMAILS_TO_NOTIFY }}
+      akamai-host: ${{ secrets.NVIDIA_DOCS_AKAMAI_HOST }}
+      target-aws-access-key-id: ${{ secrets.NVIDIA_DOCS_AWS_ACCESS_KEY_ID }}
+      target-aws-region: ${{ secrets.NVIDIA_DOCS_AWS_REGION }}
+      target-aws-secret-access-key: ${{ secrets.NVIDIA_DOCS_AWS_SECRET_ACCESS_KEY }}
+      target-s3-bucket: ${{ secrets.NVIDIA_DOCS_S3_BUCKET }}
+    uses: rapidsai/shared-workflows/.github/workflows/publish-api-docs.yaml@main
+    with:
+      docs-projects: rmm,librmm
+      dry-run: true
   wheel-build-cpp:
-    needs: checks
+    needs: [build-details, checks]
     permissions:
       actions: read
       contents: read
@@ -326,12 +400,13 @@ jobs:
     with:
       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
       build_type: pull-request
+      build-datetime: ${{ needs.build-details.outputs.build-datetime }}
       node_type: cpu8
       script: ci/build_wheel_cpp.sh
       package-name: librmm
       package-type: cpp
   wheel-build-python:
-    needs: wheel-build-cpp
+    needs: [build-details, wheel-build-cpp]
     permissions:
       actions: read
       contents: read
@@ -344,6 +419,7 @@ jobs:
       # Build a wheel for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
       build_type: pull-request
+      build-datetime: ${{ needs.build-details.outputs.build-datetime }}
       node_type: cpu8
       script: ci/build_wheel_python.sh
       package-name: rmm

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,18 +7,20 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <ostream>
 
-namespace rmm {
+RMM_NAMESPACE_BEGIN
 
 cuda_stream_view::cuda_stream_view(cudaStream_t stream) noexcept : stream_{stream} {}
 
 cuda_stream_view::cuda_stream_view(cuda::stream_ref stream) noexcept : stream_{stream.get()} {}
 
 cudaStream_t cuda_stream_view::value() const noexcept { return stream_; }
+
+cudaStream_t cuda_stream_view::get() const noexcept { return value(); }
 
 cuda_stream_view::operator cudaStream_t() const noexcept { return value(); }
 
@@ -27,22 +29,24 @@ cuda_stream_view::operator cuda::stream_ref() const noexcept { return value(); }
 bool cuda_stream_view::is_per_thread_default() const noexcept
 {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  return *this == cuda_stream_per_thread || value() == nullptr;
+  return value() == cudaStreamPerThread || value() == nullptr;
 #else
-  return *this == cuda_stream_per_thread;
+  return value() == cudaStreamPerThread;
 #endif
 }
 
 bool cuda_stream_view::is_default() const noexcept
 {
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
-  return *this == cuda_stream_legacy;
+  return value() == cudaStreamLegacy;
 #else
-  return *this == cuda_stream_legacy || value() == nullptr;
+  return value() == cudaStreamLegacy || value() == nullptr;
 #endif
 }
 
 void cuda_stream_view::synchronize() const { RMM_CUDA_TRY(cudaStreamSynchronize(stream_)); }
+
+void cuda_stream_view::sync() const { synchronize(); }
 
 void cuda_stream_view::synchronize_no_throw() const noexcept
 {
@@ -59,4 +63,4 @@ std::ostream& operator<<(std::ostream& os, cuda_stream_view stream)
   return os;
 }
 
-}  // namespace rmm
+RMM_NAMESPACE_END

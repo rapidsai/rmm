@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
@@ -9,7 +9,7 @@
 
 #include <cuda/memory_resource>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 
 /**
  * @addtogroup memory_resources
@@ -85,4 +85,4 @@ static_assert(std::is_constructible_v<host_resource_ref, host_device_resource_re
               "host_resource_ref must be constructible from host_device_resource_ref");
 
 /** @} */  // end of group
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

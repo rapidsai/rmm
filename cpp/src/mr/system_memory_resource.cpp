@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,14 +8,14 @@
 #include <rmm/detail/format.hpp>
 #include <rmm/mr/system_memory_resource.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
 #include <new>
 #include <string>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr {
 namespace detail {
 
@@ -71,7 +71,7 @@ void system_memory_resource::deallocate(cuda::stream_ref stream,
 
 void* system_memory_resource::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  auto* ptr = allocate(cuda::stream_ref{cudaStream_t{nullptr}}, bytes, alignment);
+  auto* ptr = allocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, bytes, alignment);
   RMM_CUDA_TRY(cudaStreamSynchronize(cudaStream_t{nullptr}));
   return ptr;
 }
@@ -80,7 +80,7 @@ void system_memory_resource::deallocate_sync(void* ptr,
                                              std::size_t bytes,
                                              std::size_t alignment) noexcept
 {
-  deallocate(cuda::stream_ref{cudaStream_t{nullptr}}, ptr, bytes, alignment);
+  deallocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, ptr, bytes, alignment);
 }
 
 bool system_memory_resource::operator==(system_memory_resource const&) const noexcept
@@ -94,4 +94,4 @@ bool system_memory_resource::operator!=(system_memory_resource const&) const noe
 }
 
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

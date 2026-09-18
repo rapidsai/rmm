@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-namespace rmm {
+RMM_NAMESPACE_BEGIN
 
 rapids_logger::sink_ptr default_sink()
 {
@@ -32,4 +32,4 @@ rapids_logger::logger& default_logger()
   return logger_;
 }
 
-}  // namespace rmm
+RMM_NAMESPACE_END

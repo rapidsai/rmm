@@ -13,12 +13,13 @@ from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 
-from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.cuda_stream_ref cimport stream_ref
 
 
 cdef extern from * nogil:
     """
     #include <optional>
+    #include <cuda/stream>
     #include <rmm/aligned.hpp>
     #include <rmm/resource_ref.hpp>
 
@@ -51,12 +52,12 @@ cdef extern from * nogil:
             return ref.value();
         }
 
-        void* allocate(rmm::cuda_stream_view stream, std::size_t bytes) {
+        void* allocate(cuda::stream_ref stream, std::size_t bytes) {
             return ref.value().allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
         }
 
         void deallocate(
-            rmm::cuda_stream_view stream,
+            cuda::stream_ref stream,
             void* ptr,
             std::size_t bytes) noexcept {
             ref.value().deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
@@ -66,9 +67,9 @@ cdef extern from * nogil:
     cdef cppclass device_async_resource_ref \
             "cython_device_async_resource_ref":
         device_async_resource_ref() noexcept
-        void* allocate(cuda_stream_view stream, size_t bytes) except +
+        void* allocate(stream_ref stream, size_t bytes) except +
         void deallocate(
-            cuda_stream_view stream,
+            stream_ref stream,
             void* ptr,
             size_t bytes
         ) noexcept

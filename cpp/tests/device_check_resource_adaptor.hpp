@@ -1,18 +1,17 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
@@ -57,9 +56,9 @@ class device_check_resource_adaptor final {
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    rmm::cuda_stream_view stream{};
-    auto* ptr = allocate(stream, bytes, alignment);
-    stream.synchronize();
+    auto stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
+    auto* ptr   = allocate(stream, bytes, alignment);
+    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
     return ptr;
   }
 
@@ -67,7 +66,7 @@ class device_check_resource_adaptor final {
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    deallocate(rmm::cuda_stream_view{}, ptr, bytes, alignment);
+    deallocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, ptr, bytes, alignment);
   }
 
   bool operator==(device_check_resource_adaptor const& other) const noexcept

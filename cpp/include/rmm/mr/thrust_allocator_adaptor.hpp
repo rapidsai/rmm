@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -14,11 +14,12 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/stream>
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/device_ptr.h>
 #include <thrust/memory.h>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr {
 /**
  * @addtogroup memory_resource_adaptors
@@ -70,7 +71,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @param stream The stream to be used for device memory (de)allocation
    */
   RMM_EXEC_CHECK_DISABLE
-  explicit thrust_allocator(cuda_stream_view stream) : _stream{stream} {}
+  explicit thrust_allocator(cuda::stream_ref stream) : _stream{stream} {}
 
   /**
    * @brief Constructs a `thrust_allocator` using a device memory resource and
@@ -80,7 +81,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @param stream The stream to be used for device memory (de)allocation
    */
   RMM_EXEC_CHECK_DISABLE
-  thrust_allocator(cuda_stream_view stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+  thrust_allocator(cuda::stream_ref stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr)
     : _stream{stream}, _mr(std::move(mr))
   {
   }
@@ -166,7 +167,7 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   /**
    * @briefreturn{The stream used by this allocator}
    */
-  [[nodiscard]] cuda_stream_view stream() const noexcept { return _stream; }
+  [[nodiscard]] cuda::stream_ref stream() const noexcept { return _stream; }
 
   /**
    * @brief Enables the `cuda::mr::device_accessible` property
@@ -179,11 +180,11 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   }
 
  private:
-  cuda_stream_view _stream{};
+  cuda::stream_ref _stream{cuda::stream_ref{cudaStream_t{cudaStreamDefault}}};
   mutable cuda::mr::any_resource<cuda::mr::device_accessible> _mr{
     rmm::mr::get_current_device_resource_ref()};
   cuda_device_id _device{get_current_cuda_device()};
 };
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

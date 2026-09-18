@@ -1,18 +1,17 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/format.hpp>
 #include <rmm/mr/detail/logging_resource_adaptor_impl.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr {
 namespace detail {
 
@@ -30,9 +29,9 @@ logging_resource_adaptor_impl::logging_resource_adaptor_impl(
 
 void* logging_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   void* ptr         = allocate(stream, bytes, alignment);
-  RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
+  stream.sync();
   return ptr;
 }
 
@@ -40,7 +39,7 @@ void logging_resource_adaptor_impl::deallocate_sync(void* ptr,
                                                     std::size_t bytes,
                                                     std::size_t alignment) noexcept
 {
-  auto const stream = cuda::stream_ref{cudaStream_t{nullptr}};
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   deallocate(stream, ptr, bytes, alignment);
   RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 }
@@ -83,4 +82,4 @@ std::string logging_resource_adaptor_impl::header() const
 
 }  // namespace detail
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

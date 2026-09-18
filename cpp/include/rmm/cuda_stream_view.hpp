@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,13 +7,14 @@
 
 #include <rmm/detail/export.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
+#include <concepts>
 #include <cstddef>
 #include <ostream>
 
-namespace RMM_EXPORT rmm {
+RMM_NAMESPACE_BEGIN
 /**
  * @addtogroup cuda_streams
  * @{
@@ -24,8 +25,10 @@ namespace RMM_EXPORT rmm {
  * @brief Strongly-typed non-owning wrapper for CUDA streams with default constructor.
  *
  * This wrapper is simply a "view": it does not own the lifetime of the stream it wraps.
+ *
+ * @deprecated Use cuda::stream_ref instead.
  */
-class cuda_stream_view {
+class [[deprecated("Use cuda::stream_ref instead.")]] cuda_stream_view {
  public:
   cuda_stream_view()                        = default;
   ~cuda_stream_view()                       = default;
@@ -62,6 +65,13 @@ class cuda_stream_view {
   [[nodiscard]] cudaStream_t value() const noexcept;
 
   /**
+   * @brief Get the wrapped stream.
+   *
+   * @return cudaStream_t The underlying stream referenced by this cuda_stream_view
+   */
+  [[nodiscard]] cudaStream_t get() const noexcept;
+
+  /**
    * @brief Implicit conversion to cudaStream_t.
    *
    * @return cudaStream_t The underlying stream referenced by this cuda_stream_view
@@ -95,6 +105,15 @@ class cuda_stream_view {
   void synchronize() const;
 
   /**
+   * @brief Synchronize the viewed CUDA stream.
+   *
+   * Calls `cudaStreamSynchronize()`.
+   *
+   * @throw rmm::cuda_error if stream synchronization fails
+   */
+  void sync() const;
+
+  /**
    * @brief Synchronize the viewed CUDA stream. Does not throw if there is an error.
    *
    * Calls `cudaStreamSynchronize()` and asserts if there is an error.
@@ -106,41 +125,79 @@ class cuda_stream_view {
 };
 
 /**
- * @brief Static cuda_stream_view of the default stream (stream 0), for convenience
+ * @brief Static cuda::stream_ref of the default stream (stream 0), for convenience
+ *
+ * @deprecated Use cuda::stream_ref{cudaStream_t{cudaStreamDefault}} instead.
  */
-static constexpr cuda_stream_view cuda_stream_default{};
+[[deprecated("Use cuda::stream_ref{cudaStream_t{cudaStreamDefault}} instead.")]]
+static constexpr cuda::stream_ref cuda_stream_default{cudaStream_t{nullptr}};
 
 /**
- * @brief Static cuda_stream_view of cudaStreamLegacy, for convenience
+ * @brief Static cuda::stream_ref of cudaStreamLegacy, for convenience
+ *
+ * @deprecated Use cuda::stream_ref{cudaStreamLegacy} instead.
  */
-static const cuda_stream_view cuda_stream_legacy{
-  cudaStreamLegacy  // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
-};
+[[deprecated("Use cuda::stream_ref{cudaStreamLegacy} instead.")]]
+static const cuda::stream_ref cuda_stream_legacy{cudaStream_t{cudaStreamLegacy}};
 
 /**
- * @brief Static cuda_stream_view of cudaStreamPerThread, for convenience
+ * @brief Static cuda::stream_ref of cudaStreamPerThread, for convenience
+ *
+ * @deprecated Use cuda::stream_ref{cudaStreamPerThread} instead.
  */
-static const cuda_stream_view cuda_stream_per_thread{
-  cudaStreamPerThread  // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
-};
+[[deprecated("Use cuda::stream_ref{cudaStreamPerThread} instead.")]]
+static const cuda::stream_ref cuda_stream_per_thread{cudaStream_t{cudaStreamPerThread}};
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
 /**
  * @brief Equality comparison operator for streams
  *
- * @param lhs The first stream view to compare
- * @param rhs The second stream view to compare
+ * @param lhs The first stream to compare
+ * @param rhs The second stream to compare
  * @return true if equal, false if unequal
  */
 bool operator==(cuda_stream_view lhs, cuda_stream_view rhs);
 
+/// @copydoc operator==(cuda_stream_view, cuda_stream_view)
+template <std::same_as<cuda::stream_ref> StreamRef>
+bool operator==(cuda_stream_view lhs, StreamRef const& rhs)
+{
+  return lhs.value() == rhs.get();
+}
+
+/// @copydoc operator==(cuda_stream_view, cuda_stream_view)
+template <std::same_as<cuda::stream_ref> StreamRef>
+bool operator==(StreamRef const& lhs, cuda_stream_view rhs)
+{
+  return lhs.get() == rhs.value();
+}
+
 /**
  * @brief Inequality comparison operator for streams
  *
- * @param lhs The first stream view to compare
- * @param rhs The second stream view to compare
+ * @param lhs The first stream to compare
+ * @param rhs The second stream to compare
  * @return true if unequal, false if equal
  */
 bool operator!=(cuda_stream_view lhs, cuda_stream_view rhs);
+
+/// @copydoc operator!=(cuda_stream_view, cuda_stream_view)
+template <std::same_as<cuda::stream_ref> StreamRef>
+bool operator!=(cuda_stream_view lhs, StreamRef const& rhs)
+{
+  return lhs.value() != rhs.get();
+}
+
+/// @copydoc operator!=(cuda_stream_view, cuda_stream_view)
+template <std::same_as<cuda::stream_ref> StreamRef>
+bool operator!=(StreamRef const& lhs, cuda_stream_view rhs)
+{
+  return lhs.get() != rhs.value();
+}
 
 /**
  * @brief Output stream operator for printing / logging streams
@@ -151,5 +208,9 @@ bool operator!=(cuda_stream_view lhs, cuda_stream_view rhs);
  */
 std::ostream& operator<<(std::ostream& os, cuda_stream_view stream);
 
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
 /** @} */  // end of group
-}  // namespace RMM_EXPORT rmm
+RMM_NAMESPACE_END

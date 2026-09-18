@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,7 +10,7 @@
 
 #include <rapids_logger/logger.hpp>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 
 /**
  * @brief Returns the default sink for the global logger.
@@ -36,4 +36,4 @@ std::string default_pattern();
  */
 rapids_logger::logger& default_logger();
 
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END
