@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
@@ -95,8 +95,8 @@ class BinningMemoryResource(UpstreamResourceAdaptor):
 class CallbackMemoryResource(DeviceMemoryResource):
     def __init__(
         self,
-        allocate_func: Callable[[int, Stream], int],
-        deallocate_func: Callable[[int, int, Stream], None],
+        allocate_func: Callable[[Stream, int, int], int],
+        deallocate_func: Callable[[Stream, int, int, int], None],
     ) -> None: ...
 
 class LimitingResourceAdaptor(UpstreamResourceAdaptor):
