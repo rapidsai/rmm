@@ -1,0 +1,4 @@
+self-hosted-runner:
+  labels:
+    - linux-amd64-*
+    - linux-arm64-*
