@@ -22,7 +22,17 @@ cudaError_t memcpy_async(void* dst, void const* src, std::size_t count, cuda::st
     attrs.srcAccessOrder = cudaMemcpySrcAccessOrderStream;
     attrs.flags          = flags;
     std::size_t attr_idx = 0;
-    return cudaMemcpyBatchAsync(&dst, &src, &count, 1, &attrs, &attr_idx, 1, stream.get());
+    auto const result =
+      cudaMemcpyBatchAsync(&dst, &src, &count, 1, &attrs, &attr_idx, 1, stream.get());
+    if (result != cudaErrorStreamCaptureUnsupported) { return result; }
+
+    cudaGetLastError();
+    cudaStreamCaptureStatus status{cudaStreamCaptureStatusNone};
+    auto const capture_result = cudaStreamIsCapturing(stream.get(), &status);
+    if (capture_result != cudaSuccess) { return capture_result; }
+    if (status != cudaStreamCaptureStatusActive) { return result; }
+
+    return cudaMemcpyAsync(dst, src, count, cudaMemcpyDefault, stream.get());
   }
 #endif
 
