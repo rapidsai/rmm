@@ -95,26 +95,8 @@ def invoke(
     timeout: int = 900,
 ) -> dict:
     configure(directory)
-    env = {
-        "PATH": os.environ["PATH"],
-        "HOME": str(directory),
-        "PI_CODING_AGENT_DIR": str(directory),
-        "INFERENCE_API_KEY": os.environ["INFERENCE_API_KEY"],
-    }
-    for name in (
-        "CUDA_VERSION",
-        "CUDA_VISIBLE_DEVICES",
-        "LD_LIBRARY_PATH",
-        "NVIDIA_VISIBLE_DEVICES",
-        "RAPIDS_CONDA_ARCH",
-        "RAPIDS_CUDA_VERSION",
-        "RAPIDS_DEPENDENCIES",
-        "RAPIDS_PY_VERSION",
-        "RAPIDS_CONDA_BLD_ROOT_DIR",
-        "RAPIDS_CONDA_BLD_OUTPUT_DIR",
-    ):
-        if name in os.environ:
-            env[name] = os.environ[name]
+    env = os.environ.copy()
+    env["PI_CODING_AGENT_DIR"] = str(directory)
     with transcript.open("w") as output:
         subprocess.run(
             command(tools),

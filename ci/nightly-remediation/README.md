@@ -80,9 +80,10 @@ isolation policy before a live run. The agent has internet access, its inference
 credential, and access to the job filesystem, including writable git metadata
 and workflow helpers.
 
-Pi receives a disposable configuration directory and a limited environment that
-preserves CUDA/build settings without deliberately passing GitHub or Slack
-credentials. The fork App token is minted after pi returns, but subsequent steps
+Pi inherits the step's full environment, including `HOME`, and overrides only
+`PI_CODING_AGENT_DIR` to use a disposable configuration directory. Credentials
+are scoped to workflow steps; the analyzer's read-only `GH_TOKEN` is inherited.
+The fork App token is minted after pi returns, but subsequent steps
 share the job environment: this is not a security boundary against agent code.
 Pi's extensions, project settings, automatic context files, skills, and startup
 network traffic are disabled; the fixer may explicitly read relevant repository
