@@ -11,12 +11,18 @@ for this pilot; it does not depend on an unmerged shared workflow.
    coverage of all failed jobs, and CPU routing for build/dependency failures.
 2. **Fix (CPU/GPU matrices):** one pi session per root cause. GPU fixers
    have `max-parallel: 4`; workflow-level concurrency prevents overlapping runs
-   in this repository. Each agent investigates, edits, builds, and tests. A
-   separate publication step creates a draft PR whose head and base are both in
-   `bdice-bot/rmm`, or the fork selected by `fork-owner`.
+   in this repository. GPU fixers check device visibility before starting pi;
+   the agent is instructed to check CUDA availability before GPU validation.
+   Each agent investigates, edits, builds, and tests, then exports a patch and result.
+   A fresh CPU publication job validates the result, checks source metadata
+   against the workflow inputs, and applies the patch to a fresh source checkout
+   without executing patched code. It creates a draft PR whose head and base
+   are both in `bdice-bot/rmm`, or the fork selected by `fork-owner`.
 3. **Report (CPU):** collect structured results, including unresolved failures
    and missing fixer results, and post problems and PR links to Slack. Reports
    explicitly label validation as **agent-reported**, not independently verified.
+   Proposals require at least one validation record; a `not_run` record must
+   explain any missing validation.
 
 The initial workflow is manual-only. It requires run IDs and the actual tested
 source SHA because RMM's nightly `workflow_dispatch` input `sha` can differ from
@@ -83,15 +89,20 @@ and workflow helpers.
 Pi inherits the step's full environment, including `HOME`, and overrides only
 `PI_CODING_AGENT_DIR` to use a disposable configuration directory. Credentials
 are scoped to workflow steps; the analyzer's read-only `GH_TOKEN` is inherited.
-The fork App token is minted after pi returns, but subsequent steps
-share the job environment: this is not a security boundary against agent code.
+The fork App token is created only in the separate publication job, which uses
+helpers checked out at the workflow revision. Only the proposed patch and
+schema-validated result are consumed from the fixer; its workspace, git
+metadata, tools, and environment are not reused. Keep publication on fresh
+ephemeral runners, separate from the machines executing agent code.
 Pi's extensions, project settings, automatic context files, skills, and startup
 network traffic are disabled; the fixer may explicitly read relevant repository
 guidance.
 
-Only structured analysis, results, and Slack payloads are uploaded, for seven
-days. Raw pi transcripts are temporary and are not uploaded. Treat all proposed
-patches, diagnoses, and validation claims as untrusted until human review.
+Structured analysis, proposed patches, results, and Slack payloads are uploaded
+for seven days. Slack reporting consumes only the publication jobs' normalized
+results, not raw fixer artifacts. Raw pi transcripts are temporary and are not
+uploaded. Treat all proposed patches, diagnoses, and validation claims as
+untrusted until human review.
 
 ## Run manually
 

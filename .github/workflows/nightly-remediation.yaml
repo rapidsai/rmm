@@ -87,6 +87,8 @@ jobs:
     with:
       failure-id: ${{ matrix.id }}
       runner: linux-amd64-cpu32
+      source-sha: ${{ inputs.source-sha }}
+      target-branch: ${{ inputs.target-branch }}
       fork-owner: ${{ inputs.fork-owner }}
       model-config: ${{ vars.NIGHTLY_REMEDIATION_MODEL_CONFIG }}
       inference-url: ${{ vars.NIGHTLY_REMEDIATION_INFERENCE_URL }}
@@ -107,6 +109,8 @@ jobs:
     with:
       failure-id: ${{ matrix.id }}
       runner: linux-amd64-gpu-rtxpro6000-latest-1
+      source-sha: ${{ inputs.source-sha }}
+      target-branch: ${{ inputs.target-branch }}
       fork-owner: ${{ inputs.fork-owner }}
       model-config: ${{ vars.NIGHTLY_REMEDIATION_MODEL_CONFIG }}
       inference-url: ${{ vars.NIGHTLY_REMEDIATION_INFERENCE_URL }}
@@ -130,7 +134,11 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          pattern: nightly-*
+          name: nightly-analysis
+          path: artifacts
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: nightly-fix-*
           path: artifacts
           merge-multiple: true
       - name: Report results to Slack

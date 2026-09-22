@@ -9,6 +9,12 @@ on:
       runner:
         type: string
         required: true
+      source-sha:
+        type: string
+        required: true
+      target-branch:
+        type: string
+        required: true
       fork-owner:
         type: string
         required: true
@@ -64,7 +70,6 @@ jobs:
           echo "$RUNNER_TEMP/pi/node_modules/.bin" >> "$GITHUB_PATH"
           python -m pip install -r ci/nightly-remediation/requirements.txt
       - name: Investigate, edit, build, and test with pi
-        id: fix
         env:
           FAILURE_ID: ${{ inputs.failure-id }}
           MODEL_CONFIG: ${{ inputs.model-config }}
@@ -73,20 +78,60 @@ jobs:
           INFERENCE_API_KEY: ${{ secrets.inference-api-key }}
         run: |
           python ci/nightly-remediation/remediate.py fix --failure-id "$FAILURE_ID"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: nightly-proposal-${{ inputs.failure-id }}
+          path: |
+            results/${{ inputs.failure-id }}.json
+            results/${{ inputs.failure-id }}.patch
+          if-no-files-found: warn
+          retention-days: 7
+
+  publish:
+    needs: fix
+    runs-on: linux-amd64-cpu4
+    timeout-minutes: 15
+    container:
+      image: rapidsai/ci-conda:26.12-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - name: Install Python dependencies
+        run: python -m pip install -r ci/nightly-remediation/requirements.txt
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: nightly-analysis
+          path: artifacts
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: nightly-proposal-${{ inputs.failure-id }}
+          path: proposal
+      - name: Validate proposal and apply patch to a fresh source checkout
+        id: prepare
+        if: always()
+        env:
+          FAILURE_ID: ${{ inputs.failure-id }}
+          SOURCE_SHA: ${{ inputs.source-sha }}
+          TARGET_BRANCH: ${{ inputs.target-branch }}
+        run: |
+          python ci/nightly-remediation/remediate.py prepare --failure-id "$FAILURE_ID"
       - name: Create fork-scoped GitHub App token
-        if: steps.fix.outputs.proposed == 'true'
+        if: steps.prepare.outputs.proposed == 'true'
         id: token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         with:
           app-id: ${{ inputs.app-id }}
           private-key: ${{ secrets.app-private-key }}
           owner: ${{ inputs.fork-owner }}
-          repositories: ${{ steps.fix.outputs.repository }}
+          repositories: rmm
           permission-contents: write
           permission-pull-requests: write
           permission-workflows: write
       - name: Publish draft PR in the fork
-        if: steps.fix.outputs.proposed == 'true'
+        if: steps.prepare.outputs.proposed == 'true'
         env:
           GH_TOKEN: ${{ steps.token.outputs.token }}
           FORK_OWNER: ${{ inputs.fork-owner }}

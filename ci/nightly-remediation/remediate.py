@@ -225,6 +225,28 @@ def fix(artifacts: Path, output: Path, failure_id: str, source: Path) -> None:
         "summary": "Fixer did not complete",
         "validation": [],
     }
+    if failure["runner"] == "gpu":
+        try:
+            devices = run(
+                "nvidia-smi", "--query-gpu=uuid", "--format=csv,noheader"
+            )
+            if not any(
+                line.startswith("GPU-") for line in devices.splitlines()
+            ):
+                raise ValueError("No GPU devices are visible")
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            result.update(
+                summary=f"GPU preflight blocked: {exc}",
+                validation=[
+                    {
+                        "command": "GPU tests",
+                        "status": "not_run",
+                        "details": f"nvidia-smi device check failed: {exc}",
+                    }
+                ],
+            )
+            save(output / f"{failure_id}.json", result)
+            return
     try:
         run(
             "git",
@@ -260,10 +282,40 @@ def fix(artifacts: Path, output: Path, failure_id: str, source: Path) -> None:
             result.update(proposal)
         if result["outcome"] == "proposed":
             run("git", "add", "--all", cwd=source)
-            changes = run("git", "diff", "--cached", "--name-only", cwd=source)
+            changes = run(
+                "git",
+                "diff",
+                "--cached",
+                "--name-only",
+                failure["sha"],
+                cwd=source,
+            )
             if not changes:
                 raise ValueError("Agent proposed a fix without source changes")
-            run("git", "diff", "--cached", "--check", cwd=source)
+            run(
+                "git",
+                "diff",
+                "--cached",
+                "--check",
+                failure["sha"],
+                cwd=source,
+            )
+            with (output / f"{failure_id}.patch").open("wb") as patch:
+                subprocess.run(
+                    [
+                        "git",
+                        "diff",
+                        "--cached",
+                        "--binary",
+                        "--no-ext-diff",
+                        "--no-textconv",
+                        failure["sha"],
+                    ],
+                    stdout=patch,
+                    cwd=source,
+                    check=True,
+                    timeout=120,
+                )
     except (
         ValueError,
         jsonschema.ValidationError,
@@ -274,11 +326,82 @@ def fix(artifacts: Path, output: Path, failure_id: str, source: Path) -> None:
             summary=f"Fixer failed: {type(exc).__name__}: {exc}",
         )
     save(output / f"{failure_id}.json", result)
+
+
+def prepare(
+    artifacts: Path,
+    proposal: Path,
+    output: Path,
+    failure_id: str,
+    source: Path,
+) -> None:
+    result = {
+        "id": failure_id,
+        "outcome": "unresolved",
+        "summary": "No fixer result available",
+        "validation": [],
+    }
+    try:
+        failure = load_failure(artifacts, failure_id)
+        if (failure["repo"], failure["sha"], failure["base"]) != (
+            "rapidsai/rmm",
+            os.environ["SOURCE_SHA"],
+            os.environ["TARGET_BRANCH"],
+        ):
+            raise ValueError(
+                "Analysis source does not match the workflow inputs"
+            )
+        data = json.loads((proposal / f"{failure_id}.json").read_text())
+        if not isinstance(data, dict) or data.get("id") != failure_id:
+            raise ValueError("Fixer result has an unexpected failure ID")
+        del data["id"]
+        validate(data, "result")
+        result.update(data)
+        if result["outcome"] == "proposed":
+            run(
+                "git",
+                "clone",
+                "--no-checkout",
+                "https://github.com/rapidsai/rmm.git",
+                str(source),
+            )
+            run("git", "checkout", "--detach", failure["sha"], cwd=source)
+            run(
+                "git",
+                "merge-base",
+                "--is-ancestor",
+                failure["sha"],
+                f"origin/{failure['base']}",
+                cwd=source,
+            )
+            run(
+                "git",
+                "apply",
+                "--index",
+                "--whitespace=error",
+                "--",
+                str((proposal / f"{failure_id}.patch").resolve()),
+                cwd=source,
+            )
+            if not run("git", "diff", "--cached", "--name-only", cwd=source):
+                raise ValueError("Fixer patch contains no source changes")
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        StopIteration,
+        jsonschema.ValidationError,
+        subprocess.SubprocessError,
+    ) as exc:
+        result.update(
+            outcome="unresolved",
+            summary=f"Publication preparation failed: {type(exc).__name__}: {exc}",
+        )
+    save(output / f"{failure_id}.json", result)
     with Path(os.environ["GITHUB_OUTPUT"]).open("a") as stream:
         stream.write(
             f"proposed={str(result['outcome'] == 'proposed').lower()}\n"
         )
-        stream.write(f"repository={failure['repo'].split('/')[1]}\n")
 
 
 def target_fork(source_repo: str, owner: str) -> str:
@@ -513,10 +636,11 @@ def report(artifacts: Path, output: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "stage", choices=["analyze", "fix", "publish", "report"]
+        "stage", choices=["analyze", "fix", "prepare", "publish", "report"]
     )
     parser.add_argument("--artifacts", type=Path, default=Path("artifacts"))
     parser.add_argument("--output", type=Path, default=Path("results"))
+    parser.add_argument("--proposal", type=Path, default=Path("proposal"))
     parser.add_argument("--source", type=Path, default=Path("source"))
     parser.add_argument("--failure-id", default="")
     args = parser.parse_args()
@@ -525,6 +649,14 @@ def main() -> None:
     elif args.stage == "fix":
         fix(
             args.artifacts, args.output, args.failure_id, args.source.resolve()
+        )
+    elif args.stage == "prepare":
+        prepare(
+            args.artifacts,
+            args.proposal,
+            args.output,
+            args.failure_id,
+            args.source.resolve(),
         )
     elif args.stage == "publish":
         publish(
