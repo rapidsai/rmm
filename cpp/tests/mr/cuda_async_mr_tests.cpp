@@ -1,8 +1,9 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/cuda_device.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/mr/cuda_async_memory_resource.hpp>
@@ -33,6 +34,16 @@ class AsyncMRTest : public ::testing::Test {
     }
   }
 };
+
+TEST(RuntimeAsyncAllocTest, IsSupportedMatchesEachDevice)
+{
+  for (int device = 0; device < rmm::get_num_cuda_devices(); ++device) {
+    int expected{};
+    RMM_CUDA_TRY(cudaDeviceGetAttribute(&expected, cudaDevAttrMemoryPoolsSupported, device));
+    EXPECT_EQ(rmm::detail::runtime_async_alloc::is_supported(rmm::cuda_device_id{device}),
+              expected == 1);
+  }
+}
 
 TEST_F(AsyncMRTest, ExplicitInitialPoolSize)
 {

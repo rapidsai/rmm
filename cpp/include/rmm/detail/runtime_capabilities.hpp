@@ -37,17 +37,15 @@ namespace detail {
  * drivers.
  */
 struct runtime_async_alloc {
-  static bool is_supported()
+  static bool is_supported(cuda_device_id device_id)
   {
-    static auto driver_supports_pool{[] {
-      int cuda_pool_supported{};
-      auto result = cudaDeviceGetAttribute(&cuda_pool_supported,
-                                           cudaDevAttrMemoryPoolsSupported,
-                                           rmm::get_current_cuda_device().value());
-      return result == cudaSuccess and cuda_pool_supported == 1;
-    }()};
-    return driver_supports_pool;
+    int cuda_pool_supported{};
+    auto const result = cudaDeviceGetAttribute(
+      &cuda_pool_supported, cudaDevAttrMemoryPoolsSupported, device_id.value());
+    return result == cudaSuccess and cuda_pool_supported == 1;
   }
+
+  static bool is_supported() { return is_supported(rmm::get_current_cuda_device()); }
 };
 
 /**
