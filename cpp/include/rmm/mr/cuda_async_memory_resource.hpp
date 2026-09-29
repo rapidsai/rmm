@@ -71,14 +71,21 @@ class RMM_EXPORT cuda_async_memory_resource final
    * If the pool size grows beyond the release threshold, unused memory held by the pool will be
    * released at the next synchronization event.
    *
+   * Unless an explicit release threshold or non-`none` export handle type requires a new pool, the
+   * resource uses the current CUDA memory pool without owning it. A non-default current pool is
+   * presumed to be user-selected and none of its attributes are modified. If the current pool is
+   * the device-default pool, RMM sets its release threshold to the maximum value of
+   * `std::uint64_t`. On systems supporting hardware decompression, RMM instead creates a
+   * non-releasing, hardware-decompression-enabled pool, makes it current, and retains it for the
+   * process lifetime.
+   *
    * @throws rmm::logic_error if the CUDA version does not support `cudaMallocAsync`
    *
    * @param initial_pool_size Optional initial size in bytes of the pool. If provided, the pool
    * will be primed by allocating and immediately deallocating this amount of memory on the
    * default CUDA stream.
-   * @param release_threshold Optional release threshold size in bytes of the pool. If no value is
-   * provided, the release threshold is set to the maximum value of `std::uint64_t`, so that the
-   * pool retains memory across synchronization events unless the caller specifies otherwise.
+   * @param release_threshold Optional release threshold size in bytes. If provided, a new pool is
+   * created with this threshold. A value of zero is mapped to the maximum value of `std::uint64_t`.
    * @param export_handle_type Optional `cudaMemAllocationHandleType` that allocations from this
    * resource should support interprocess communication (IPC). Default is `cudaMemHandleTypeNone`
    * for no IPC support.

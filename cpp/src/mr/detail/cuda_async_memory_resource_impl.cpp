@@ -17,10 +17,94 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <map>
+#include <mutex>
 
 RMM_NAMESPACE_BEGIN
 namespace mr {
 namespace detail {
+namespace {
+
+struct retained_pool_state {
+  std::mutex lock;
+  cudaMemPool_t pool{};
+};
+
+retained_pool_state& get_retained_pool_state(rmm::cuda_device_id device_id)
+{
+  static std::mutex lock;
+  static std::map<rmm::cuda_device_id::value_type, retained_pool_state> states;
+  std::lock_guard guard{lock};
+  return states.try_emplace(device_id.value()).first->second;
+}
+
+cudaMemPool_t create_pool(cudaMemAllocationHandleType handle_type,
+                          bool enable_hw_decompress,
+                          std::uint64_t release_threshold)
+{
+  RMM_EXPECTS(rmm::detail::export_handle_type::is_supported(handle_type),
+              "Requested IPC memory handle type not supported");
+
+  // Construct explicit pool
+  cudaMemPoolProps pool_props{};
+  pool_props.allocType     = cudaMemAllocationTypePinned;
+  pool_props.handleTypes   = handle_type;
+  pool_props.location.type = cudaMemLocationTypeDevice;
+  pool_props.location.id   = rmm::get_current_cuda_device().value();
+
+#if CUDART_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_VERSION
+  // usage field in the cudaMemPoolProps only exists in new enough versions of the runtime
+  // headers.
+  if (enable_hw_decompress) { pool_props.usage = cudaMemPoolCreateUsageHwDecompress; }
+#else
+  (void)enable_hw_decompress;
+#endif
+
+  cudaMemPool_t pool{};
+  RMM_CUDA_TRY(cudaMemPoolCreate(&pool, &pool_props));
+  RMM_CUDA_TRY(cudaMemPoolSetAttribute(pool, cudaMemPoolAttrReleaseThreshold, &release_threshold));
+  return pool;
+}
+
+cudaMemPool_t get_current_pool(bool enable_hw_decompress)
+{
+  auto const device_id = rmm::get_current_cuda_device();
+  auto& state          = get_retained_pool_state(device_id);
+  std::lock_guard guard{state.lock};
+
+  cudaMemPool_t current_pool{};
+  cudaMemPool_t default_pool{};
+  RMM_CUDA_TRY(cudaDeviceGetMemPool(&current_pool, device_id.value()));
+  RMM_CUDA_TRY(cudaDeviceGetDefaultMemPool(&default_pool, device_id.value()));
+  if (current_pool != default_pool) { return current_pool; }
+
+  auto constexpr max_threshold = std::numeric_limits<std::uint64_t>::max();
+  if (!enable_hw_decompress) {
+    // Need an l-value to take address to pass to cudaMemPoolSetAttribute
+    auto threshold = max_threshold;
+    RMM_CUDA_TRY(
+      cudaMemPoolSetAttribute(default_pool, cudaMemPoolAttrReleaseThreshold, &threshold));
+    return default_pool;
+  }
+
+  bool created{};
+  if (state.pool == nullptr) {
+    state.pool = create_pool(cudaMemHandleTypeNone, true, max_threshold);
+    created    = true;
+  }
+  try {
+    RMM_CUDA_TRY(cudaDeviceSetMemPool(device_id.value(), state.pool));
+  } catch (...) {
+    if (created) {
+      cudaMemPoolDestroy(state.pool);
+      state.pool = nullptr;
+    }
+    throw;
+  }
+  return state.pool;
+}
+
+}  // namespace
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
@@ -32,31 +116,18 @@ cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
   RMM_EXPECTS(rmm::detail::runtime_async_alloc::is_supported(),
               "cudaMallocAsync not supported with this CUDA driver/runtime version");
 
-  // Construct explicit pool
-  cudaMemPoolProps pool_props{};
-  pool_props.allocType = cudaMemAllocationTypePinned;
-  pool_props.handleTypes =
+  auto const handle_type =
     static_cast<cudaMemAllocationHandleType>(export_handle_type.value_or(cudaMemHandleTypeNone));
-
-#if CUDART_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_VERSION
-  // usage field in the cudaMemPoolProps only exists in new enough versions of the runtime
-  // headers.
-  if (enable_hw_decompress) { pool_props.usage = cudaMemPoolCreateUsageHwDecompress; }
-#else
-  (void)enable_hw_decompress;
-#endif
-
-  RMM_EXPECTS(rmm::detail::export_handle_type::is_supported(pool_props.handleTypes),
-              "Requested IPC memory handle type not supported");
-  pool_props.location.type = cudaMemLocationTypeDevice;
-  pool_props.location.id   = rmm::get_current_cuda_device().value();
-  cudaMemPool_t cuda_pool_handle{};
-  RMM_CUDA_TRY(cudaMemPoolCreate(&cuda_pool_handle, &pool_props));
-  pool_ = cuda_async_view_memory_resource{cuda_pool_handle};
-
-  // Need an l-value to take address to pass to cudaMemPoolSetAttribute
-  std::uint64_t threshold = release_threshold.value_or(std::numeric_limits<std::uint64_t>::max());
-  RMM_CUDA_TRY(cudaMemPoolSetAttribute(pool_handle(), cudaMemPoolAttrReleaseThreshold, &threshold));
+  owns_pool_ = release_threshold.has_value() || handle_type != cudaMemHandleTypeNone;
+  if (owns_pool_) {
+    auto const threshold = release_threshold.value_or(0) == 0
+                             ? std::numeric_limits<std::uint64_t>::max()
+                             : release_threshold.value();
+    pool_ =
+      cuda_async_view_memory_resource{create_pool(handle_type, enable_hw_decompress, threshold)};
+  } else {
+    pool_ = cuda_async_view_memory_resource{get_current_pool(enable_hw_decompress)};
+  }
 
   // Allocate and immediately deallocate the initial_pool_size to prime the pool with the
   // specified size (only if initial_pool_size is provided)
@@ -69,7 +140,7 @@ cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
 
 cuda_async_memory_resource_impl::~cuda_async_memory_resource_impl()
 {
-  if (rmm::process_is_exiting()) { return; }
+  if (!owns_pool_ || rmm::process_is_exiting()) { return; }
 
   RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaMemPoolDestroy(pool_handle()));
 }
