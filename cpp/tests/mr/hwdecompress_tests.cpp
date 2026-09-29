@@ -1,8 +1,9 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/cuda_device.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/mr/cuda_async_memory_resource.hpp>
@@ -32,7 +33,7 @@ class HWDecompressTest : public ::testing::Test {
       EXPECT_TRUE(is_capable);
     } else {
       GTEST_SKIP() << "Skipping since hardware decompression is not supported "
-                   << "by the current CUDA driver.";
+                   << "by the current CUDA driver or device.";
     }
 #else
     GTEST_SKIP() << "Skipping since hardware decompression is not supported "
@@ -40,6 +41,25 @@ class HWDecompressTest : public ::testing::Test {
 #endif
   }
 };
+
+TEST(HWDecompressSupportTest, IsSupportedMatchesDeviceCapability)
+{
+  for (int device = 0; device < rmm::get_num_cuda_devices(); ++device) {
+    bool expected{};
+#if CUDA_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_VERSION
+    int driver_version{};
+    RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
+    if (driver_version >= RMM_MIN_HWDECOMPRESS_CUDA_VERSION) {
+      int algorithm_mask{};
+      EXPECT_EQ(cuDeviceGetAttribute(
+                  &algorithm_mask, CU_DEVICE_ATTRIBUTE_MEM_DECOMPRESS_ALGORITHM_MASK, device),
+                CUDA_SUCCESS);
+      expected = algorithm_mask != CU_MEM_DECOMPRESS_UNSUPPORTED;
+    }
+#endif
+    EXPECT_EQ(rmm::detail::hwdecompress::is_supported(rmm::cuda_device_id{device}), expected);
+  }
+}
 
 TEST_F(HWDecompressTest, CudaMalloc)
 {

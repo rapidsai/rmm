@@ -8,8 +8,10 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 
+#include <cuda.h>
 #include <cuda_runtime_api.h>
 
+#include <cudaTypedefs.h>
 #include <dlfcn.h>
 
 #include <atomic>
@@ -119,11 +121,10 @@ struct export_handle_type {
 
 /**
  * @brief Check whether `cudaMemPoolCreateUsageHwDecompress` is a supported
- * pool property on the present CUDA driver version.
+ * pool property on the present CUDA driver version and device hardware.
  *
- * @note Even if this function returns `true`, hardware decompression will not be enabled
- * on async memory pools if the version of cudart that RMM was compiled with is too low
- * (see `RMM_MIN_HWDECOMPRESS_CUDA_VERSION`).
+ * @note This function returns `false` if the version of cudart that RMM was compiled with is too
+ * low (see `RMM_MIN_HWDECOMPRESS_CUDA_VERSION`).
  *
  * @return true if supported
  * @return false if unsupported
@@ -135,16 +136,43 @@ struct export_handle_type {
 #pragma nv_diag_suppress 20011
 #endif
 struct hwdecompress {
-  static bool is_supported()
+  static bool is_supported(cuda_device_id device_id)
   {
+#if CUDART_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_VERSION
     // Check if hardware decompression is supported (requires CUDA 12.8 driver or higher)
-    static bool is_supported = []() {
+    static bool driver_supported = []() {
       int driver_version{};
       RMM_CUDA_TRY(cudaDriverGetVersion(&driver_version));
       return driver_version >= RMM_MIN_HWDECOMPRESS_CUDA_VERSION;
     }();
-    return is_supported;
+    if (!driver_supported) { return false; }
+
+    // The runtime API has no enumerator for the decompression device attribute.
+    static auto const get_attribute = []() -> PFN_cuDeviceGetAttribute_v2000 {
+      void* function{};
+      cudaDriverEntryPointQueryResult status{};
+      auto const result = cudaGetDriverEntryPointByVersion("cuDeviceGetAttribute",
+                                                           &function,
+                                                           RMM_MIN_HWDECOMPRESS_CUDA_VERSION,
+                                                           cudaEnableDefault,
+                                                           &status);
+      if (result != cudaSuccess || status != cudaDriverEntryPointSuccess) { return nullptr; }
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+      return reinterpret_cast<PFN_cuDeviceGetAttribute_v2000>(function);
+    }();
+    if (get_attribute == nullptr) { return false; }
+
+    int algorithm_mask{};
+    auto const result = get_attribute(
+      &algorithm_mask, CU_DEVICE_ATTRIBUTE_MEM_DECOMPRESS_ALGORITHM_MASK, device_id.value());
+    return result == CUDA_SUCCESS && algorithm_mask != CU_MEM_DECOMPRESS_UNSUPPORTED;
+#else
+    (void)device_id;
+    return false;
+#endif
   }
+
+  static bool is_supported() { return is_supported(rmm::get_current_cuda_device()); }
 };
 #ifdef __CUDACC__
 #pragma nv_diagnostic pop
