@@ -336,7 +336,8 @@ device. This resource is used when another is not explicitly provided.
 Accessing and modifying this resource is done through two functions:
 - `device_async_resource_ref get_current_device_resource_ref()`
    - Returns a non-owning reference to the resource for the active CUDA device.
-   - The initial resource is an instance of `cuda_memory_resource`.
+   - The initial resource is a `cuda_async_memory_resource` when stream-ordered allocation is
+     supported and a `cuda_memory_resource` otherwise.
    - This function is thread safe with respect to concurrent calls to it and
      `set_current_device_resource()`.
    - For more explicit control, you can use `get_per_device_resource_ref()`, which takes a device ID.
