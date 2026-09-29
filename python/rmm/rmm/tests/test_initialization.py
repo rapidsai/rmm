@@ -128,3 +128,28 @@ def test_available_device_memory():
     assert initial_memory[1] == final_memory[1]
     assert initial_memory[0] > 0
     assert final_memory[0] > 0
+
+
+def test_reinitialize_pool_upstream():
+    from cuda.bindings import runtime
+
+    rmm.reinitialize(pool_allocator=True, initial_pool_size="1MiB")
+    mr = rmm.mr.get_current_device_resource()
+    assert type(mr) is rmm.mr.PoolMemoryResource
+    if rmm._cuda.gpu.getDeviceAttribute(
+        runtime.cudaDeviceAttr.cudaDevAttrMemoryPoolsSupported,
+        rmm._cuda.gpu.getDevice(),
+    ):
+        expected = rmm.mr.CudaAsyncMemoryResource
+    else:
+        expected = rmm.mr.CudaMemoryResource
+    assert type(mr.get_upstream()) is expected
+
+
+def test_reinitialize_managed_pool_upstream():
+    rmm.reinitialize(
+        pool_allocator=True, managed_memory=True, initial_pool_size="1MiB"
+    )
+    mr = rmm.mr.get_current_device_resource()
+    assert type(mr) is rmm.mr.PoolMemoryResource
+    assert type(mr.get_upstream()) is rmm.mr.ManagedMemoryResource

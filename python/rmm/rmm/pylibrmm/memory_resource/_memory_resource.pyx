@@ -20,7 +20,12 @@ from libcpp.pair cimport pair
 
 from cuda.bindings import driver, runtime
 
-from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
+from rmm._cuda.gpu import (
+    CUDARuntimeError,
+    getDevice,
+    getDeviceAttribute,
+    setDevice,
+)
 
 from rmm.pylibrmm.stream cimport Stream
 from rmm.pylibrmm.utils cimport as_stream
@@ -999,6 +1004,17 @@ cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
         pass
 
 
+def _pool_upstream():
+    """
+    Returns the upstream for a pool resource on the current device.
+    """
+    if getDeviceAttribute(
+        runtime.cudaDeviceAttr.cudaDevAttrMemoryPoolsSupported, getDevice()
+    ):
+        return CudaAsyncMemoryResource()
+    return CudaMemoryResource()
+
+
 # Global per-device memory resources; dict of int:DeviceMemoryResource
 cdef _per_device_mrs = defaultdict(CudaMemoryResource)
 
@@ -1020,9 +1036,10 @@ cpdef void _initialize(
     else:
         upstream = CudaMemoryResource
 
+    pool_upstream = upstream if managed_memory else _pool_upstream
+
     if pool_allocator:
         typ = PoolMemoryResource
-        args = (upstream(),)
         kwargs = dict(
             initial_pool_size=None if initial_pool_size is None
             else parse_bytes(initial_pool_size),
@@ -1031,7 +1048,6 @@ cpdef void _initialize(
         )
     else:
         typ = upstream
-        args = ()
         kwargs = {}
 
     cdef DeviceMemoryResource mr
@@ -1058,6 +1074,7 @@ cpdef void _initialize(
         # create a memory resource per specified device
         for device in devices:
             setDevice(device)
+            args = (pool_upstream(),) if pool_allocator else ()
 
             if logging:
                 mr = LoggingResourceAdaptor(
