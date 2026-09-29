@@ -19,7 +19,8 @@ tracking_resource_adaptor::tracking_resource_adaptor(
 {
 }
 
-device_async_resource_ref tracking_resource_adaptor::get_upstream_resource() const noexcept
+cuda::mr::resource_ref<cuda::mr::device_accessible>
+tracking_resource_adaptor::get_upstream_resource() const noexcept
 {
   return get().get_upstream_resource();
 }

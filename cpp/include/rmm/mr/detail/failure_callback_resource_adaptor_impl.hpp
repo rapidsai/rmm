@@ -8,7 +8,6 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/failure_callback_t.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/stream>
@@ -56,9 +55,10 @@ class failure_callback_resource_adaptor_impl {
     return !(*this == other);
   }
 
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
+  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
+    const noexcept
   {
-    return device_async_resource_ref{
+    return cuda::mr::resource_ref<cuda::mr::device_accessible>{
       const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
   }
 

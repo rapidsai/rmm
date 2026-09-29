@@ -11,8 +11,8 @@
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
-#include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/stream>
 #include <cuda_runtime_api.h>
 
@@ -53,7 +53,7 @@ allocation remove_at(allocation_vector& allocs, std::size_t index)
 }
 
 template <typename SizeDistribution>
-void random_allocation_free(rmm::device_async_resource_ref mr,
+void random_allocation_free(cuda::mr::resource_ref<cuda::mr::device_accessible> mr,
                             SizeDistribution size_distribution,
                             std::size_t num_allocations,
                             std::size_t max_usage,  // in MiB
@@ -132,7 +132,7 @@ void random_allocation_free(rmm::device_async_resource_ref mr,
 }  // namespace
 
 void uniform_random_allocations(
-  rmm::device_async_resource_ref mr,
+  cuda::mr::resource_ref<cuda::mr::device_accessible> mr,
   std::size_t num_allocations,      // NOLINT(bugprone-easily-swappable-parameters)
   std::size_t max_allocation_size,  // size in MiB
   std::size_t max_usage,
@@ -143,7 +143,7 @@ void uniform_random_allocations(
 }
 
 // TODO figure out how to map a normal distribution to integers between 1 and max_allocation_size
-/*void normal_random_allocations(rmm::device_async_resource_ref mr,
+/*void normal_random_allocations(cuda::mr::resource_ref<cuda::mr::device_accessible> mr,
                                 std::size_t num_allocations = 1000,
                                 std::size_t mean_allocation_size = 500, // in MiB
                                 std::size_t stddev_allocation_size = 500, // in MiB

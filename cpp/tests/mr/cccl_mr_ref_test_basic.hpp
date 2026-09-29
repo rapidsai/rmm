@@ -15,7 +15,7 @@ namespace rmm::test {
  * @brief Typed-test fixture for basic CCCL-style memory resource tests.
  *
  * The Fixture parameter must be a ::testing::Test subclass providing:
- *   rmm::device_async_resource_ref ref
+ *   cuda::mr::resource_ref<cuda::mr::device_accessible> ref
  *   rmm::cuda_stream stream
  */
 template <typename Fixture>

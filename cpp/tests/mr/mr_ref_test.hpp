@@ -23,8 +23,8 @@
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 #include <rmm/mr/system_memory_resource.hpp>
-#include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/stream>
 
 #include <gtest/gtest.h>
@@ -34,7 +34,7 @@
 #include <string>
 #include <utility>
 
-using resource_ref = rmm::device_async_resource_ref;
+using resource_ref = cuda::mr::resource_ref<cuda::mr::device_accessible>;
 
 namespace rmm::test {
 
@@ -116,7 +116,7 @@ inline void test_allocate(resource_ref ref, std::size_t bytes)
   }
 }
 
-inline void test_async_allocate(rmm::device_async_resource_ref ref,
+inline void test_async_allocate(cuda::mr::resource_ref<cuda::mr::device_accessible> ref,
                                 std::size_t bytes,
                                 cuda::stream_ref stream = cuda::stream_ref{
                                   cudaStream_t{cudaStreamDefault}})
@@ -147,8 +147,8 @@ inline void concurrent_allocations_are_different(resource_ref ref)
   ref.deallocate_sync(ptr2, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
-inline void concurrent_async_allocations_are_different(rmm::device_async_resource_ref ref,
-                                                       cuda::stream_ref stream)
+inline void concurrent_async_allocations_are_different(
+  cuda::mr::resource_ref<cuda::mr::device_accessible> ref, cuda::stream_ref stream)
 {
   const auto size{8_B};
   void* ptr1 = ref.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
@@ -189,7 +189,7 @@ inline void test_various_allocations(resource_ref ref)
   }
 }
 
-inline void test_various_async_allocations(rmm::device_async_resource_ref ref,
+inline void test_various_async_allocations(cuda::mr::resource_ref<cuda::mr::device_accessible> ref,
                                            cuda::stream_ref stream)
 {
   // test allocating zero bytes on non-default stream
@@ -244,7 +244,7 @@ inline void test_random_allocations(resource_ref ref,
   });
 }
 
-inline void test_random_async_allocations(rmm::device_async_resource_ref ref,
+inline void test_random_async_allocations(cuda::mr::resource_ref<cuda::mr::device_accessible> ref,
                                           std::size_t num_allocations = default_num_allocations,
                                           size_in_bytes max_size      = default_max_size,
                                           cuda::stream_ref stream     = cuda::stream_ref{
@@ -322,10 +322,10 @@ inline void test_mixed_random_allocation_free(resource_ref ref,
   EXPECT_EQ(allocations.size(), active_allocations);
 }
 
-inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_ref ref,
-                                                    size_in_bytes max_size  = default_max_size,
-                                                    cuda::stream_ref stream = cuda::stream_ref{
-                                                      cudaStream_t{cudaStreamDefault}})
+inline void test_mixed_random_async_allocation_free(
+  cuda::mr::resource_ref<cuda::mr::device_accessible> ref,
+  size_in_bytes max_size  = default_max_size,
+  cuda::stream_ref stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}})
 {
   std::default_random_engine generator;
   constexpr std::size_t num_allocations{100};

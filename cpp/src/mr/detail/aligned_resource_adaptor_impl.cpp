@@ -28,9 +28,10 @@ aligned_resource_adaptor_impl::aligned_resource_adaptor_impl(
   RMM_EXPECTS(rmm::is_supported_alignment(alignment), "Allocation alignment is not a power of 2.");
 }
 
-device_async_resource_ref aligned_resource_adaptor_impl::get_upstream_resource() const noexcept
+cuda::mr::resource_ref<cuda::mr::device_accessible>
+aligned_resource_adaptor_impl::get_upstream_resource() const noexcept
 {
-  return device_async_resource_ref{
+  return cuda::mr::resource_ref<cuda::mr::device_accessible>{
     const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
 }
 

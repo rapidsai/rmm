@@ -15,7 +15,7 @@ namespace rmm::test {
 struct PrefetchMRFixture : public ::testing::Test {
   rmm::mr::cuda_memory_resource upstream{};
   rmm::mr::prefetch_resource_adaptor mr{upstream};
-  rmm::device_async_resource_ref ref{mr};
+  cuda::mr::resource_ref<cuda::mr::device_accessible> ref{mr};
   rmm::cuda_stream stream{};
 };
 

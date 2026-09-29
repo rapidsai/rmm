@@ -16,7 +16,7 @@ struct FailureCallbackMRFixture : public ::testing::Test {
   rmm::mr::cuda_memory_resource upstream{};
   rmm::mr::failure_callback_resource_adaptor<> mr{
     upstream, [](std::size_t, void*) { return false; }, nullptr};
-  rmm::device_async_resource_ref ref{mr};
+  cuda::mr::resource_ref<cuda::mr::device_accessible> ref{mr};
   rmm::cuda_stream stream{};
 };
 

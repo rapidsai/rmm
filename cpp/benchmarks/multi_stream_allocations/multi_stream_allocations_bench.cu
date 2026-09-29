@@ -6,6 +6,7 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_pool.hpp>
+#include <rmm/detail/error.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/binning_memory_resource.hpp>
@@ -13,8 +14,8 @@
 #include <rmm/mr/cuda_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
-#include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/stream>
 #include <cuda_runtime_api.h>
 
@@ -41,7 +42,8 @@ __global__ void compute_bound_kernel(int64_t* out)
 using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
 using MRFactoryFunc       = std::function<any_device_resource()>;
 
-static void run_prewarm(rmm::cuda_stream_pool& stream_pool, rmm::device_async_resource_ref mr)
+static void run_prewarm(rmm::cuda_stream_pool& stream_pool,
+                        cuda::mr::resource_ref<cuda::mr::device_accessible> mr)
 {
   auto buffers = std::vector<rmm::device_uvector<int64_t>>();
   for (std::size_t i = 0; i < stream_pool.get_pool_size(); i++) {
@@ -52,7 +54,7 @@ static void run_prewarm(rmm::cuda_stream_pool& stream_pool, rmm::device_async_re
 
 static void run_test(std::size_t num_kernels,
                      rmm::cuda_stream_pool& stream_pool,
-                     rmm::device_async_resource_ref mr)
+                     cuda::mr::resource_ref<cuda::mr::device_accessible> mr)
 {
   for (std::size_t i = 0; i < num_kernels; i++) {
     auto stream = stream_pool.get_stream(i);

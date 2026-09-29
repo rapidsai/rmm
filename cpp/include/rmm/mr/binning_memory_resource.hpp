@@ -6,7 +6,6 @@
 
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/binning_memory_resource_impl.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -71,9 +70,10 @@ class RMM_EXPORT binning_memory_resource
   ~binning_memory_resource() = default;
 
   /**
-   * @briefreturn{device_async_resource_ref to the upstream resource}
+   * @briefreturn{cuda::mr::resource_ref<cuda::mr::device_accessible> to the upstream resource}
    */
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
+    const noexcept;
 
   /**
    * @brief Add a bin allocator to this resource
@@ -90,8 +90,9 @@ class RMM_EXPORT binning_memory_resource
    * @param allocation_size The maximum size that this bin allocates
    * @param bin_resource The memory resource for the bin
    */
-  void add_bin(std::size_t allocation_size,
-               std::optional<device_async_resource_ref> bin_resource = std::nullopt);
+  void add_bin(
+    std::size_t allocation_size,
+    std::optional<cuda::mr::resource_ref<cuda::mr::device_accessible>> bin_resource = std::nullopt);
 };
 
 static_assert(cuda::mr::resource_with<binning_memory_resource, cuda::mr::device_accessible>,

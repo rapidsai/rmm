@@ -12,7 +12,6 @@
 #include <rmm/detail/format.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/stream>

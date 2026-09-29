@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -14,7 +14,7 @@ namespace rmm::test {
 struct PinnedPoolMRFixture : public ::testing::Test {
   rmm::mr::pinned_host_memory_resource pinned{};
   rmm::mr::pool_memory_resource mr{pinned, 0};
-  rmm::device_async_resource_ref ref{mr};
+  cuda::mr::resource_ref<cuda::mr::device_accessible> ref{mr};
   rmm::cuda_stream stream{};
 };
 

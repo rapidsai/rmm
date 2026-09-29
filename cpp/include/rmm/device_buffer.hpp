@@ -9,7 +9,6 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/per_device_resource.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/stream>
@@ -373,7 +372,10 @@ class device_buffer {
   /**
    * @briefreturn{The resource used to allocate and deallocate}
    */
-  [[nodiscard]] rmm::device_async_resource_ref memory_resource() noexcept { return _mr; }
+  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> memory_resource() noexcept
+  {
+    return _mr;
+  }
 
  private:
   void* _data{nullptr};  ///< Pointer to device memory allocation

@@ -11,8 +11,8 @@
 #include <rmm/detail/export.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/per_device_resource.hpp>
-#include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/std/iterator>
 #include <cuda/std/span>
 #include <cuda/stream>
@@ -597,7 +597,7 @@ class device_uvector {
    * @briefreturn{The resource used to allocate and deallocate the device
    * storage}
    */
-  [[nodiscard]] rmm::device_async_resource_ref memory_resource() noexcept
+  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> memory_resource() noexcept
   {
     return _storage.memory_resource();
   }

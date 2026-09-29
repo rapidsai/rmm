@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -15,7 +15,7 @@ namespace rmm::test {
 struct BinningMRFixture : public ::testing::Test {
   rmm::mr::cuda_memory_resource upstream{};
   rmm::mr::binning_memory_resource mr{upstream, 18, 22};
-  rmm::device_async_resource_ref ref{mr};
+  cuda::mr::resource_ref<cuda::mr::device_accessible> ref{mr};
   rmm::cuda_stream stream{};
 };
 

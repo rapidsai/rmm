@@ -24,7 +24,7 @@ TEST(BinningTest, ExplicitBinMR)
 {
   cuda_mr cuda{};
   binning_mr mr{cuda};
-  mr.add_bin(1024, rmm::device_async_resource_ref{cuda});
+  mr.add_bin(1024, cuda::mr::resource_ref<cuda::mr::device_accessible>{cuda});
   auto* ptr = mr.allocate_sync(512);
   EXPECT_NE(ptr, nullptr);
   mr.deallocate_sync(ptr, 512);
@@ -36,7 +36,7 @@ TEST(BinningTest, ZeroByteAllocationsUseBinResource)
   mock_resource mock;
   mock_resource_wrapper wrapper{&mock};
   binning_mr mr{cuda};
-  mr.add_bin(1024, device_async_resource_ref{wrapper});
+  mr.add_bin(1024, cuda::mr::resource_ref<cuda::mr::device_accessible>{wrapper});
 
   EXPECT_CALL(mock, allocate(::testing::_, 0, rmm::CUDA_ALLOCATION_ALIGNMENT))
     .Times(2)

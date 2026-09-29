@@ -26,9 +26,10 @@ limiting_resource_adaptor_impl::limiting_resource_adaptor_impl(
 {
 }
 
-device_async_resource_ref limiting_resource_adaptor_impl::get_upstream_resource() const noexcept
+cuda::mr::resource_ref<cuda::mr::device_accessible>
+limiting_resource_adaptor_impl::get_upstream_resource() const noexcept
 {
-  return device_async_resource_ref{
+  return cuda::mr::resource_ref<cuda::mr::device_accessible>{
     const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
 }
 

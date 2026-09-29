@@ -47,9 +47,10 @@ pool_memory_resource_impl::pool_memory_resource_impl(
 
 pool_memory_resource_impl::~pool_memory_resource_impl() { release(); }
 
-device_async_resource_ref pool_memory_resource_impl::get_upstream_resource() const noexcept
+cuda::mr::resource_ref<cuda::mr::device_accessible>
+pool_memory_resource_impl::get_upstream_resource() const noexcept
 {
-  return device_async_resource_ref{
+  return cuda::mr::resource_ref<cuda::mr::device_accessible>{
     const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
 }
 

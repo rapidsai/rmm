@@ -36,7 +36,7 @@ INSTANTIATE_TEST_SUITE_P(ArenaMultiThreadResourceTests,
 struct ArenaMRFixture : public ::testing::Test {
   rmm::mr::cuda_memory_resource upstream{};
   rmm::mr::arena_memory_resource mr{upstream, 8_GiB};
-  rmm::device_async_resource_ref ref{mr};
+  cuda::mr::resource_ref<cuda::mr::device_accessible> ref{mr};
   rmm::cuda_stream stream{};
 };
 

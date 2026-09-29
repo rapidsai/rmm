@@ -6,7 +6,6 @@
 
 #include <rmm/mr/detail/fixed_size_free_list.hpp>
 #include <rmm/mr/detail/stream_ordered_memory_resource.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/stream>
@@ -52,7 +51,8 @@ class fixed_size_memory_resource_impl final
     return !(*this == other);
   }
 
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
+    const noexcept;
 
   [[nodiscard]] std::size_t get_block_size() const noexcept;
 

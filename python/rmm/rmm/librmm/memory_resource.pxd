@@ -21,7 +21,7 @@ cdef extern from * nogil:
     #include <optional>
     #include <cuda/stream>
     #include <rmm/aligned.hpp>
-    #include <rmm/resource_ref.hpp>
+    #include <cuda/memory_resource>
 
     // Default-constructible wrapper around rmm::device_async_resource_ref.
     //
@@ -41,14 +41,14 @@ cdef extern from * nogil:
     // Cython code continues to use the familiar name while the
     // generated C++ uses the default-constructible wrapper.
     struct cython_device_async_resource_ref {
-        std::optional<rmm::device_async_resource_ref> ref;
+        std::optional<cuda::mr::resource_ref<cuda::mr::device_accessible>> ref;
 
         cython_device_async_resource_ref() noexcept = default;
 
         cython_device_async_resource_ref(
-            rmm::device_async_resource_ref r) noexcept : ref(r) {}
+            cuda::mr::resource_ref<cuda::mr::device_accessible> r) noexcept : ref(r) {}
 
-        operator rmm::device_async_resource_ref() const noexcept {
+        operator cuda::mr::resource_ref<cuda::mr::device_accessible>() const noexcept {
             return ref.value();
         }
 
@@ -90,12 +90,12 @@ cdef extern from "<cuda/memory_resource>" namespace "cuda::mr" nogil:
 cdef extern from *:
     """
     #include <optional>
-    #include <rmm/resource_ref.hpp>
+    #include <cuda/memory_resource>
     template <typename T>
     std::optional<cython_device_async_resource_ref>
     make_device_async_resource_ref(T& r) {
         return std::optional<cython_device_async_resource_ref>(
-            rmm::device_async_resource_ref(r));
+            cuda::mr::resource_ref<cuda::mr::device_accessible>(r));
     }
     """
     optional[device_async_resource_ref] make_device_async_resource_ref(

@@ -20,7 +20,8 @@
 #include <rmm/mr/statistics_resource_adaptor.hpp>
 #include <rmm/mr/thread_safe_resource_adaptor.hpp>
 #include <rmm/mr/tracking_resource_adaptor.hpp>
-#include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <gtest/gtest.h>
 
@@ -73,7 +74,7 @@ template <typename AdaptorType>
 struct CcclAdaptorTest : public ::testing::Test {
   cuda_mr cuda{};
   AdaptorType mr{make_mr()};
-  rmm::device_async_resource_ref ref{mr};
+  cuda::mr::resource_ref<cuda::mr::device_accessible> ref{mr};
   rmm::cuda_stream stream{};
 
   AdaptorType make_mr()
@@ -130,7 +131,7 @@ TYPED_TEST(CcclAdaptorTest, Equality)
 
 TYPED_TEST(CcclAdaptorTest, GetUpstreamResource)
 {
-  rmm::device_async_resource_ref expected{this->cuda};
+  cuda::mr::resource_ref<cuda::mr::device_accessible> expected{this->cuda};
   EXPECT_EQ(this->mr.get_upstream_resource(), expected);
 }
 
@@ -180,14 +181,14 @@ TEST(ArenaMRAdaptorTest, EqualityAndSharedOwnership)
 TEST(CallbackMRAdaptorTest, EqualityAndSharedOwnership)
 {
   cuda_mr cuda{};
-  rmm::device_async_resource_ref upstream{cuda};
+  cuda::mr::resource_ref<cuda::mr::device_accessible> upstream{cuda};
 
   auto alloc_cb = [](std::size_t bytes, cuda::stream_ref stream, void* arg) {
-    return static_cast<rmm::device_async_resource_ref*>(arg)->allocate(
+    return static_cast<cuda::mr::resource_ref<cuda::mr::device_accessible>*>(arg)->allocate(
       stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   };
   auto dealloc_cb = [](void* ptr, std::size_t bytes, cuda::stream_ref stream, void* arg) {
-    static_cast<rmm::device_async_resource_ref*>(arg)->deallocate(
+    static_cast<cuda::mr::resource_ref<cuda::mr::device_accessible>*>(arg)->deallocate(
       stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   };
 

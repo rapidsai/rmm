@@ -86,7 +86,8 @@ TEST(FailureCallbackTest, ForwardsAlignment)
   mock_resource mock;
   mock_resource_wrapper wrapper{&mock};
   bool retried{false};
-  failure_callback_adaptor<> mr{device_async_resource_ref{wrapper}, failure_handler, &retried};
+  failure_callback_adaptor<> mr{
+    cuda::mr::resource_ref<cuda::mr::device_accessible>{wrapper}, failure_handler, &retried};
 
   auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   std::byte pointer_value{};
