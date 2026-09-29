@@ -1004,17 +1004,6 @@ cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
         pass
 
 
-def _pool_upstream():
-    """
-    Returns the upstream for a pool resource on the current device.
-    """
-    if getDeviceAttribute(
-        runtime.cudaDeviceAttr.cudaDevAttrMemoryPoolsSupported, getDevice()
-    ):
-        return CudaAsyncMemoryResource()
-    return CudaMemoryResource()
-
-
 # Global per-device memory resources; dict of int:DeviceMemoryResource
 cdef _per_device_mrs = defaultdict(CudaMemoryResource)
 
@@ -1088,6 +1077,17 @@ cpdef void _initialize(
 
         # reset CUDA device to original
         setDevice(original_device)
+
+
+def _pool_upstream():
+    """
+    Returns the upstream for a pool resource on the current device.
+    """
+    if getDeviceAttribute(
+        runtime.cudaDeviceAttr.cudaDevAttrMemoryPoolsSupported, getDevice()
+    ):
+        return CudaAsyncMemoryResource()
+    return CudaMemoryResource()
 
 
 cpdef get_per_device_resource(int device):
