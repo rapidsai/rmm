@@ -12,6 +12,11 @@
 
 #include <dlfcn.h>
 
+#include <atomic>
+#include <cstddef>
+#include <cstdint>
+#include <vector>
+
 RMM_NAMESPACE_BEGIN
 namespace detail {
 
@@ -37,14 +42,51 @@ namespace detail {
  * drivers.
  */
 struct runtime_async_alloc {
+  /**
+   * @brief Determine whether the specified device supports stream-ordered memory pools.
+   *
+   * Successful queries are cached per device. Reads and writes of the cache are lock-free.
+   *
+   * @param device_id The CUDA device to query
+   * @return true if supported
+   * @return false if unsupported or if the attribute query fails
+   */
   static bool is_supported(cuda_device_id device_id)
   {
+    enum : std::int8_t { unknown, unsupported, supported };
+    static std::vector<std::atomic<std::int8_t>> cache = [] {
+      int device_count{};
+      if (cudaGetDeviceCount(&device_count) != cudaSuccess) { device_count = 0; }
+      return std::vector<std::atomic<std::int8_t>>(static_cast<std::size_t>(device_count));
+    }();
+
+    auto const index    = static_cast<std::size_t>(device_id.value());
+    auto const in_range = device_id.value() >= 0 and index < cache.size();
+    // Each entry is written only with the same device-invariant value, so relaxed ordering
+    // suffices and concurrent writers are harmless.
+    if (in_range) {
+      auto const cached = cache[index].load(std::memory_order_relaxed);
+      if (cached != unknown) { return cached == supported; }
+    }
+
     int cuda_pool_supported{};
     auto const result = cudaDeviceGetAttribute(
       &cuda_pool_supported, cudaDevAttrMemoryPoolsSupported, device_id.value());
-    return result == cudaSuccess and cuda_pool_supported == 1;
+    if (result != cudaSuccess) { return false; }
+
+    auto const is_supported = cuda_pool_supported == 1;
+    if (in_range) {
+      cache[index].store(is_supported ? supported : unsupported, std::memory_order_relaxed);
+    }
+    return is_supported;
   }
 
+  /**
+   * @brief Determine whether the current device supports stream-ordered memory pools.
+   *
+   * @return true if supported
+   * @return false if unsupported or if the attribute query fails
+   */
   static bool is_supported() { return is_supported(rmm::get_current_cuda_device()); }
 };
 

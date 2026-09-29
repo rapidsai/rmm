@@ -12,8 +12,12 @@
 
 #include <gtest/gtest.h>
 
+#include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <thread>
+#include <vector>
 
 namespace rmm::test {
 namespace {
@@ -43,6 +47,46 @@ TEST(RuntimeAsyncAllocTest, IsSupportedMatchesEachDevice)
     EXPECT_EQ(rmm::detail::runtime_async_alloc::is_supported(rmm::cuda_device_id{device}),
               expected == 1);
   }
+}
+
+TEST(RuntimeAsyncAllocTest, IsSupportedConcurrentQueriesAgree)
+{
+  auto const num_devices = rmm::get_num_cuda_devices();
+  std::vector<bool> expected(static_cast<std::size_t>(num_devices));
+  for (int device = 0; device < num_devices; ++device) {
+    int supported{};
+    RMM_CUDA_TRY(cudaDeviceGetAttribute(&supported, cudaDevAttrMemoryPoolsSupported, device));
+    expected[static_cast<std::size_t>(device)] = supported == 1;
+  }
+
+  constexpr int num_threads{16};
+  constexpr int iterations{1000};
+  std::atomic<int> mismatches{};
+  std::vector<std::thread> threads;
+  threads.reserve(num_threads);
+  for (int thread = 0; thread < num_threads; ++thread) {
+    threads.emplace_back([&] {
+      for (int iteration = 0; iteration < iterations; ++iteration) {
+        for (int device = 0; device < num_devices; ++device) {
+          if (rmm::detail::runtime_async_alloc::is_supported(rmm::cuda_device_id{device}) !=
+              expected[static_cast<std::size_t>(device)]) {
+            ++mismatches;
+          }
+        }
+      }
+    });
+  }
+  for (auto& thread : threads) {
+    thread.join();
+  }
+  EXPECT_EQ(mismatches.load(), 0);
+}
+
+TEST(RuntimeAsyncAllocTest, IsSupportedInvalidDeviceIsFalse)
+{
+  EXPECT_FALSE(rmm::detail::runtime_async_alloc::is_supported(rmm::cuda_device_id{-1}));
+  EXPECT_FALSE(rmm::detail::runtime_async_alloc::is_supported(
+    rmm::cuda_device_id{rmm::get_num_cuda_devices()}));
 }
 
 TEST_F(AsyncMRTest, ExplicitInitialPoolSize)
