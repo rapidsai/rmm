@@ -8,8 +8,8 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/device_scalar.hpp>
 #include <rmm/mr/per_device_resource.hpp>
-#include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/stream>
 #include <cuda_runtime_api.h>
 
@@ -32,7 +32,8 @@ struct DeviceScalarTest : public ::testing::Test {
   std::default_random_engine generator{};
   T value{};
   rmm::cuda_stream stream{};
-  rmm::device_async_resource_ref mr{rmm::mr::get_current_device_resource_ref()};
+  cuda::mr::resource_ref<cuda::mr::device_accessible> mr{
+    rmm::mr::get_current_device_resource_ref()};
 
   DeviceScalarTest() : value{random_value()} {}
 

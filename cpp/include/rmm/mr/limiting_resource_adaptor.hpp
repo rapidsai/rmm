@@ -7,7 +7,6 @@
 #include <rmm/aligned.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/limiting_resource_adaptor_impl.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -60,9 +59,10 @@ class RMM_EXPORT limiting_resource_adaptor
   ~limiting_resource_adaptor() = default;
 
   /**
-   * @briefreturn{device_async_resource_ref to the upstream resource}
+   * @briefreturn{cuda::mr::resource_ref<cuda::mr::device_accessible> to the upstream resource}
    */
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
+    const noexcept;
 
   /**
    * @brief Query the number of bytes that have been allocated. Note that

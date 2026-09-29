@@ -14,7 +14,7 @@ namespace rmm::test {
 struct LoggingAdaptorFixture : public ::testing::Test {
   rmm::mr::cuda_memory_resource cuda{};
   rmm::mr::logging_resource_adaptor mr{cuda, "rmm_cccl_adaptor_test.txt"};
-  rmm::device_async_resource_ref ref{mr};
+  cuda::mr::resource_ref<cuda::mr::device_accessible> ref{mr};
   rmm::cuda_stream stream{};
 };
 

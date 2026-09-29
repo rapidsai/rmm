@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,8 +7,8 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
-#include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
@@ -60,7 +60,7 @@ struct allocation {
 template <typename MemoryResourceType>
 struct MRRefTest : public ::testing::Test {
   MemoryResourceType mr;
-  rmm::host_resource_ref ref;
+  cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible> ref;
 
   MRRefTest() : mr{}, ref{mr} {}
 
@@ -234,7 +234,7 @@ TYPED_TEST(MRRefTest, AlignmentTest)
 TEST(PinnedHostResource, isPinned)
 {
   rmm::mr::pinned_host_memory_resource mr;
-  rmm::host_resource_ref ref{mr};
+  cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible> ref{mr};
   void* ptr{nullptr};
   EXPECT_NO_THROW(ptr = ref.allocate_sync(100, rmm::CUDA_ALLOCATION_ALIGNMENT));
   EXPECT_TRUE(is_pinned_memory(ptr));

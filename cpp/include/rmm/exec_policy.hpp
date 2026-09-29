@@ -13,8 +13,8 @@
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/thrust_allocator_adaptor.hpp>
-#include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/stream>
 #include <thrust/system/cuda/execution_policy.h>
 #include <thrust/version.h>

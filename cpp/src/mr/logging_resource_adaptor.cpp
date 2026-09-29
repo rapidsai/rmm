@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/detail/error.hpp>
 #include <rmm/mr/logging_resource_adaptor.hpp>
 
 #include <cstddef>
@@ -60,7 +61,8 @@ logging_resource_adaptor::logging_resource_adaptor(
 {
 }
 
-rmm::device_async_resource_ref logging_resource_adaptor::get_upstream_resource() const noexcept
+cuda::mr::resource_ref<cuda::mr::device_accessible>
+logging_resource_adaptor::get_upstream_resource() const noexcept
 {
   return get().get_upstream_resource();
 }

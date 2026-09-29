@@ -6,7 +6,6 @@
 
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/thread_safe_resource_adaptor_impl.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -57,9 +56,10 @@ class RMM_EXPORT thread_safe_resource_adaptor
   ~thread_safe_resource_adaptor() = default;
 
   /**
-   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
+   * @briefreturn{cuda::mr::resource_ref<cuda::mr::device_accessible> to the upstream resource}
    */
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
+    const noexcept;
 };
 
 static_assert(cuda::mr::resource_with<thread_safe_resource_adaptor, cuda::mr::device_accessible>,

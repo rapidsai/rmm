@@ -21,7 +21,8 @@ pool_memory_resource::pool_memory_resource(
 {
 }
 
-device_async_resource_ref pool_memory_resource::get_upstream_resource() const noexcept
+cuda::mr::resource_ref<cuda::mr::device_accessible> pool_memory_resource::get_upstream_resource()
+  const noexcept
 {
   return get().get_upstream_resource();
 }

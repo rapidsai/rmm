@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include <rmm/resource_ref.hpp>
-
 #include <cuda/memory_resource>
 #include <cuda/stream>
 
@@ -26,7 +24,8 @@ namespace rmm::test {
  */
 class delayed_memory_resource {
  public:
-  delayed_memory_resource(rmm::device_async_resource_ref upstream, std::chrono::milliseconds delay)
+  delayed_memory_resource(cuda::mr::resource_ref<cuda::mr::device_accessible> upstream,
+                          std::chrono::milliseconds delay)
     : upstream_{upstream}, delay_{delay}
   {
   }

@@ -8,7 +8,6 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/per_device_resource.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/stream>
@@ -21,17 +20,18 @@
 
 class device_check_resource_adaptor final {
  public:
-  device_check_resource_adaptor(rmm::device_async_resource_ref upstream)
+  device_check_resource_adaptor(cuda::mr::resource_ref<cuda::mr::device_accessible> upstream)
     : device_id{rmm::get_current_cuda_device()}, upstream_(upstream)
   {
   }
 
   /**
-   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
+   * @briefreturn{cuda::mr::resource_ref<cuda::mr::device_accessible> to the upstream resource}
    */
-  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
+    const noexcept
   {
-    return rmm::device_async_resource_ref{upstream_};
+    return cuda::mr::resource_ref<cuda::mr::device_accessible>{upstream_};
   }
 
   void* allocate(cuda::stream_ref stream,

@@ -15,8 +15,8 @@
 #include <rmm/mr/limiting_resource_adaptor.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
-#include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/stream>
 #include <cuda_runtime_api.h>
 
@@ -412,7 +412,7 @@ TEST(PoolTest, CrossStreamStealAfterMergeWaitsForDonorStream)
   constexpr int pattern_c{0xBB};
 
   pool_mr mr{rmm::mr::get_current_device_resource_ref(), pool_size, pool_size};
-  rmm::device_async_resource_ref ref{mr};
+  cuda::mr::resource_ref<cuda::mr::device_accessible> ref{mr};
 
   rmm::cuda_stream stream_a;
   rmm::cuda_stream stream_b;

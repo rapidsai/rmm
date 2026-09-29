@@ -6,7 +6,6 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -50,7 +49,8 @@ class aligned_resource_adaptor_impl {
     return !(*this == other);
   }
 
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
+    const noexcept;
 
   [[nodiscard]] std::size_t get_alignment() const noexcept;
 

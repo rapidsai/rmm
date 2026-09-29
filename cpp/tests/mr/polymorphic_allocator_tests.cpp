@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -30,7 +30,8 @@ TEST_F(allocator_test, custom_resource)
 {
   rmm::mr::cuda_memory_resource mr;
   rmm::mr::polymorphic_allocator<int> allocator{mr};
-  EXPECT_EQ(allocator.get_upstream_resource(), rmm::device_async_resource_ref{mr});
+  EXPECT_EQ(allocator.get_upstream_resource(),
+            cuda::mr::resource_ref<cuda::mr::device_accessible>{mr});
 }
 
 void test_conversion(rmm::mr::polymorphic_allocator<int> /*unused*/) {}

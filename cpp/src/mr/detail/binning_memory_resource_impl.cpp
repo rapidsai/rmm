@@ -36,14 +36,16 @@ binning_memory_resource_impl::binning_memory_resource_impl(
   }
 }
 
-device_async_resource_ref binning_memory_resource_impl::get_upstream_resource() const noexcept
+cuda::mr::resource_ref<cuda::mr::device_accessible>
+binning_memory_resource_impl::get_upstream_resource() const noexcept
 {
-  return device_async_resource_ref{
+  return cuda::mr::resource_ref<cuda::mr::device_accessible>{
     const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
 }
 
-void binning_memory_resource_impl::add_bin(std::size_t allocation_size,
-                                           std::optional<device_async_resource_ref> bin_resource)
+void binning_memory_resource_impl::add_bin(
+  std::size_t allocation_size,
+  std::optional<cuda::mr::resource_ref<cuda::mr::device_accessible>> bin_resource)
 {
   allocation_size = align_up(allocation_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
@@ -56,7 +58,8 @@ void binning_memory_resource_impl::add_bin(std::size_t allocation_size,
   }
 }
 
-device_async_resource_ref binning_memory_resource_impl::get_resource_ref(std::size_t bytes)
+cuda::mr::resource_ref<cuda::mr::device_accessible> binning_memory_resource_impl::get_resource_ref(
+  std::size_t bytes)
 {
   auto iter = resource_bins_.lower_bound(bytes);
   return (iter != resource_bins_.cend()) ? iter->second : get_upstream_resource();

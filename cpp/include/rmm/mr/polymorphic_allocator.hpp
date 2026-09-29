@@ -8,7 +8,6 @@
 #include <rmm/aligned.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/per_device_resource.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/stream>
@@ -24,8 +23,8 @@ namespace mr {
  * @file
  */
 /**
- * @brief A stream ordered Allocator using a `device_async_resource_ref` to satisfy
- * (de)allocations.
+ * @brief A stream ordered Allocator using a `cuda::mr::resource_ref<cuda::mr::device_accessible>`
+ * to satisfy (de)allocations.
  *
  * Similar to `std::pmr::polymorphic_allocator`, uses the runtime polymorphism of
  * type-erased resource refs to allow containers with `polymorphic_allocator` as their static
@@ -51,7 +50,8 @@ class polymorphic_allocator {
   /**
    * @brief Construct a `polymorphic_allocator` using the provided memory resource.
    *
-   * This constructor provides an implicit conversion from `device_async_resource_ref`.
+   * This constructor provides an implicit conversion from
+   * `cuda::mr::resource_ref<cuda::mr::device_accessible>`.
    *
    * @param mr The upstream memory resource to use for allocation.
    */
@@ -100,11 +100,12 @@ class polymorphic_allocator {
   }
 
   /**
-   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
+   * @briefreturn{cuda::mr::resource_ref<cuda::mr::device_accessible> to the upstream resource}
    */
-  [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
+  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
+    const noexcept
   {
-    return rmm::device_async_resource_ref{mr_};
+    return cuda::mr::resource_ref<cuda::mr::device_accessible>{mr_};
   }
 
  private:

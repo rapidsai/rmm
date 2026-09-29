@@ -19,7 +19,8 @@ fixed_size_memory_resource::fixed_size_memory_resource(
 {
 }
 
-device_async_resource_ref fixed_size_memory_resource::get_upstream_resource() const noexcept
+cuda::mr::resource_ref<cuda::mr::device_accessible>
+fixed_size_memory_resource::get_upstream_resource() const noexcept
 {
   return get().get_upstream_resource();
 }
