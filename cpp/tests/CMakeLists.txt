@@ -1,6 +1,6 @@
 # =============================================================================
 # cmake-format: off
-# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 # cmake-format: on
 # =============================================================================
@@ -219,6 +219,9 @@ ConfigureTest(DEVICE_UVECTOR_TEST device_uvector_tests.cpp)
 
 # prefetch tests
 ConfigureTest(PREFETCH_TEST prefetch_tests.cpp)
+
+# runtime capability tests
+ConfigureTest(RUNTIME_CAPABILITIES_TEST runtime_capabilities_tests.cpp)
 
 # logger tests
 ConfigureTest(LOGGER_TEST logger_tests.cpp)

@@ -17,6 +17,8 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
+#include <utility>
 #include <vector>
 
 RMM_NAMESPACE_BEGIN
@@ -34,6 +36,69 @@ namespace detail {
  * @brief Minimum CUDA driver version for stream-ordered managed memory allocator support
  */
 #define RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION 13000
+
+/**
+ * @brief Lock-free per-device cache of a boolean device capability.
+ *
+ * Device capabilities are invariant for the lifetime of the process, so each entry is only ever
+ * written with the same value. Concurrent first queries may both query CUDA and store, which is
+ * harmless, so relaxed atomics suffice for both reads and writes. Failed queries and out-of-range
+ * device ids are not cached.
+ */
+class per_device_capability {
+ public:
+  per_device_capability()
+  {
+    int device_count{};
+    if (cudaGetDeviceCount(&device_count) != cudaSuccess) { device_count = 0; }
+    cache_ = std::vector<std::atomic<std::int8_t>>(static_cast<std::size_t>(device_count));
+  }
+
+  /**
+   * @brief Returns the cached capability for `device_id`, querying it on first use.
+   *
+   * @param device_id The CUDA device to query
+   * @param query Callable returning the capability, or `std::nullopt` if the query failed
+   * @return The capability, or false if the query failed
+   */
+  template <typename Query>
+  bool get(cuda_device_id device_id, Query&& query)
+  {
+    auto const index    = static_cast<std::size_t>(device_id.value());
+    auto const in_range = device_id.value() >= 0 and index < cache_.size();
+    if (in_range) {
+      auto const cached = cache_[index].load(std::memory_order_relaxed);
+      if (cached != unknown) { return cached == supported; }
+    }
+
+    std::optional<bool> const result = std::forward<Query>(query)();
+    if (!result.has_value()) { return false; }
+    if (in_range) {
+      cache_[index].store(*result ? supported : unsupported, std::memory_order_relaxed);
+    }
+    return *result;
+  }
+
+ private:
+  enum : std::int8_t { unknown, unsupported, supported };
+  std::vector<std::atomic<std::int8_t>> cache_;
+};
+
+/**
+ * @brief Returns whether a boolean device attribute equals 1, or `std::nullopt` if the query fails.
+ *
+ * @param attribute The device attribute to query
+ * @param device_id The CUDA device to query
+ * @return Whether the attribute equals 1, or `std::nullopt` on failure
+ */
+inline std::optional<bool> query_device_flag(cudaDeviceAttr attribute, cuda_device_id device_id)
+{
+  int value{};
+  if (cudaDeviceGetAttribute(&value, attribute, device_id.value()) != cudaSuccess) {
+    return std::nullopt;
+  }
+  return value == 1;
+}
 
 /**
  * @brief Determine at runtime if the CUDA driver supports the stream-ordered
@@ -55,32 +120,10 @@ struct runtime_async_alloc {
    */
   static bool is_supported(cuda_device_id device_id)
   {
-    enum : std::int8_t { unknown, unsupported, supported };
-    static std::vector<std::atomic<std::int8_t>> cache = [] {
-      int device_count{};
-      if (cudaGetDeviceCount(&device_count) != cudaSuccess) { device_count = 0; }
-      return std::vector<std::atomic<std::int8_t>>(static_cast<std::size_t>(device_count));
-    }();
-
-    auto const index    = static_cast<std::size_t>(device_id.value());
-    auto const in_range = device_id.value() >= 0 and index < cache.size();
-    // Each entry is written only with the same device-invariant value, so relaxed ordering
-    // suffices and concurrent writers are harmless.
-    if (in_range) {
-      auto const cached = cache[index].load(std::memory_order_relaxed);
-      if (cached != unknown) { return cached == supported; }
-    }
-
-    int cuda_pool_supported{};
-    auto const result = cudaDeviceGetAttribute(
-      &cuda_pool_supported, cudaDevAttrMemoryPoolsSupported, device_id.value());
-    if (result != cudaSuccess) { return false; }
-
-    auto const is_supported = cuda_pool_supported == 1;
-    if (in_range) {
-      cache[index].store(is_supported ? supported : unsupported, std::memory_order_relaxed);
-    }
-    return is_supported;
+    static per_device_capability cache;
+    return cache.get(device_id, [device_id] {
+      return query_device_flag(cudaDevAttrMemoryPoolsSupported, device_id);
+    });
   }
 
   /**
@@ -125,9 +168,6 @@ struct export_handle_type {
  *
  * @note This function returns `false` if the version of cudart that RMM was compiled with is too
  * low (see `RMM_MIN_HWDECOMPRESS_CUDA_VERSION`).
- *
- * @return true if supported
- * @return false if unsupported
  */
 // This suppression was needed due to a false positive warning from nvcc. We
 // should be able to remove it altogether once we rework the thrust allocator.
@@ -136,6 +176,13 @@ struct export_handle_type {
 #pragma nv_diag_suppress 20011
 #endif
 struct hwdecompress {
+  /**
+   * @brief Check hardware decompression support on the specified device.
+   *
+   * @param device_id The CUDA device to query
+   * @return true if supported
+   * @return false if unsupported
+   */
   static bool is_supported(cuda_device_id device_id)
   {
 #if CUDART_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_VERSION
@@ -162,16 +209,26 @@ struct hwdecompress {
     }();
     if (get_attribute == nullptr) { return false; }
 
-    int algorithm_mask{};
-    auto const result = get_attribute(
-      &algorithm_mask, CU_DEVICE_ATTRIBUTE_MEM_DECOMPRESS_ALGORITHM_MASK, device_id.value());
-    return result == CUDA_SUCCESS && algorithm_mask != CU_MEM_DECOMPRESS_UNSUPPORTED;
+    static per_device_capability cache;
+    return cache.get(device_id, [device_id]() -> std::optional<bool> {
+      int algorithm_mask{};
+      auto const result = get_attribute(
+        &algorithm_mask, CU_DEVICE_ATTRIBUTE_MEM_DECOMPRESS_ALGORITHM_MASK, device_id.value());
+      if (result != CUDA_SUCCESS) { return std::nullopt; }
+      return algorithm_mask != CU_MEM_DECOMPRESS_UNSUPPORTED;
+    });
 #else
     (void)device_id;
     return false;
 #endif
   }
 
+  /**
+   * @brief Check hardware decompression support on the current device.
+   *
+   * @return true if supported
+   * @return false if unsupported
+   */
   static bool is_supported() { return is_supported(rmm::get_current_cuda_device()); }
 };
 #ifdef __CUDACC__
@@ -179,23 +236,30 @@ struct hwdecompress {
 #endif
 
 /**
- * @brief Check if the current device supports concurrent managed access.
+ * @brief Check if a device supports concurrent managed access.
  * Concurrent managed access is required for prefetching to work.
- *
- * @return true if the device supports concurrent managed access, false otherwise
  */
 struct concurrent_managed_access {
-  static bool is_supported()
+  /**
+   * @brief Check concurrent managed access support on the specified device.
+   *
+   * @param device_id The CUDA device to query
+   * @return true if the device supports concurrent managed access, false otherwise
+   */
+  static bool is_supported(cuda_device_id device_id)
   {
-    static auto driver_supports_concurrent_managed_access{[] {
-      int concurrentManagedAccess = 0;
-      auto result                 = cudaDeviceGetAttribute(&concurrentManagedAccess,
-                                           cudaDevAttrConcurrentManagedAccess,
-                                           rmm::get_current_cuda_device().value());
-      return result == cudaSuccess and concurrentManagedAccess == 1;
-    }()};
-    return driver_supports_concurrent_managed_access;
+    static per_device_capability cache;
+    return cache.get(device_id, [device_id] {
+      return query_device_flag(cudaDevAttrConcurrentManagedAccess, device_id);
+    });
   }
+
+  /**
+   * @brief Check concurrent managed access support on the current device.
+   *
+   * @return true if the device supports concurrent managed access, false otherwise
+   */
+  static bool is_supported() { return is_supported(rmm::get_current_cuda_device()); }
 };
 
 /**
@@ -205,11 +269,16 @@ struct concurrent_managed_access {
  * Stream-ordered managed memory pools were introduced in CUDA 13.0.
  */
 struct runtime_async_managed_alloc {
-  static bool is_supported()
+  /**
+   * @brief Check stream-ordered managed memory pool support on the specified device.
+   *
+   * @param device_id The CUDA device to query
+   * @return true if supported
+   * @return false if unsupported
+   */
+  static bool is_supported(cuda_device_id device_id)
   {
-    static auto supports_async_managed_pool{[] {
-      // Concurrent managed access is required for async managed memory pools
-      if (not concurrent_managed_access::is_supported()) { return false; }
+    static auto const versions_supported{[] {
       // CUDA 13.0 or higher is required for async managed memory pools
       int cuda_driver_version{};
       auto driver_result = cudaDriverGetVersion(&cuda_driver_version);
@@ -219,26 +288,42 @@ struct runtime_async_managed_alloc {
              cuda_driver_version >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION and
              cuda_runtime_version >= RMM_MIN_ASYNC_MANAGED_ALLOC_CUDA_VERSION;
     }()};
-    return supports_async_managed_pool;
+    // Concurrent managed access is required for async managed memory pools
+    return versions_supported and concurrent_managed_access::is_supported(device_id);
   }
+
+  /**
+   * @brief Check stream-ordered managed memory pool support on the current device.
+   *
+   * @return true if supported
+   * @return false if unsupported
+   */
+  static bool is_supported() { return is_supported(rmm::get_current_cuda_device()); }
 };
 
 /**
- * @brief Check if the current device is an integrated memory system.
- *
- * @return true if the device is an integrated memory system, false otherwise
+ * @brief Check if a device is an integrated memory system.
  */
 struct device_integrated_memory {
-  static bool is_supported()
+  /**
+   * @brief Check whether the specified device is an integrated memory system.
+   *
+   * @param device_id The CUDA device to query
+   * @return true if the device is an integrated memory system, false otherwise
+   */
+  static bool is_supported(cuda_device_id device_id)
   {
-    static auto is_integrated{[] {
-      int integrated = 0;
-      auto result    = cudaDeviceGetAttribute(
-        &integrated, cudaDevAttrIntegrated, rmm::get_current_cuda_device().value());
-      return result == cudaSuccess and integrated == 1;
-    }()};
-    return is_integrated;
+    static per_device_capability cache;
+    return cache.get(device_id,
+                     [device_id] { return query_device_flag(cudaDevAttrIntegrated, device_id); });
   }
+
+  /**
+   * @brief Check whether the current device is an integrated memory system.
+   *
+   * @return true if the device is an integrated memory system, false otherwise
+   */
+  static bool is_supported() { return is_supported(rmm::get_current_cuda_device()); }
 };
 
 }  // namespace detail
