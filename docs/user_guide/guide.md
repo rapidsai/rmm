@@ -250,7 +250,7 @@ Common to both usages is that they modify the currently active RMM memory resour
 >>> import rmm
 >>> import rmm.statistics
 
->>> # We start with the default CUDA async memory resource
+>>> # We start with the default resource (CudaMemoryResource on devices without memory pool support)
 >>> rmm.mr.get_current_device_resource()
 <rmm.pylibrmm.memory_resource.CudaAsyncMemoryResource object at 0x7fa0da48a8e0>
 
