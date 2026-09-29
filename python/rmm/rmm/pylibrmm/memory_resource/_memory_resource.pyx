@@ -1037,6 +1037,7 @@ cpdef void _initialize(
         )
     else:
         typ = upstream
+        args = ()
         kwargs = {}
 
     cdef DeviceMemoryResource mr
@@ -1063,7 +1064,8 @@ cpdef void _initialize(
         # create a memory resource per specified device
         for device in devices:
             setDevice(device)
-            args = (pool_upstream(),) if pool_allocator else ()
+            if pool_allocator:
+                args = (pool_upstream(),)
 
             if logging:
                 mr = LoggingResourceAdaptor(
