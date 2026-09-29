@@ -77,7 +77,8 @@ class RMM_EXPORT cuda_async_memory_resource final
    * the device-default pool, RMM sets its release threshold to the maximum value of
    * `std::uint64_t`. On systems supporting hardware decompression, RMM instead creates a
    * non-releasing, hardware-decompression-enabled pool, makes it current, and retains it for the
-   * process lifetime.
+   * process lifetime. RMM synchronizes its own pool selection for each device, but calls to
+   * `cudaDeviceSetMemPool` made outside RMM during construction must be externally synchronized.
    *
    * @throws rmm::logic_error if the CUDA version does not support `cudaMallocAsync`
    *
