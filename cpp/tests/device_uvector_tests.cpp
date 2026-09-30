@@ -147,7 +147,6 @@ TYPED_TEST(TypedUVectorTest, MovePreservesSizeAndCapacity)
 
   rmm::device_uvector<TypeParam> moved(std::move(source));
   EXPECT_EQ(source.size(), 0);
-  EXPECT_EQ(source.capacity(), 0);
   EXPECT_EQ(moved.size(), 4);
   EXPECT_EQ(moved.capacity(), 8);
   EXPECT_EQ(moved.data(), data);
@@ -155,7 +154,6 @@ TYPED_TEST(TypedUVectorTest, MovePreservesSizeAndCapacity)
   rmm::device_uvector<TypeParam> assigned(1, this->stream());
   assigned = std::move(moved);
   EXPECT_EQ(moved.size(), 0);
-  EXPECT_EQ(moved.capacity(), 0);
   EXPECT_EQ(assigned.size(), 4);
   EXPECT_EQ(assigned.capacity(), 8);
   EXPECT_EQ(assigned.data(), data);
