@@ -12,6 +12,7 @@
 #include <rmm/device_buffer.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/tracking_resource_adaptor.hpp>
 
 #include <cuda/memory_resource>
