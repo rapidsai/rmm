@@ -91,6 +91,7 @@ TYPED_TEST(TypedUVectorTest, ResizeSmaller)
 {
   auto const original_size{12345};
   rmm::device_uvector<TypeParam> vec(original_size, this->stream());
+  vec.set_element(0, 1, this->stream());
   auto* original_data  = vec.data();
   auto* original_begin = vec.begin();
 
@@ -106,12 +107,14 @@ TYPED_TEST(TypedUVectorTest, ResizeSmaller)
   vec.shrink_to_fit(this->stream());
   EXPECT_EQ(vec.size(), smaller_size);
   EXPECT_EQ(vec.capacity(), smaller_size);
+  EXPECT_EQ(vec.element(0, this->stream()), 1);
 }
 
 TYPED_TEST(TypedUVectorTest, ResizeLarger)
 {
   auto const original_size{12345};
   rmm::device_uvector<TypeParam> vec(original_size, this->stream());
+  vec.set_element(0, 1, this->stream());
   auto* original_data  = vec.data();
   auto* original_begin = vec.begin();
 
@@ -122,6 +125,7 @@ TYPED_TEST(TypedUVectorTest, ResizeLarger)
   EXPECT_NE(vec.begin(), original_begin);
   EXPECT_EQ(vec.size(), larger_size);
   EXPECT_EQ(vec.capacity(), larger_size);
+  EXPECT_EQ(vec.element(0, this->stream()), 1);
 
   auto* larger_data  = vec.data();
   auto* larger_begin = vec.begin();
@@ -132,6 +136,30 @@ TYPED_TEST(TypedUVectorTest, ResizeLarger)
   EXPECT_EQ(vec.capacity(), larger_size);
   EXPECT_EQ(vec.data(), larger_data);
   EXPECT_EQ(vec.begin(), larger_begin);
+}
+
+TYPED_TEST(TypedUVectorTest, MovePreservesSizeAndCapacity)
+{
+  rmm::device_uvector<TypeParam> source(4, this->stream());
+  source.reserve(8, this->stream());
+  source.set_element(0, 1, this->stream());
+  auto* const data = source.data();
+
+  rmm::device_uvector<TypeParam> moved(std::move(source));
+  EXPECT_EQ(source.size(), 0);
+  EXPECT_EQ(source.capacity(), 0);
+  EXPECT_EQ(moved.size(), 4);
+  EXPECT_EQ(moved.capacity(), 8);
+  EXPECT_EQ(moved.data(), data);
+
+  rmm::device_uvector<TypeParam> assigned(1, this->stream());
+  assigned = std::move(moved);
+  EXPECT_EQ(moved.size(), 0);
+  EXPECT_EQ(moved.capacity(), 0);
+  EXPECT_EQ(assigned.size(), 4);
+  EXPECT_EQ(assigned.capacity(), 8);
+  EXPECT_EQ(assigned.data(), data);
+  EXPECT_EQ(assigned.element(0, this->stream()), 1);
 }
 
 TYPED_TEST(TypedUVectorTest, ReserveSmaller)
@@ -200,22 +228,6 @@ TEST(DeviceUVectorOverflowTest, Resize)
 
   EXPECT_THROW(vec.resize(overflowing_size, cuda::stream_ref{cudaStream_t{cudaStreamDefault}}),
                rmm::invalid_argument);
-}
-
-TYPED_TEST(TypedUVectorTest, Release)
-{
-  auto const original_size{12345};
-  rmm::device_uvector<TypeParam> vec(original_size, this->stream());
-
-  auto* original_data = vec.data();
-
-  rmm::device_buffer storage = vec.release();
-
-  EXPECT_EQ(vec.size(), 0);
-  EXPECT_EQ(vec.capacity(), 0);
-  EXPECT_TRUE(vec.is_empty());
-  EXPECT_EQ(storage.data(), original_data);
-  EXPECT_EQ(storage.size(), original_size * sizeof(TypeParam));
 }
 
 TYPED_TEST(TypedUVectorTest, ElementPointer)

@@ -9,10 +9,10 @@
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/exec_check_disable.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/device_buffer.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/buffer>
 #include <cuda/std/iterator>
 #include <cuda/std/span>
 #include <cuda/stream>
@@ -90,12 +90,32 @@ class device_uvector {
   RMM_EXEC_CHECK_DISABLE
   ~device_uvector() = default;
 
+  /**
+   * @brief Move constructor.
+   *
+   * @param other Vector whose storage is moved
+   */
   RMM_EXEC_CHECK_DISABLE
-  device_uvector(device_uvector&&) noexcept = default;  ///< @default_move_constructor
+  device_uvector(device_uvector&& other) noexcept
+    : _storage{std::move(other._storage)}, _size{std::exchange(other._size, 0)}
+  {
+  }
 
+  /**
+   * @brief Move assignment operator.
+   *
+   * @param other Vector whose storage is moved
+   * @return Reference to this vector
+   */
   RMM_EXEC_CHECK_DISABLE
-  device_uvector& operator=(device_uvector&&) noexcept =
-    default;  ///< @default_move_assignment{device_uvector}
+  device_uvector& operator=(device_uvector&& other) noexcept
+  {
+    if (this != &other) {
+      _storage = std::move(other._storage);
+      _size    = std::exchange(other._size, 0);
+    }
+    return *this;
+  }
 
   /**
    * @brief Copy ctor is deleted as it doesn't allow a stream argument
@@ -131,7 +151,12 @@ class device_uvector {
     size_type size,
     cuda::stream_ref stream,
     cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref())
-    : _storage{elements_to_bytes(size), std::alignment_of_v<T>, stream, std::move(mr)}
+    : _storage{stream,
+               std::move(mr),
+               checked_size(size),
+               cuda::no_init,
+               cuda::std::execution::prop{cuda::allocation_alignment, std::alignment_of_v<T>}},
+      _size{size}
   {
   }
 
@@ -148,8 +173,11 @@ class device_uvector {
     device_uvector const& other,
     cuda::stream_ref stream,
     cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref())
-    : _storage{other._storage, stream, std::move(mr)}
+    : device_uvector{other.size(), stream, std::move(mr)}
   {
+    if (_size != 0) {
+      RMM_CUDA_TRY(rmm::detail::memcpy_async(data(), other.data(), _size * sizeof(T), stream));
+    }
   }
 
   /**
@@ -360,7 +388,9 @@ class device_uvector {
    */
   void reserve(size_type new_capacity, cuda::stream_ref stream)
   {
-    _storage.reserve(elements_to_bytes(new_capacity), stream);
+    checked_size(new_capacity);
+    _storage.set_stream(stream);
+    if (new_capacity > capacity()) { reallocate(new_capacity, stream); }
   }
 
   /**
@@ -383,7 +413,10 @@ class device_uvector {
    */
   void resize(size_type new_size, cuda::stream_ref stream)
   {
-    _storage.resize(elements_to_bytes(new_size), stream);
+    checked_size(new_size);
+    _storage.set_stream(stream);
+    if (new_size > capacity()) { reallocate(new_size, stream); }
+    _size = new_size;
   }
 
   /**
@@ -393,14 +426,11 @@ class device_uvector {
    *
    * @param stream Stream on which to perform allocation and copy
    */
-  void shrink_to_fit(cuda::stream_ref stream) { _storage.shrink_to_fit(stream); }
-
-  /**
-   * @brief Release ownership of device memory storage.
-   *
-   * @return The `device_buffer` used to store the vector elements
-   */
-  device_buffer release() noexcept { return std::move(_storage); }
+  void shrink_to_fit(cuda::stream_ref stream)
+  {
+    _storage.set_stream(stream);
+    if (size() != capacity()) { reallocate(size(), stream); }
+  }
 
   /**
    * @brief Returns the number of elements that can be held in currently allocated storage.
@@ -408,10 +438,7 @@ class device_uvector {
    * @return size_type The number of elements that can be stored without requiring a new
    * allocation.
    */
-  [[nodiscard]] size_type capacity() const noexcept
-  {
-    return bytes_to_elements(_storage.capacity());
-  }
+  [[nodiscard]] size_type capacity() const noexcept { return _storage.size(); }
 
   /**
    * @brief Returns pointer to underlying device storage.
@@ -421,7 +448,7 @@ class device_uvector {
    *
    * @return Raw pointer to element storage in device memory.
    */
-  [[nodiscard]] pointer data() noexcept { return static_cast<pointer>(_storage.data()); }
+  [[nodiscard]] pointer data() noexcept { return _storage.data(); }
 
   /**
    * @brief Returns const pointer to underlying device storage.
@@ -431,10 +458,7 @@ class device_uvector {
    *
    * @return const_pointer Raw const pointer to element storage in device memory.
    */
-  [[nodiscard]] const_pointer data() const noexcept
-  {
-    return static_cast<const_pointer>(_storage.data());
-  }
+  [[nodiscard]] const_pointer data() const noexcept { return _storage.data(); }
 
   /**
    * @brief Returns an iterator to the first element.
@@ -560,7 +584,7 @@ class device_uvector {
   /**
    * @briefreturn{The number of elements in the vector}
    */
-  [[nodiscard]] size_type size() const noexcept { return bytes_to_elements(_storage.size()); }
+  [[nodiscard]] size_type size() const noexcept { return _size; }
 
   /**
    * @briefreturn{The signed number of elements in the vector}
@@ -599,7 +623,7 @@ class device_uvector {
    */
   [[nodiscard]] rmm::device_async_resource_ref memory_resource() noexcept
   {
-    return _storage.memory_resource();
+    return rmm::device_async_resource_ref{resource()};
   }
 
   /**
@@ -621,19 +645,36 @@ class device_uvector {
   void set_stream(cuda::stream_ref stream) noexcept { _storage.set_stream(stream); }
 
  private:
-  device_buffer _storage{};  ///< Device memory storage for vector elements
+  cuda::device_buffer<T> _storage;  ///< Device memory storage for vector elements
+  size_type _size{};                ///< Number of live vector elements
 
-  [[nodiscard]] size_type elements_to_bytes(size_type num_elements) const
+  static size_type checked_size(size_type num_elements)
   {
     RMM_EXPECTS(num_elements <= std::numeric_limits<size_type>::max() / sizeof(value_type),
                 "Requested size overflows device_uvector storage.",
                 rmm::invalid_argument);
-    return num_elements * sizeof(value_type);
+    return num_elements;
   }
 
-  [[nodiscard]] size_type constexpr bytes_to_elements(size_type num_bytes) const noexcept
+  [[nodiscard]] cuda::mr::any_resource<cuda::mr::device_accessible>& resource() noexcept
   {
-    return num_bytes / sizeof(value_type);
+    return const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(
+      _storage.memory_resource());
+  }
+
+  void reallocate(size_type new_capacity, cuda::stream_ref stream)
+  {
+    auto replacement = cuda::buffer<T, cuda::mr::device_accessible>{
+      stream,
+      resource(),
+      new_capacity,
+      cuda::no_init,
+      cuda::std::execution::prop{cuda::allocation_alignment, std::alignment_of_v<T>}};
+    if (_size != 0) {
+      RMM_CUDA_TRY(
+        rmm::detail::memcpy_async(replacement.data(), data(), _size * sizeof(T), stream));
+    }
+    _storage = std::move(replacement);
   }
 };
 
