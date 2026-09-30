@@ -7,6 +7,8 @@
 
 #include "mr_ref_test.hpp"
 
+#include <rmm/mr/per_device_resource.hpp>
+
 #include <cuda/stream>
 
 namespace rmm::test {
