@@ -4,17 +4,59 @@
 
 set -euo pipefail
 
-LIBRMM_WHEELHOUSE="${PWD}/wheel-output/librmm"
-RMM_WHEELHOUSE="${PWD}/wheel-output/rmm"
-mkdir -p "${LIBRMM_WHEELHOUSE}" "${RMM_WHEELHOUSE}"
+# shellcheck source=ci/build_wheel_common.sh
+source ./ci/build_wheel_common.sh
 
-RAPIDS_WHEEL_BLD_OUTPUT_DIR="${LIBRMM_WHEELHOUSE}" ./ci/build_wheel_cpp.sh
+RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen "${RAPIDS_CUDA_VERSION}")"
+AUDITWHEEL_EXCLUDES=(
+  --exclude librapids_logger.so
+  --exclude librmm.so
+)
 
-LIBRMM_WHEELHOUSE="${LIBRMM_WHEELHOUSE}" RAPIDS_WHEEL_BLD_OUTPUT_DIR="${RMM_WHEELHOUSE}" ./ci/build_wheel_python.sh
+repair_wheel() {
+  python -m auditwheel repair \
+    "${AUDITWHEEL_EXCLUDES[@]}" \
+    -w "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}" \
+    "$@"
+}
 
-{
-  echo "librmm_artifact_name=$(rapids-artifact-name wheel_cpp librmm rmm --cuda "${RAPIDS_CUDA_VERSION}")"
-  echo "librmm_output_dir=${LIBRMM_WHEELHOUSE}"
-  echo "rmm_artifact_name=$(rapids-artifact-name wheel_python rmm rmm --stable --cuda "${RAPIDS_CUDA_VERSION}")"
-  echo "rmm_output_dir=${RMM_WHEELHOUSE}"
-} >> "${GITHUB_OUTPUT}"
+add_wheel_constraint() {
+  local package_name=$1
+  local wheel_glob=$2
+  local -a wheel_paths=()
+
+  # auditwheel determines the final platform/ABI tag, so resolve its output
+  # filename before recording the local direct-reference constraint.
+  mapfile -t wheel_paths < <(compgen -G "${wheel_glob}")
+  if (( ${#wheel_paths[@]} != 1 )); then
+    echo "Expected exactly one wheel matching ${wheel_glob}, found ${#wheel_paths[@]}" >&2
+    exit 1
+  fi
+
+  echo "${package_name}-${RAPIDS_PY_CUDA_SUFFIX} @ file://${wheel_paths[0]}" >> "${PIP_CONSTRAINT}"
+}
+
+# librmm
+build_package_wheel librmm librmm python/librmm
+
+repair_wheel python/librmm/dist/*
+
+finalize_package_wheel \
+  librmm \
+  "$(rapids-artifact-name wheel_cpp librmm rmm --cuda "${RAPIDS_CUDA_VERSION}")"
+
+# rmm uses the librmm wheel built above.
+add_wheel_constraint librmm "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}/librmm_*.whl"
+
+export RAPIDS_PY_API="cp${RAPIDS_PY_VERSION//./}"
+
+# rmm
+build_package_wheel rmm rmm python/rmm --stable
+
+repair_wheel python/rmm/dist/*
+
+./ci/check_symbols.sh "$(echo "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"/rmm_*.whl)"
+
+finalize_package_wheel \
+  rmm \
+  "$(rapids-artifact-name wheel_python rmm rmm --stable --cuda "${RAPIDS_CUDA_VERSION}")"
