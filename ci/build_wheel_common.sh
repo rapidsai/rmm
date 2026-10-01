@@ -96,8 +96,10 @@ record_wheel_artifact() {
 
 finalize_package_wheel() {
   local package_key=$1
-  local artifact_name=$2
+  local package_dir=$2
+  local artifact_name=$3
 
-  ./ci/validate_wheel.sh "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
+  # pydistcheck reads its configuration from the package's pyproject.toml.
+  (cd "${package_dir}" && ../../ci/validate_wheel.sh "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}")
   record_wheel_artifact "${package_key}" "${artifact_name}"
 }

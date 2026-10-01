@@ -43,6 +43,7 @@ repair_wheel python/librmm/dist/*
 
 finalize_package_wheel \
   librmm \
+  python/librmm \
   "$(rapids-artifact-name wheel_cpp librmm rmm --cuda "${RAPIDS_CUDA_VERSION}")"
 
 # rmm uses the librmm wheel built above.
@@ -59,4 +60,5 @@ repair_wheel python/rmm/dist/*
 
 finalize_package_wheel \
   rmm \
+  python/rmm \
   "$(rapids-artifact-name wheel_python rmm rmm --stable --cuda "${RAPIDS_CUDA_VERSION}")"
