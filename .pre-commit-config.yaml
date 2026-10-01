@@ -6,7 +6,7 @@ ci:
   autoupdate_branch: ""
   autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
   autoupdate_schedule: quarterly
-  skip: ["verify-alpha-spec"]
+  skip: ["verify-alpha-spec", "verify-dependencies"]
   submodules: false
 
 repos:
@@ -98,8 +98,9 @@ repos:
         pass_filenames: false
         verbose: true
   - repo: https://github.com/rapidsai/pre-commit-hooks
-    rev: v1.6.0
+    rev: v1.7.0
     hooks:
+      - id: verify-dependencies
       - id: verify-copyright
         args: [--fix, --spdx]
         files: |

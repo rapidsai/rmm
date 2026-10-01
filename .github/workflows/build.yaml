@@ -152,7 +152,6 @@ jobs:
     with:
       docs-projects: rmm,librmm
       dry-run: false
-      version-map: ${{ vars.VERSION_MAP }}
   wheel-build-cpp:
     needs: [build-details, telemetry-setup]
     permissions:

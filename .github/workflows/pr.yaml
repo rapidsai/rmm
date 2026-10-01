@@ -387,7 +387,6 @@ jobs:
     with:
       docs-projects: rmm,librmm
       dry-run: true
-      version-map: ${{ vars.VERSION_MAP }}
   wheel-build-cpp:
     needs: [build-details, checks]
     permissions:
