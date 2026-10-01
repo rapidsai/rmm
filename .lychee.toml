@@ -1,0 +1,14 @@
+cache = true
+max_cache_age = "3d"
+max_concurrency = 8
+max_retries = 3
+retry_wait_time = 2
+
+# Doxygen resolves modules.html and $relpath placeholders during generation.
+exclude = ['modules\.html$', '\$relpath']
+exclude_path = [
+  # Historical links are not maintained.
+  '(^|/)CHANGELOG\.md$',
+  # Package READMEs are symlinks whose relative links resolve from the repository root.
+  '^python/(librmm|rmm)/README\.md$',
+]
