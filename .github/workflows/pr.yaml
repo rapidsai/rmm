@@ -220,6 +220,42 @@ jobs:
           - '!cpp/doxygen/**'
           - '!docs/**'
           - '!img/**'
+        test_python_integrations_conda:
+          - '.github/workflows/pr.yaml'
+          - 'RAPIDS_BRANCH'
+          - 'VERSION'
+          - 'ci/build_cpp.sh'
+          - 'ci/build_python.sh'
+          - 'ci/gpu_info.sh'
+          - 'ci/run_pytests.sh'
+          - 'ci/test_python_integrations.sh'
+          - 'cmake/**'
+          - 'conda/recipes/**'
+          - 'cpp/CMakeLists.txt'
+          - 'cpp/cmake/thirdparty/**'
+          - 'cpp/include/**'
+          - 'cpp/src/**'
+          - 'dependencies.yaml'
+          - 'python/rmm/**'
+        test_python_integrations_wheels:
+          - '.github/workflows/pr.yaml'
+          - 'RAPIDS_BRANCH'
+          - 'VERSION'
+          - 'ci/build_wheel_cpp.sh'
+          - 'ci/build_wheel_python.sh'
+          - 'ci/check_symbols.sh'
+          - 'ci/download-torch-wheels.sh'
+          - 'ci/gpu_info.sh'
+          - 'ci/test_wheel_integrations.sh'
+          - 'ci/validate_wheel.sh'
+          - 'cmake/**'
+          - 'cpp/CMakeLists.txt'
+          - 'cpp/cmake/thirdparty/**'
+          - 'cpp/include/**'
+          - 'cpp/src/**'
+          - 'dependencies.yaml'
+          - 'python/librmm/**'
+          - 'python/rmm/**'
   checks:
     permissions:
       actions: read
@@ -336,7 +372,7 @@ jobs:
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@main
-    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python_conda
+    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python_integrations_conda
     with:
       build_type: pull-request
       script: ci/test_python_integrations.sh
@@ -448,7 +484,7 @@ jobs:
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@main
-    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python_wheels
+    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python_integrations_wheels
     with:
       build_type: pull-request
       script: ci/test_wheel_integrations.sh
