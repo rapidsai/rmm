@@ -6,7 +6,6 @@ import warnings
 # This import is needed for Cython typing in translate_python_except_to_cpp
 # See https://github.com/cython/cython/issues/5589
 from builtins import BaseException
-from collections import defaultdict
 
 cimport cython
 from cuda.bindings cimport cyruntime
@@ -20,7 +19,12 @@ from libcpp.pair cimport pair
 
 from cuda.bindings import driver, runtime
 
-from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
+from rmm._cuda.gpu import (
+    CUDARuntimeError,
+    getDevice,
+    getDeviceAttribute,
+    setDevice,
+)
 
 from rmm.pylibrmm.stream cimport Stream
 from rmm.pylibrmm.utils cimport as_stream
@@ -999,8 +1003,31 @@ cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
         pass
 
 
+def _initial_resource():
+    """
+    Returns the initial memory resource for the current device.
+    """
+    if getDeviceAttribute(
+        runtime.cudaDeviceAttr.cudaDevAttrMemoryPoolsSupported, getDevice()
+    ):
+        return CudaAsyncMemoryResource()
+    return CudaMemoryResource()
+
+
+class _PerDeviceResources(dict):
+    def __missing__(self, int device):
+        cdef int original_device = getDevice()
+        setDevice(device)
+        try:
+            mr = _initial_resource()
+        finally:
+            setDevice(original_device)
+        self[device] = mr
+        return mr
+
+
 # Global per-device memory resources; dict of int:DeviceMemoryResource
-cdef _per_device_mrs = defaultdict(CudaMemoryResource)
+cdef _per_device_mrs = _PerDeviceResources()
 
 
 cpdef void _initialize(
@@ -1030,7 +1057,7 @@ cpdef void _initialize(
             else parse_bytes(maximum_pool_size)
         )
     else:
-        typ = upstream
+        typ = upstream if managed_memory else _initial_resource
         args = ()
         kwargs = {}
 
