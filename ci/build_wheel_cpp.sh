@@ -36,11 +36,11 @@ RAPIDS_PIP_WHEEL_ARGS=(
 # unset PIP_CONSTRAINT (set by rapids-init-pip)... it doesn't affect builds as of pip 25.3, and
 # results in an error from 'pip wheel' when set and --build-constraint is also passed
 unset PIP_CONSTRAINT
-rapids-telemetry-record build.log rapids-pip-retry wheel \
+rapids-telemetry-record build-librmm.log rapids-pip-retry wheel \
   "${RAPIDS_PIP_WHEEL_ARGS[@]}" \
   .
 
-rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
+rapids-telemetry-record sccache-stats-librmm.txt sccache --show-adv-stats
 sccache --stop-server >/dev/null 2>&1 || true
 
 python -m auditwheel repair \
@@ -49,6 +49,3 @@ python -m auditwheel repair \
     "${dist_dir}"/*
 
 ../../ci/validate_wheel.sh "${RAPIDS_WHEEL_BLD_OUTPUT_DIR}"
-
-RAPIDS_PACKAGE_NAME="$(rapids-artifact-name wheel_cpp librmm rmm --cuda "$RAPIDS_CUDA_VERSION")"
-export RAPIDS_PACKAGE_NAME
