@@ -234,6 +234,9 @@ jobs:
     with:
       enable_check_generated_files: false
       ignored_pr_jobs: "telemetry-summarize conda-python-tests-integration-optional wheel-tests-integration-optional"
+      # Main builds seed this cache. PR merge refs can restore it but should not create
+      # duplicate archives that are inaccessible to other PRs.
+      pre-commit-cache-read-only: true
   cmake-tests:
     needs: checks
     permissions:
