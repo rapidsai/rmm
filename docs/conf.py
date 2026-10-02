@@ -66,6 +66,10 @@ extensions = [
     "sphinxcontrib.jquery",
 ]
 
+# configuration for 'sphinx-llm'
+llms_txt_summary_enabled = False
+llms_txt_suppress_unknown_node_warnings = True
+
 # Breathe Configuration
 breathe_projects = {"librmm": "../cpp/doxygen/xml"}
 breathe_default_project = "librmm"
