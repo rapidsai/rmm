@@ -81,9 +81,7 @@ cdef extern from "<cuda/memory_resource>" namespace "cuda::mr" nogil:
     cdef cppclass any_resource[Properties]:
         any_resource() except +
         any_resource(device_async_resource_ref) except +
-    cdef cppclass any_device_resource:
-        any_device_resource() except +
-        any_device_resource(device_async_resource_ref) except +
+    ctypedef any_resource[device_accessible] any_device_resource
 
 # Inline C++ helper to construct optional[device_async_resource_ref] from any
 # concrete resource type. Returns optional so that Cython assignment
