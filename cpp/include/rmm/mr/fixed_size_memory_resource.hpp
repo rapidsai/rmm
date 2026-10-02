@@ -60,7 +60,7 @@ class RMM_EXPORT fixed_size_memory_resource
    * @param blocks_to_preallocate The number of blocks to allocate to initialize the pool.
    */
   explicit fixed_size_memory_resource(
-    cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+    cuda::mr::any_device_resource upstream,
     // NOLINTNEXTLINE bugprone-easily-swappable-parameters
     std::size_t block_size            = default_block_size,
     std::size_t blocks_to_preallocate = default_blocks_to_preallocate);
@@ -68,10 +68,9 @@ class RMM_EXPORT fixed_size_memory_resource
   ~fixed_size_memory_resource() = default;
 
   /**
-   * @briefreturn{cuda::mr::resource_ref<cuda::mr::device_accessible> to the upstream resource}
+   * @briefreturn{cuda::mr::device_resource_ref to the upstream resource}
    */
-  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
-    const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   /**
    * @brief Get the size of blocks allocated by this memory resource.

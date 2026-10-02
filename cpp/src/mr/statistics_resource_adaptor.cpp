@@ -11,15 +11,13 @@
 RMM_NAMESPACE_BEGIN
 namespace mr {
 
-statistics_resource_adaptor::statistics_resource_adaptor(
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream)
+statistics_resource_adaptor::statistics_resource_adaptor(cuda::mr::any_device_resource upstream)
   : shared_base(
       cuda::mr::make_shared_resource<detail::statistics_resource_adaptor_impl>(std::move(upstream)))
 {
 }
 
-cuda::mr::resource_ref<cuda::mr::device_accessible>
-statistics_resource_adaptor::get_upstream_resource() const noexcept
+cuda::mr::device_resource_ref statistics_resource_adaptor::get_upstream_resource() const noexcept
 {
   return get().get_upstream_resource();
 }

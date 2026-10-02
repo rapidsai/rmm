@@ -39,11 +39,9 @@ __global__ void compute_bound_kernel(int64_t* out)
   *out = static_cast<int64_t>(clock_current);
 }
 
-using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
-using MRFactoryFunc       = std::function<any_device_resource()>;
+using MRFactoryFunc = std::function<cuda::mr::any_device_resource()>;
 
-static void run_prewarm(rmm::cuda_stream_pool& stream_pool,
-                        cuda::mr::resource_ref<cuda::mr::device_accessible> mr)
+static void run_prewarm(rmm::cuda_stream_pool& stream_pool, cuda::mr::device_resource_ref mr)
 {
   auto buffers = std::vector<rmm::device_uvector<int64_t>>();
   for (std::size_t i = 0; i < stream_pool.get_pool_size(); i++) {
@@ -54,7 +52,7 @@ static void run_prewarm(rmm::cuda_stream_pool& stream_pool,
 
 static void run_test(std::size_t num_kernels,
                      rmm::cuda_stream_pool& stream_pool,
-                     cuda::mr::resource_ref<cuda::mr::device_accessible> mr)
+                     cuda::mr::device_resource_ref mr)
 {
   for (std::size_t i = 0; i < num_kernels; i++) {
     auto stream = stream_pool.get_stream(i);
@@ -83,22 +81,25 @@ static void BM_MultiStreamAllocations(benchmark::State& state, MRFactoryFunc con
   state.SetItemsProcessed(static_cast<int64_t>(state.iterations() * num_kernels));
 }
 
-inline any_device_resource make_cuda() { return rmm::mr::cuda_memory_resource{}; }
+inline cuda::mr::any_device_resource make_cuda() { return rmm::mr::cuda_memory_resource{}; }
 
-inline any_device_resource make_cuda_async() { return rmm::mr::cuda_async_memory_resource{}; }
+inline cuda::mr::any_device_resource make_cuda_async()
+{
+  return rmm::mr::cuda_async_memory_resource{};
+}
 
-inline any_device_resource make_pool()
+inline cuda::mr::any_device_resource make_pool()
 {
   return rmm::mr::pool_memory_resource{rmm::mr::cuda_memory_resource{},
                                        rmm::percent_of_free_device_memory(50)};
 }
 
-inline any_device_resource make_arena()
+inline cuda::mr::any_device_resource make_arena()
 {
   return rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref()};
 }
 
-inline any_device_resource make_binning()
+inline cuda::mr::any_device_resource make_binning()
 {
   // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
   // Larger allocations will use the pool resource

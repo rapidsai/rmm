@@ -43,8 +43,7 @@ TYPED_TEST(TypedUVectorTest, MemoryResource)
 {
   rmm::device_uvector<TypeParam> vec(128, this->stream());
   EXPECT_EQ(vec.memory_resource(),
-            cuda::mr::resource_ref<cuda::mr::device_accessible>{
-              rmm::mr::get_current_device_resource_ref()});
+            cuda::mr::device_resource_ref{rmm::mr::get_current_device_resource_ref()});
 }
 
 TYPED_TEST(TypedUVectorTest, ZeroSizeConstructor)

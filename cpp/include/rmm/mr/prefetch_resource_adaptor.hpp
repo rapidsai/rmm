@@ -43,15 +43,14 @@ class RMM_EXPORT prefetch_resource_adaptor
    *
    * @param upstream The resource_ref used for allocating/deallocating device memory
    */
-  explicit prefetch_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream);
+  explicit prefetch_resource_adaptor(cuda::mr::any_device_resource upstream);
 
   ~prefetch_resource_adaptor() = default;
 
   /**
-   * @briefreturn{cuda::mr::resource_ref<cuda::mr::device_accessible> to the upstream resource}
+   * @briefreturn{cuda::mr::device_resource_ref to the upstream resource}
    */
-  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
-    const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 };
 
 static_assert(cuda::mr::resource_with<prefetch_resource_adaptor, cuda::mr::device_accessible>,

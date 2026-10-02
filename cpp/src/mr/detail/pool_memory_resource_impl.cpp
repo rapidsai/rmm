@@ -31,10 +31,9 @@ RMM_NAMESPACE_BEGIN
 namespace mr {
 namespace detail {
 
-pool_memory_resource_impl::pool_memory_resource_impl(
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
-  std::size_t initial_pool_size,
-  std::optional<std::size_t> maximum_pool_size)
+pool_memory_resource_impl::pool_memory_resource_impl(cuda::mr::any_device_resource upstream,
+                                                     std::size_t initial_pool_size,
+                                                     std::optional<std::size_t> maximum_pool_size)
   : upstream_mr_{std::move(upstream)}
 {
   RMM_EXPECTS(rmm::is_aligned(initial_pool_size, rmm::CUDA_ALLOCATION_ALIGNMENT),
@@ -47,11 +46,9 @@ pool_memory_resource_impl::pool_memory_resource_impl(
 
 pool_memory_resource_impl::~pool_memory_resource_impl() { release(); }
 
-cuda::mr::resource_ref<cuda::mr::device_accessible>
-pool_memory_resource_impl::get_upstream_resource() const noexcept
+cuda::mr::device_resource_ref pool_memory_resource_impl::get_upstream_resource() const noexcept
 {
-  return cuda::mr::resource_ref<cuda::mr::device_accessible>{
-    const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
+  return cuda::mr::device_resource_ref{const_cast<cuda::mr::any_device_resource&>(upstream_mr_)};
 }
 
 std::size_t pool_memory_resource_impl::pool_size() const noexcept { return current_pool_size_; }

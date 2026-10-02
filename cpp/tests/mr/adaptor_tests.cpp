@@ -100,7 +100,7 @@ TYPED_TEST(AdaptorTest, Equality)
 
 TYPED_TEST(AdaptorTest, GetUpstreamResource)
 {
-  cuda::mr::resource_ref<cuda::mr::device_accessible> expected{this->cuda};
+  cuda::mr::device_resource_ref expected{this->cuda};
   EXPECT_EQ(this->mr->get_upstream_resource(), expected);
 }
 

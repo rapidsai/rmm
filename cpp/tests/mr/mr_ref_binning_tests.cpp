@@ -15,7 +15,7 @@ namespace rmm::test {
 struct BinningMRFixture : public ::testing::Test {
   rmm::mr::cuda_memory_resource upstream{};
   rmm::mr::binning_memory_resource mr{upstream, 18, 22};
-  cuda::mr::resource_ref<cuda::mr::device_accessible> ref{mr};
+  cuda::mr::device_resource_ref ref{mr};
   rmm::cuda_stream stream{};
 };
 

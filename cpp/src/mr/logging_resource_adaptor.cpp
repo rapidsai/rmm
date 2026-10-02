@@ -34,26 +34,24 @@ auto make_logger(std::initializer_list<rapids_logger::sink_ptr> sinks)
 
 }  // namespace
 
-logging_resource_adaptor::logging_resource_adaptor(
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
-  std::string const& filename,
-  bool auto_flush)
+logging_resource_adaptor::logging_resource_adaptor(cuda::mr::any_device_resource upstream,
+                                                   std::string const& filename,
+                                                   bool auto_flush)
   : shared_base(cuda::mr::make_shared_resource<detail::logging_resource_adaptor_impl>(
       make_logger(filename), std::move(upstream), auto_flush))
 {
 }
 
-logging_resource_adaptor::logging_resource_adaptor(
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
-  std::ostream& stream,
-  bool auto_flush)
+logging_resource_adaptor::logging_resource_adaptor(cuda::mr::any_device_resource upstream,
+                                                   std::ostream& stream,
+                                                   bool auto_flush)
   : shared_base(cuda::mr::make_shared_resource<detail::logging_resource_adaptor_impl>(
       make_logger(stream), std::move(upstream), auto_flush))
 {
 }
 
 logging_resource_adaptor::logging_resource_adaptor(
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  cuda::mr::any_device_resource upstream,
   std::initializer_list<rapids_logger::sink_ptr> sinks,
   bool auto_flush)
   : shared_base(cuda::mr::make_shared_resource<detail::logging_resource_adaptor_impl>(
@@ -61,8 +59,7 @@ logging_resource_adaptor::logging_resource_adaptor(
 {
 }
 
-cuda::mr::resource_ref<cuda::mr::device_accessible>
-logging_resource_adaptor::get_upstream_resource() const noexcept
+cuda::mr::device_resource_ref logging_resource_adaptor::get_upstream_resource() const noexcept
 {
   return get().get_upstream_resource();
 }

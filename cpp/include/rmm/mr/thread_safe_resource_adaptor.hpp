@@ -50,16 +50,14 @@ class RMM_EXPORT thread_safe_resource_adaptor
    *
    * @param upstream The resource used for allocating/deallocating device memory.
    */
-  explicit thread_safe_resource_adaptor(
-    cuda::mr::any_resource<cuda::mr::device_accessible> upstream);
+  explicit thread_safe_resource_adaptor(cuda::mr::any_device_resource upstream);
 
   ~thread_safe_resource_adaptor() = default;
 
   /**
-   * @briefreturn{cuda::mr::resource_ref<cuda::mr::device_accessible> to the upstream resource}
+   * @briefreturn{cuda::mr::device_resource_ref to the upstream resource}
    */
-  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
-    const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 };
 
 static_assert(cuda::mr::resource_with<thread_safe_resource_adaptor, cuda::mr::device_accessible>,

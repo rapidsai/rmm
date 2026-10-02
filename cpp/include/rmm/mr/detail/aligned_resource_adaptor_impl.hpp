@@ -28,7 +28,7 @@ class aligned_resource_adaptor_impl {
  public:
   static constexpr std::size_t default_alignment_threshold = 0;
 
-  aligned_resource_adaptor_impl(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  aligned_resource_adaptor_impl(cuda::mr::any_device_resource upstream,
                                 std::size_t alignment,
                                 std::size_t alignment_threshold);
 
@@ -49,8 +49,7 @@ class aligned_resource_adaptor_impl {
     return !(*this == other);
   }
 
-  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
-    const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   [[nodiscard]] std::size_t get_alignment() const noexcept;
 
@@ -80,7 +79,7 @@ class aligned_resource_adaptor_impl {
  private:
   [[nodiscard]] std::size_t upstream_allocation_size(std::size_t bytes) const;
 
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
+  cuda::mr::any_device_resource upstream_mr_;
   std::unordered_map<void*, void*> pointers_;
   std::size_t alignment_;
   std::size_t alignment_threshold_;

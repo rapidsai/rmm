@@ -19,16 +19,14 @@ RMM_NAMESPACE_BEGIN
 namespace mr {
 namespace detail {
 
-binning_memory_resource_impl::binning_memory_resource_impl(
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream)
+binning_memory_resource_impl::binning_memory_resource_impl(cuda::mr::any_device_resource upstream)
   : upstream_mr_{std::move(upstream)}
 {
 }
 
-binning_memory_resource_impl::binning_memory_resource_impl(
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
-  int8_t min_size_exponent,
-  int8_t max_size_exponent)
+binning_memory_resource_impl::binning_memory_resource_impl(cuda::mr::any_device_resource upstream,
+                                                           int8_t min_size_exponent,
+                                                           int8_t max_size_exponent)
   : upstream_mr_{std::move(upstream)}
 {
   for (auto i = min_size_exponent; i <= max_size_exponent; i++) {
@@ -36,16 +34,13 @@ binning_memory_resource_impl::binning_memory_resource_impl(
   }
 }
 
-cuda::mr::resource_ref<cuda::mr::device_accessible>
-binning_memory_resource_impl::get_upstream_resource() const noexcept
+cuda::mr::device_resource_ref binning_memory_resource_impl::get_upstream_resource() const noexcept
 {
-  return cuda::mr::resource_ref<cuda::mr::device_accessible>{
-    const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
+  return cuda::mr::device_resource_ref{const_cast<cuda::mr::any_device_resource&>(upstream_mr_)};
 }
 
 void binning_memory_resource_impl::add_bin(
-  std::size_t allocation_size,
-  std::optional<cuda::mr::resource_ref<cuda::mr::device_accessible>> bin_resource)
+  std::size_t allocation_size, std::optional<cuda::mr::device_resource_ref> bin_resource)
 {
   allocation_size = align_up(allocation_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
 
@@ -58,8 +53,7 @@ void binning_memory_resource_impl::add_bin(
   }
 }
 
-cuda::mr::resource_ref<cuda::mr::device_accessible> binning_memory_resource_impl::get_resource_ref(
-  std::size_t bytes)
+cuda::mr::device_resource_ref binning_memory_resource_impl::get_resource_ref(std::size_t bytes)
 {
   auto iter = resource_bins_.lower_bound(bytes);
   return (iter != resource_bins_.cend()) ? iter->second : get_upstream_resource();

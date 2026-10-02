@@ -14,7 +14,7 @@ namespace rmm::test {
 struct PinnedPoolMRFixture : public ::testing::Test {
   rmm::mr::pinned_host_memory_resource pinned{};
   rmm::mr::pool_memory_resource mr{pinned, 0};
-  cuda::mr::resource_ref<cuda::mr::device_accessible> ref{mr};
+  cuda::mr::device_resource_ref ref{mr};
   rmm::cuda_stream stream{};
 };
 

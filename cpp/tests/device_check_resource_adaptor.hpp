@@ -20,18 +20,17 @@
 
 class device_check_resource_adaptor final {
  public:
-  device_check_resource_adaptor(cuda::mr::resource_ref<cuda::mr::device_accessible> upstream)
+  device_check_resource_adaptor(cuda::mr::device_resource_ref upstream)
     : device_id{rmm::get_current_cuda_device()}, upstream_(upstream)
   {
   }
 
   /**
-   * @briefreturn{cuda::mr::resource_ref<cuda::mr::device_accessible> to the upstream resource}
+   * @briefreturn{cuda::mr::device_resource_ref to the upstream resource}
    */
-  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
-    const noexcept
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept
   {
-    return cuda::mr::resource_ref<cuda::mr::device_accessible>{upstream_};
+    return cuda::mr::device_resource_ref{upstream_};
   }
 
   void* allocate(cuda::stream_ref stream,
@@ -88,7 +87,7 @@ class device_check_resource_adaptor final {
   [[nodiscard]] bool check_device_id() const { return device_id == rmm::get_current_cuda_device(); }
 
   rmm::cuda_device_id device_id;
-  mutable cuda::mr::any_resource<cuda::mr::device_accessible> upstream_;
+  mutable cuda::mr::any_device_resource upstream_;
 };
 
 static_assert(cuda::mr::resource_with<device_check_resource_adaptor, cuda::mr::device_accessible>);

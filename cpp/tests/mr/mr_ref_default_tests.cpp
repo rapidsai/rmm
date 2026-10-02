@@ -46,8 +46,7 @@ TEST(DefaultTest, UseCurrentDeviceResourceRef) { test_get_current_device_resourc
 TEST(DefaultTest, GetCurrentDeviceResourceRef)
 {
   auto mr = rmm::mr::get_current_device_resource_ref();
-  EXPECT_EQ(
-    mr, cuda::mr::resource_ref<cuda::mr::device_accessible>{rmm::mr::detail::initial_resource()});
+  EXPECT_EQ(mr, cuda::mr::device_resource_ref{rmm::mr::detail::initial_resource()});
 }
 
 TEST(DefaultTest, SetCurrentDeviceResourceRef)
@@ -74,9 +73,8 @@ TEST(DefaultTest, UseCurrentDeviceResourceRef_mt) { spawn(test_get_current_devic
 TEST(DefaultTest, CurrentDeviceResourceRefIsCUDA_mt)
 {
   spawn([]() {
-    EXPECT_EQ(
-      rmm::mr::get_current_device_resource_ref(),
-      cuda::mr::resource_ref<cuda::mr::device_accessible>{rmm::mr::detail::initial_resource()});
+    EXPECT_EQ(rmm::mr::get_current_device_resource_ref(),
+              cuda::mr::device_resource_ref{rmm::mr::detail::initial_resource()});
   });
 }
 
@@ -84,8 +82,7 @@ TEST(DefaultTest, GetCurrentDeviceResourceRef_mt)
 {
   spawn([]() {
     auto mr = rmm::mr::get_current_device_resource_ref();
-    EXPECT_EQ(
-      mr, cuda::mr::resource_ref<cuda::mr::device_accessible>{rmm::mr::detail::initial_resource()});
+    EXPECT_EQ(mr, cuda::mr::device_resource_ref{rmm::mr::detail::initial_resource()});
   });
 }
 

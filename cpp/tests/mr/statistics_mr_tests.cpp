@@ -43,7 +43,7 @@ TEST_P(allocation_size, MultiThreaded)
   const std::size_t allocation_size = GetParam();
   auto upstream                     = rmm::mr::cuda_memory_resource{};
   auto delayed = delayed_memory_resource(upstream, std::chrono::milliseconds{300});
-  statistics_adaptor mr{cuda::mr::resource_ref<cuda::mr::device_accessible>{delayed}};
+  statistics_adaptor mr{cuda::mr::device_resource_ref{delayed}};
   auto stream = rmm::cuda_stream{};
   // Provoke interleaving to test that statistics counters are updated with correct ordering
   // relative to upstream deallocate. The delayed memory resource frees the pointer upstream
@@ -185,9 +185,9 @@ TEST(StatisticsTest, MultiTracking)
 
   EXPECT_EQ(mr.get_allocations_counter().value, 10);
 
-  statistics_adaptor inner_mr{cuda::mr::resource_ref<cuda::mr::device_accessible>{mr}};
+  statistics_adaptor inner_mr{cuda::mr::device_resource_ref{mr}};
 
-  cuda::mr::resource_ref<cuda::mr::device_accessible> inner_ref{inner_mr};
+  cuda::mr::device_resource_ref inner_ref{inner_mr};
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
     allocations.emplace_back(std::make_shared<rmm::device_buffer>(
       ten_MiB, cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, inner_ref));
@@ -231,7 +231,7 @@ TEST(StatisticsTest, NegativeInnerTracking)
 
   EXPECT_EQ(mr.get_allocations_counter().value, 10);
 
-  statistics_adaptor inner_mr{cuda::mr::resource_ref<cuda::mr::device_accessible>{mr}};
+  statistics_adaptor inner_mr{cuda::mr::device_resource_ref{mr}};
 
   // Add more allocations
   for (std::size_t i = 0; i < num_more_allocations; ++i) {

@@ -53,7 +53,7 @@ allocation remove_at(allocation_vector& allocs, std::size_t index)
 }
 
 template <typename SizeDistribution>
-void random_allocation_free(cuda::mr::resource_ref<cuda::mr::device_accessible> mr,
+void random_allocation_free(cuda::mr::device_resource_ref mr,
                             SizeDistribution size_distribution,
                             std::size_t num_allocations,
                             std::size_t max_usage,  // in MiB
@@ -132,7 +132,7 @@ void random_allocation_free(cuda::mr::resource_ref<cuda::mr::device_accessible> 
 }  // namespace
 
 void uniform_random_allocations(
-  cuda::mr::resource_ref<cuda::mr::device_accessible> mr,
+  cuda::mr::device_resource_ref mr,
   std::size_t num_allocations,      // NOLINT(bugprone-easily-swappable-parameters)
   std::size_t max_allocation_size,  // size in MiB
   std::size_t max_usage,
@@ -143,7 +143,7 @@ void uniform_random_allocations(
 }
 
 // TODO figure out how to map a normal distribution to integers between 1 and max_allocation_size
-/*void normal_random_allocations(cuda::mr::resource_ref<cuda::mr::device_accessible> mr,
+/*void normal_random_allocations(cuda::mr::device_resource_ref mr,
                                 std::size_t num_allocations = 1000,
                                 std::size_t mean_allocation_size = 500, // in MiB
                                 std::size_t stddev_allocation_size = 500, // in MiB
@@ -153,26 +153,28 @@ void uniform_random_allocations(
 }*/
 
 /// MR factory functions
-using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
 
-inline any_device_resource make_cuda() { return rmm::mr::cuda_memory_resource{}; }
+inline cuda::mr::any_device_resource make_cuda() { return rmm::mr::cuda_memory_resource{}; }
 
-inline any_device_resource make_cuda_async() { return rmm::mr::cuda_async_memory_resource{}; }
+inline cuda::mr::any_device_resource make_cuda_async()
+{
+  return rmm::mr::cuda_async_memory_resource{};
+}
 
-inline any_device_resource make_pool()
+inline cuda::mr::any_device_resource make_pool()
 {
   return rmm::mr::pool_memory_resource{rmm::mr::cuda_memory_resource{},
                                        rmm::percent_of_free_device_memory(50)};
 }
 
-inline any_device_resource make_arena()
+inline cuda::mr::any_device_resource make_arena()
 {
   auto free = rmm::available_device_memory().first;
   constexpr auto reserve{64UL << 20};  // Leave some space for CUDA overhead.
   return rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref(), free - reserve};
 }
 
-inline any_device_resource make_binning()
+inline cuda::mr::any_device_resource make_binning()
 {
   // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
   // Larger allocations will use the pool resource
@@ -182,7 +184,7 @@ inline any_device_resource make_binning()
   return rmm::mr::binning_memory_resource{pool, min_bin_pow2, max_bin_pow2};
 }
 
-using MRFactoryFunc = std::function<any_device_resource()>;
+using MRFactoryFunc = std::function<cuda::mr::any_device_resource()>;
 
 constexpr std::size_t max_usage = 16000;
 

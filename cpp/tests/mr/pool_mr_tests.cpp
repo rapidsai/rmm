@@ -412,7 +412,7 @@ TEST(PoolTest, CrossStreamStealAfterMergeWaitsForDonorStream)
   constexpr int pattern_c{0xBB};
 
   pool_mr mr{rmm::mr::get_current_device_resource_ref(), pool_size, pool_size};
-  cuda::mr::resource_ref<cuda::mr::device_accessible> ref{mr};
+  cuda::mr::device_resource_ref ref{mr};
 
   rmm::cuda_stream stream_a;
   rmm::cuda_stream stream_b;

@@ -30,16 +30,14 @@ TEST_F(allocator_test, custom_resource)
 {
   rmm::mr::cuda_memory_resource mr;
   rmm::mr::polymorphic_allocator<int> allocator{mr};
-  EXPECT_EQ(allocator.get_upstream_resource(),
-            cuda::mr::resource_ref<cuda::mr::device_accessible>{mr});
+  EXPECT_EQ(allocator.get_upstream_resource(), cuda::mr::device_resource_ref{mr});
 }
 
 void test_conversion(rmm::mr::polymorphic_allocator<int> /*unused*/) {}
 
 TEST_F(allocator_test, implicit_conversion)
 {
-  test_conversion(
-    cuda::mr::any_resource<cuda::mr::device_accessible>{rmm::mr::cuda_memory_resource{}});
+  test_conversion(cuda::mr::any_device_resource{rmm::mr::cuda_memory_resource{}});
 }
 
 TEST_F(allocator_test, self_equality)

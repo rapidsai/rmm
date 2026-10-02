@@ -27,7 +27,7 @@ from rmm.librmm.device_buffer cimport (
     get_current_cuda_device,
     prefetch,
 )
-from rmm.librmm.memory_resource cimport any_resource, device_accessible
+from rmm.librmm.memory_resource cimport any_device_resource
 from rmm.pylibrmm.memory_resource cimport (
     DeviceMemoryResource,
     get_current_device_resource,
@@ -90,12 +90,12 @@ cdef class DeviceBuffer:
             if c_ptr == NULL or size == 0:
                 self.c_obj.reset(new device_buffer(
                     size, stream.view(),
-                    any_resource[device_accessible](self.mr.get_mr())
+                    any_device_resource(self.mr.get_mr())
                 ))
             else:
                 self.c_obj.reset(new device_buffer(
                     c_ptr, size, stream.view(),
-                    any_resource[device_accessible](self.mr.get_mr())
+                    any_device_resource(self.mr.get_mr())
                 ))
 
                 if stream.c_is_default():

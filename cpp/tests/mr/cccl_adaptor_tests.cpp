@@ -74,7 +74,7 @@ template <typename AdaptorType>
 struct CcclAdaptorTest : public ::testing::Test {
   cuda_mr cuda{};
   AdaptorType mr{make_mr()};
-  cuda::mr::resource_ref<cuda::mr::device_accessible> ref{mr};
+  cuda::mr::device_resource_ref ref{mr};
   rmm::cuda_stream stream{};
 
   AdaptorType make_mr()
@@ -131,7 +131,7 @@ TYPED_TEST(CcclAdaptorTest, Equality)
 
 TYPED_TEST(CcclAdaptorTest, GetUpstreamResource)
 {
-  cuda::mr::resource_ref<cuda::mr::device_accessible> expected{this->cuda};
+  cuda::mr::device_resource_ref expected{this->cuda};
   EXPECT_EQ(this->mr.get_upstream_resource(), expected);
 }
 
@@ -181,14 +181,14 @@ TEST(ArenaMRAdaptorTest, EqualityAndSharedOwnership)
 TEST(CallbackMRAdaptorTest, EqualityAndSharedOwnership)
 {
   cuda_mr cuda{};
-  cuda::mr::resource_ref<cuda::mr::device_accessible> upstream{cuda};
+  cuda::mr::device_resource_ref upstream{cuda};
 
   auto alloc_cb = [](std::size_t bytes, cuda::stream_ref stream, void* arg) {
-    return static_cast<cuda::mr::resource_ref<cuda::mr::device_accessible>*>(arg)->allocate(
+    return static_cast<cuda::mr::device_resource_ref*>(arg)->allocate(
       stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   };
   auto dealloc_cb = [](void* ptr, std::size_t bytes, cuda::stream_ref stream, void* arg) {
-    static_cast<cuda::mr::resource_ref<cuda::mr::device_accessible>*>(arg)->deallocate(
+    static_cast<cuda::mr::device_resource_ref*>(arg)->deallocate(
       stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
   };
 

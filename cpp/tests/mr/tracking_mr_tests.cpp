@@ -46,7 +46,7 @@ TEST_P(allocation_size, MultiThreaded)
   auto upstream                     = rmm::mr::cuda_memory_resource{};
   std::vector<std::thread> threads;
   auto delayed = delayed_memory_resource(upstream, std::chrono::milliseconds{300});
-  tracking_adaptor mr{cuda::mr::resource_ref<cuda::mr::device_accessible>{delayed}};
+  tracking_adaptor mr{cuda::mr::device_resource_ref{delayed}};
   auto stream = rmm::cuda_stream{};
   // Idea, we want to provoke address reuse to test ABA problems in the tracking resource
   // adaptor. To do so, the delayed memory resource frees (and hence returns to the
@@ -160,9 +160,9 @@ TEST(TrackingTest, MultiTracking)
 
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations);
 
-  tracking_adaptor inner_mr{cuda::mr::resource_ref<cuda::mr::device_accessible>{mr}};
+  tracking_adaptor inner_mr{cuda::mr::device_resource_ref{mr}};
 
-  cuda::mr::resource_ref<cuda::mr::device_accessible> inner_ref{inner_mr};
+  cuda::mr::device_resource_ref inner_ref{inner_mr};
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
     allocations.emplace_back(std::make_shared<rmm::device_buffer>(
       ten_MiB, cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, inner_ref));
@@ -201,7 +201,7 @@ TEST(TrackingTest, NegativeInnerTracking)
 
   EXPECT_EQ(mr.get_outstanding_allocations().size(), num_allocations);
 
-  tracking_adaptor inner_mr{cuda::mr::resource_ref<cuda::mr::device_accessible>{mr}};
+  tracking_adaptor inner_mr{cuda::mr::device_resource_ref{mr}};
 
   // Add more allocations
   for (std::size_t i = 0; i < num_more_allocations; ++i) {
@@ -228,7 +228,7 @@ TEST(TrackingTest, UntrackedDeallocationDoesNotUnderflowAllocatedBytes)
   tracking_adaptor mr{rmm::mr::get_current_device_resource_ref()};
   auto* ptr = mr.allocate_sync(ten_MiB);
 
-  tracking_adaptor inner_mr{cuda::mr::resource_ref<cuda::mr::device_accessible>{mr}};
+  tracking_adaptor inner_mr{cuda::mr::device_resource_ref{mr}};
   inner_mr.deallocate_sync(ptr, ten_MiB);
 
   EXPECT_EQ(inner_mr.get_allocated_bytes(), 0);
