@@ -7,7 +7,6 @@
 #include <rmm/aligned.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/aligned_resource_adaptor_impl.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -59,7 +58,7 @@ class RMM_EXPORT aligned_resource_adaptor
    * if smaller).
    * @param alignment_threshold Only allocations >= this size are aligned to `alignment`.
    */
-  explicit aligned_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  explicit aligned_resource_adaptor(cuda::mr::any_device_resource upstream,
                                     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
                                     std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT,
                                     std::size_t alignment_threshold = default_alignment_threshold);
@@ -67,9 +66,9 @@ class RMM_EXPORT aligned_resource_adaptor
   ~aligned_resource_adaptor() = default;
 
   /**
-   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
+   * @briefreturn{cuda::mr::device_resource_ref to the upstream resource}
    */
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 };
 
 static_assert(cuda::mr::resource_with<aligned_resource_adaptor, cuda::mr::device_accessible>,

@@ -237,8 +237,8 @@ interface.
 RMM's memory resources use [CCCL's memory resource
 concepts](https://nvidia.github.io/cccl/unstable/libcudacxx/extended_api/memory_resource.html).
 Resource APIs accept either concrete resource objects, non-owning resource refs such as
-`rmm::device_async_resource_ref`, or owning type-erased resources such as
-`cuda::mr::any_resource<cuda::mr::device_accessible>`.
+`cuda::mr::device_resource_ref`, or owning type-erased resources such as
+`cuda::mr::any_device_resource`.
 
 ## Memory Resources
 
@@ -256,9 +256,8 @@ void deallocate(cuda::stream_ref stream,
                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
 ```
 
-RMM also uses `rmm::device_async_resource_ref`, an alias for
-`cuda::mr::resource_ref<cuda::mr::device_accessible>`, as a lightweight non-owning reference to a
-device resource. RMM uses `cuda::mr::any_resource<cuda::mr::device_accessible>` as an owning
+RMM also uses `cuda::mr::device_resource_ref` as a lightweight non-owning
+reference to a device resource. RMM uses `cuda::mr::any_device_resource` as an owning
 type-erased resource. RMM resources with non-trivial state are value types with shared ownership of
 their internal state, so copying a resource object is inexpensive and keeps the underlying state
 alive.
@@ -334,14 +333,14 @@ To enable this use case, RMM provides the concept of a resource for the currentl
 device. This resource is used when another is not explicitly provided.
 
 Accessing and modifying this resource is done through two functions:
-- `device_async_resource_ref get_current_device_resource_ref()`
+- `cuda::mr::device_resource_ref get_current_device_resource_ref()`
    - Returns a non-owning reference to the resource for the active CUDA device.
    - The initial resource is an instance of `cuda_memory_resource`.
    - This function is thread safe with respect to concurrent calls to it and
      `set_current_device_resource()`.
    - For more explicit control, you can use `get_per_device_resource_ref()`, which takes a device ID.
 
-- `cuda::mr::any_resource<cuda::mr::device_accessible> set_current_device_resource(cuda::mr::any_resource<cuda::mr::device_accessible> new_mr)`
+- `cuda::mr::any_device_resource set_current_device_resource(cuda::mr::any_device_resource new_mr)`
    - Updates the resource for the active CUDA device to `new_mr`
    - Returns the previous resource as an owning type-erased resource
    - This function is thread safe with respect to concurrent calls to it and
@@ -878,7 +877,7 @@ resource:
 ```c++
 std::unique_ptr<rmm::device_buffer> allocate(
   std::size_t size,
-  cuda::mr::any_resource<cuda::mr::device_accessible> mr =
+  cuda::mr::any_device_resource mr =
     rmm::mr::get_current_device_resource_ref())
 {
     return std::make_unique<rmm::device_buffer>(

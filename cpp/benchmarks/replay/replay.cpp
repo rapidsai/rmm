@@ -13,9 +13,9 @@
 #include <rmm/mr/managed_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/iterator>
+#include <cuda/memory_resource>
 #include <cuda/stream>
 #include <thrust/execution_policy.h>
 #include <thrust/reduce.h>
@@ -37,14 +37,15 @@
 #include <string>
 #include <thread>
 
-using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
-
 /// MR factory functions
-any_device_resource make_cuda(std::size_t = 0) { return rmm::mr::cuda_memory_resource{}; }
+cuda::mr::any_device_resource make_cuda(std::size_t = 0) { return rmm::mr::cuda_memory_resource{}; }
 
-any_device_resource make_managed(std::size_t = 0) { return rmm::mr::managed_memory_resource{}; }
+cuda::mr::any_device_resource make_managed(std::size_t = 0)
+{
+  return rmm::mr::managed_memory_resource{};
+}
 
-inline any_device_resource make_pool(std::size_t simulated_size)
+inline cuda::mr::any_device_resource make_pool(std::size_t simulated_size)
 {
   if (simulated_size > 0) {
     rmm::mr::simulated_memory_resource sim{simulated_size};
@@ -53,7 +54,7 @@ inline any_device_resource make_pool(std::size_t simulated_size)
   return rmm::mr::pool_memory_resource{rmm::mr::cuda_memory_resource{}, 0};
 }
 
-inline any_device_resource make_arena(std::size_t simulated_size)
+inline cuda::mr::any_device_resource make_arena(std::size_t simulated_size)
 {
   if (simulated_size > 0) {
     return rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref(),
@@ -62,7 +63,7 @@ inline any_device_resource make_arena(std::size_t simulated_size)
   return rmm::mr::arena_memory_resource{rmm::mr::get_current_device_resource_ref()};
 }
 
-inline any_device_resource make_binning(std::size_t simulated_size)
+inline cuda::mr::any_device_resource make_binning(std::size_t simulated_size)
 {
   auto pool = make_pool(simulated_size);
   auto mr   = rmm::mr::binning_memory_resource{pool};
@@ -74,7 +75,7 @@ inline any_device_resource make_binning(std::size_t simulated_size)
   return mr;
 }
 
-using MRFactoryFunc = std::function<any_device_resource(std::size_t)>;
+using MRFactoryFunc = std::function<cuda::mr::any_device_resource(std::size_t)>;
 
 /**
  * @brief Represents an allocation made during the replay
@@ -97,7 +98,7 @@ struct allocation {
 struct replay_benchmark {
   MRFactoryFunc factory_;
   std::size_t simulated_size_;
-  std::optional<any_device_resource> mr_{};
+  std::optional<cuda::mr::any_device_resource> mr_{};
   std::vector<std::vector<rmm::detail::event>> const& events_{};
 
   // Maps a pointer from the event log to an active allocation

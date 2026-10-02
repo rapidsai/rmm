@@ -6,7 +6,6 @@
 
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/fixed_size_memory_resource.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/stream>
@@ -31,10 +30,9 @@ namespace detail {
  */
 class binning_memory_resource_impl {
  public:
-  explicit binning_memory_resource_impl(
-    cuda::mr::any_resource<cuda::mr::device_accessible> upstream);
+  explicit binning_memory_resource_impl(cuda::mr::any_device_resource upstream);
 
-  binning_memory_resource_impl(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  binning_memory_resource_impl(cuda::mr::any_device_resource upstream,
                                int8_t min_size_exponent,
                                int8_t max_size_exponent);
 
@@ -55,10 +53,10 @@ class binning_memory_resource_impl {
     return !(*this == other);
   }
 
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   void add_bin(std::size_t allocation_size,
-               std::optional<device_async_resource_ref> bin_resource = std::nullopt);
+               std::optional<cuda::mr::device_resource_ref> bin_resource = std::nullopt);
 
   [[nodiscard]] void* allocate(cuda::stream_ref stream,
                                std::size_t bytes,
@@ -82,11 +80,11 @@ class binning_memory_resource_impl {
   }
 
  private:
-  [[nodiscard]] device_async_resource_ref get_resource_ref(std::size_t bytes);
+  [[nodiscard]] cuda::mr::device_resource_ref get_resource_ref(std::size_t bytes);
 
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
+  cuda::mr::any_device_resource upstream_mr_;
   std::vector<std::unique_ptr<fixed_size_memory_resource>> owned_bin_resources_;
-  std::map<std::size_t, device_async_resource_ref> resource_bins_;
+  std::map<std::size_t, cuda::mr::device_resource_ref> resource_bins_;
 };
 
 }  // namespace detail

@@ -10,8 +10,8 @@
 #include <rmm/device_vector.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/thrust_allocator_adaptor.hpp>
-#include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/stream>
 #include <thrust/reduce.h>
 
@@ -39,7 +39,7 @@ TEST_P(allocator_test, defaults)
   rmm::mr::thrust_allocator<int> allocator(cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
   EXPECT_EQ(allocator.stream(), cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
   EXPECT_EQ(allocator.get_upstream_resource(),
-            rmm::device_async_resource_ref{rmm::mr::get_current_device_resource_ref()});
+            cuda::mr::device_resource_ref{rmm::mr::get_current_device_resource_ref()});
 }
 
 TEST_P(allocator_test, multi_device)

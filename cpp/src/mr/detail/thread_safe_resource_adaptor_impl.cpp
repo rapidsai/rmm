@@ -14,15 +14,15 @@ namespace mr {
 namespace detail {
 
 thread_safe_resource_adaptor_impl::thread_safe_resource_adaptor_impl(
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream)
+  cuda::mr::any_device_resource upstream)
   : upstream_mr_{std::move(upstream)}
 {
 }
 
-device_async_resource_ref thread_safe_resource_adaptor_impl::get_upstream_resource() const noexcept
+cuda::mr::device_resource_ref thread_safe_resource_adaptor_impl::get_upstream_resource()
+  const noexcept
 {
-  return device_async_resource_ref{
-    const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
+  return cuda::mr::device_resource_ref{const_cast<cuda::mr::any_device_resource&>(upstream_mr_)};
 }
 
 void* thread_safe_resource_adaptor_impl::allocate(cuda::stream_ref stream,

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -14,7 +14,8 @@
 #include <rmm/mr/statistics_resource_adaptor.hpp>
 #include <rmm/mr/thread_safe_resource_adaptor.hpp>
 #include <rmm/mr/tracking_resource_adaptor.hpp>
-#include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <gtest/gtest.h>
 
@@ -99,7 +100,7 @@ TYPED_TEST(AdaptorTest, Equality)
 
 TYPED_TEST(AdaptorTest, GetUpstreamResource)
 {
-  rmm::device_async_resource_ref expected{this->cuda};
+  cuda::mr::device_resource_ref expected{this->cuda};
   EXPECT_EQ(this->mr->get_upstream_resource(), expected);
 }
 

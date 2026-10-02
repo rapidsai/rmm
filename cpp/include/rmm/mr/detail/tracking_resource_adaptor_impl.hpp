@@ -6,7 +6,6 @@
 
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/stack_trace.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -45,8 +44,7 @@ class tracking_resource_adaptor_impl {
     }
   };
 
-  tracking_resource_adaptor_impl(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
-                                 bool capture_stacks);
+  tracking_resource_adaptor_impl(cuda::mr::any_device_resource upstream, bool capture_stacks);
 
   ~tracking_resource_adaptor_impl() = default;
 
@@ -65,7 +63,7 @@ class tracking_resource_adaptor_impl {
     return !(*this == other);
   }
 
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   /**
    * @brief Get the outstanding allocations map.
@@ -111,7 +109,7 @@ class tracking_resource_adaptor_impl {
   std::map<void*, allocation_info> allocations_;
   std::atomic<std::size_t> allocated_bytes_{0};
   mutable std::shared_mutex mtx_;
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
+  cuda::mr::any_device_resource upstream_mr_;
 };
 
 }  // namespace detail

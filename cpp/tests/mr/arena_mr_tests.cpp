@@ -121,7 +121,7 @@ struct ArenaTest : public ::testing::Test {
     EXPECT_CALL(mock_mr, deallocate_sync(fake_address3, arena_size, ::testing::_));
     mock_wrapper = std::make_unique<mock_memory_resource_wrapper>(&mock_mr);
     global =
-      std::make_unique<global_arena>(rmm::device_async_resource_ref{*mock_wrapper}, arena_size);
+      std::make_unique<global_arena>(cuda::mr::device_resource_ref{*mock_wrapper}, arena_size);
     per_thread = std::make_unique<arena>(*global);
   }
 

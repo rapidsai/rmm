@@ -15,7 +15,7 @@ namespace rmm::test {
  * @brief Typed-test fixture for CCCL-style multi-threaded memory resource tests.
  *
  * The Fixture parameter must be a ::testing::Test subclass providing:
- *   rmm::device_async_resource_ref ref
+ *   cuda::mr::device_resource_ref ref
  *   rmm::cuda_stream stream
  */
 template <typename Fixture>
