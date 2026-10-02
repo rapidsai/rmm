@@ -16,16 +16,14 @@ namespace mr {
 namespace detail {
 
 prefetch_resource_adaptor_impl::prefetch_resource_adaptor_impl(
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream)
+  cuda::mr::any_device_resource upstream)
   : upstream_mr_{std::move(upstream)}
 {
 }
 
-cuda::mr::resource_ref<cuda::mr::device_accessible>
-prefetch_resource_adaptor_impl::get_upstream_resource() const noexcept
+cuda::mr::device_resource_ref prefetch_resource_adaptor_impl::get_upstream_resource() const noexcept
 {
-  return cuda::mr::resource_ref<cuda::mr::device_accessible>{
-    const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
+  return cuda::mr::device_resource_ref{const_cast<cuda::mr::any_device_resource&>(upstream_mr_)};
 }
 
 void* prefetch_resource_adaptor_impl::allocate(cuda::stream_ref stream,

@@ -33,7 +33,7 @@ class pool_memory_resource_impl final
  public:
   friend class stream_ordered_memory_resource<pool_memory_resource_impl, coalescing_free_list>;
 
-  pool_memory_resource_impl(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  pool_memory_resource_impl(cuda::mr::any_device_resource upstream,
                             std::size_t initial_pool_size,
                             std::optional<std::size_t> maximum_pool_size);
 
@@ -49,8 +49,7 @@ class pool_memory_resource_impl final
     return !(*this == other);
   }
 
-  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
-    const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   [[nodiscard]] std::size_t pool_size() const noexcept;
 
@@ -83,7 +82,7 @@ class pool_memory_resource_impl final
 #endif
 
  private:
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
+  cuda::mr::any_device_resource upstream_mr_;
   std::size_t current_pool_size_{};
   std::optional<std::size_t> maximum_pool_size_{};
   std::set<block_type, compare_blocks<block_type>> upstream_blocks_;  ///< Upstream allocations.

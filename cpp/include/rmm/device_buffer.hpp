@@ -27,7 +27,7 @@ RMM_NAMESPACE_BEGIN
  * @brief RAII construct for device memory allocation
  *
  * This class allocates untyped and *uninitialized* device memory using a
- * `cuda::mr::any_resource<cuda::mr::device_accessible>`. If not explicitly specified, the memory
+ * `cuda::mr::any_device_resource`. If not explicitly specified, the memory
  * resource returned from `get_current_device_resource_ref()` is used.
  *
  * @note Unlike `std::vector` or `thrust::device_vector`, the device memory
@@ -97,13 +97,12 @@ class device_buffer {
    * resource supports streams.
    * @param mr Memory resource to use for the device memory allocation.
    */
-  explicit device_buffer(
-    std::size_t size,
-    cuda::stream_ref stream,
-    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
+  explicit device_buffer(std::size_t size,
+                         cuda::stream_ref stream,
+                         cuda::mr::any_device_resource mr = mr::get_current_device_resource_ref());
 
   // clang-format off
-  /// @copydoc device_buffer(std::size_t, cuda::stream_ref, cuda::mr::any_resource<cuda::mr::device_accessible>)
+  /// @copydoc device_buffer(std::size_t, cuda::stream_ref, cuda::mr::any_device_resource)
   // clang-format on
   ///
   /// @throws rmm::bad_alloc If the requested alignment cannot be satisfied by the provided
@@ -112,11 +111,10 @@ class device_buffer {
   ///
   /// @param alignment Required alignment of the allocation. The actual alignment will be
   /// at least the requested alignment.
-  explicit device_buffer(
-    std::size_t size,
-    std::size_t alignment,
-    cuda::stream_ref stream,
-    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
+  explicit device_buffer(std::size_t size,
+                         std::size_t alignment,
+                         cuda::stream_ref stream,
+                         cuda::mr::any_device_resource mr = mr::get_current_device_resource_ref());
 
   /**
    * @brief Construct a new device buffer by copying from a raw pointer to an existing host or
@@ -141,14 +139,13 @@ class device_buffer {
    * resource supports streams.
    * @param mr Memory resource to use for the device memory allocation
    */
-  device_buffer(
-    void const* source_data,
-    std::size_t size,
-    cuda::stream_ref stream,
-    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
+  device_buffer(void const* source_data,
+                std::size_t size,
+                cuda::stream_ref stream,
+                cuda::mr::any_device_resource mr = mr::get_current_device_resource_ref());
 
   // clang-format off
-  /// @copydoc device_buffer(void const*, std::size_t, cuda::stream_ref, cuda::mr::any_resource<cuda::mr::device_accessible>)
+  /// @copydoc device_buffer(void const*, std::size_t, cuda::stream_ref, cuda::mr::any_device_resource)
   // clang-format on
   ///
   /// @throws rmm::bad_alloc If the requested alignment cannot be satisfied by the provided
@@ -157,12 +154,11 @@ class device_buffer {
   ///
   /// @param alignment Required alignment of the allocation. The actual alignment will be
   /// at least the requested alignment.
-  explicit device_buffer(
-    void const* source_data,
-    std::size_t size,
-    std::size_t alignment,
-    cuda::stream_ref stream,
-    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
+  explicit device_buffer(void const* source_data,
+                         std::size_t size,
+                         std::size_t alignment,
+                         cuda::stream_ref stream,
+                         cuda::mr::any_device_resource mr = mr::get_current_device_resource_ref());
   /**
    * @brief Construct a new `device_buffer` by deep copying the contents of
    * another `device_buffer`, optionally using the specified stream and memory
@@ -175,7 +171,7 @@ class device_buffer {
    * @note The new buffer has the same alignment guarantees as the copied-from buffer. If you need
    *to control the alignment of the new buffer explicitly, use `device_buffer(void const*,
    * std::size_t, std::size_t, cuda::stream_ref,
-   *cuda::mr::any_resource<cuda::mr::device_accessible>)`.
+   *cuda::mr::any_device_resource)`.
    *
    * @note This function does not synchronize `stream`. `other` is copied on `stream`, so the
    * caller is responsible for correct synchronization to ensure that `other` is valid when
@@ -189,10 +185,9 @@ class device_buffer {
    * @param stream The stream to use for the allocation and copy
    * @param mr The resource to use for allocating the new `device_buffer`
    */
-  device_buffer(
-    device_buffer const& other,
-    cuda::stream_ref stream,
-    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref());
+  device_buffer(device_buffer const& other,
+                cuda::stream_ref stream,
+                cuda::mr::any_device_resource mr = mr::get_current_device_resource_ref());
 
   /**
    * @brief Constructs a new `device_buffer` by moving the contents of another
@@ -372,10 +367,7 @@ class device_buffer {
   /**
    * @briefreturn{The resource used to allocate and deallocate}
    */
-  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> memory_resource() noexcept
-  {
-    return _mr;
-  }
+  [[nodiscard]] cuda::mr::device_resource_ref memory_resource() noexcept { return _mr; }
 
  private:
   void* _data{nullptr};  ///< Pointer to device memory allocation
@@ -385,8 +377,8 @@ class device_buffer {
   cuda::stream_ref _stream{cuda::stream_ref{
     cudaStream_t{cudaStreamDefault}}};  ///< Stream to use for device memory deallocation
 
-  cuda::mr::any_resource<cuda::mr::device_accessible> _mr;  ///< The memory resource used to
-                                                            ///< allocate/deallocate device memory
+  cuda::mr::any_device_resource _mr;  ///< The memory resource used to
+                                      ///< allocate/deallocate device memory
   cuda_device_id _device{get_current_cuda_device()};
 
   /**

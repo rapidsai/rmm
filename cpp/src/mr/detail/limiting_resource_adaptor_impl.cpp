@@ -16,9 +16,7 @@ namespace mr {
 namespace detail {
 
 limiting_resource_adaptor_impl::limiting_resource_adaptor_impl(
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
-  std::size_t allocation_limit,
-  std::size_t alignment)
+  cuda::mr::any_device_resource upstream, std::size_t allocation_limit, std::size_t alignment)
   : upstream_mr_{std::move(upstream)},
     allocation_limit_{allocation_limit},
     allocated_bytes_(0),
@@ -26,11 +24,9 @@ limiting_resource_adaptor_impl::limiting_resource_adaptor_impl(
 {
 }
 
-cuda::mr::resource_ref<cuda::mr::device_accessible>
-limiting_resource_adaptor_impl::get_upstream_resource() const noexcept
+cuda::mr::device_resource_ref limiting_resource_adaptor_impl::get_upstream_resource() const noexcept
 {
-  return cuda::mr::resource_ref<cuda::mr::device_accessible>{
-    const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
+  return cuda::mr::device_resource_ref{const_cast<cuda::mr::any_device_resource&>(upstream_mr_)};
 }
 
 std::size_t limiting_resource_adaptor_impl::get_allocated_bytes() const { return allocated_bytes_; }

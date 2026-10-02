@@ -26,7 +26,7 @@ namespace detail {
 class logging_resource_adaptor_impl {
  public:
   logging_resource_adaptor_impl(std::shared_ptr<rapids_logger::logger> logger,
-                                cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+                                cuda::mr::any_device_resource upstream,
                                 bool auto_flush);
 
   [[nodiscard]] void* allocate_sync(std::size_t bytes,
@@ -55,8 +55,7 @@ class logging_resource_adaptor_impl {
     return !(*this == other);
   }
 
-  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
-    const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   void flush();
 
@@ -69,7 +68,7 @@ class logging_resource_adaptor_impl {
 
  private:
   std::shared_ptr<rapids_logger::logger> logger_{};
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
+  cuda::mr::any_device_resource upstream_mr_;
 };
 
 }  // namespace detail

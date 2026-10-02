@@ -14,7 +14,7 @@ namespace rmm::test {
 struct FixedSizeMRFixture : public ::testing::Test {
   rmm::mr::cuda_memory_resource upstream{};
   rmm::mr::fixed_size_memory_resource mr{upstream};
-  cuda::mr::resource_ref<cuda::mr::device_accessible> ref{mr};
+  cuda::mr::device_resource_ref ref{mr};
   rmm::cuda_stream stream{};
 };
 

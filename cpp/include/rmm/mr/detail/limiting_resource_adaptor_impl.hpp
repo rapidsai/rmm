@@ -25,7 +25,7 @@ namespace detail {
  */
 class limiting_resource_adaptor_impl {
  public:
-  limiting_resource_adaptor_impl(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  limiting_resource_adaptor_impl(cuda::mr::any_device_resource upstream,
                                  std::size_t allocation_limit,
                                  std::size_t alignment);
 
@@ -46,8 +46,7 @@ class limiting_resource_adaptor_impl {
     return !(*this == other);
   }
 
-  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
-    const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   [[nodiscard]] std::size_t get_allocated_bytes() const;
 
@@ -75,7 +74,7 @@ class limiting_resource_adaptor_impl {
   }
 
  private:
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
+  cuda::mr::any_device_resource upstream_mr_;
   std::size_t allocation_limit_;
   std::atomic<std::size_t> allocated_bytes_;
   std::size_t alignment_;

@@ -37,7 +37,7 @@ void spawn(Task task, Arguments&&... args)
   spawn_n(4, task, std::forward<Arguments>(args)...);
 }
 
-inline void async_allocate_loop(cuda::mr::resource_ref<cuda::mr::device_accessible> ref,
+inline void async_allocate_loop(cuda::mr::device_resource_ref ref,
                                 std::size_t num_allocations,
                                 std::list<allocation>& allocations,
                                 std::mutex& mtx,
@@ -65,7 +65,7 @@ inline void async_allocate_loop(cuda::mr::resource_ref<cuda::mr::device_accessib
   RMM_CUDA_TRY(cudaEventSynchronize(event));
 }
 
-inline void async_deallocate_loop(cuda::mr::resource_ref<cuda::mr::device_accessible> ref,
+inline void async_deallocate_loop(cuda::mr::device_resource_ref ref,
                                   std::size_t num_allocations,
                                   std::list<allocation>& allocations,
                                   std::mutex& mtx,
@@ -86,10 +86,9 @@ inline void async_deallocate_loop(cuda::mr::resource_ref<cuda::mr::device_access
   RMM_CUDA_TRY(cudaEventSynchronize(event));
 }
 
-inline void test_async_allocate_free_different_threads(
-  cuda::mr::resource_ref<cuda::mr::device_accessible> ref,
-  cuda::stream_ref streamA,
-  cuda::stream_ref streamB)
+inline void test_async_allocate_free_different_threads(cuda::mr::device_resource_ref ref,
+                                                       cuda::stream_ref streamA,
+                                                       cuda::stream_ref streamB)
 {
   constexpr std::size_t num_allocations{100};
 

@@ -83,12 +83,12 @@ TEST(ResourceRefConversion, ResourceToRef)
 }
 
 // Test conversion from cuda::mr::resource_ref<cuda::mr::host_accessible,
-// cuda::mr::device_accessible> to cuda::mr::resource_ref<cuda::mr::device_accessible>
+// cuda::mr::device_accessible> to cuda::mr::device_resource_ref
 TEST(ResourceRefConversion, HostDeviceToDeviceSync)
 {
   rmm::mr::pinned_host_memory_resource mr{};
 
-  // Create a cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>
+  // Create a cuda::mr::host_device_resource_ref
   cuda::mr::synchronous_resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible> hd_ref{
     mr};
   static_assert(cuda::mr::synchronous_resource_with<decltype(hd_ref), cuda::mr::host_accessible>);
@@ -96,7 +96,7 @@ TEST(ResourceRefConversion, HostDeviceToDeviceSync)
   static_assert(cuda::has_property<decltype(hd_ref), cuda::mr::host_accessible>);
   static_assert(cuda::has_property<decltype(hd_ref), cuda::mr::device_accessible>);
 
-  // Convert to cuda::mr::resource_ref<cuda::mr::device_accessible>
+  // Convert to cuda::mr::device_resource_ref
   cuda::mr::synchronous_resource_ref<cuda::mr::device_accessible> d_ref{hd_ref};
   static_assert(!cuda::mr::synchronous_resource_with<decltype(d_ref), cuda::mr::host_accessible>);
   static_assert(cuda::mr::synchronous_resource_with<decltype(d_ref), cuda::mr::device_accessible>);
@@ -113,11 +113,11 @@ TEST(ResourceRefConversion, HostDeviceToDeviceAsync)
 {
   rmm::mr::pinned_host_memory_resource mr{};
 
-  // Create a cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>
-  cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible> hd_ref{mr};
+  // Create a cuda::mr::host_device_resource_ref
+  cuda::mr::host_device_resource_ref hd_ref{mr};
 
-  // Convert to cuda::mr::resource_ref<cuda::mr::device_accessible>
-  cuda::mr::resource_ref<cuda::mr::device_accessible> d_ref{hd_ref};
+  // Convert to cuda::mr::device_resource_ref
+  cuda::mr::device_resource_ref d_ref{hd_ref};
 
   // Use the converted ref
   rmm::cuda_stream stream{};
@@ -158,16 +158,16 @@ class host_allocator {
   bool operator!=(host_allocator const& other) const { return !(*this == other); }
 
  private:
-  cuda::mr::resource_ref<cuda::mr::host_accessible> mr_;
+  cuda::mr::host_resource_ref mr_;
   cuda::stream_ref stream_;
 };
 
 // Function that returns cuda::mr::resource_ref<cuda::mr::host_accessible,
 // cuda::mr::device_accessible> (like cudf::get_pinned_memory_resource)
-cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible> get_pinned_resource()
+cuda::mr::host_device_resource_ref get_pinned_resource()
 {
   static rmm::mr::pinned_host_memory_resource mr{};
-  return cuda::mr::resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible>{mr};
+  return cuda::mr::host_device_resource_ref{mr};
 }
 
 // Helper to create a pinned vector (similar to cudf's make_pinned_vector_async)
@@ -227,7 +227,7 @@ TEST(ResourceCast, FindsConcreteResourceInAnyResource)
   constexpr std::size_t limit{1024};
   rmm::mr::cuda_memory_resource cuda_mr{};
   rmm::mr::limiting_resource_adaptor limiter{cuda_mr, limit};
-  cuda::mr::any_resource<cuda::mr::device_accessible> resource{limiter};
+  cuda::mr::any_device_resource resource{limiter};
 
   auto* const casted = cuda::mr::resource_cast<rmm::mr::limiting_resource_adaptor>(&resource);
   ASSERT_NE(casted, nullptr);
@@ -240,7 +240,7 @@ TEST(ResourceCast, FindsConcreteResourceInDeviceAsyncResourceRef)
   constexpr std::size_t limit{1024};
   rmm::mr::cuda_memory_resource cuda_mr{};
   rmm::mr::limiting_resource_adaptor limiter{cuda_mr, limit};
-  cuda::mr::resource_ref<cuda::mr::device_accessible> ref{limiter};
+  cuda::mr::device_resource_ref ref{limiter};
 
   auto* const casted = cuda::mr::resource_cast<rmm::mr::limiting_resource_adaptor>(&ref);
   ASSERT_NE(casted, nullptr);
@@ -268,17 +268,10 @@ TEST(ResourceRefConversionAllocator, VectorMove)
 
 // A minimal adaptor that uses cuda::forward_property with an RMM async resource ref as upstream.
 struct forwarding_adaptor
-  : cuda::forward_property<forwarding_adaptor,
-                           cuda::mr::resource_ref<cuda::mr::device_accessible>> {
-  explicit forwarding_adaptor(cuda::mr::resource_ref<cuda::mr::device_accessible> upstream)
-    : upstream_{upstream}
-  {
-  }
+  : cuda::forward_property<forwarding_adaptor, cuda::mr::device_resource_ref> {
+  explicit forwarding_adaptor(cuda::mr::device_resource_ref upstream) : upstream_{upstream} {}
 
-  cuda::mr::resource_ref<cuda::mr::device_accessible> upstream_resource() const
-  {
-    return upstream_;
-  }
+  cuda::mr::device_resource_ref upstream_resource() const { return upstream_; }
 
   void* allocate(cuda::stream_ref stream, std::size_t bytes, std::size_t alignment)
   {
@@ -310,7 +303,7 @@ struct forwarding_adaptor
   }
 
  private:
-  cuda::mr::resource_ref<cuda::mr::device_accessible> upstream_;
+  cuda::mr::device_resource_ref upstream_;
 };
 
 // A minimal adaptor using forward_property with an RMM sync resource ref as upstream.
@@ -363,9 +356,9 @@ static_assert(cuda::has_property<forwarding_sync_adaptor, cuda::mr::device_acces
 TEST(ForwardPropertyAdaptor, TypeEraseAsyncAdaptor)
 {
   rmm::mr::cuda_memory_resource mr{};
-  cuda::mr::resource_ref<cuda::mr::device_accessible> upstream{mr};
+  cuda::mr::device_resource_ref upstream{mr};
   forwarding_adaptor adaptor{upstream};
-  cuda::mr::resource_ref<cuda::mr::device_accessible> erased{adaptor};
+  cuda::mr::device_resource_ref erased{adaptor};
 
   rmm::cuda_stream stream{};
   void* ptr = erased.allocate(stream, 1024, 256);
@@ -389,7 +382,7 @@ TEST(ForwardPropertyAdaptor, TypeEraseSyncAdaptor)
 TEST(ForwardPropertyAdaptor, GetPropertyDeviceAccessible)
 {
   rmm::mr::cuda_memory_resource mr{};
-  cuda::mr::resource_ref<cuda::mr::device_accessible> upstream{mr};
+  cuda::mr::device_resource_ref upstream{mr};
   forwarding_adaptor adaptor{upstream};
 
   // Should compile and not throw - device_accessible is a stateless property

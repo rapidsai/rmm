@@ -35,7 +35,7 @@ class fixed_size_memory_resource_impl final
   static constexpr std::size_t default_block_size            = 1 << 20;
   static constexpr std::size_t default_blocks_to_preallocate = 128;
 
-  fixed_size_memory_resource_impl(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  fixed_size_memory_resource_impl(cuda::mr::any_device_resource upstream,
                                   std::size_t block_size,
                                   std::size_t blocks_to_preallocate);
 
@@ -51,8 +51,7 @@ class fixed_size_memory_resource_impl final
     return !(*this == other);
   }
 
-  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
-    const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   [[nodiscard]] std::size_t get_block_size() const noexcept;
 
@@ -83,7 +82,7 @@ class fixed_size_memory_resource_impl final
 
   void release();
 
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
+  cuda::mr::any_device_resource upstream_mr_;
   std::size_t block_size_;
   std::size_t upstream_chunk_size_;
   std::vector<block_type> upstream_blocks_;

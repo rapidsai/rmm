@@ -17,10 +17,9 @@ RMM_NAMESPACE_BEGIN
 namespace mr {
 namespace detail {
 
-aligned_resource_adaptor_impl::aligned_resource_adaptor_impl(
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
-  std::size_t alignment,
-  std::size_t alignment_threshold)
+aligned_resource_adaptor_impl::aligned_resource_adaptor_impl(cuda::mr::any_device_resource upstream,
+                                                             std::size_t alignment,
+                                                             std::size_t alignment_threshold)
   : upstream_mr_{std::move(upstream)},
     alignment_{std::max(alignment, rmm::CUDA_ALLOCATION_ALIGNMENT)},
     alignment_threshold_{alignment_threshold}
@@ -28,11 +27,9 @@ aligned_resource_adaptor_impl::aligned_resource_adaptor_impl(
   RMM_EXPECTS(rmm::is_supported_alignment(alignment), "Allocation alignment is not a power of 2.");
 }
 
-cuda::mr::resource_ref<cuda::mr::device_accessible>
-aligned_resource_adaptor_impl::get_upstream_resource() const noexcept
+cuda::mr::device_resource_ref aligned_resource_adaptor_impl::get_upstream_resource() const noexcept
 {
-  return cuda::mr::resource_ref<cuda::mr::device_accessible>{
-    const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
+  return cuda::mr::device_resource_ref{const_cast<cuda::mr::any_device_resource&>(upstream_mr_)};
 }
 
 std::size_t aligned_resource_adaptor_impl::get_alignment() const noexcept { return alignment_; }

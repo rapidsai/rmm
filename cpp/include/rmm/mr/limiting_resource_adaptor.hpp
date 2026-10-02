@@ -52,17 +52,16 @@ class RMM_EXPORT limiting_resource_adaptor
    * @param allocation_limit Maximum memory allowed for this allocator
    * @param alignment Alignment in bytes for the start of each allocated buffer
    */
-  limiting_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  limiting_resource_adaptor(cuda::mr::any_device_resource upstream,
                             std::size_t allocation_limit,
                             std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   ~limiting_resource_adaptor() = default;
 
   /**
-   * @briefreturn{cuda::mr::resource_ref<cuda::mr::device_accessible> to the upstream resource}
+   * @briefreturn{cuda::mr::device_resource_ref to the upstream resource}
    */
-  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
-    const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   /**
    * @brief Query the number of bytes that have been allocated. Note that

@@ -64,7 +64,7 @@ class failure_callback_resource_adaptor
    * @param callback Callback function @see failure_callback_t
    * @param callback_arg Extra argument passed to `callback`
    */
-  failure_callback_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  failure_callback_resource_adaptor(cuda::mr::any_device_resource upstream,
                                     failure_callback_t callback,
                                     void* callback_arg)
     : shared_base(cuda::mr::make_shared_resource<
@@ -76,10 +76,9 @@ class failure_callback_resource_adaptor
   ~failure_callback_resource_adaptor() = default;
 
   /**
-   * @briefreturn{cuda::mr::resource_ref<cuda::mr::device_accessible> to the upstream resource}
+   * @briefreturn{cuda::mr::device_resource_ref to the upstream resource}
    */
-  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
-    const noexcept
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept
   {
     return this->get().get_upstream_resource();
   }

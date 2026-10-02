@@ -20,7 +20,7 @@ device_buffer::device_buffer() : _mr{rmm::mr::get_current_device_resource_ref()}
 
 device_buffer::device_buffer(std::size_t size,
                              cuda::stream_ref stream,
-                             cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+                             cuda::mr::any_device_resource mr)
   : device_buffer::device_buffer(size, rmm::CUDA_ALLOCATION_ALIGNMENT, stream, std::move(mr))
 {
 }
@@ -28,7 +28,7 @@ device_buffer::device_buffer(std::size_t size,
 device_buffer::device_buffer(std::size_t size,
                              std::size_t alignment,
                              cuda::stream_ref stream,
-                             cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+                             cuda::mr::any_device_resource mr)
   : _alignment{alignment}, _stream{stream}, _mr{std::move(mr)}
 {
   RMM_EXPECTS(rmm::is_supported_alignment(alignment),
@@ -41,7 +41,7 @@ device_buffer::device_buffer(std::size_t size,
 device_buffer::device_buffer(void const* source_data,
                              std::size_t size,
                              cuda::stream_ref stream,
-                             cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+                             cuda::mr::any_device_resource mr)
   : device_buffer::device_buffer(
       source_data, size, rmm::CUDA_ALLOCATION_ALIGNMENT, stream, std::move(mr))
 {
@@ -51,7 +51,7 @@ device_buffer::device_buffer(void const* source_data,
                              std::size_t size,
                              std::size_t alignment,
                              cuda::stream_ref stream,
-                             cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+                             cuda::mr::any_device_resource mr)
   : _alignment{alignment}, _stream{stream}, _mr{std::move(mr)}
 {
   RMM_EXPECTS(rmm::is_supported_alignment(alignment),
@@ -65,7 +65,7 @@ device_buffer::device_buffer(void const* source_data,
 
 device_buffer::device_buffer(device_buffer const& other,
                              cuda::stream_ref stream,
-                             cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+                             cuda::mr::any_device_resource mr)
   : device_buffer{other.data(), other.size(), other.alignment(), stream, std::move(mr)}
 {
 }

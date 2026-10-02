@@ -28,10 +28,9 @@ namespace detail {
 template <typename ExceptionType>
 class failure_callback_resource_adaptor_impl {
  public:
-  failure_callback_resource_adaptor_impl(
-    cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
-    failure_callback_t callback,
-    void* callback_arg)
+  failure_callback_resource_adaptor_impl(cuda::mr::any_device_resource upstream,
+                                         failure_callback_t callback,
+                                         void* callback_arg)
     : upstream_mr_{std::move(upstream)}, callback_{std::move(callback)}, callback_arg_{callback_arg}
   {
   }
@@ -55,11 +54,9 @@ class failure_callback_resource_adaptor_impl {
     return !(*this == other);
   }
 
-  [[nodiscard]] cuda::mr::resource_ref<cuda::mr::device_accessible> get_upstream_resource()
-    const noexcept
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept
   {
-    return cuda::mr::resource_ref<cuda::mr::device_accessible>{
-      const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
+    return cuda::mr::device_resource_ref{const_cast<cuda::mr::any_device_resource&>(upstream_mr_)};
   }
 
   [[nodiscard]] void* allocate(cuda::stream_ref stream,
@@ -110,7 +107,7 @@ class failure_callback_resource_adaptor_impl {
   }
 
  private:
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
+  cuda::mr::any_device_resource upstream_mr_;
   failure_callback_t callback_;
   void* callback_arg_;
 };
