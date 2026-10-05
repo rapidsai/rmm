@@ -426,7 +426,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - cuda-core>=0.5.1,<2
+          - cuda-core>=1.0,<2
           - packaging
           - pytest
           - pytest-cov
@@ -450,7 +450,7 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - cuda-core==0.5.1
+              - cuda-core==1.0
               - numba==0.60.0
               - numpy==2.0.*
           - matrix:
