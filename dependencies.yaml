@@ -437,12 +437,14 @@ dependencies:
               dependencies: "oldest"
               cuda: "12.*"
             packages:
-              - cuda-bindings==12.9.2
+              # Older bindings segfault when cuda-core releases contexts at shutdown.
+              - cuda-bindings==12.9.3
           - matrix:
               dependencies: "oldest"
               cuda: "13.*"
             packages:
-              - cuda-bindings==13.0.1
+              # Older bindings segfault when cuda-core releases contexts at shutdown.
+              - cuda-bindings==13.0.2
           - matrix:
             packages:
       - output_types: [conda, requirements, pyproject]
