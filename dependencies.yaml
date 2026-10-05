@@ -462,7 +462,8 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - &numba_cuda_oldest numba-cuda==0.22.1
+              # Earlier numba-cuda releases require cuda-core<1.0.0.
+              - &numba_cuda_oldest numba-cuda==0.30.2
           - matrix:
             packages:
               - *numba_cuda
