@@ -493,13 +493,13 @@ jobs:
         uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
     env:
       GH_TOKEN: ${{ github.token }}
-  range-probe:
+  disk-range-probe:
     runs-on: "linux-amd64-cpu8"
     env:
       REPO: rapidsai/ci-wheel
       TAG: 26.12-cuda13.3.0-rockylinux8-py3.13-amd64
     steps:
-      - name: Probe registry mirror range support
+      - name: Probe open-ended ranges and disk throughput
         run: |
           set -uo pipefail
           mirror=$(docker info --format '{{range .RegistryConfig.Mirrors}}{{.}}{{end}}')
@@ -509,47 +509,64 @@ jobs:
           accept='application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.v2+json'
           auth=()
           section() { echo; echo "===== $*"; }
+          timed() {
+            local start end
+            start=$(date +%s.%N)
+            "$@"
+            end=$(date +%s.%N)
+            awk -v s="$start" -v e="$end" 'BEGIN { printf "elapsed: %.1fs\n", e - s }'
+          }
+          headers() { grep -i -E '^(HTTP|content-length|content-range|accept-ranges|location)'; }
 
-          section "mirror: ${mirror}"
-          section "GET ${mirror}/v2/"
-          curl -sS -o /dev/null -D - "${mirror}/v2/"
-
-          section "manifest via mirror"
           manifest=$(curl -sS -H "Accept: ${accept}" "${mirror}/v2/${REPO}/manifests/${TAG}")
           if ! jq -e .layers >/dev/null 2>&1 <<<"$manifest"; then
             echo "mirror manifest request failed, retrying with Docker Hub token"
             auth=(-H "Authorization: Bearer ${token}")
             manifest=$(curl -sS -H "Accept: ${accept}" "${auth[@]}" "${mirror}/v2/${REPO}/manifests/${TAG}")
           fi
-          jq -r '.layers[] | "\(.size) \(.digest)"' <<<"$manifest" | sort -n -r | sed -n 1,4p
           read -r size digest < <(jq -r '.layers | max_by(.size) | "\(.size) \(.digest)"' <<<"$manifest")
           mid=$((size / 2))
           blob="/v2/${REPO}/blobs/${digest}"
           echo "probe blob: ${digest} (${size} bytes)"
 
-          section "mirror HEAD"
-          curl -sS -o /dev/null -D - -I "${auth[@]}" "${mirror}${blob}"
-          section "mirror GET Range: bytes=0-1023, no redirects"
-          curl -sS -o /dev/null -D - -r 0-1023 --max-time 30 "${auth[@]}" "${mirror}${blob}"
-          section "mirror GET Range: bytes=0-1023 with containerd Accept-Encoding, no redirects"
-          curl -sS -o /dev/null -D - -r 0-1023 --max-time 30 \
-            -H 'Accept-Encoding: zstd;q=1.0, gzip;q=0.8, deflate;q=0.5' "${auth[@]}" "${mirror}${blob}"
-          section "mirror GET Range: bytes=${mid}-$((mid + 1023)), no redirects"
-          curl -sS -o /dev/null -D - -r "${mid}-$((mid + 1023))" --max-time 30 "${auth[@]}" "${mirror}${blob}"
-          section "mirror GET Range: bytes=0-1023, following redirects"
-          curl -sS -o /dev/null -D - -L -r 0-1023 --max-time 30 "${auth[@]}" "${mirror}${blob}" \
-            -w 'final: %{http_code} %{size_download} bytes from %{url_effective}\n'
+          section "mirror GET Range: bytes=0-"
+          curl -s -o /dev/null -D - -r 0- --max-time 3 "${auth[@]}" "${mirror}${blob}" | headers
+          section "mirror GET Range: bytes=${mid}-"
+          curl -s -o /dev/null -D - -r "${mid}-" --max-time 3 "${auth[@]}" "${mirror}${blob}" | headers
+          section "Docker Hub GET Range: bytes=0-, following redirects (reference)"
+          curl -s -o /dev/null -D - -L -r 0- --max-time 3 -H "Authorization: Bearer ${token}" "${hub}${blob}" | headers
 
-          section "Docker Hub GET Range: bytes=0-1023, following redirects (reference)"
-          curl -sS -o /dev/null -D - -L -r 0-1023 --max-time 30 \
-            -H "Authorization: Bearer ${token}" "${hub}${blob}" \
-            -w 'final: %{http_code} %{size_download} bytes\n' | grep -i -E '^(HTTP|location|accept-ranges|content-range|content-length|server)|^final'
+          root=$(sudo containerd config dump | awk -F"'" '/^root = /{print $2}')
+          root=${root:-/var/lib/containerd}
+          command -v zstd >/dev/null || sudo apt-get install -y -q zstd >/dev/null
+          dir="${root}/probe"
+          sudo mkdir -p "$dir"
+          section "runner: $(nproc) CPUs, containerd root ${root}"
+          free -g
+          findmnt -T "$root"
+          df -h "$root"
+          lsblk -o NAME,SIZE,TYPE,ROTA,MOUNTPOINTS
 
-          section "mirror throughput, 1 stream, 20s"
-          curl -s -o /dev/null -L --max-time 20 -w '%{http_code} %{size_download} bytes, %{speed_download} B/s\n' "${auth[@]}" "${mirror}${blob}"
-          section "mirror throughput, 4 parallel streams, 20s each"
-          for i in 1 2 3 4; do
-            curl -s -o /dev/null -L --max-time 20 -w "stream ${i}: %{http_code} %{size_download} bytes, %{speed_download} B/s\n" "${auth[@]}" "${mirror}${blob}" &
-          done
-          wait
+          section "dd 4 GiB, O_DIRECT"
+          sudo dd if=/dev/zero of="${dir}/dd" bs=1M count=4096 oflag=direct 2>&1 | grep -v records
+          sudo rm -f "${dir}/dd"
+          section "dd 4 GiB, fdatasync"
+          sudo dd if=/dev/zero of="${dir}/dd" bs=1M count=4096 conv=fdatasync 2>&1 | grep -v records
+          sudo rm -f "${dir}/dd"
+
+          section "mirror blob to disk"
+          sudo curl -sS -o "${dir}/blob" "${auth[@]}" "${mirror}${blob}" -w '%{http_code} %{size_download} bytes, %{speed_download} B/s\n'
+          section "sync after download"
+          timed sync
+          section "sha256sum"
+          timed sudo sha256sum "${dir}/blob"
+          section "zstd decompress to /dev/null"
+          timed bash -c "sudo zstd -q -d -c '${dir}/blob' > /dev/null"
+          section "zstd decompress + tar extract to disk"
+          sudo mkdir -p "${dir}/rootfs"
+          timed bash -c "sudo zstd -d -c '${dir}/blob' | sudo tar -x -C '${dir}/rootfs'"
+          section "sync after extract"
+          timed sync
+          sudo du -sh "${dir}/rootfs"
+          sudo rm -rf "$dir"
           exit 0
