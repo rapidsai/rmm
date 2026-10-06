@@ -38,10 +38,11 @@ jobs:
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@main
-    if: always()
+    if: false
     with:
       needs: ${{ toJSON(needs) }}
   telemetry-setup:
+    if: false
     runs-on: ubuntu-latest
     continue-on-error: true
     permissions:
@@ -55,8 +56,10 @@ jobs:
         if: ${{ vars.TELEMETRY_ENABLED == 'true' }}
         uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
   build-details:
+    if: false
     uses: rapidsai/shared-workflows/.github/workflows/compute-build-details.yaml@main
   check-nightly-ci:
+    if: false
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -341,6 +344,7 @@ jobs:
       build_type: pull-request
       script: ci/test_python_integrations.sh
   docs-build-matrix:
+    if: false
     permissions:
       contents: read
     uses: rapidsai/shared-workflows/.github/workflows/compute-matrix.yaml@main
@@ -482,10 +486,52 @@ jobs:
     permissions:
       actions: write
     needs: pr-builder
-    if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() && github.run_attempt == '1' }}
+    if: false
     continue-on-error: true
     steps:
       - name: Telemetry summarize
         uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
     env:
       GH_TOKEN: ${{ github.token }}
+  pull:
+    name: ${{ matrix.ARCH }}, max-concurrent-downloads ${{ matrix.ORDER }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ARCH: [amd64, arm64]
+        # Both orders on the same runner, so registry/CDN warm-up from the
+        # first pull doesn't bias the comparison toward one setting.
+        ORDER: ["3 10", "10 3"]
+    runs-on: "linux-${{ matrix.ARCH }}-cpu8"
+    env:
+      IMAGE: rapidsai/ci-wheel:26.12-cuda13.3.0-rockylinux8-py3.13
+      ORDER: ${{ matrix.ORDER }}
+    steps:
+      - name: Show Docker environment
+        run: |
+          docker version
+          docker info
+          sudo cat /etc/docker/daemon.json || echo "no daemon.json"
+          containerd --version || true
+      - name: Time pulls
+        run: |
+          set -euo pipefail
+          for limit in ${ORDER}; do
+            f=/etc/docker/daemon.json
+            { sudo cat "$f" 2>/dev/null || echo '{}'; } \
+              | jq --argjson n "$limit" '. + {"max-concurrent-downloads": $n}' \
+              | sudo tee "$f.new" >/dev/null
+            sudo mv "$f.new" "$f"
+            sudo systemctl restart docker
+            until docker info >/dev/null 2>&1; do sleep 1; done
+            docker image rm -f "${IMAGE}" >/dev/null 2>&1 || true
+            docker image prune -af >/dev/null
+            echo "::group::pull with max-concurrent-downloads=${limit}"
+            start=$(date +%s)
+            docker pull "${IMAGE}" | while IFS= read -r line; do
+              printf '%(%T)T %s\n' -1 "$line"
+            done
+            end=$(date +%s)
+            echo "::endgroup::"
+            echo "max-concurrent-downloads=${limit}: $((end - start))s" | tee -a "$GITHUB_STEP_SUMMARY"
+          done
