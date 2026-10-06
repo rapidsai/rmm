@@ -493,70 +493,63 @@ jobs:
         uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
     env:
       GH_TOKEN: ${{ github.token }}
-  pull:
-    name: ${{ matrix.ARCH }}, ctr pull ${{ matrix.ORDER }}
-    strategy:
-      fail-fast: false
-      matrix:
-        ARCH: [amd64, arm64]
-        # Both orders on the same runner, so registry/CDN warm-up from the
-        # first pull doesn't bias the comparison toward one setting.
-        ORDER: ["default chunked", "chunked default"]
-    runs-on: "linux-${{ matrix.ARCH }}-cpu8"
+  range-probe:
+    runs-on: "linux-amd64-cpu8"
     env:
-      IMAGE: docker.io/rapidsai/ci-wheel:26.12-cuda13.3.0-rockylinux8-py3.13
-      ORDER: ${{ matrix.ORDER }}
+      REPO: rapidsai/ci-wheel
+      TAG: 26.12-cuda13.3.0-rockylinux8-py3.13-amd64
     steps:
-      - name: Show containerd environment
+      - name: Probe registry mirror range support
         run: |
-          docker info
-          containerd --version
-          sudo cat /etc/containerd/config.toml || echo "no config.toml"
-      - name: Time pulls
-        run: |
-          set -euo pipefail
-          f=/etc/containerd/config.toml
-          # Migrate to the current config version first; the existing file may
-          # be unversioned, which rejects plugin URIs like the one below.
-          base=$(mktemp)
-          sudo containerd config migrate > "$base"
-          # Docker pulls through the runner's registry mirror; without it, ctr
-          # hits Docker Hub anonymously and is rate limited.
+          set -uo pipefail
           mirror=$(docker info --format '{{range .RegistryConfig.Mirrors}}{{.}}{{end}}')
-          sudo mkdir -p /etc/containerd/certs.d/docker.io
-          printf '%s\n' \
-            'server = "https://registry-1.docker.io"' \
-            "[host.\"${mirror%/}\"]" \
-            '  capabilities = ["pull", "resolve"]' \
-            | sudo tee /etc/containerd/certs.d/docker.io/hosts.toml
-          for config in ${ORDER}; do
-            case "$config" in
-              default) downloads=3; buffer=0 ;;
-              chunked) downloads=16; buffer=67108864 ;;
-            esac
-            {
-              awk "/^  \[plugins\.'io\.containerd\.transfer\.v1\.local'\]\$/ {skip=1; next} skip && /^\$/ {skip=0; next} !skip" "$base"
-              printf '%s\n' \
-                "[plugins.'io.containerd.transfer.v1.local']" \
-                "  max_concurrent_downloads = ${downloads}" \
-                "  concurrent_layer_fetch_buffer = ${buffer}"
-            } | sudo tee "$f" >/dev/null
-            sudo systemctl restart containerd docker
-            until docker info >/dev/null 2>&1; do sleep 1; done
-            sudo containerd config dump | grep -A2 "transfer.v1.local'\]" | tee /dev/stderr \
-              | grep -q "concurrent_layer_fetch_buffer = ${buffer}\$"
-            docker image rm -f "${IMAGE}" >/dev/null 2>&1 || true
-            docker image prune -af >/dev/null
-            sudo ctr -n moby images rm --sync "${IMAGE}" >/dev/null 2>&1 || true
-            echo "content blobs before pull: $(sudo ctr -n moby content ls -q | wc -l)"
-            log=$(mktemp)
-            start=$(date +%s)
-            if ! sudo ctr -n moby images pull --hosts-dir /etc/containerd/certs.d "${IMAGE}" >"$log" 2>&1; then
-              cat "$log"
-              exit 1
-            fi
-            end=$(date +%s)
-            echo "range ignored by registry: $(sudo journalctl -u containerd --since "@${start}" | grep -c 'ignored content range' || true)"
-            docker image inspect "${IMAGE}" --format '{{.Id}} visible to docker'
-            echo "${config} (max_concurrent_downloads=${downloads}, concurrent_layer_fetch_buffer=${buffer}): $((end - start))s" | tee -a "$GITHUB_STEP_SUMMARY"
+          mirror=${mirror%/}
+          hub=https://registry-1.docker.io
+          token=$(curl -fsS "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${REPO}:pull" | jq -r .token)
+          accept='application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.v2+json'
+          auth=()
+          section() { echo; echo "===== $*"; }
+
+          section "mirror: ${mirror}"
+          section "GET ${mirror}/v2/"
+          curl -sS -o /dev/null -D - "${mirror}/v2/"
+
+          section "manifest via mirror"
+          manifest=$(curl -sS -H "Accept: ${accept}" "${mirror}/v2/${REPO}/manifests/${TAG}")
+          if ! jq -e .layers >/dev/null 2>&1 <<<"$manifest"; then
+            echo "mirror manifest request failed, retrying with Docker Hub token"
+            auth=(-H "Authorization: Bearer ${token}")
+            manifest=$(curl -sS -H "Accept: ${accept}" "${auth[@]}" "${mirror}/v2/${REPO}/manifests/${TAG}")
+          fi
+          jq -r '.layers[] | "\(.size) \(.digest)"' <<<"$manifest" | sort -n -r | sed -n 1,4p
+          read -r size digest < <(jq -r '.layers | max_by(.size) | "\(.size) \(.digest)"' <<<"$manifest")
+          mid=$((size / 2))
+          blob="/v2/${REPO}/blobs/${digest}"
+          echo "probe blob: ${digest} (${size} bytes)"
+
+          section "mirror HEAD"
+          curl -sS -o /dev/null -D - -I "${auth[@]}" "${mirror}${blob}"
+          section "mirror GET Range: bytes=0-1023, no redirects"
+          curl -sS -o /dev/null -D - -r 0-1023 --max-time 30 "${auth[@]}" "${mirror}${blob}"
+          section "mirror GET Range: bytes=0-1023 with containerd Accept-Encoding, no redirects"
+          curl -sS -o /dev/null -D - -r 0-1023 --max-time 30 \
+            -H 'Accept-Encoding: zstd;q=1.0, gzip;q=0.8, deflate;q=0.5' "${auth[@]}" "${mirror}${blob}"
+          section "mirror GET Range: bytes=${mid}-$((mid + 1023)), no redirects"
+          curl -sS -o /dev/null -D - -r "${mid}-$((mid + 1023))" --max-time 30 "${auth[@]}" "${mirror}${blob}"
+          section "mirror GET Range: bytes=0-1023, following redirects"
+          curl -sS -o /dev/null -D - -L -r 0-1023 --max-time 30 "${auth[@]}" "${mirror}${blob}" \
+            -w 'final: %{http_code} %{size_download} bytes from %{url_effective}\n'
+
+          section "Docker Hub GET Range: bytes=0-1023, following redirects (reference)"
+          curl -sS -o /dev/null -D - -L -r 0-1023 --max-time 30 \
+            -H "Authorization: Bearer ${token}" "${hub}${blob}" \
+            -w 'final: %{http_code} %{size_download} bytes\n' | grep -i -E '^(HTTP|location|accept-ranges|content-range|content-length|server)|^final'
+
+          section "mirror throughput, 1 stream, 20s"
+          curl -s -o /dev/null -L --max-time 20 -w '%{http_code} %{size_download} bytes, %{speed_download} B/s\n' "${auth[@]}" "${mirror}${blob}"
+          section "mirror throughput, 4 parallel streams, 20s each"
+          for i in 1 2 3 4; do
+            curl -s -o /dev/null -L --max-time 20 -w "stream ${i}: %{http_code} %{size_download} bytes, %{speed_download} B/s\n" "${auth[@]}" "${mirror}${blob}" &
           done
+          wait
+          exit 0
