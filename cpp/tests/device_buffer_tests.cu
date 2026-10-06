@@ -30,6 +30,8 @@ using namespace testing;
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
+#include <cstdint>
+#include <numeric>
 #include <random>
 
 template <typename MemoryResourceType>
@@ -73,7 +75,7 @@ TYPED_TEST(DeviceBufferTest, DefaultMemoryResource)
   rmm::device_buffer buff(this->size, cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
   EXPECT_NE(nullptr, buff.data());
   EXPECT_EQ(this->size, buff.size());
-  EXPECT_EQ(this->size, buff.ssize());
+  EXPECT_EQ(static_cast<std::int64_t>(this->size), buff.ssize());
   EXPECT_EQ(this->size, buff.capacity());
   EXPECT_EQ(rmm::device_async_resource_ref{rmm::mr::get_current_device_resource_ref()},
             buff.memory_resource());
@@ -435,10 +437,14 @@ TYPED_TEST(DeviceBufferTest, SelfMoveAssignment)
   auto mr       = buff.memory_resource();
   auto stream   = buff.stream();
 
+#if defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wself-move"
+#endif
   buff = std::move(buff);  // self-move-assignment shouldn't modify the buffer
+#if defined(__GNUC__)
 #pragma GCC diagnostic pop
+#endif
   EXPECT_NE(nullptr, buff.data());  // NOLINT(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
   EXPECT_EQ(ptr, buff.data());
   EXPECT_EQ(size, buff.size());

@@ -248,7 +248,7 @@ TYPED_TEST(TypedUVectorTest, GetSetElement)
   auto const size{100};
   rmm::device_uvector<TypeParam> vec(size, this->stream());
   for (std::size_t i = 0; i < vec.size(); ++i) {
-    vec.set_element(i, i, this->stream());
+    vec.set_element(i, static_cast<TypeParam>(i), this->stream());
     EXPECT_EQ(static_cast<TypeParam>(i), vec.element(i, this->stream()));
   }
 }

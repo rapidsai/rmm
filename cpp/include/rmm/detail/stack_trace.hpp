@@ -81,6 +81,7 @@ class stack_trace {
       os << str << std::endl;
     }
 #else
+    (void)trace;
     os << "stack traces disabled" << std::endl;
 #endif  // RMM_ENABLE_STACK_TRACES
     return os;
