@@ -501,7 +501,7 @@ jobs:
     steps:
       - name: Probe open-ended ranges and disk throughput
         run: |
-          set -uo pipefail
+          set +e -uo pipefail
           mirror=$(docker info --format '{{range .RegistryConfig.Mirrors}}{{.}}{{end}}')
           mirror=${mirror%/}
           hub=https://registry-1.docker.io
