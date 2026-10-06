@@ -453,11 +453,9 @@ For example, recapitulating the previous example using `rmm::device_vector`:
 > initialize new elements: the user must arrange for this kernel launch to occur with the correct
 > device for the memory resource active.
 
-## `cuda::stream_ref`, `cuda_stream_view`, and `cuda_stream`
+## `cuda::stream_ref` and `cuda_stream`
 
-`cuda::stream_ref`, provided by `<cuda/stream>`, is the preferred non-owning CUDA stream wrapper.
-`rmm::cuda_stream_view` is deprecated; migrate existing code to `cuda::stream_ref`. The deprecated
-wrapper remains convertible to and from `cuda::stream_ref` for compatibility.
+`cuda::stream_ref`, provided by `<cuda/stream>`, is the non-owning CUDA stream wrapper.
 
 `rmm::cuda_stream` is a simple owning wrapper around a CUDA `cudaStream_t`. This class provides
 RAII semantics (constructor creates the CUDA stream, destructor destroys it). An `rmm::cuda_stream`
