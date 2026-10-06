@@ -494,44 +494,59 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
   pull:
-    name: ${{ matrix.ARCH }}, max-concurrent-downloads ${{ matrix.ORDER }}
+    name: ${{ matrix.ARCH }}, ctr pull ${{ matrix.ORDER }}
     strategy:
       fail-fast: false
       matrix:
         ARCH: [amd64, arm64]
         # Both orders on the same runner, so registry/CDN warm-up from the
         # first pull doesn't bias the comparison toward one setting.
-        ORDER: ["3 10", "10 3"]
+        ORDER: ["default chunked", "chunked default"]
     runs-on: "linux-${{ matrix.ARCH }}-cpu8"
     env:
-      IMAGE: rapidsai/ci-wheel:26.12-cuda13.3.0-rockylinux8-py3.13
+      IMAGE: docker.io/rapidsai/ci-wheel:26.12-cuda13.3.0-rockylinux8-py3.13
       ORDER: ${{ matrix.ORDER }}
     steps:
-      - name: Show Docker environment
+      - name: Show containerd environment
         run: |
-          docker version
           docker info
-          sudo cat /etc/docker/daemon.json || echo "no daemon.json"
-          containerd --version || true
+          containerd --version
+          sudo cat /etc/containerd/config.toml || echo "no config.toml"
       - name: Time pulls
         run: |
           set -euo pipefail
-          for limit in ${ORDER}; do
-            f=/etc/docker/daemon.json
-            { sudo cat "$f" 2>/dev/null || echo '{}'; } \
-              | jq --argjson n "$limit" '. + {"max-concurrent-downloads": $n}' \
-              | sudo tee "$f.new" >/dev/null
-            sudo mv "$f.new" "$f"
-            sudo systemctl restart docker
+          f=/etc/containerd/config.toml
+          # Migrate to the current config version first; the existing file may
+          # be unversioned, which rejects plugin URIs like the one below.
+          base=$(mktemp)
+          sudo containerd config migrate > "$base"
+          for config in ${ORDER}; do
+            case "$config" in
+              default) downloads=3; buffer=0 ;;
+              chunked) downloads=16; buffer=67108864 ;;
+            esac
+            {
+              awk "/^  \[plugins\.'io\.containerd\.transfer\.v1\.local'\]\$/ {skip=1; next} skip && /^\$/ {skip=0; next} !skip" "$base"
+              printf '%s\n' \
+                "[plugins.'io.containerd.transfer.v1.local']" \
+                "  max_concurrent_downloads = ${downloads}" \
+                "  concurrent_layer_fetch_buffer = ${buffer}"
+            } | sudo tee "$f" >/dev/null
+            sudo systemctl restart containerd docker
             until docker info >/dev/null 2>&1; do sleep 1; done
+            sudo containerd config dump | grep -A2 "transfer.v1.local'\]" | tee /dev/stderr \
+              | grep -q "concurrent_layer_fetch_buffer = ${buffer}\$"
             docker image rm -f "${IMAGE}" >/dev/null 2>&1 || true
             docker image prune -af >/dev/null
-            echo "::group::pull with max-concurrent-downloads=${limit}"
+            sudo ctr -n moby images rm --sync "${IMAGE}" >/dev/null 2>&1 || true
+            echo "content blobs before pull: $(sudo ctr -n moby content ls -q | wc -l)"
+            log=$(mktemp)
             start=$(date +%s)
-            docker pull "${IMAGE}" | while IFS= read -r line; do
-              printf '%(%T)T %s\n' -1 "$line"
-            done
+            if ! sudo ctr -n moby images pull "${IMAGE}" >"$log" 2>&1; then
+              cat "$log"
+              exit 1
+            fi
             end=$(date +%s)
-            echo "::endgroup::"
-            echo "max-concurrent-downloads=${limit}: $((end - start))s" | tee -a "$GITHUB_STEP_SUMMARY"
+            docker image inspect "${IMAGE}" --format '{{.Id}} visible to docker'
+            echo "${config} (max_concurrent_downloads=${downloads}, concurrent_layer_fetch_buffer=${buffer}): $((end - start))s" | tee -a "$GITHUB_STEP_SUMMARY"
           done
