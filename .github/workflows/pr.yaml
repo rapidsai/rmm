@@ -520,6 +520,15 @@ jobs:
           # be unversioned, which rejects plugin URIs like the one below.
           base=$(mktemp)
           sudo containerd config migrate > "$base"
+          # Docker pulls through the runner's registry mirror; without it, ctr
+          # hits Docker Hub anonymously and is rate limited.
+          mirror=$(docker info --format '{{range .RegistryConfig.Mirrors}}{{.}}{{end}}')
+          sudo mkdir -p /etc/containerd/certs.d/docker.io
+          printf '%s\n' \
+            'server = "https://registry-1.docker.io"' \
+            "[host.\"${mirror%/}\"]" \
+            '  capabilities = ["pull", "resolve"]' \
+            | sudo tee /etc/containerd/certs.d/docker.io/hosts.toml
           for config in ${ORDER}; do
             case "$config" in
               default) downloads=3; buffer=0 ;;
@@ -542,11 +551,12 @@ jobs:
             echo "content blobs before pull: $(sudo ctr -n moby content ls -q | wc -l)"
             log=$(mktemp)
             start=$(date +%s)
-            if ! sudo ctr -n moby images pull "${IMAGE}" >"$log" 2>&1; then
+            if ! sudo ctr -n moby images pull --hosts-dir /etc/containerd/certs.d "${IMAGE}" >"$log" 2>&1; then
               cat "$log"
               exit 1
             fi
             end=$(date +%s)
+            echo "range ignored by registry: $(sudo journalctl -u containerd --since "@${start}" | grep -c 'ignored content range' || true)"
             docker image inspect "${IMAGE}" --format '{{.Id}} visible to docker'
             echo "${config} (max_concurrent_downloads=${downloads}, concurrent_layer_fetch_buffer=${buffer}): $((end - start))s" | tee -a "$GITHUB_STEP_SUMMARY"
           done
