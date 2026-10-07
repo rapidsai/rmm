@@ -8,7 +8,6 @@ ci:
   autoupdate_schedule: quarterly
   skip: ["verify-alpha-spec"]
   submodules: false
-
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -120,6 +119,10 @@ repos:
             cpp/benchmarks/utilities/rapidcsv[.]h$
           )
       - id: verify-alpha-spec
+        args:
+          - --fix
+          - --mode
+          - release
       - id: verify-hardcoded-version
         exclude: |
           (?x)
@@ -163,6 +166,5 @@ repos:
     rev: v1.24.1
     hooks:
       - id: zizmor
-
 default_language_version:
   python: python3
