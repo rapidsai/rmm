@@ -1,3 +1,51 @@
+# rmm 26.10.00 (7 Oct 2026)
+
+### 🚨 Breaking Changes
+* fix(mr): add [[nodiscard]] to allocate and allocate_sync declarations by @nethum529 in https://github.com/rapidsai/rmm/pull/2468
+* Delete r-value reference ctor for device_scalar by @wence- in https://github.com/rapidsai/rmm/pull/2527
+* Migrate stream APIs from rmm::cuda_stream_view to cuda::stream_ref by @bdice in https://github.com/rapidsai/rmm/pull/2372
+### 🐛 Bug Fixes
+* Fix pip constraints with extras by @bdice in https://github.com/rapidsai/rmm/pull/2500
+* Limit arena size in C++ tests by @bdice in https://github.com/rapidsai/rmm/pull/2506
+* Fix parse_bytes overflow handling by @bdice in https://github.com/rapidsai/rmm/pull/2515
+* Replace <cuda/stream_ref> includes with <cuda/stream> by @robertmaynard in https://github.com/rapidsai/rmm/pull/2520
+### 📖 Documentation
+* Clarify asynchronous Python buffer copy APIs by @bdice in https://github.com/rapidsai/rmm/pull/2522
+* Rebrand RMM by @bdice in https://github.com/rapidsai/rmm/pull/2530
+* Enable public docs features in CI by @bdice in https://github.com/rapidsai/rmm/pull/2535
+* Fix documentation builds with Breathe 5 by @bdice in https://github.com/rapidsai/rmm/pull/2560
+### 🚀 New Features
+* Update RAPIDS.cmake to log source of rapids-cmake by @arhag23 in https://github.com/rapidsai/rmm/pull/2466
+* Reclaim free upstream blocks so a capped pool can reach max_pool_size by @nethum529 in https://github.com/rapidsai/rmm/pull/2470
+### 🛠️ Improvements
+* enforce 'yamllint' checks by @jameslamb in https://github.com/rapidsai/rmm/pull/2495
+* X-ORG-2491: Publish API docs to docs.nvidia.com by @josephine-wolf-oberholtzer in https://github.com/rapidsai/rmm/pull/2492
+* X-ORG-2491: Enable docs version picker by @josephine-wolf-oberholtzer in https://github.com/rapidsai/rmm/pull/2501
+* ensure nightly builds always produce new packages, expand 'changed-files' lists by @jameslamb in https://github.com/rapidsai/rmm/pull/2502
+* Update to rapids-logger 0.3 by @bdice in https://github.com/rapidsai/rmm/pull/2499
+* wheels: enforce 'abi3audit' checks by @jameslamb in https://github.com/rapidsai/rmm/pull/2508
+* Replace `<cuda/stream_ref>` includes with `<cuda/stream>` by @bdice in https://github.com/rapidsai/rmm/pull/2513
+* Set managed pool release threshold to maximum by @bdice in https://github.com/rapidsai/rmm/pull/2512
+* fix(align_up): assert power-of-2 and overflow invariants by @nethum529 in https://github.com/rapidsai/rmm/pull/2469
+* Fix 26.08 references by @bdice in https://github.com/rapidsai/rmm/pull/2516
+* Use cudaMemcpyBatchAsync for RMM copies by @bdice in https://github.com/rapidsai/rmm/pull/2511
+* test: isolate library wheel smoke test by @bdice in https://github.com/rapidsai/rmm/pull/2494
+* ci: avoid triggered-by-schedule and triggered-by-merge builds cancelling each other by @jameslamb in https://github.com/rapidsai/rmm/pull/2517
+* X-ORG-2491: publish-api-docs version-map uses vars by @josephine-wolf-oberholtzer in https://github.com/rapidsai/rmm/pull/2519
+* pre-commit: update 'cython-lint' to 0.21.1 by @jameslamb in https://github.com/rapidsai/rmm/pull/2533
+* Add stream_ref-compatible cuda_stream_view methods by @bdice in https://github.com/rapidsai/rmm/pull/2537
+* Turn on autosectionlabel in sphinx docs by @wence- in https://github.com/rapidsai/rmm/pull/2538
+* CI: Migrate custom jobs to RTX PRO 6000 by @bdice in https://github.com/rapidsai/rmm/pull/2539
+* wheels: test against PyTorch 2.14 by @jameslamb in https://github.com/rapidsai/rmm/pull/2541
+* Bump nightly alpha version for release/26.10 by @bdice in https://github.com/rapidsai/rmm/pull/2548
+* X-ORG-410: Integrate archived docs into version switcher by @josephine-wolf-oberholtzer in https://github.com/rapidsai/rmm/pull/2578
+
+## New Contributors
+* @arhag23 made their first contribution in https://github.com/rapidsai/rmm/pull/2466
+* @nethum529 made their first contribution in https://github.com/rapidsai/rmm/pull/2468
+
+**Full Changelog**: https://github.com/rapidsai/rmm/compare/v26.10.00a...release/26.10
+
 # rmm 26.08.00 (5 Aug 2026)
 
 ### 🚨 Breaking Changes
