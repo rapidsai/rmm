@@ -81,7 +81,11 @@ inline int get_cuda_driver_version()
 enum size_in_bytes : size_t {};
 
 constexpr auto default_num_allocations{100};
-constexpr size_in_bytes default_max_size{5_MiB};
+// Small enough for multithreaded tests to fit within LimitingMRFixture's limit.
+constexpr size_in_bytes default_max_size{2_MiB};
+
+using random_seed = std::default_random_engine::result_type;
+constexpr random_seed default_random_seed{std::default_random_engine::default_seed};
 
 struct allocation {
   void* ptr{nullptr};
@@ -223,11 +227,12 @@ inline void test_various_async_allocations(rmm::device_async_resource_ref ref,
 
 inline void test_random_allocations(resource_ref ref,
                                     std::size_t num_allocations = default_num_allocations,
-                                    size_in_bytes max_size      = default_max_size)
+                                    size_in_bytes max_size      = default_max_size,
+                                    random_seed seed            = default_random_seed)
 {
   std::vector<allocation> allocations(num_allocations);
 
-  std::default_random_engine generator;
+  std::default_random_engine generator{seed};
   std::uniform_int_distribution<std::size_t> distribution(1, max_size);
 
   // num_allocations allocations from [0,max_size)
@@ -247,12 +252,13 @@ inline void test_random_allocations(resource_ref ref,
 inline void test_random_async_allocations(rmm::device_async_resource_ref ref,
                                           std::size_t num_allocations = default_num_allocations,
                                           size_in_bytes max_size      = default_max_size,
-                                          cuda::stream_ref stream     = cuda::stream_ref{
-                                            cudaStream_t{cudaStreamDefault}})
+                                          cuda::stream_ref stream = cuda::stream_ref{cudaStream_t{
+                                            cudaStreamDefault}},
+                                          random_seed seed        = default_random_seed)
 {
   std::vector<allocation> allocations(num_allocations);
 
-  std::default_random_engine generator;
+  std::default_random_engine generator{seed};
   std::uniform_int_distribution<std::size_t> distribution(1, max_size);
 
   // num_allocations allocations from [0,max_size)
@@ -274,9 +280,10 @@ inline void test_random_async_allocations(rmm::device_async_resource_ref ref,
 }
 
 inline void test_mixed_random_allocation_free(resource_ref ref,
-                                              size_in_bytes max_size = default_max_size)
+                                              size_in_bytes max_size = default_max_size,
+                                              random_seed seed       = default_random_seed)
 {
-  std::default_random_engine generator;
+  std::default_random_engine generator{seed};
   constexpr std::size_t num_allocations{100};
 
   std::uniform_int_distribution<std::size_t> size_distribution(1, max_size);
@@ -322,12 +329,13 @@ inline void test_mixed_random_allocation_free(resource_ref ref,
   EXPECT_EQ(allocations.size(), active_allocations);
 }
 
-inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_ref ref,
-                                                    size_in_bytes max_size  = default_max_size,
-                                                    cuda::stream_ref stream = cuda::stream_ref{
-                                                      cudaStream_t{cudaStreamDefault}})
+inline void test_mixed_random_async_allocation_free(
+  rmm::device_async_resource_ref ref,
+  size_in_bytes max_size  = default_max_size,
+  cuda::stream_ref stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}},
+  random_seed seed        = default_random_seed)
 {
-  std::default_random_engine generator;
+  std::default_random_engine generator{seed};
   constexpr std::size_t num_allocations{100};
 
   std::uniform_int_distribution<std::size_t> size_distribution(1, max_size);
