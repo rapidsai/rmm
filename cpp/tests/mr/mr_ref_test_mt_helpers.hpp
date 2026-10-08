@@ -17,6 +17,8 @@ namespace rmm::test {
 
 // Helper functions for multi-threaded tests
 
+constexpr std::size_t default_num_threads{4};
+
 template <typename Task, typename... Arguments>
 void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
 {
@@ -34,7 +36,22 @@ void spawn_n(std::size_t num_threads, Task task, Arguments&&... args)
 template <typename Task, typename... Arguments>
 void spawn(Task task, Arguments&&... args)
 {
-  spawn_n(4, task, std::forward<Arguments>(args)...);
+  spawn_n(default_num_threads, task, std::forward<Arguments>(args)...);
+}
+
+// Like spawn, but appends a distinct random seed to each thread's arguments.
+template <typename Task, typename... Arguments>
+void spawn_seeded(Task task, Arguments const&... args)
+{
+  std::vector<std::thread> threads;
+  threads.reserve(default_num_threads);
+  for (std::size_t i = 0; i < default_num_threads; ++i) {
+    threads.emplace_back(task, args..., static_cast<random_seed>(default_random_seed + i));
+  }
+
+  for (auto& thread : threads) {
+    thread.join();
+  }
 }
 
 inline void async_allocate_loop(rmm::device_async_resource_ref ref,
