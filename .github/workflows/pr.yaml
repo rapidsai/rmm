@@ -24,8 +24,7 @@ jobs:
       - docs-build
       - docs-build-matrix
       - publish-api-docs
-      - wheel-build-cpp
-      - wheel-build-python
+      - wheel-build
       - wheel-tests
       - wheel-tests-integration-optional
       - devcontainer
@@ -388,7 +387,7 @@ jobs:
     with:
       docs-projects: rmm,librmm
       dry-run: true
-  wheel-build-cpp:
+  wheel-build:
     needs: [build-details, checks]
     permissions:
       actions: read
@@ -397,36 +396,15 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@main
-    with:
-      matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
-      build_type: pull-request
-      build-datetime: ${{ needs.build-details.outputs.build-datetime }}
-      node_type: cpu8
-      script: ci/build_wheel_cpp.sh
-      package-name: librmm
-      package-type: cpp
-  wheel-build-python:
-    needs: [build-details, wheel-build-cpp]
-    permissions:
-      actions: read
-      contents: read
-      id-token: write
-      packages: read
-      pull-requests: read
-    secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@main
+    uses: ./.github/workflows/wheels-build-stage.yaml
     with:
       # Build a wheel for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
       build_type: pull-request
       build-datetime: ${{ needs.build-details.outputs.build-datetime }}
       node_type: cpu8
-      script: ci/build_wheel_python.sh
-      package-name: rmm
-      package-type: python
   wheel-tests:
-    needs: [wheel-build-python, changed-files]
+    needs: [wheel-build, changed-files]
     permissions:
       actions: read
       contents: read
@@ -440,7 +418,7 @@ jobs:
       build_type: pull-request
       script: ci/test_wheel.sh
   wheel-tests-integration-optional:
-    needs: [wheel-build-python, changed-files]
+    needs: [wheel-build, changed-files]
     permissions:
       actions: read
       contents: read
