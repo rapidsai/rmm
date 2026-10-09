@@ -5,3 +5,4 @@ This folder contains examples to demonstrate librmm use cases. Running `build.sh
 Current examples:
 
 - Basic: demonstrates memory resource construction and allocating a `device_uvector` on a stream.
+- IPC Pool Sharing: demonstrates CUDA IPC memory pool sharing between processes.
