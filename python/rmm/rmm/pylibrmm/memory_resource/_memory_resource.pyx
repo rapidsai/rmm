@@ -183,16 +183,26 @@ cdef class CudaAsyncMemoryResource(DeviceMemoryResource):
     release_threshold: int, optional
         Release threshold in bytes. If the pool size grows beyond this
         value, unused memory held by the pool will be released at the
-        next synchronization point. If not provided, the release threshold
-        is set to the maximum representable ``uint64_t`` value, so that
-        the pool retains memory across synchronization events unless the
-        caller specifies otherwise.
+        next synchronization point. If provided, a new pool is created with
+        this threshold. A value of zero uses the maximum representable
+        ``uint64_t`` value.
     enable_ipc: bool, optional
         If True, enables export of POSIX file descriptor handles for the memory
         allocated by this resource so that it can be used with CUDA IPC.
     enable_fabric: bool, optional
         If True, enables export of fabric handles for the memory allocated by
         this resource.
+
+    Notes
+    -----
+    Unless an explicit release threshold or export handle requires a new pool,
+    this resource uses the current CUDA memory pool without owning it. A
+    non-default current pool is presumed to be user-selected and is not
+    modified. If the current pool is the device-default pool, its release
+    threshold is set to the maximum. On systems supporting hardware
+    decompression, RMM instead creates a non-releasing,
+    decompression-enabled pool, makes it the device's current pool, and
+    retains it for the process lifetime.
     """
     def __cinit__(
         self,
