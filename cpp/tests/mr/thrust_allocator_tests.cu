@@ -46,10 +46,12 @@ TEST_P(allocator_test, execution_policies)
   rmm::cuda_stream stream;
   auto const num_ints{100};
   rmm::device_vector<int> ints(num_ints, 1);
-  EXPECT_EQ(num_ints,
-            thrust::reduce(rmm::exec_policy(stream, this->ref), ints.begin(), ints.end()));
-  EXPECT_EQ(num_ints,
-            thrust::reduce(rmm::exec_policy_nosync(stream, this->ref), ints.begin(), ints.end()));
+  auto const sum = thrust::reduce(rmm::exec_policy(stream, this->ref), ints.begin(), ints.end());
+  auto const sum_nosync =
+    thrust::reduce(rmm::exec_policy_nosync(stream, this->ref), ints.begin(), ints.end());
+  stream.synchronize();
+  EXPECT_EQ(num_ints, sum);
+  EXPECT_EQ(num_ints, sum_nosync);
 }
 
 TEST_P(allocator_test, defaults)
