@@ -20,7 +20,12 @@ from libcpp.pair cimport pair
 
 from cuda.bindings import driver, runtime
 
-from rmm._cuda.gpu import CUDARuntimeError, getDevice, setDevice
+from rmm._cuda.gpu import (
+    CUDARuntimeError,
+    getDevice,
+    getDeviceAttribute,
+    setDevice,
+)
 
 from rmm.pylibrmm.stream cimport Stream
 from rmm.pylibrmm.utils cimport as_stream
@@ -1020,9 +1025,10 @@ cpdef void _initialize(
     else:
         upstream = CudaMemoryResource
 
+    pool_upstream = upstream if managed_memory else _pool_upstream
+
     if pool_allocator:
         typ = PoolMemoryResource
-        args = (upstream(),)
         kwargs = dict(
             initial_pool_size=None if initial_pool_size is None
             else parse_bytes(initial_pool_size),
@@ -1058,6 +1064,8 @@ cpdef void _initialize(
         # create a memory resource per specified device
         for device in devices:
             setDevice(device)
+            if pool_allocator:
+                args = (pool_upstream(),)
 
             if logging:
                 mr = LoggingResourceAdaptor(
@@ -1071,6 +1079,17 @@ cpdef void _initialize(
 
         # reset CUDA device to original
         setDevice(original_device)
+
+
+def _pool_upstream():
+    """
+    Returns the upstream for a pool resource on the current device.
+    """
+    if getDeviceAttribute(
+        runtime.cudaDeviceAttr.cudaDevAttrMemoryPoolsSupported, getDevice()
+    ):
+        return CudaAsyncMemoryResource()
+    return CudaMemoryResource()
 
 
 cpdef get_per_device_resource(int device):
