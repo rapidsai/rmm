@@ -418,7 +418,7 @@ dependencies:
     common:
       - output_types: [conda, requirements, pyproject]
         packages:
-          - cuda-core>=0.5.1,<2
+          - cuda-core>=1.0,<2
           - packaging
           - pytest
           - pytest-cov
@@ -429,12 +429,14 @@ dependencies:
               dependencies: "oldest"
               cuda: "12.*"
             packages:
-              - cuda-bindings==12.9.2
+              # Older bindings segfault when cuda-core releases contexts at shutdown.
+              - cuda-bindings==12.9.3
           - matrix:
               dependencies: "oldest"
               cuda: "13.*"
             packages:
-              - cuda-bindings==13.0.1
+              # Older bindings segfault when cuda-core releases contexts at shutdown.
+              - cuda-bindings==13.0.2
           - matrix:
             packages:
       - output_types: [conda, requirements, pyproject]
@@ -442,7 +444,8 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - cuda-core==0.5.1
+              # cuda-core 1.0.0 cannot import with the oldest CUDA 13 bindings.
+              - cuda-core==1.0.1
               - numba==0.60.0
               - numpy==2.0.*
           - matrix:
@@ -453,7 +456,8 @@ dependencies:
           - matrix:
               dependencies: "oldest"
             packages:
-              - &numba_cuda_oldest numba-cuda==0.22.1
+              # Earlier numba-cuda releases require cuda-core<1.0.0.
+              - &numba_cuda_oldest numba-cuda==0.30.2
           - matrix:
             packages:
               - *numba_cuda
