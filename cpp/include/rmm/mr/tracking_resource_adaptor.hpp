@@ -6,7 +6,6 @@
 
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/tracking_resource_adaptor_impl.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -57,15 +56,14 @@ class RMM_EXPORT tracking_resource_adaptor
    * @param upstream The resource used for allocating/deallocating device memory.
    * @param capture_stacks If true, capture stacks for each allocation.
    */
-  tracking_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
-                            bool capture_stacks = false);
+  tracking_resource_adaptor(cuda::mr::any_device_resource upstream, bool capture_stacks = false);
 
   ~tracking_resource_adaptor() = default;
 
   /**
-   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
+   * @briefreturn{cuda::mr::device_resource_ref to the upstream resource}
    */
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   /**
    * @brief Get the outstanding allocations map.

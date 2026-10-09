@@ -6,7 +6,6 @@
 
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/binning_memory_resource_impl.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -50,7 +49,7 @@ class RMM_EXPORT binning_memory_resource
    *
    * @param upstream The resource used to allocate bin pools.
    */
-  explicit binning_memory_resource(cuda::mr::any_resource<cuda::mr::device_accessible> upstream);
+  explicit binning_memory_resource(cuda::mr::any_device_resource upstream);
 
   /**
    * @brief Construct a new binning memory resource object with a range of initial bins.
@@ -64,16 +63,16 @@ class RMM_EXPORT binning_memory_resource
    * @param min_size_exponent The minimum base-2 exponent bin size.
    * @param max_size_exponent The maximum base-2 exponent bin size.
    */
-  binning_memory_resource(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  binning_memory_resource(cuda::mr::any_device_resource upstream,
                           int8_t min_size_exponent,  // NOLINT(bugprone-easily-swappable-parameters)
                           int8_t max_size_exponent);
 
   ~binning_memory_resource() = default;
 
   /**
-   * @briefreturn{device_async_resource_ref to the upstream resource}
+   * @briefreturn{cuda::mr::device_resource_ref to the upstream resource}
    */
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   /**
    * @brief Add a bin allocator to this resource
@@ -91,7 +90,7 @@ class RMM_EXPORT binning_memory_resource
    * @param bin_resource The memory resource for the bin
    */
   void add_bin(std::size_t allocation_size,
-               std::optional<device_async_resource_ref> bin_resource = std::nullopt);
+               std::optional<cuda::mr::device_resource_ref> bin_resource = std::nullopt);
 };
 
 static_assert(cuda::mr::resource_with<binning_memory_resource, cuda::mr::device_accessible>,

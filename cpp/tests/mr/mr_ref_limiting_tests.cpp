@@ -16,7 +16,7 @@ struct LimitingMRFixture : public ::testing::Test {
   static constexpr std::size_t allocation_limit{1_GiB};
   rmm::mr::cuda_memory_resource upstream{};
   rmm::mr::limiting_resource_adaptor mr{upstream, allocation_limit};
-  rmm::device_async_resource_ref ref{mr};
+  cuda::mr::device_resource_ref ref{mr};
   rmm::cuda_stream stream{};
 };
 

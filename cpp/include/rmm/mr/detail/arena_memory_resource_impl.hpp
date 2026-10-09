@@ -6,7 +6,6 @@
 
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/arena.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/stream>
@@ -32,7 +31,7 @@ namespace detail {
  */
 class arena_memory_resource_impl {
  public:
-  arena_memory_resource_impl(cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr,
+  arena_memory_resource_impl(cuda::mr::any_device_resource upstream_mr,
                              std::optional<std::size_t> arena_size,
                              bool dump_log_on_failure);
 

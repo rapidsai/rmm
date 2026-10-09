@@ -5,7 +5,6 @@
 #pragma once
 
 #include <rmm/detail/export.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -58,8 +57,7 @@ class statistics_resource_adaptor_impl {
     }
   };
 
-  explicit statistics_resource_adaptor_impl(
-    cuda::mr::any_resource<cuda::mr::device_accessible> upstream);
+  explicit statistics_resource_adaptor_impl(cuda::mr::any_device_resource upstream);
 
   ~statistics_resource_adaptor_impl() = default;
 
@@ -78,7 +76,7 @@ class statistics_resource_adaptor_impl {
     return !(*this == other);
   }
 
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   [[nodiscard]] counter get_bytes_counter() const noexcept;
 
@@ -113,7 +111,7 @@ class statistics_resource_adaptor_impl {
   // Stack of counter pairs <bytes, allocations>. Invariant: always >= 1 entry.
   std::stack<std::pair<counter, counter>> counter_stack_{{std::make_pair(counter{}, counter{})}};
   mutable std::shared_mutex mtx_;
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
+  cuda::mr::any_device_resource upstream_mr_;
 };
 
 }  // namespace detail
