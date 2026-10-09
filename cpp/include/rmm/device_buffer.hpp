@@ -380,8 +380,8 @@ class device_buffer {
   std::size_t _size{};   ///< Requested size of the device memory allocation
   std::size_t _alignment{rmm::CUDA_ALLOCATION_ALIGNMENT};  ///< The alignment of the allocation
   std::size_t _capacity{};  ///< The actual size of the device memory allocation
-  cuda::stream_ref _stream{cuda::stream_ref{
-    cudaStream_t{cudaStreamDefault}}};  ///< Stream to use for device memory deallocation
+  cuda::stream_ref _stream{
+    cuda::invalid_stream_t{}};  ///< Stream to use for device memory deallocation
 
   cuda::mr::any_resource<cuda::mr::device_accessible> _mr;  ///< The memory resource used to
                                                             ///< allocate/deallocate device memory

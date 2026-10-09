@@ -64,6 +64,7 @@ cuda_async_memory_resource_impl::cuda_async_memory_resource_impl(
     auto const pool_size = initial_pool_size.value();
     auto* ptr            = allocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, pool_size);
     deallocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, ptr, pool_size);
+    cuda::stream_ref{cudaStream_t{cudaStreamDefault}}.sync();
   }
 }
 
