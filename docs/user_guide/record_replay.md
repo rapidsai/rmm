@@ -214,14 +214,14 @@ Pool Resource/threads:1      0.744 ms        0.742 ms          937
 
 Use `--benchmark_min_time=1x` to run one replay instead of 937.
 
-### Rule 4: Check the first line of the output
+### Rule 4: Check for the simulation line
 
 Unknown positional arguments are ignored. There is no warning. Typing `0s 78`
 instead of `-s 78` runs the tool with no simulated GPU and replays the log
 against the real GPU. The failure then looks like a real
 `cudaErrorMemoryAllocation`, and it is easy to report it as the bug.
 
-Before trusting a result, check the first line of the output:
+Before trusting a result, check that the output contains this line:
 
 ```text
 Simulating GPU with memory size of 83751862272 bytes.
@@ -351,8 +351,8 @@ Follow these steps in order.
 4. Replay again at `-s <N+1>`. If both fail, go up. If both pass, go down.
    Repeat until one size fails and one size passes. Step by 1 GiB.
 5. Decide pass or fail from the output text, as defined in section 4. The exit
-   code is always 0 and provides no useful information. Check that the first line of the
-   output says `Simulating GPU with memory size of`. If it does not, the flags
+   code is always 0 and provides no useful information. Check that the output
+   contains the line `Simulating GPU with memory size of`. If it does not, the flags
    were wrong. Run the command again.
 6. Report these four things:
    - The largest size that fails.
