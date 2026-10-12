@@ -682,19 +682,29 @@ TEST(ArenaStreamIdTest, DefaultStreamNormalizesToLegacyId)  // NOLINT
 
 // Regression for #2394: CUDA can hand a destroyed stream's raw handle value to a new stream (ABA
 // reuse). Keying arenas by the raw handle would let the new stream inherit stale arena state.
-// Keying by cudaStreamGetId prevents this: a reused handle yields a distinct ID.
+// Keying by cudaStreamGetId prevents this: a reused handle yields a distinct ID and a fresh arena.
 //
 // This test cannot force reuse deterministically because CUDA does not guarantee handle-reuse
 // timing (see the issue's own caveat), so it probes up to a bounded number of iterations and
 // skips if reuse is never observed. It either proves the property or skips, never falsely fails.
 TEST(ArenaStreamIdTest, ReusedRawHandleYieldsDistinctId)  // NOLINT
 {
+  // Two superblocks: the original stream's arena takes the first, so a fresh arena for the
+  // reused handle must take the second.
+  auto const arena_size = superblock::minimum_size * 2;
+  mock_memory_resource mock_mr{};
+  EXPECT_CALL(mock_mr, allocate_sync(arena_size, ::testing::_)).WillOnce(Return(fake_address3));
+  EXPECT_CALL(mock_mr, deallocate_sync(fake_address3, arena_size, ::testing::_));
+  mock_memory_resource_wrapper mock_wrapper{&mock_mr};
+  arena_mr mr(rmm::device_async_resource_ref{mock_wrapper}, arena_size);
+
   cudaStream_t raw{};
   rmm::mr::detail::stream_id_type id{};
   {
     rmm::cuda_stream original{};
     raw = original.view().value();
     id  = rmm::mr::detail::get_stream_id(original.view());
+    EXPECT_EQ(mr.allocate(original.view(), 256, rmm::CUDA_ALLOCATION_ALIGNMENT), fake_address3);
   }  // original destroyed here, freeing its raw handle for potential reuse
 
   constexpr int max_iterations = 2048;
@@ -704,6 +714,9 @@ TEST(ArenaStreamIdTest, ReusedRawHandleYieldsDistinctId)  // NOLINT
     if (candidate.view().value() == raw) {
       // Same raw handle, but the ID must differ so no stale arena is inherited.
       EXPECT_NE(rmm::mr::detail::get_stream_id(candidate.view()), id);
+      // A raw-handle key would reuse the original arena and return a block from the first
+      // superblock.
+      EXPECT_EQ(mr.allocate(candidate.view(), 256, rmm::CUDA_ALLOCATION_ALIGNMENT), fake_address4);
       observed_reuse = true;
       break;
     }
