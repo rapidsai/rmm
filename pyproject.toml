@@ -16,7 +16,7 @@ max-line-length = 120
 
 [tool.ruff]
 line-length = 79
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = [
