@@ -119,7 +119,6 @@ max_allowed_size_compressed = '10Mi'
 # treat warnings as errors
 filterwarnings = [
     "error",
-    "ignore:The cuda.core.experimental namespace is deprecated:DeprecationWarning",
 ]
 
 [tool.ruff]
