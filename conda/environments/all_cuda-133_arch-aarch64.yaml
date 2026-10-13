@@ -10,8 +10,8 @@ dependencies:
 - clang-tools==20.1.8
 - clang==20.1.8
 - cmake>=4.0
-- cuda-bindings>=13.0.1,<14.0
-- cuda-core>=0.5.1,<2
+- cuda-bindings>=13.0.2,<14.0
+- cuda-core>=1.0,<2
 - cuda-nvcc
 - cuda-version=13.3
 - cxx-compiler
@@ -25,7 +25,7 @@ dependencies:
 - myst-parser
 - nbsphinx
 - ninja
-- numba-cuda>=0.22.1
+- numba-cuda>=0.30.2
 - numba>=0.60.0,<0.65.0
 - numpy>=2.0,<3.0
 - numpydoc
