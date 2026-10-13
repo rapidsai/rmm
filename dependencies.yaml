@@ -371,7 +371,7 @@ dependencies:
           - myst-parser
           - nbsphinx
           - &numba numba>=0.60.0,<0.65.0
-          - &numba_cuda numba-cuda>=0.22.1
+          - &numba_cuda numba-cuda>=0.30.2
           - numpydoc
           - sphinx
           - sphinx-copybutton
@@ -485,12 +485,12 @@ dependencies:
               cuda: "12.*"
               cuda_suffixed: "true"
             packages:
-              - numba-cuda[cu12]>=0.22.1
+              - numba-cuda[cu12]>=0.30.2
           - matrix:
               cuda: "13.*"
               cuda_suffixed: "true"
             packages:
-              - numba-cuda[cu13]>=0.22.1
+              - numba-cuda[cu13]>=0.30.2
           # fallback to numba-cuda with no extra CUDA packages if 'cuda_suffixed' isn't true
           - matrix:
             packages:
