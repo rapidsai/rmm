@@ -15,6 +15,7 @@ rapids-logger "Begin cpp build"
 
 sccache --stop-server 2>/dev/null || true
 
+python ci/prepare_candidate_source_version.py
 RAPIDS_PACKAGE_VERSION=$(rapids-generate-version)
 export RAPIDS_PACKAGE_VERSION
 

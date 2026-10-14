@@ -11,6 +11,7 @@ export CMAKE_GENERATOR=Ninja
 
 rapids-print-env
 
+python ci/prepare_candidate_source_version.py
 rapids-generate-version > ./VERSION
 
 rapids-logger "Begin py build"
