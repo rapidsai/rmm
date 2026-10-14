@@ -16,25 +16,37 @@ import pytest
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 HELPER = REPOSITORY_ROOT / "ci/prepare_candidate_wheel_dependencies.py"
+_SOURCE_VERSION = (
+    (REPOSITORY_ROOT / "VERSION").read_text(encoding="utf-8").strip()
+)
+_SOURCE_MAJOR, _SOURCE_MINOR, *_ = _SOURCE_VERSION.split(".")
+_SOURCE_WILDCARD = f"{_SOURCE_MAJOR}.{_SOURCE_MINOR}.*"
+_SOURCE_REQUIREMENT = f"librmm=={_SOURCE_WILDCARD},>=0.0.0a0"
+_FROZEN_VERSION = f"{_SOURCE_MAJOR}.{int(_SOURCE_MINOR) + 2}.0"
 
 
 def _write_pyproject(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        """[build-system]
+        f"""[build-system]
 requires = ["rapids-build-backend>=0.4.0,<0.5.0"]
 
 [project]
-dependencies = ["librmm==26.10.*,>=0.0.0a0"]
+dependencies = ["{_SOURCE_REQUIREMENT}"]
 
 [tool.rapids-build-backend]
-requires = ["librmm==26.10.*,>=0.0.0a0"]
+requires = ["{_SOURCE_REQUIREMENT}"]
 """,
         encoding="utf-8",
     )
 
 
-def _run_helper(root: Path, versions: dict[str, object] | None) -> subprocess.CompletedProcess[str]:
+def _run_helper(
+    root: Path,
+    versions: dict[str, object] | None,
+    *,
+    candidate_mode: bool = True,
+) -> subprocess.CompletedProcess[str]:
     target = root / "python/rmm/pyproject.toml"
     _write_pyproject(target)
     helper = root / "ci/prepare_candidate_wheel_dependencies.py"
@@ -42,8 +54,11 @@ def _run_helper(root: Path, versions: dict[str, object] | None) -> subprocess.Co
     shutil.copy2(HELPER, helper)
     environment = os.environ.copy()
     environment.pop("RAPIDS_RELEASE_CANDIDATE_UNIT_VERSIONS", None)
+    environment["RAPIDS_RELEASE_CANDIDATE"] = str(candidate_mode).lower()
     if versions is not None:
-        environment["RAPIDS_RELEASE_CANDIDATE_UNIT_VERSIONS"] = json.dumps(versions)
+        environment["RAPIDS_RELEASE_CANDIDATE_UNIT_VERSIONS"] = json.dumps(
+            versions
+        )
     return subprocess.run(
         [sys.executable, str(helper)],
         cwd=root,
@@ -54,63 +69,92 @@ def _run_helper(root: Path, versions: dict[str, object] | None) -> subprocess.Co
     )
 
 
-def test_candidate_rewrites_runtime_and_build_backend_requirements(tmp_path: Path) -> None:
+def test_candidate_rewrites_runtime_and_build_backend_requirements(
+    tmp_path: Path,
+) -> None:
     result = _run_helper(
         tmp_path,
         {
-            "package_versions": {"wheel": "26.12.0"},
-            "unit_package_versions": {"wheel:rmm": "26.12.0"},
+            "package_versions": {"wheel": _FROZEN_VERSION},
+            "unit_package_versions": {"wheel:rmm": _FROZEN_VERSION},
         },
     )
 
     assert result.returncode == 0, result.stderr
-    updated = (tmp_path / "python/rmm/pyproject.toml").read_text(encoding="utf-8")
-    assert updated.count("librmm==26.12.0") == 2
-    assert "librmm==26.10.*" not in updated
+    updated = (tmp_path / "python/rmm/pyproject.toml").read_text(
+        encoding="utf-8"
+    )
+    assert updated.count(f"librmm=={_FROZEN_VERSION}") == 2
+    assert _SOURCE_REQUIREMENT not in updated
 
 
-def test_unit_version_override_wins_over_family_fallback(tmp_path: Path) -> None:
+def test_unit_version_override_wins_over_family_fallback(
+    tmp_path: Path,
+) -> None:
     result = _run_helper(
         tmp_path,
         {
-            "package_versions": {"wheel": "26.10.0"},
-            "unit_package_versions": {"wheel:rmm": "26.12.0"},
+            "package_versions": {"wheel": _SOURCE_VERSION},
+            "unit_package_versions": {"wheel:rmm": _FROZEN_VERSION},
         },
     )
 
     assert result.returncode == 0, result.stderr
-    updated = (tmp_path / "python/rmm/pyproject.toml").read_text(encoding="utf-8")
-    assert updated.count("librmm==26.12.0") == 2
+    updated = (tmp_path / "python/rmm/pyproject.toml").read_text(
+        encoding="utf-8"
+    )
+    assert updated.count(f"librmm=={_FROZEN_VERSION}") == 2
 
 
-def test_family_version_is_used_when_unit_override_is_absent(tmp_path: Path) -> None:
+def test_family_version_is_used_when_unit_override_is_absent(
+    tmp_path: Path,
+) -> None:
     result = _run_helper(
         tmp_path,
         {
-            "package_versions": {"wheel": "26.12.0"},
+            "package_versions": {"wheel": _FROZEN_VERSION},
             "unit_package_versions": {},
         },
     )
 
     assert result.returncode == 0, result.stderr
-    updated = (tmp_path / "python/rmm/pyproject.toml").read_text(encoding="utf-8")
-    assert updated.count("librmm==26.12.0") == 2
+    updated = (tmp_path / "python/rmm/pyproject.toml").read_text(
+        encoding="utf-8"
+    )
+    assert updated.count(f"librmm=={_FROZEN_VERSION}") == 2
 
 
-def test_missing_candidate_metadata_preserves_production_metadata(tmp_path: Path) -> None:
-    result = _run_helper(tmp_path, None)
+def test_missing_candidate_metadata_preserves_production_metadata(
+    tmp_path: Path,
+) -> None:
+    result = _run_helper(tmp_path, None, candidate_mode=False)
 
     assert result.returncode == 0
-    updated = (tmp_path / "python/rmm/pyproject.toml").read_text(encoding="utf-8")
-    assert updated.count("librmm==26.10.*") == 2
+    updated = (tmp_path / "python/rmm/pyproject.toml").read_text(
+        encoding="utf-8"
+    )
+    assert updated.count(_SOURCE_REQUIREMENT) == 2
+
+
+def test_candidate_mode_without_version_map_fails_without_edit(
+    tmp_path: Path,
+) -> None:
+    result = _run_helper(tmp_path, None)
+
+    assert result.returncode == 1
+    assert "candidate unit-version metadata is required" in result.stderr
+    updated = (tmp_path / "python/rmm/pyproject.toml").read_text(
+        encoding="utf-8"
+    )
+    assert updated.count(_SOURCE_REQUIREMENT) == 2
 
 
 @pytest.mark.parametrize(
     "versions",
     [
         {"package_versions": {}, "unit_package_versions": {}},
-        {"package_versions": {"wheel": "26.12"}},
-        {"package_versions": {"wheel": "26.12.0+local"}},
+        {"package_versions": {"wheel": _FROZEN_VERSION.rsplit(".", 1)[0]}},
+        {"package_versions": {"wheel": f"{_FROZEN_VERSION}+local"}},
     ],
 )
 def test_invalid_or_missing_frozen_version_fails_without_edit(
@@ -119,23 +163,31 @@ def test_invalid_or_missing_frozen_version_fails_without_edit(
     result = _run_helper(tmp_path, versions)
 
     assert result.returncode == 1
-    updated = (tmp_path / "python/rmm/pyproject.toml").read_text(encoding="utf-8")
-    assert updated.count("librmm==26.10.*") == 2
+    updated = (tmp_path / "python/rmm/pyproject.toml").read_text(
+        encoding="utf-8"
+    )
+    assert updated.count(_SOURCE_REQUIREMENT) == 2
 
 
 def test_unexpected_generated_constraint_fails_closed(tmp_path: Path) -> None:
     target = tmp_path / "python/rmm/pyproject.toml"
     _write_pyproject(target)
+    invalid_requirement = _SOURCE_REQUIREMENT.split(",", 1)[0].replace(
+        "==", ">="
+    )
     target.write_text(
-        target.read_text(encoding="utf-8").replace("librmm==26.10.*", "librmm>=26.10"),
+        target.read_text(encoding="utf-8").replace(
+            _SOURCE_REQUIREMENT, invalid_requirement
+        ),
         encoding="utf-8",
     )
     helper = tmp_path / "ci/prepare_candidate_wheel_dependencies.py"
     helper.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(HELPER, helper)
     environment = os.environ.copy()
+    environment["RAPIDS_RELEASE_CANDIDATE"] = "true"
     environment["RAPIDS_RELEASE_CANDIDATE_UNIT_VERSIONS"] = json.dumps(
-        {"package_versions": {"wheel": "26.12.0"}}
+        {"package_versions": {"wheel": _FROZEN_VERSION}}
     )
 
     result = subprocess.run(
@@ -149,4 +201,4 @@ def test_unexpected_generated_constraint_fails_closed(tmp_path: Path) -> None:
 
     assert result.returncode == 1
     assert "expected exactly one generated wildcard" in result.stderr
-    assert "librmm>=26.10" in target.read_text(encoding="utf-8")
+    assert invalid_requirement in target.read_text(encoding="utf-8")

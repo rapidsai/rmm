@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 _VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+")
-_LIBRMM_REQUIREMENT = re.compile(r'librmm==\d+\.\d+\.\*,>=0\.0\.0a0')
+_LIBRMM_REQUIREMENT = re.compile(r"librmm==\d+\.\d+\.\*,>=0\.0\.0a0")
 
 
 def _candidate_version(raw_versions: str) -> str:
@@ -21,18 +21,25 @@ def _candidate_version(raw_versions: str) -> str:
     try:
         versions: Any = json.loads(raw_versions)
     except json.JSONDecodeError as exc:
-        raise ValueError("candidate unit-version metadata is not valid JSON") from exc
+        raise ValueError(
+            "candidate unit-version metadata is not valid JSON"
+        ) from exc
 
     if not isinstance(versions, dict):
         raise ValueError("candidate unit-version metadata must be an object")
 
     unit_versions = versions.get("unit_package_versions", {})
     family_versions = versions.get("package_versions", {})
-    if not isinstance(unit_versions, dict) or not isinstance(family_versions, dict):
+    if not isinstance(unit_versions, dict) or not isinstance(
+        family_versions, dict
+    ):
         raise ValueError("candidate version maps must be objects")
 
     version = unit_versions.get("wheel:rmm", family_versions.get("wheel"))
-    if not isinstance(version, str) or _VERSION_PATTERN.fullmatch(version) is None:
+    if (
+        not isinstance(version, str)
+        or _VERSION_PATTERN.fullmatch(version) is None
+    ):
         raise ValueError("frozen wheel:rmm version is missing or invalid")
     return version
 
@@ -45,7 +52,9 @@ def _rewrite_pyproject(path: Path, version: str) -> None:
     parsed = tomllib.loads(original)
     requirement_lists = (
         parsed.get("project", {}).get("dependencies", []),
-        parsed.get("tool", {}).get("rapids-build-backend", {}).get("requires", []),
+        parsed.get("tool", {})
+        .get("rapids-build-backend", {})
+        .get("requires", []),
     )
     selected = [
         requirement
@@ -70,15 +79,28 @@ def _rewrite_pyproject(path: Path, version: str) -> None:
 
 def main() -> int:
     """Update candidate metadata; leave ordinary production builds untouched."""
-    raw_versions = os.environ.get("RAPIDS_RELEASE_CANDIDATE_UNIT_VERSIONS")
-    if raw_versions is None:
+    candidate_mode = os.environ.get(
+        "RAPIDS_RELEASE_CANDIDATE", "false"
+    ).lower()
+    if candidate_mode not in {"true", "false"}:
+        print(
+            "RAPIDS_RELEASE_CANDIDATE must be true or false", file=sys.stderr
+        )
+        return 1
+    if candidate_mode == "false":
         return 0
 
     try:
+        raw_versions = os.environ.get("RAPIDS_RELEASE_CANDIDATE_UNIT_VERSIONS")
+        if raw_versions is None:
+            raise ValueError("candidate unit-version metadata is required")
         version = _candidate_version(raw_versions)
         _rewrite_pyproject(Path("python/rmm/pyproject.toml"), version)
     except (OSError, ValueError) as exc:
-        print(f"Unable to prepare frozen RMM candidate requirements: {exc}", file=sys.stderr)
+        print(
+            f"Unable to prepare frozen RMM candidate requirements: {exc}",
+            file=sys.stderr,
+        )
         return 1
 
     print(f"Applied frozen candidate librmm=={version} to RMM wheel metadata")
