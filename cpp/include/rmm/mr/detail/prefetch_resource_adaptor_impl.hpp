@@ -5,7 +5,6 @@
 #pragma once
 
 #include <rmm/detail/export.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -24,8 +23,7 @@ namespace detail {
  */
 class prefetch_resource_adaptor_impl {
  public:
-  explicit prefetch_resource_adaptor_impl(
-    cuda::mr::any_resource<cuda::mr::device_accessible> upstream);
+  explicit prefetch_resource_adaptor_impl(cuda::mr::any_device_resource upstream);
 
   ~prefetch_resource_adaptor_impl() = default;
 
@@ -44,7 +42,7 @@ class prefetch_resource_adaptor_impl {
     return !(*this == other);
   }
 
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   [[nodiscard]] void* allocate(cuda::stream_ref stream,
                                std::size_t bytes,
@@ -68,7 +66,7 @@ class prefetch_resource_adaptor_impl {
   }
 
  private:
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
+  cuda::mr::any_device_resource upstream_mr_;
 };
 
 }  // namespace detail

@@ -5,7 +5,6 @@
 #pragma once
 
 #include <rmm/detail/export.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/stream>

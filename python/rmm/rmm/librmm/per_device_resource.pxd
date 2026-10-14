@@ -1,6 +1,6 @@
-# SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-from rmm.librmm.memory_resource cimport any_resource, device_accessible
+from rmm.librmm.memory_resource cimport any_device_resource
 
 
 cdef extern from "rmm/mr/per_device_resource.hpp" namespace "rmm" nogil:
@@ -14,8 +14,8 @@ cdef extern from "rmm/mr/per_device_resource.hpp" namespace "rmm" nogil:
 cdef extern from "rmm/mr/per_device_resource.hpp" \
         namespace "rmm::mr" nogil:
     cdef void set_per_device_resource(
-        cuda_device_id id, any_resource[device_accessible] new_resource
+        cuda_device_id id, any_device_resource new_resource
     )
     cdef void set_current_device_resource(
-        any_resource[device_accessible] new_resource
+        any_device_resource new_resource
     )

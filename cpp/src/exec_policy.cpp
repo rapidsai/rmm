@@ -7,15 +7,13 @@
 
 RMM_NAMESPACE_BEGIN
 
-exec_policy::exec_policy(cuda::stream_ref stream,
-                         cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+exec_policy::exec_policy(cuda::stream_ref stream, cuda::mr::any_device_resource mr)
   : thrust_exec_policy_t(
       thrust::cuda::par(mr::thrust_allocator<char>(stream, std::move(mr))).on(stream.get()))
 {
 }
 
-exec_policy_nosync::exec_policy_nosync(cuda::stream_ref stream,
-                                       cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+exec_policy_nosync::exec_policy_nosync(cuda::stream_ref stream, cuda::mr::any_device_resource mr)
   : thrust_exec_policy_nosync_t(
       thrust::cuda::par_nosync(mr::thrust_allocator<char>(stream, std::move(mr))).on(stream.get()))
 {

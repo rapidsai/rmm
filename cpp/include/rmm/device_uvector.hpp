@@ -11,8 +11,8 @@
 #include <rmm/detail/export.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/mr/per_device_resource.hpp>
-#include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
 #include <cuda/std/iterator>
 #include <cuda/std/span>
 #include <cuda/stream>
@@ -127,10 +127,9 @@ class device_uvector {
    * @param stream The stream on which to perform the allocation
    * @param mr The resource used to allocate the device storage
    */
-  explicit device_uvector(
-    size_type size,
-    cuda::stream_ref stream,
-    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref())
+  explicit device_uvector(size_type size,
+                          cuda::stream_ref stream,
+                          cuda::mr::any_device_resource mr = mr::get_current_device_resource_ref())
     : _storage{elements_to_bytes(size), std::alignment_of_v<T>, stream, std::move(mr)}
   {
   }
@@ -144,10 +143,9 @@ class device_uvector {
    * @param stream The stream on which to perform the copy
    * @param mr The resource used to allocate device memory for the new vector
    */
-  explicit device_uvector(
-    device_uvector const& other,
-    cuda::stream_ref stream,
-    cuda::mr::any_resource<cuda::mr::device_accessible> mr = mr::get_current_device_resource_ref())
+  explicit device_uvector(device_uvector const& other,
+                          cuda::stream_ref stream,
+                          cuda::mr::any_device_resource mr = mr::get_current_device_resource_ref())
     : _storage{other._storage, stream, std::move(mr)}
   {
   }
@@ -597,7 +595,7 @@ class device_uvector {
    * @briefreturn{The resource used to allocate and deallocate the device
    * storage}
    */
-  [[nodiscard]] rmm::device_async_resource_ref memory_resource() noexcept
+  [[nodiscard]] cuda::mr::device_resource_ref memory_resource() noexcept
   {
     return _storage.memory_resource();
   }

@@ -9,7 +9,8 @@
 #include <rmm/aligned.hpp>
 #include <rmm/mr/callback_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
-#include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -27,16 +28,16 @@ TEST(CallbackTest, TestCallbacksAreInvoked)
 {
   auto base_mr      = mock_resource();
   auto base_wrapper = mock_resource_wrapper{&base_mr};
-  auto base_ref     = device_async_resource_ref{base_wrapper};
+  auto base_ref     = cuda::mr::device_resource_ref{base_wrapper};
   EXPECT_CALL(base_mr, allocate(_, 10_MiB, _)).Times(1);
   EXPECT_CALL(base_mr, deallocate(_, _, 10_MiB, _)).Times(1);
 
   auto allocate_callback = [](std::size_t size, cuda::stream_ref stream, void* arg) {
-    auto base_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
+    auto base_mr = *static_cast<cuda::mr::device_resource_ref*>(arg);
     return base_mr.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   };
   auto deallocate_callback = [](void* ptr, std::size_t size, cuda::stream_ref stream, void* arg) {
-    auto base_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
+    auto base_mr = *static_cast<cuda::mr::device_resource_ref*>(arg);
     base_mr.deallocate(stream, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   };
   auto mr =
@@ -53,13 +54,13 @@ TEST(CallbackTest, LoggingTest)
   auto base_mr           = rmm::mr::get_current_device_resource_ref();
   auto allocate_callback = [](std::size_t size, cuda::stream_ref stream, void* arg) {
     std::cout << "Allocating " << size << " bytes" << std::endl;
-    auto base_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
+    auto base_mr = *static_cast<cuda::mr::device_resource_ref*>(arg);
     return base_mr.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   };
 
   auto deallocate_callback = [](void* ptr, std::size_t size, cuda::stream_ref stream, void* arg) {
     std::cout << "Deallocating " << size << " bytes" << std::endl;
-    auto base_mr = *static_cast<rmm::device_async_resource_ref*>(arg);
+    auto base_mr = *static_cast<cuda::mr::device_resource_ref*>(arg);
     base_mr.deallocate(stream, ptr, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
   };
   auto mr =

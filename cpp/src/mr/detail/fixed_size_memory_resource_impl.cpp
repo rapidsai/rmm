@@ -28,9 +28,7 @@ namespace mr {
 namespace detail {
 
 fixed_size_memory_resource_impl::fixed_size_memory_resource_impl(
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
-  std::size_t block_size,
-  std::size_t blocks_to_preallocate)
+  cuda::mr::any_device_resource upstream, std::size_t block_size, std::size_t blocks_to_preallocate)
   : upstream_mr_{std::move(upstream)},
     block_size_{align_up(block_size, rmm::CUDA_ALLOCATION_ALIGNMENT)},
     upstream_chunk_size_{block_size_ * blocks_to_preallocate}
@@ -41,10 +39,10 @@ fixed_size_memory_resource_impl::fixed_size_memory_resource_impl(
 
 fixed_size_memory_resource_impl::~fixed_size_memory_resource_impl() { release(); }
 
-device_async_resource_ref fixed_size_memory_resource_impl::get_upstream_resource() const noexcept
+cuda::mr::device_resource_ref fixed_size_memory_resource_impl::get_upstream_resource()
+  const noexcept
 {
-  return device_async_resource_ref{
-    const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
+  return cuda::mr::device_resource_ref{const_cast<cuda::mr::any_device_resource&>(upstream_mr_)};
 }
 
 std::size_t fixed_size_memory_resource_impl::get_block_size() const noexcept { return block_size_; }

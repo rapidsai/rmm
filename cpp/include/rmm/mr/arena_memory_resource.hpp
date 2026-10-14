@@ -6,7 +6,6 @@
 
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/arena_memory_resource_impl.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -81,7 +80,7 @@ class RMM_EXPORT arena_memory_resource
    * memory on the current device.
    * @param dump_log_on_failure If true, dump memory log when running out of memory.
    */
-  explicit arena_memory_resource(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  explicit arena_memory_resource(cuda::mr::any_device_resource upstream,
                                  std::optional<std::size_t> arena_size = std::nullopt,
                                  bool dump_log_on_failure              = false);
 

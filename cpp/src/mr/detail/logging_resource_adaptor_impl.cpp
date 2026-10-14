@@ -17,7 +17,7 @@ namespace detail {
 
 logging_resource_adaptor_impl::logging_resource_adaptor_impl(
   std::shared_ptr<rapids_logger::logger> logger,
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  cuda::mr::any_device_resource upstream,
   bool auto_flush)
   : logger_{std::move(logger)}, upstream_mr_{std::move(upstream)}
 {
@@ -67,10 +67,9 @@ void logging_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
   upstream_mr_.deallocate(stream, ptr, bytes, alignment);
 }
 
-rmm::device_async_resource_ref logging_resource_adaptor_impl::get_upstream_resource() const noexcept
+cuda::mr::device_resource_ref logging_resource_adaptor_impl::get_upstream_resource() const noexcept
 {
-  return rmm::device_async_resource_ref{
-    const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
+  return cuda::mr::device_resource_ref{const_cast<cuda::mr::any_device_resource&>(upstream_mr_)};
 }
 
 void logging_resource_adaptor_impl::flush() { logger_->flush(); }

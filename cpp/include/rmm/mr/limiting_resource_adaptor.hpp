@@ -7,7 +7,6 @@
 #include <rmm/aligned.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/limiting_resource_adaptor_impl.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -53,16 +52,16 @@ class RMM_EXPORT limiting_resource_adaptor
    * @param allocation_limit Maximum memory allowed for this allocator
    * @param alignment Alignment in bytes for the start of each allocated buffer
    */
-  limiting_resource_adaptor(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  limiting_resource_adaptor(cuda::mr::any_device_resource upstream,
                             std::size_t allocation_limit,
                             std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   ~limiting_resource_adaptor() = default;
 
   /**
-   * @briefreturn{device_async_resource_ref to the upstream resource}
+   * @briefreturn{cuda::mr::device_resource_ref to the upstream resource}
    */
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   /**
    * @brief Query the number of bytes that have been allocated. Note that

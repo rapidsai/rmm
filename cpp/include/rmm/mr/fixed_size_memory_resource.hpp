@@ -6,7 +6,6 @@
 
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/fixed_size_memory_resource_impl.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -61,7 +60,7 @@ class RMM_EXPORT fixed_size_memory_resource
    * @param blocks_to_preallocate The number of blocks to allocate to initialize the pool.
    */
   explicit fixed_size_memory_resource(
-    cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+    cuda::mr::any_device_resource upstream,
     // NOLINTNEXTLINE bugprone-easily-swappable-parameters
     std::size_t block_size            = default_block_size,
     std::size_t blocks_to_preallocate = default_blocks_to_preallocate);
@@ -69,9 +68,9 @@ class RMM_EXPORT fixed_size_memory_resource
   ~fixed_size_memory_resource() = default;
 
   /**
-   * @briefreturn{device_async_resource_ref to the upstream resource}
+   * @briefreturn{cuda::mr::device_resource_ref to the upstream resource}
    */
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   /**
    * @brief Get the size of blocks allocated by this memory resource.

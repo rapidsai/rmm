@@ -6,7 +6,6 @@
 
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/pool_memory_resource_impl.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 
@@ -59,14 +58,14 @@ class RMM_EXPORT pool_memory_resource
    * @param maximum_pool_size Maximum size, in bytes, that the pool can grow to. Defaults to all
    * of the available memory from the upstream resource.
    */
-  explicit pool_memory_resource(cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  explicit pool_memory_resource(cuda::mr::any_device_resource upstream,
                                 std::size_t initial_pool_size,
                                 std::optional<std::size_t> maximum_pool_size = std::nullopt);
 
   /**
-   * @briefreturn{rmm::device_async_resource_ref to the upstream resource}
+   * @briefreturn{cuda::mr::device_resource_ref to the upstream resource}
    */
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   /**
    * @brief Computes the size of the current pool

@@ -18,15 +18,14 @@ namespace mr {
 namespace detail {
 
 tracking_resource_adaptor_impl::tracking_resource_adaptor_impl(
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream, bool capture_stacks)
+  cuda::mr::any_device_resource upstream, bool capture_stacks)
   : capture_stacks_{capture_stacks}, upstream_mr_{std::move(upstream)}
 {
 }
 
-device_async_resource_ref tracking_resource_adaptor_impl::get_upstream_resource() const noexcept
+cuda::mr::device_resource_ref tracking_resource_adaptor_impl::get_upstream_resource() const noexcept
 {
-  return device_async_resource_ref{
-    const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
+  return cuda::mr::device_resource_ref{const_cast<cuda::mr::any_device_resource&>(upstream_mr_)};
 }
 
 std::map<void*, tracking_resource_adaptor_impl::allocation_info> const&

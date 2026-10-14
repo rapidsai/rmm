@@ -7,6 +7,8 @@
 
 #include "mr_ref_test.hpp"
 
+#include <rmm/mr/per_device_resource.hpp>
+
 #include <cuda/stream>
 
 namespace rmm::test {
@@ -15,7 +17,7 @@ namespace rmm::test {
  * @brief Typed-test fixture for basic CCCL-style memory resource tests.
  *
  * The Fixture parameter must be a ::testing::Test subclass providing:
- *   rmm::device_async_resource_ref ref
+ *   cuda::mr::device_resource_ref ref
  *   rmm::cuda_stream stream
  */
 template <typename Fixture>

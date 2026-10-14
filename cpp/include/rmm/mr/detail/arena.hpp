@@ -12,7 +12,6 @@
 #include <rmm/detail/format.hpp>
 #include <rmm/detail/logging_assert.hpp>
 #include <rmm/logger.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/stream>
@@ -490,8 +489,7 @@ class global_arena final {
    * @param arena_size Size in bytes of the global arena. Defaults to half of the available memory
    * on the current device.
    */
-  global_arena(cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr,
-               std::optional<std::size_t> arena_size)
+  global_arena(cuda::mr::any_device_resource upstream_mr, std::optional<std::size_t> arena_size)
     : upstream_mr_{std::move(upstream_mr)}
   {
     auto const size =
@@ -763,7 +761,7 @@ class global_arena final {
   }
 
   /// The upstream resource to allocate memory from.
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
+  cuda::mr::any_device_resource upstream_mr_;
   /// Block allocated from upstream so that it can be quickly freed.
   block upstream_block_;
   /// Address-ordered set of superblocks.

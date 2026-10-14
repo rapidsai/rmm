@@ -54,7 +54,7 @@ void spawn_seeded(Task task, Arguments const&... args)
   }
 }
 
-inline void async_allocate_loop(rmm::device_async_resource_ref ref,
+inline void async_allocate_loop(cuda::mr::device_resource_ref ref,
                                 std::size_t num_allocations,
                                 std::list<allocation>& allocations,
                                 std::mutex& mtx,
@@ -82,7 +82,7 @@ inline void async_allocate_loop(rmm::device_async_resource_ref ref,
   RMM_CUDA_TRY(cudaEventSynchronize(event));
 }
 
-inline void async_deallocate_loop(rmm::device_async_resource_ref ref,
+inline void async_deallocate_loop(cuda::mr::device_resource_ref ref,
                                   std::size_t num_allocations,
                                   std::list<allocation>& allocations,
                                   std::mutex& mtx,
@@ -103,7 +103,7 @@ inline void async_deallocate_loop(rmm::device_async_resource_ref ref,
   RMM_CUDA_TRY(cudaEventSynchronize(event));
 }
 
-inline void test_async_allocate_free_different_threads(rmm::device_async_resource_ref ref,
+inline void test_async_allocate_free_different_threads(cuda::mr::device_resource_ref ref,
                                                        cuda::stream_ref streamA,
                                                        cuda::stream_ref streamB)
 {

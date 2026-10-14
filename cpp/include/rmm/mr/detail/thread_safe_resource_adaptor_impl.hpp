@@ -5,7 +5,6 @@
 #pragma once
 
 #include <rmm/detail/export.hpp>
-#include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
 #include <cuda/stream>
@@ -27,8 +26,7 @@ namespace detail {
  */
 class thread_safe_resource_adaptor_impl {
  public:
-  explicit thread_safe_resource_adaptor_impl(
-    cuda::mr::any_resource<cuda::mr::device_accessible> upstream);
+  explicit thread_safe_resource_adaptor_impl(cuda::mr::any_device_resource upstream);
 
   ~thread_safe_resource_adaptor_impl() = default;
 
@@ -47,7 +45,7 @@ class thread_safe_resource_adaptor_impl {
     return !(*this == other);
   }
 
-  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept;
+  [[nodiscard]] cuda::mr::device_resource_ref get_upstream_resource() const noexcept;
 
   [[nodiscard]] void* allocate(cuda::stream_ref stream,
                                std::size_t bytes,
@@ -71,7 +69,7 @@ class thread_safe_resource_adaptor_impl {
   }
 
  private:
-  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
+  cuda::mr::any_device_resource upstream_mr_;
   mutable std::mutex mtx_;
 };
 
