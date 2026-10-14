@@ -58,7 +58,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@10c48afab35c7a70c3c4b1fcccaab11356b7720f
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@497a9313661e724a316a38a05c9c805f4f12f430
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       build-datetime: ${{ needs.build-details.outputs.build-datetime }}
@@ -75,7 +75,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@10c48afab35c7a70c3c4b1fcccaab11356b7720f
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@497a9313661e724a316a38a05c9c805f4f12f430
     with:
       # Build a conda package for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
@@ -95,7 +95,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/conda-upload-packages.yaml@10c48afab35c7a70c3c4b1fcccaab11356b7720f
+    uses: rapidsai/shared-workflows/.github/workflows/conda-upload-packages.yaml@497a9313661e724a316a38a05c9c805f4f12f430
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
@@ -110,7 +110,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@10c48afab35c7a70c3c4b1fcccaab11356b7720f
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@497a9313661e724a316a38a05c9c805f4f12f430
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
@@ -136,7 +136,7 @@ jobs:
       target-aws-region: ${{ secrets.NVIDIA_DOCS_AWS_REGION }}
       target-aws-secret-access-key: ${{ secrets.NVIDIA_DOCS_AWS_SECRET_ACCESS_KEY }}
       target-s3-bucket: ${{ secrets.NVIDIA_DOCS_S3_BUCKET }}
-    uses: rapidsai/shared-workflows/.github/workflows/publish-api-docs.yaml@10c48afab35c7a70c3c4b1fcccaab11356b7720f
+    uses: rapidsai/shared-workflows/.github/workflows/publish-api-docs.yaml@497a9313661e724a316a38a05c9c805f4f12f430
     with:
       docs-projects: rmm,librmm
       dry-run: false
@@ -149,7 +149,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@10c48afab35c7a70c3c4b1fcccaab11356b7720f
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@497a9313661e724a316a38a05c9c805f4f12f430
     with:
       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
       build_type: ${{ inputs.build_type || 'branch' }}
@@ -169,7 +169,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@10c48afab35c7a70c3c4b1fcccaab11356b7720f
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@497a9313661e724a316a38a05c9c805f4f12f430
     with:
       # Build a wheel for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
@@ -192,7 +192,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@10c48afab35c7a70c3c4b1fcccaab11356b7720f
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@497a9313661e724a316a38a05c9c805f4f12f430
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       publish_to_pypi: false # PyPI publication is handled by Kitmaker.
@@ -212,7 +212,7 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@10c48afab35c7a70c3c4b1fcccaab11356b7720f
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-publish.yaml@497a9313661e724a316a38a05c9c805f4f12f430
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       publish_to_pypi: false # PyPI publication is handled by Kitmaker.
