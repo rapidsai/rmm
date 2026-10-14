@@ -86,6 +86,7 @@ requirements:
       else: cuda-bindings >=13.0.2,<14.0
     - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
     - numpy >=2.0,<3.0
+    - rapids-logger =0.3
     - python
   run_constraints:
     - cupy >=14.0.1,!=14.1.0
