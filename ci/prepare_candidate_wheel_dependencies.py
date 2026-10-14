@@ -14,6 +14,10 @@ from typing import Any
 
 _VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+")
 _LIBRMM_REQUIREMENT = re.compile(r"librmm==\d+\.\d+\.\*,>=0\.0\.0a0")
+_GENERATED_LIBRMM_REQUIREMENT = re.compile(
+    r"(?P<package>librmm(?:-cu12|-cu13)?)==\d+\.\d+\.\*,>=0\.0\.0a0"
+)
+_GENERATED_LIBRMM_PACKAGES = {"librmm", "librmm-cu12", "librmm-cu13"}
 
 
 def _candidate_version(raw_versions: str) -> str:
@@ -44,8 +48,8 @@ def _candidate_version(raw_versions: str) -> str:
     return version
 
 
-def _rewrite_pyproject(path: Path, version: str) -> None:
-    """Rewrite only the generated runtime and backend librmm constraints."""
+def _rewrite_pyproject(path: Path, version: str) -> str:
+    """Return pyproject text with generated librmm constraints updated."""
     import tomllib
 
     original = path.read_text(encoding="utf-8")
@@ -73,8 +77,28 @@ def _rewrite_pyproject(path: Path, version: str) -> None:
     updated, count = _LIBRMM_REQUIREMENT.subn(f"librmm=={version}", original)
     if count != 2:
         raise ValueError("expected exactly two generated librmm constraints")
-    if updated != original:
-        path.write_text(updated, encoding="utf-8")
+    return updated
+
+
+def _rewrite_dependency_file(path: Path, version: str) -> str:
+    """Return dependency-file text with only librmm build inputs updated."""
+    original = path.read_text(encoding="utf-8")
+    matches = list(_GENERATED_LIBRMM_REQUIREMENT.finditer(original))
+    packages = [match.group("package") for match in matches]
+    if (
+        len(matches) != len(_GENERATED_LIBRMM_PACKAGES)
+        or set(packages) != _GENERATED_LIBRMM_PACKAGES
+    ):
+        raise ValueError(
+            "expected one generated librmm, librmm-cu12, and librmm-cu13 "
+            "constraint in dependencies.yaml"
+        )
+
+    updated = _GENERATED_LIBRMM_REQUIREMENT.sub(
+        lambda match: f"{match.group('package')}=={version},>=0.0.0a0",
+        original,
+    )
+    return updated
 
 
 def main() -> int:
@@ -95,7 +119,14 @@ def main() -> int:
         if raw_versions is None:
             raise ValueError("candidate unit-version metadata is required")
         version = _candidate_version(raw_versions)
-        _rewrite_pyproject(Path("python/rmm/pyproject.toml"), version)
+        pyproject_path = Path("python/rmm/pyproject.toml")
+        dependency_file_path = Path("dependencies.yaml")
+        pyproject = _rewrite_pyproject(pyproject_path, version)
+        dependency_file = _rewrite_dependency_file(
+            dependency_file_path, version
+        )
+        pyproject_path.write_text(pyproject, encoding="utf-8")
+        dependency_file_path.write_text(dependency_file, encoding="utf-8")
     except (OSError, ValueError) as exc:
         print(
             f"Unable to prepare frozen RMM candidate requirements: {exc}",
