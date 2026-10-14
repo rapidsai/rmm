@@ -23,8 +23,17 @@ build:
     version_independent: true
   string: cuda${{ cuda_major }}_cp${{ py_buildstring }}_abi3_${{ datetime_string }}_${{ head_rev }}
   script:
-    content:
-      - ./build.sh -v clean rmm --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
+    content: |
+      # Versioned debug-prefix maps invalidate otherwise identical cached native objects.
+      for flags_name in CFLAGS CXXFLAGS; do
+          [[ -v "${flags_name}" ]] || continue
+          flags_value="${!flags_name}"
+          while [[ "${flags_value}" =~ -fdebug-prefix-map[^[:space:]]* ]]; do
+              flags_value="${flags_value/"${BASH_REMATCH[0]}"/}"
+          done
+          export "${flags_name}=${flags_value}"
+      done
+      ./build.sh -v clean rmm --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
     secrets:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
