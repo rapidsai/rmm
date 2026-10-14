@@ -154,10 +154,10 @@ channels:
 dependencies:
   rapids_build_skbuild:
     common:
-      - output_types: [conda, requirements, pyproject]
+      - output_types: [conda, requirements, constraints, pyproject]
         packages:
           - rapids-build-backend>=0.4.0,<0.5.0
-      - output_types: conda
+      - output_types: [conda, constraints]
         packages:
           - scikit-build-core>=0.11.0
       - output_types: [requirements, pyproject]
@@ -165,7 +165,7 @@ dependencies:
           - scikit-build-core[pyproject]>=0.11.0
   build:
     common:
-      - output_types: [conda, requirements, pyproject]
+      - output_types: [conda, requirements, constraints, pyproject]
         packages:
           - &cmake_ver cmake>=4.0
           - ninja
@@ -189,11 +189,11 @@ dependencies:
               - sysroot_linux-aarch64==2.28
   cython_build:
     common:
-      - output_types: [conda, requirements, pyproject]
+      - output_types: [conda, requirements, constraints, pyproject]
         packages:
           - cython>=3.2.2
     specific:
-      - output_types: [conda, requirements, pyproject]
+      - output_types: [conda, requirements, constraints, pyproject]
         matrices:
           - matrix:
               cuda: "12.*"
@@ -208,7 +208,7 @@ dependencies:
         packages:
           - &librmm_unsuffixed librmm==26.12.*,>=0.0.0a0
     specific:
-      - output_types: [requirements, pyproject]
+      - output_types: [requirements, constraints, pyproject]
         matrices:
           - matrix:
               cuda: "12.*"
@@ -241,7 +241,7 @@ dependencies:
           - librmm-example==26.12.*,>=0.0.0a0
   checks:
     common:
-      - output_types: [conda, requirements]
+      - output_types: [conda, requirements, constraints]
         packages:
           - pre-commit
           # pre-commit requires identify minimum version 1.0, but clang-format
@@ -294,7 +294,7 @@ dependencies:
               cuda: "13.3"
             packages:
               - cuda-version=13.3
-      - output_types: requirements
+      - output_types: [requirements, constraints]
         matrices:
           # if use_cuda_wheels=false is provided, do not add dependencies on any CUDA wheels
           # (e.g. for DLFW and pip devcontainers)
@@ -396,11 +396,11 @@ dependencies:
               - python>=3.12
   run:
     common:
-      - output_types: [conda, requirements, pyproject]
+      - output_types: [conda, requirements, constraints, pyproject]
         packages:
           - numpy>=2.0,<3.0
     specific:
-      - output_types: [conda, requirements, pyproject]
+      - output_types: [conda, requirements, constraints, pyproject]
         matrices:
           - matrix:
               cuda: "12.*"
@@ -416,14 +416,14 @@ dependencies:
           - *cmake_ver
   test_python:
     common:
-      - output_types: [conda, requirements, pyproject]
+      - output_types: [conda, requirements, constraints, pyproject]
         packages:
           - cuda-core>=1.0,<2
           - packaging
           - pytest
           - pytest-cov
     specific:
-      - output_types: [conda, requirements, pyproject]
+      - output_types: [conda, requirements, constraints, pyproject]
         matrices:
           - matrix:
               dependencies: "oldest"
@@ -439,7 +439,7 @@ dependencies:
               - cuda-bindings==13.0.2
           - matrix:
             packages:
-      - output_types: [conda, requirements, pyproject]
+      - output_types: [conda, requirements, constraints, pyproject]
         matrices:
           - matrix:
               dependencies: "oldest"
@@ -461,7 +461,7 @@ dependencies:
           - matrix:
             packages:
               - *numba_cuda
-      - output_types: requirements
+      - output_types: constraints
         matrices:
           - matrix:
               dependencies: "oldest"
@@ -471,7 +471,7 @@ dependencies:
           - matrix:
             packages:
               - *numba_cuda
-      - output_types: pyproject
+      - output_types: [requirements, pyproject]
         matrices:
           - matrix:
               cuda: "12.*"
@@ -490,7 +490,7 @@ dependencies:
 
   depends_on_rapids_logger:
     common:
-      - output_types: [conda, requirements, pyproject]
+      - output_types: [conda, requirements, constraints, pyproject]
         packages:
           - rapids-logger==0.3.*
   depends_on_pytorch:
@@ -515,7 +515,7 @@ dependencies:
       # This list only contains entries exactly matching CUDA {major}.{minor} that we test in RMM CI,
       # to ensure a loud error alerts us to the need to update this list (or CI scripts) when new
       # CTKs are added to the support matrix.
-      - output_types: requirements
+      - output_types: [requirements, constraints]
         matrices:
           # avoid pulling in 'torch' in places like DLFW builds that prefer to install it other ways
           - matrix:
@@ -570,7 +570,7 @@ dependencies:
         packages:
           - cupy>=14.0.1,!=14.1.0
     specific:
-      - output_types: requirements
+      - output_types: constraints
         matrices:
           - matrix:
               cuda: "12.*"
@@ -579,7 +579,7 @@ dependencies:
           - matrix:
             packages:
               - &cupy_cu13 cupy-cuda13x>=14.0.1,!=14.1.0
-      - output_types: pyproject
+      - output_types: [requirements, pyproject]
         matrices:
           - matrix:
               cuda: "12.*"
