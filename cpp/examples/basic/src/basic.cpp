@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,7 +10,7 @@
 
 int main(int argc, char** argv)
 {
-  // Construct a CUDA async memory resource using RAPIDS Memory Manager (RMM).
+  // Construct a CUDA async memory resource using RMM.
   // This uses a memory pool managed by the CUDA driver, using half of the
   // available GPU memory.
   rmm::mr::cuda_async_memory_resource mr{rmm::percent_of_free_device_memory(50)};

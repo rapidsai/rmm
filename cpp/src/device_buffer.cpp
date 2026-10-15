@@ -1,23 +1,25 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include <rmm/aligned.hpp>
+#include <rmm/detail/cuda_memcpy.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
 #include <rmm/error.hpp>
 
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <memory>
 
-namespace rmm {
+RMM_NAMESPACE_BEGIN
 
 device_buffer::device_buffer() : _mr{rmm::mr::get_current_device_resource_ref()} {}
 
 device_buffer::device_buffer(std::size_t size,
-                             cuda_stream_view stream,
+                             cuda::stream_ref stream,
                              cuda::mr::any_resource<cuda::mr::device_accessible> mr)
   : device_buffer::device_buffer(size, rmm::CUDA_ALLOCATION_ALIGNMENT, stream, std::move(mr))
 {
@@ -25,7 +27,7 @@ device_buffer::device_buffer(std::size_t size,
 
 device_buffer::device_buffer(std::size_t size,
                              std::size_t alignment,
-                             cuda_stream_view stream,
+                             cuda::stream_ref stream,
                              cuda::mr::any_resource<cuda::mr::device_accessible> mr)
   : _alignment{alignment}, _stream{stream}, _mr{std::move(mr)}
 {
@@ -38,7 +40,7 @@ device_buffer::device_buffer(std::size_t size,
 
 device_buffer::device_buffer(void const* source_data,
                              std::size_t size,
-                             cuda_stream_view stream,
+                             cuda::stream_ref stream,
                              cuda::mr::any_resource<cuda::mr::device_accessible> mr)
   : device_buffer::device_buffer(
       source_data, size, rmm::CUDA_ALLOCATION_ALIGNMENT, stream, std::move(mr))
@@ -48,7 +50,7 @@ device_buffer::device_buffer(void const* source_data,
 device_buffer::device_buffer(void const* source_data,
                              std::size_t size,
                              std::size_t alignment,
-                             cuda_stream_view stream,
+                             cuda::stream_ref stream,
                              cuda::mr::any_resource<cuda::mr::device_accessible> mr)
   : _alignment{alignment}, _stream{stream}, _mr{std::move(mr)}
 {
@@ -62,7 +64,7 @@ device_buffer::device_buffer(void const* source_data,
 }
 
 device_buffer::device_buffer(device_buffer const& other,
-                             cuda_stream_view stream,
+                             cuda::stream_ref stream,
                              cuda::mr::any_resource<cuda::mr::device_accessible> mr)
   : device_buffer{other.data(), other.size(), other.alignment(), stream, std::move(mr)}
 {
@@ -81,8 +83,8 @@ device_buffer::device_buffer(device_buffer&& other) noexcept
   other._size      = 0;
   other._alignment = 1;
   other._capacity  = 0;
-  other.set_stream(cuda_stream_view{});
-  other._device = cuda_device_id{-1};
+  other._stream    = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
+  other._device    = cuda_device_id{-1};
 }
 
 device_buffer& device_buffer::operator=(device_buffer&& other) noexcept
@@ -103,8 +105,8 @@ device_buffer& device_buffer::operator=(device_buffer&& other) noexcept
     other._size      = 0;
     other._alignment = 1;
     other._capacity  = 0;
-    other.set_stream(cuda_stream_view{});
-    other._device = cuda_device_id{-1};
+    other._stream    = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
+    other._device    = cuda_device_id{-1};
   }
   return *this;
 }
@@ -113,7 +115,7 @@ device_buffer::~device_buffer() noexcept
 {
   cuda_set_device_raii dev{_device};
   deallocate_async();
-  _stream = cuda_stream_view{};
+  _stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
 }
 
 void device_buffer::allocate_async(std::size_t bytes)
@@ -138,24 +140,24 @@ void device_buffer::copy_async(void const* source, std::size_t bytes)
     RMM_EXPECTS(nullptr != source, "Invalid copy from nullptr.");
     RMM_EXPECTS(nullptr != _data, "Invalid copy to nullptr.");
 
-    RMM_CUDA_TRY(cudaMemcpyAsync(_data, source, bytes, cudaMemcpyDefault, stream().value()));
+    RMM_CUDA_TRY(rmm::detail::memcpy_async(_data, source, bytes, stream()));
   }
 }
 
-void device_buffer::reserve(std::size_t new_capacity, cuda_stream_view stream)
+void device_buffer::reserve(std::size_t new_capacity, cuda::stream_ref stream)
 {
   set_stream(stream);
   if (new_capacity > capacity()) {
     cuda_set_device_raii dev{_device};
     auto tmp            = device_buffer{new_capacity, alignment(), stream, _mr};
     auto const old_size = size();
-    RMM_CUDA_TRY(cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, stream.value()));
+    RMM_CUDA_TRY(rmm::detail::memcpy_async(tmp.data(), data(), size(), stream));
     *this = std::move(tmp);
     _size = old_size;
   }
 }
 
-void device_buffer::resize(std::size_t new_size, cuda_stream_view stream)
+void device_buffer::resize(std::size_t new_size, cuda::stream_ref stream)
 {
   set_stream(stream);
   // If the requested size is smaller than the current capacity, just update
@@ -165,12 +167,12 @@ void device_buffer::resize(std::size_t new_size, cuda_stream_view stream)
   } else {
     cuda_set_device_raii dev{_device};
     auto tmp = device_buffer{new_size, alignment(), stream, _mr};
-    RMM_CUDA_TRY(cudaMemcpyAsync(tmp.data(), data(), size(), cudaMemcpyDefault, stream.value()));
+    RMM_CUDA_TRY(rmm::detail::memcpy_async(tmp.data(), data(), size(), stream));
     *this = std::move(tmp);
   }
 }
 
-void device_buffer::shrink_to_fit(cuda_stream_view stream)
+void device_buffer::shrink_to_fit(cuda::stream_ref stream)
 {
   set_stream(stream);
   if (size() != capacity()) {
@@ -183,4 +185,4 @@ void device_buffer::shrink_to_fit(cuda_stream_view stream)
   }
 }
 
-}  // namespace rmm
+RMM_NAMESPACE_END

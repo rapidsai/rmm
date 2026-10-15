@@ -1,6 +1,6 @@
 # NVIDIA RMM Documentation
 
-NVIDIA RMM (RAPIDS Memory Manager) is a library for allocating and managing GPU memory in C++ and Python.
+NVIDIA RMM is a library for CUDA memory management.
 
 ```{toctree}
 :maxdepth: 2

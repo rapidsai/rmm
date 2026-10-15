@@ -1,11 +1,15 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rmm/detail/error.hpp>
 #include <rmm/mr/detail/thread_safe_resource_adaptor_impl.hpp>
 
-namespace RMM_NAMESPACE {
+#include <cuda/stream>
+#include <cuda_runtime_api.h>
+
+RMM_NAMESPACE_BEGIN
 namespace mr {
 namespace detail {
 
@@ -40,16 +44,21 @@ void thread_safe_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
 
 void* thread_safe_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
 {
-  return allocate(cuda_stream_view{}, bytes, alignment);
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
+  auto* ptr         = allocate(stream, bytes, alignment);
+  RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
+  return ptr;
 }
 
 void thread_safe_resource_adaptor_impl::deallocate_sync(void* ptr,
                                                         std::size_t bytes,
                                                         std::size_t alignment) noexcept
 {
-  deallocate(cuda_stream_view{}, ptr, bytes, alignment);
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
+  deallocate(stream, ptr, bytes, alignment);
+  RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
 }
 
 }  // namespace detail
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

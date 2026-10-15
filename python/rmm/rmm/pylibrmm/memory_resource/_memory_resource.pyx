@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -27,7 +27,7 @@ from rmm.pylibrmm.utils cimport as_stream
 
 from rmm.pylibrmm.stream import DEFAULT_STREAM
 
-from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.cuda_stream_ref cimport stream_ref
 from rmm.librmm.per_device_resource cimport (
     cuda_device_id,
     set_per_device_resource as cpp_set_per_device_resource,
@@ -575,7 +575,7 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
 cdef void* _allocate_callback_wrapper(
     size_t nbytes,
-    cuda_stream_view stream,
+    stream_ref stream,
     void* ctx
     # Note that this function is specifically designed to rethrow Python
     # exceptions as C++ exceptions when called as a callback from C++, so it is
@@ -586,7 +586,7 @@ cdef void* _allocate_callback_wrapper(
         try:
             return <void*>(<uintptr_t>((<object>(ctx))(
                 nbytes,
-                Stream._from_cudaStream_t(stream.value())
+                Stream._from_cudaStream_t(stream.get())
             )))
         except BaseException as e:
             err = translate_python_except_to_cpp(e)
@@ -595,10 +595,10 @@ cdef void* _allocate_callback_wrapper(
 cdef void _deallocate_callback_wrapper(
     void* ptr,
     size_t nbytes,
-    cuda_stream_view stream,
+    stream_ref stream,
     void* ctx
 ) except * with gil:
-    (<object>(ctx))(<uintptr_t>(ptr), nbytes, Stream._from_cudaStream_t(stream.value()))
+    (<object>(ctx))(<uintptr_t>(ptr), nbytes, Stream._from_cudaStream_t(stream.get()))
 
 
 cdef class CallbackMemoryResource(DeviceMemoryResource):

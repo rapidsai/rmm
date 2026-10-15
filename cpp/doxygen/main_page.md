@@ -5,7 +5,7 @@ device memory are allocated. For example, using "pinned" host memory for asynchr
 host <-> device memory transfers, or using a device memory pool sub-allocator to reduce the cost of
 dynamic device memory allocation.
 
-The goal of the RAPIDS Memory Manager (RMM) is to provide:
+The goal of RMM is to provide:
 - A common interface that allows customizing device and host memory allocation
 - A collection of implementations of the interface
 - A collection of data structures that use the interface for memory allocation

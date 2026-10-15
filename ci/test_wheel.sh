@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 set -eou pipefail
@@ -12,7 +12,18 @@ LIBRMM_WHEELHOUSE=$(rapids-download-from-github "$(rapids-artifact-name wheel_cp
 RMM_WHEELHOUSE=$(rapids-download-from-github "$(rapids-artifact-name wheel_python rmm rmm --stable --cuda "$RAPIDS_CUDA_VERSION")")
 
 # generate constraints (possibly pinning to oldest support versions of dependencies)
-rapids-generate-pip-constraints test_python "${PIP_CONSTRAINT}"
+rapids-generate-pip-constraints test_python "${PIP_CONSTRAINT}" constraints
+
+python -m venv librmm-env
+. librmm-env/bin/activate
+
+rapids-pip-retry install \
+    -v \
+    --prefer-binary \
+    --constraint "${PIP_CONSTRAINT}" \
+    "$(echo "${LIBRMM_WHEELHOUSE}"/librmm_"${RAPIDS_PY_CUDA_SUFFIX}"*.whl)"
+python -c "import librmm; assert librmm.load_library() is not None"
+deactivate
 
 # notes:
 #

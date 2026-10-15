@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -11,7 +11,6 @@
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/runtime_capabilities.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
@@ -25,6 +24,8 @@
 #include <rmm/mr/pool_memory_resource.hpp>
 #include <rmm/mr/system_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
+
+#include <cuda/stream>
 
 #include <gtest/gtest.h>
 
@@ -80,7 +81,11 @@ inline int get_cuda_driver_version()
 enum size_in_bytes : size_t {};
 
 constexpr auto default_num_allocations{100};
-constexpr size_in_bytes default_max_size{5_MiB};
+// Small enough for multithreaded tests to fit within LimitingMRFixture's limit.
+constexpr size_in_bytes default_max_size{2_MiB};
+
+using random_seed = std::default_random_engine::result_type;
+constexpr random_seed default_random_seed{std::default_random_engine::default_seed};
 
 struct allocation {
   void* ptr{nullptr};
@@ -117,16 +122,17 @@ inline void test_allocate(resource_ref ref, std::size_t bytes)
 
 inline void test_async_allocate(rmm::device_async_resource_ref ref,
                                 std::size_t bytes,
-                                cuda_stream_view stream = {})
+                                cuda::stream_ref stream = cuda::stream_ref{
+                                  cudaStream_t{cudaStreamDefault}})
 {
   try {
     void* ptr = ref.allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-    if (not stream.is_default()) { stream.synchronize(); }
+    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
     EXPECT_NE(nullptr, ptr);
     EXPECT_TRUE(is_properly_aligned(ptr));
     EXPECT_TRUE(is_device_accessible_memory(ptr));
     ref.deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-    if (not stream.is_default()) { stream.synchronize(); }
+    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
   } catch (rmm::out_of_memory const& e) {
     EXPECT_NE(std::string{e.what()}.find("out_of_memory"), std::string::npos);
   }
@@ -146,7 +152,7 @@ inline void concurrent_allocations_are_different(resource_ref ref)
 }
 
 inline void concurrent_async_allocations_are_different(rmm::device_async_resource_ref ref,
-                                                       cuda_stream_view stream)
+                                                       cuda::stream_ref stream)
 {
   const auto size{8_B};
   void* ptr1 = ref.allocate(stream, size, rmm::CUDA_ALLOCATION_ALIGNMENT);
@@ -188,14 +194,14 @@ inline void test_various_allocations(resource_ref ref)
 }
 
 inline void test_various_async_allocations(rmm::device_async_resource_ref ref,
-                                           cuda_stream_view stream)
+                                           cuda::stream_ref stream)
 {
   // test allocating zero bytes on non-default stream
   {
     void* ptr = ref.allocate(stream, 0, rmm::CUDA_ALLOCATION_ALIGNMENT);
-    stream.synchronize();
+    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
     EXPECT_NO_THROW(ref.deallocate(stream, ptr, 0, rmm::CUDA_ALLOCATION_ALIGNMENT));
-    stream.synchronize();
+    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
   }
 
   test_async_allocate(ref, 4_B, stream);
@@ -221,11 +227,12 @@ inline void test_various_async_allocations(rmm::device_async_resource_ref ref,
 
 inline void test_random_allocations(resource_ref ref,
                                     std::size_t num_allocations = default_num_allocations,
-                                    size_in_bytes max_size      = default_max_size)
+                                    size_in_bytes max_size      = default_max_size,
+                                    random_seed seed            = default_random_seed)
 {
   std::vector<allocation> allocations(num_allocations);
 
-  std::default_random_engine generator;
+  std::default_random_engine generator{seed};
   std::uniform_int_distribution<std::size_t> distribution(1, max_size);
 
   // num_allocations allocations from [0,max_size)
@@ -245,11 +252,13 @@ inline void test_random_allocations(resource_ref ref,
 inline void test_random_async_allocations(rmm::device_async_resource_ref ref,
                                           std::size_t num_allocations = default_num_allocations,
                                           size_in_bytes max_size      = default_max_size,
-                                          cuda_stream_view stream     = {})
+                                          cuda::stream_ref stream = cuda::stream_ref{cudaStream_t{
+                                            cudaStreamDefault}},
+                                          random_seed seed        = default_random_seed)
 {
   std::vector<allocation> allocations(num_allocations);
 
-  std::default_random_engine generator;
+  std::default_random_engine generator{seed};
   std::uniform_int_distribution<std::size_t> distribution(1, max_size);
 
   // num_allocations allocations from [0,max_size)
@@ -259,21 +268,22 @@ inline void test_random_async_allocations(rmm::device_async_resource_ref ref,
     [&generator, &distribution, &ref, stream](allocation& alloc) {
       alloc.size = distribution(generator);
       EXPECT_NO_THROW(alloc.ptr = ref.allocate(stream, alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
-      if (not stream.is_default()) { stream.synchronize(); }
+      RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
       EXPECT_NE(nullptr, alloc.ptr);
       EXPECT_TRUE(is_properly_aligned(alloc.ptr));
     });
 
   std::for_each(allocations.begin(), allocations.end(), [stream, &ref](allocation& alloc) {
     EXPECT_NO_THROW(ref.deallocate(stream, alloc.ptr, alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT));
-    if (not stream.is_default()) { stream.synchronize(); }
+    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
   });
 }
 
 inline void test_mixed_random_allocation_free(resource_ref ref,
-                                              size_in_bytes max_size = default_max_size)
+                                              size_in_bytes max_size = default_max_size,
+                                              random_seed seed       = default_random_seed)
 {
-  std::default_random_engine generator;
+  std::default_random_engine generator{seed};
   constexpr std::size_t num_allocations{100};
 
   std::uniform_int_distribution<std::size_t> size_distribution(1, max_size);
@@ -319,11 +329,13 @@ inline void test_mixed_random_allocation_free(resource_ref ref,
   EXPECT_EQ(allocations.size(), active_allocations);
 }
 
-inline void test_mixed_random_async_allocation_free(rmm::device_async_resource_ref ref,
-                                                    size_in_bytes max_size  = default_max_size,
-                                                    cuda_stream_view stream = {})
+inline void test_mixed_random_async_allocation_free(
+  rmm::device_async_resource_ref ref,
+  size_in_bytes max_size  = default_max_size,
+  cuda::stream_ref stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}},
+  random_seed seed        = default_random_seed)
 {
-  std::default_random_engine generator;
+  std::default_random_engine generator{seed};
   constexpr std::size_t num_allocations{100};
 
   std::uniform_int_distribution<std::size_t> size_distribution(1, max_size);
@@ -400,7 +412,7 @@ inline auto make_system()
 
 inline auto make_arena()
 {
-  return std::make_shared<rmm::mr::arena_memory_resource>(rmm::mr::cuda_memory_resource{});
+  return std::make_shared<rmm::mr::arena_memory_resource>(rmm::mr::cuda_memory_resource{}, 8_GiB);
 }
 
 inline auto make_fixed_size()

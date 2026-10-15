@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,7 +7,6 @@
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/format.hpp>
@@ -16,6 +15,7 @@
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <algorithm>
@@ -27,7 +27,7 @@
 #include <optional>
 #include <set>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr::detail::arena {
 
 /**
@@ -573,7 +573,7 @@ class global_arena final {
    * @param size The size in bytes of the allocation.
    * @return void* Pointer to the newly allocated memory.
    */
-  void* allocate_sync(std::size_t size)
+  [[nodiscard]] void* allocate_sync(std::size_t size)
   {
     RMM_LOGGING_ASSERT(handles(size));
     std::lock_guard lock(mtx_);
@@ -595,10 +595,10 @@ class global_arena final {
    * that was passed to the `allocate` call that returned `ptr`.
    * @return bool true if the allocation is found, false otherwise.
    */
-  bool deallocate(cuda_stream_view stream, void* ptr, std::size_t size)
+  bool deallocate(cuda::stream_ref stream, void* ptr, std::size_t size)
   {
     RMM_LOGGING_ASSERT(handles(size));
-    stream.synchronize_no_throw();
+    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
     return deallocate_sync(ptr, size);
   }
 
@@ -802,7 +802,7 @@ class arena {
    * @param size The size in bytes of the allocation.
    * @return void* Pointer to the newly allocated memory.
    */
-  void* allocate_sync(std::size_t size)
+  [[nodiscard]] void* allocate_sync(std::size_t size)
   {
     if (global_arena_.handles(size)) { return global_arena_.allocate_sync(size); }
     std::lock_guard lock(mtx_);
@@ -818,7 +818,7 @@ class arena {
    * that was passed to the `allocate` call that returned `ptr`.
    * @return bool true if the allocation is found, false otherwise.
    */
-  bool deallocate(cuda_stream_view stream, void* ptr, std::size_t size)
+  bool deallocate(cuda::stream_ref stream, void* ptr, std::size_t size)
   {
     if (global_arena::handles(size) && global_arena_.deallocate(stream, ptr, size)) { return true; }
     return deallocate_sync(ptr, size);
@@ -980,4 +980,4 @@ class arena_cleaner {
 };
 
 }  // namespace mr::detail::arena
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

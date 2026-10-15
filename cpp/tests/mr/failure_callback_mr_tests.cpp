@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,13 +7,12 @@
 #include "../mock_resource.hpp"
 
 #include <rmm/aligned.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/error.hpp>
 #include <rmm/mr/failure_callback_resource_adaptor.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 
 #include <cuda/memory_resource>
-#include <cuda/stream_ref>
+#include <cuda/stream>
 
 #include <gtest/gtest.h>
 
@@ -55,13 +54,13 @@ class always_throw_memory_resource final {
 
   void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
-    return allocate(rmm::cuda_stream_view{}, bytes, alignment);
+    return allocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, bytes, alignment);
   }
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
                        std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
   {
-    deallocate(rmm::cuda_stream_view{}, ptr, bytes, alignment);
+    deallocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, ptr, bytes, alignment);
   }
 
   bool operator==(always_throw_memory_resource const&) const noexcept { return true; }
@@ -89,7 +88,7 @@ TEST(FailureCallbackTest, ForwardsAlignment)
   bool retried{false};
   failure_callback_adaptor<> mr{device_async_resource_ref{wrapper}, failure_handler, &retried};
 
-  cuda_stream_view stream;
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
   std::byte pointer_value{};
   void* const pointer = &pointer_value;
   auto const size{1024};

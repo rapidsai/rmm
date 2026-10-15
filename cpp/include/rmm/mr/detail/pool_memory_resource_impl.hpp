@@ -1,15 +1,15 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/mr/detail/coalescing_free_list.hpp>
 #include <rmm/mr/detail/stream_ordered_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/stream>
 
 #include <cstddef>
 #include <memory>
@@ -17,7 +17,7 @@
 #include <optional>
 #include <set>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr {
 namespace detail {
 
@@ -67,11 +67,12 @@ class pool_memory_resource_impl final
   using lock_guard = std::lock_guard<std::mutex>;
 
   [[nodiscard]] std::size_t get_maximum_allocation_size() const;
-  block_type try_to_expand(std::size_t try_size, std::size_t min_size, cuda_stream_view stream);
+  block_type try_to_expand(std::size_t try_size, std::size_t min_size, cuda::stream_ref stream);
   void initialize_pool(std::size_t initial_size, std::optional<std::size_t> maximum_size);
-  block_type expand_pool(std::size_t size, free_list& blocks, cuda_stream_view stream);
+  block_type expand_pool(std::size_t size, free_list& blocks, cuda::stream_ref stream);
+  void reclaim_free_blocks(std::size_t size, free_list& blocks, cuda::stream_ref stream);
   [[nodiscard]] std::size_t size_to_grow(std::size_t size) const;
-  block_type block_from_upstream(std::size_t size, cuda_stream_view stream);
+  block_type block_from_upstream(std::size_t size, cuda::stream_ref stream);
   split_block allocate_from_block(block_type const& block, std::size_t size);
   block_type free_block(void* ptr, std::size_t size) noexcept;
   void release();
@@ -85,12 +86,12 @@ class pool_memory_resource_impl final
   cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
   std::size_t current_pool_size_{};
   std::optional<std::size_t> maximum_pool_size_{};
-  std::set<block_type, compare_blocks<block_type>> upstream_blocks_;
+  std::set<block_type, compare_blocks<block_type>> upstream_blocks_;  ///< Upstream allocations.
 #ifdef RMM_POOL_TRACK_ALLOCATIONS
-  std::set<block_type, compare_blocks<block_type>> allocated_blocks_;
+  std::set<block_type, compare_blocks<block_type>> allocated_blocks_;  ///< Live suballocations.
 #endif
 };
 
 }  // namespace detail
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

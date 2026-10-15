@@ -1,9 +1,7 @@
-# SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-from cuda.bindings.cyruntime cimport cudaStream_t
-
-from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.cuda_stream_ref cimport stream_ref
 from rmm.librmm.memory_resource cimport any_resource, device_accessible
 
 
@@ -20,36 +18,30 @@ cdef extern from "rmm/prefetch.hpp" namespace "rmm" nogil:
     cdef void prefetch(const void* ptr,
                        size_t bytes,
                        cuda_device_id device,
-                       cuda_stream_view stream) except +
+                       stream_ref stream) except +
 
 cdef extern from "rmm/device_buffer.hpp" namespace "rmm" nogil:
     cdef cppclass device_buffer:
         device_buffer()
         device_buffer(
             size_t size,
-            cuda_stream_view stream,
+            stream_ref stream,
             any_resource[device_accessible] mr
         ) except +
         device_buffer(
             const void* source_data,
             size_t size,
-            cuda_stream_view stream,
-            any_resource[device_accessible] mr
-        ) except +
-        device_buffer(
-            const void* source_data,
-            size_t size,
-            cudaStream_t stream,
+            stream_ref stream,
             any_resource[device_accessible] mr
         ) except +
         device_buffer(
             const device_buffer buf,
-            cuda_stream_view stream,
+            stream_ref stream,
             any_resource[device_accessible] mr
         ) except +
-        void reserve(size_t new_capacity, cuda_stream_view stream) except +
-        void resize(size_t new_size, cuda_stream_view stream) except +
-        void shrink_to_fit(cuda_stream_view stream) except +
+        void reserve(size_t new_capacity, stream_ref stream) except +
+        void resize(size_t new_size, stream_ref stream) except +
+        void shrink_to_fit(stream_ref stream) except +
         void* data()
         size_t size()
         size_t capacity()
