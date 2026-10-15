@@ -273,6 +273,28 @@ TEST(DeviceUVectorMemcpyTest, GetSetElementOnNonDefaultStream)
   EXPECT_EQ(vec.element(0, stream), value);
 }
 
+TEST(DeviceUVectorMemcpyTest, CapturedSetElement)
+{
+  rmm::cuda_stream stream;
+  rmm::device_uvector<int> vec(1, stream);
+  int const value = 42;
+
+  cudaGraph_t graph{};
+  cudaGraphExec_t exec{};
+  RMM_CUDA_TRY(cudaStreamBeginCapture(stream.value(), cudaStreamCaptureModeThreadLocal));
+  RMM_CUDA_TRY(cudaMemsetAsync(vec.data(), 0, sizeof(int), stream.value()));
+  EXPECT_NO_THROW(vec.set_element_async(0, value, stream));
+  RMM_CUDA_TRY(cudaStreamEndCapture(stream.value(), &graph));
+  RMM_CUDA_TRY(cudaGraphInstantiateWithFlags(&exec, graph, 0));
+  RMM_CUDA_TRY(cudaGraphLaunch(exec, stream.value()));
+  stream.synchronize();
+
+  EXPECT_EQ(vec.element(0, stream), value);
+
+  RMM_CUDA_TRY(cudaGraphExecDestroy(exec));
+  RMM_CUDA_TRY(cudaGraphDestroy(graph));
+}
+
 TYPED_TEST(TypedUVectorTest, SetElementZeroAsync)
 {
   auto const size{100};

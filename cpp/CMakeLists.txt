@@ -83,7 +83,6 @@ add_library(
   src/cuda_memcpy.cpp
   src/cuda_stream.cpp
   src/cuda_stream_pool.cpp
-  src/cuda_stream_view.cpp
   src/device_buffer.cpp
   src/error.cpp
   src/exec_policy.cpp
