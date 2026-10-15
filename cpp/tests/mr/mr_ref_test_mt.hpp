@@ -95,46 +95,46 @@ TEST_P(mr_ref_test_mt, AllocateOnStream)
 
 TEST_P(mr_ref_test_mt, RandomAllocations)
 {
-  spawn(test_random_allocations, this->ref, default_num_allocations, default_max_size);
+  spawn_seeded(test_random_allocations, this->ref, default_num_allocations, default_max_size);
 }
 
 TEST_P(mr_ref_test_mt, RandomAllocationsDefaultStream)
 {
-  spawn(test_random_async_allocations,
-        this->ref,
-        default_num_allocations,
-        default_max_size,
-        cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
+  spawn_seeded(test_random_async_allocations,
+               this->ref,
+               default_num_allocations,
+               default_max_size,
+               cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
 }
 
 TEST_P(mr_ref_test_mt, RandomAllocationsStream)
 {
-  spawn(test_random_async_allocations,
-        this->ref,
-        default_num_allocations,
-        default_max_size,
-        cuda::stream_ref{this->stream});
+  spawn_seeded(test_random_async_allocations,
+               this->ref,
+               default_num_allocations,
+               default_max_size,
+               cuda::stream_ref{this->stream});
 }
 
 TEST_P(mr_ref_test_mt, MixedRandomAllocationFree)
 {
-  spawn(test_mixed_random_allocation_free, this->ref, default_max_size);
+  spawn_seeded(test_mixed_random_allocation_free, this->ref, default_max_size);
 }
 
 TEST_P(mr_ref_test_mt, MixedRandomAllocationFreeDefaultStream)
 {
-  spawn(test_mixed_random_async_allocation_free,
-        this->ref,
-        default_max_size,
-        cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
+  spawn_seeded(test_mixed_random_async_allocation_free,
+               this->ref,
+               default_max_size,
+               cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
 }
 
 TEST_P(mr_ref_test_mt, MixedRandomAllocationFreeStream)
 {
-  spawn(test_mixed_random_async_allocation_free,
-        this->ref,
-        default_max_size,
-        cuda::stream_ref{this->stream});
+  spawn_seeded(test_mixed_random_async_allocation_free,
+               this->ref,
+               default_max_size,
+               cuda::stream_ref{this->stream});
 }
 
 TEST_P(mr_ref_test_mt, AllocFreeDifferentThreadsDefaultStream)
