@@ -4,12 +4,12 @@
  */
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/detail/arena.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/stream>
 
 #include <cstddef>
 #include <map>
@@ -18,7 +18,7 @@
 #include <shared_mutex>
 #include <thread>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr {
 namespace detail {
 
@@ -38,7 +38,7 @@ using stream_id_type = unsigned long long;
  * @return The CUDA stream ID.
  * @throws rmm::cuda_error if `cudaStreamGetId` fails.
  */
-stream_id_type get_stream_id(cuda_stream_view stream);
+stream_id_type get_stream_id(cuda::stream_ref stream);
 
 /**
  * @brief Try to return the CUDA stream ID used to key per-stream arenas.
@@ -52,7 +52,7 @@ stream_id_type get_stream_id(cuda_stream_view stream);
  * @param stream The stream for which to get the ID.
  * @return The CUDA stream ID, or `std::nullopt` if `cudaStreamGetId` fails.
  */
-std::optional<stream_id_type> try_get_stream_id(cuda_stream_view stream) noexcept;
+std::optional<stream_id_type> try_get_stream_id(cuda::stream_ref stream) noexcept;
 
 /**
  * @brief Implementation class for arena_memory_resource.
@@ -85,16 +85,17 @@ class arena_memory_resource_impl {
     return !(*this == other);
   }
 
-  void* allocate(cuda::stream_ref stream,
-                 std::size_t bytes,
-                 std::size_t alignment = alignof(std::max_align_t));
+  [[nodiscard]] void* allocate(cuda::stream_ref stream,
+                               std::size_t bytes,
+                               std::size_t alignment = alignof(std::max_align_t));
 
   void deallocate(cuda::stream_ref stream,
                   void* ptr,
                   std::size_t bytes,
                   std::size_t alignment = alignof(std::max_align_t)) noexcept;
 
-  void* allocate_sync(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t));
+  [[nodiscard]] void* allocate_sync(std::size_t bytes,
+                                    std::size_t alignment = alignof(std::max_align_t));
 
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
@@ -111,15 +112,15 @@ class arena_memory_resource_impl {
 
   void defragment();
 
-  void deallocate_from_other_arena(cuda_stream_view stream, void* ptr, std::size_t bytes) noexcept;
+  void deallocate_from_other_arena(cuda::stream_ref stream, void* ptr, std::size_t bytes) noexcept;
 
-  arena& get_arena(cuda_stream_view stream);
+  arena& get_arena(cuda::stream_ref stream);
   arena& get_thread_arena();
   arena& get_stream_arena(stream_id_type stream_id);
 
   void dump_memory_log(std::size_t bytes);
 
-  static bool use_per_thread_arena(cuda_stream_view stream);
+  static bool use_per_thread_arena(cuda::stream_ref stream);
 
   global_arena global_arena_;
   std::map<std::thread::id, std::shared_ptr<arena>> thread_arenas_;
@@ -136,4 +137,4 @@ class arena_memory_resource_impl {
 
 }  // namespace detail
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

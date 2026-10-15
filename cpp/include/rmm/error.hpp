@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 
 /**
  * @brief Exception thrown when logical precondition is violated.
@@ -109,4 +109,4 @@ class invalid_argument : public std::invalid_argument {
   using std::invalid_argument::invalid_argument;
 };
 
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

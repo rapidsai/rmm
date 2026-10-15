@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,6 +10,7 @@
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
@@ -18,9 +19,13 @@
 #include <cstddef>
 #include <random>
 #include <type_traits>
+#include <utility>
 
 // explicit instantiation for test coverage purposes
 template class rmm::device_scalar<int>;
+
+static_assert(
+  std::is_same_v<decltype(std::declval<rmm::device_scalar<int>>().stream()), cuda::stream_ref>);
 
 template <typename T>
 struct DeviceScalarTest : public ::testing::Test {
@@ -139,7 +144,7 @@ TYPED_TEST(DeviceScalarTest, SetGetStream)
 
   EXPECT_EQ(scalar.stream(), this->stream);
 
-  rmm::cuda_stream_view const otherstream{cudaStreamPerThread};
+  auto const otherstream = cuda::stream_ref{cudaStreamPerThread};
   scalar.set_stream(otherstream);
 
   EXPECT_EQ(scalar.stream(), otherstream);
@@ -147,7 +152,7 @@ TYPED_TEST(DeviceScalarTest, SetGetStream)
 
 TEST(DeviceScalarAlignmentTest, SmallAlignment)
 {
-  auto s = rmm::device_scalar<int>(rmm::cuda_stream_view{});
+  auto s = rmm::device_scalar<int>(cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
   EXPECT_TRUE(rmm::is_pointer_aligned(s.data(), std::alignment_of_v<decltype(s)::value_type>));
 }
 
@@ -157,6 +162,7 @@ TEST(DeviceScalarAlignmentTest, LargeAlignment)
     int value;
   };
 
-  EXPECT_THROW(std::ignore = rmm::device_scalar<OverAligned>(rmm::cuda_stream_view{}),
+  EXPECT_THROW(std::ignore =
+                 rmm::device_scalar<OverAligned>(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}),
                rmm::bad_alloc);
 }

@@ -1,15 +1,15 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/fixed_size_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
 #include <cuda/memory_resource>
+#include <cuda/stream>
 
 #include <cstddef>
 #include <map>
@@ -17,7 +17,7 @@
 #include <optional>
 #include <vector>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr {
 namespace detail {
 
@@ -60,16 +60,17 @@ class binning_memory_resource_impl {
   void add_bin(std::size_t allocation_size,
                std::optional<device_async_resource_ref> bin_resource = std::nullopt);
 
-  void* allocate(cuda::stream_ref stream,
-                 std::size_t bytes,
-                 std::size_t alignment = alignof(std::max_align_t));
+  [[nodiscard]] void* allocate(cuda::stream_ref stream,
+                               std::size_t bytes,
+                               std::size_t alignment = alignof(std::max_align_t));
 
   void deallocate(cuda::stream_ref stream,
                   void* ptr,
                   std::size_t bytes,
                   std::size_t alignment = alignof(std::max_align_t)) noexcept;
 
-  void* allocate_sync(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t));
+  [[nodiscard]] void* allocate_sync(std::size_t bytes,
+                                    std::size_t alignment = alignof(std::max_align_t));
 
   void deallocate_sync(void* ptr,
                        std::size_t bytes,
@@ -90,4 +91,4 @@ class binning_memory_resource_impl {
 
 }  // namespace detail
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END
