@@ -39,3 +39,33 @@ The deprecated stream constants are also removed:
 ```cython
 from rmm.librmm.cuda_stream_ref cimport stream_ref
 ```
+
+## Explicit Streams for `exec_policy` and `device_buffer`
+
+### `exec_policy` and `exec_policy_nosync` Require a Stream
+
+The `rmm::exec_policy` and `rmm::exec_policy_nosync` constructors no longer
+default to the default stream. Pass the stream explicitly:
+
+```cpp
+#include <rmm/exec_policy.hpp>
+
+#include <cuda/stream>
+
+// Before
+auto policy = rmm::exec_policy();
+
+// After
+auto policy = rmm::exec_policy(stream);
+```
+
+To keep the previous behavior, pass
+`cuda::stream_ref{cudaStream_t{cudaStreamDefault}}`.
+
+### Empty `device_buffer` Has an Invalid Stream
+
+A default-constructed `rmm::device_buffer`, and a `device_buffer` that has
+been moved from, now return an invalid stream
+(`cuda::stream_ref{cuda::invalid_stream_t{}}`) from `stream()` instead of the
+default stream. Specify a stream, for example with `set_stream()`, before
+relying on `stream()` for an empty buffer.

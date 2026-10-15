@@ -286,7 +286,7 @@ class device_uvector {
   void set_element(size_type element_index, T const& value, cuda::stream_ref stream)
   {
     set_element_async(element_index, value, stream);
-    RMM_ASSERT_CUDA_SUCCESS(cudaStreamSynchronize(stream.get()));
+    stream.sync();
   }
 
   /**

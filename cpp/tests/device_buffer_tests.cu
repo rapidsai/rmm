@@ -338,8 +338,7 @@ TYPED_TEST(DeviceBufferTest, MoveConstructor)
             buff.data());         // NOLINT(bugprone-use-after-move, clang-analyzer-cplusplus.Move)
   EXPECT_EQ(0, buff.size());      // NOLINT(bugprone-use-after-move)
   EXPECT_EQ(0, buff.capacity());  // NOLINT(bugprone-use-after-move)
-  EXPECT_EQ(cuda::stream_ref{cudaStream_t{cudaStreamDefault}},
-            buff.stream());  // NOLINT(bugprone-use-after-move)
+  EXPECT_EQ(cuda::invalid_stream_t{}, buff.stream());  // NOLINT(bugprone-use-after-move)
 }
 
 TYPED_TEST(DeviceBufferTest, MoveConstructorStream)
@@ -367,8 +366,7 @@ TYPED_TEST(DeviceBufferTest, MoveConstructorStream)
             buff.data());         // NOLINT(bugprone-use-after-move, clang-analyzer-cplusplus.Move)
   EXPECT_EQ(0, buff.size());      // NOLINT(bugprone-use-after-move)
   EXPECT_EQ(0, buff.capacity());  // NOLINT(bugprone-use-after-move)
-  EXPECT_EQ(cuda::stream_ref{cudaStream_t{cudaStreamDefault}},
-            buff.stream());  // NOLINT(bugprone-use-after-move)
+  EXPECT_EQ(cuda::invalid_stream_t{}, buff.stream());  // NOLINT(bugprone-use-after-move)
 }
 
 TYPED_TEST(DeviceBufferTest, MoveAssignmentToDefault)
@@ -395,7 +393,7 @@ TYPED_TEST(DeviceBufferTest, MoveAssignmentToDefault)
   EXPECT_EQ(nullptr, src.data());  // NOLINT(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
   EXPECT_EQ(0, src.size());
   EXPECT_EQ(0, src.capacity());
-  EXPECT_EQ(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, src.stream());
+  EXPECT_EQ(cuda::invalid_stream_t{}, src.stream());
 }
 
 TYPED_TEST(DeviceBufferTest, MoveAssignment)
@@ -423,7 +421,7 @@ TYPED_TEST(DeviceBufferTest, MoveAssignment)
   EXPECT_EQ(nullptr, src.data());  // NOLINT(bugprone-use-after-move,clang-analyzer-cplusplus.Move)
   EXPECT_EQ(0, src.size());
   EXPECT_EQ(0, src.capacity());
-  EXPECT_EQ(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, src.stream());
+  EXPECT_EQ(cuda::invalid_stream_t{}, src.stream());
 }
 
 TYPED_TEST(DeviceBufferTest, SelfMoveAssignment)
@@ -665,6 +663,7 @@ TEST(DeviceBufferAlignmentTest, DefaultConstructedHasValidAlignment)
 {
   rmm::device_buffer buff;
   EXPECT_TRUE(rmm::is_supported_alignment(buff.alignment()));
+  EXPECT_EQ(cuda::invalid_stream_t{}, buff.stream());
 }
 
 TEST(DeviceBufferAlignmentTest, DefaultConstructedResizeLarger)
