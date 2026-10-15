@@ -78,6 +78,8 @@ class device_buffer {
 
   /**
    * @brief Default constructor creates an empty `device_buffer`
+   *
+   * The new buffer's `stream()` is invalid until a stream is specified.
    */
   // Note: we cannot use `device_buffer() = default;` because nvcc implicitly adds
   // `__host__ __device__` specifiers to the defaulted constructor when it is called within the
@@ -200,8 +202,8 @@ class device_buffer {
    * `device_buffer` into the newly constructed one.
    *
    * After the new `device_buffer` is constructed, `other` is modified to be a
-   * valid, empty `device_buffer`, i.e., `data()` returns `nullptr`, and
-   * `size()` and `capacity()` are zero.
+   * valid, empty `device_buffer`, i.e., `data()` returns `nullptr`,
+   * `size()` and `capacity()` are zero, and `stream()` is invalid.
    *
    * @param other The `device_buffer` whose contents will be moved into the
    * newly constructed one.
@@ -216,7 +218,8 @@ class device_buffer {
    *
    * If a different stream is required, call `set_stream()` on
    * the instance before assignment. After assignment, this instance's stream is
-   * replaced by the `other.stream()`.
+   * replaced by the `other.stream()`, and `other` is modified to be a valid,
+   * empty `device_buffer` whose `stream()` is invalid.
    *
    * @param other The `device_buffer` whose contents will be moved.
    *
@@ -353,7 +356,7 @@ class device_buffer {
   [[nodiscard]] std::size_t alignment() const noexcept { return _alignment; }
 
   /**
-   * @briefreturn{The stream most recently specified for allocation/deallocation}
+   * @briefreturn{The stream most recently specified for allocation/deallocation (invalid if none)}
    */
   [[nodiscard]] cuda::stream_ref stream() const noexcept { return _stream; }
 
