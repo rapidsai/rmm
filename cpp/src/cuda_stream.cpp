@@ -38,10 +38,6 @@ cudaStream_t cuda_stream::value() const
 
 cuda_stream::operator cudaStream_t() const noexcept { return value(); }
 
-cuda_stream_view cuda_stream::view() const { return cuda_stream_view{value()}; }
-
-cuda_stream::operator cuda_stream_view() const { return view(); }
-
 cuda_stream::operator cuda::stream_ref() const noexcept { return cuda::stream_ref{value()}; }
 
 void cuda_stream::synchronize() const { RMM_CUDA_TRY(cudaStreamSynchronize(value())); }

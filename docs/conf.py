@@ -14,9 +14,12 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import datetime
+import glob
 import os
 import re
+import xml.etree.ElementTree as ET
 
+import breathe
 import rmm
 from docutils import nodes
 from docutils.nodes import Node
@@ -64,8 +67,30 @@ extensions = [
     "sphinxcontrib.jquery",
 ]
 
+
+def strip_constexpr_only_types(path):
+    # Workaround for https://github.com/breathe-doc/breathe/issues/1081
+    # Breathe 5 emits constexpr from the member attribute but fails to strip a
+    # type containing only constexpr (as on constructors), producing an invalid
+    # "constexpr constexpr" declaration.
+    for fn in glob.glob(os.path.join(path, "*.xml")):
+        tree = ET.parse(fn)
+        changed = False
+        for type_ in tree.getroot().findall(
+            ".//memberdef[@constexpr='yes']/type"
+        ):
+            if "".join(type_.itertext()).strip() == "constexpr":
+                type_.clear()
+                changed = True
+        if changed:
+            tree.write(fn)
+
+
 # Breathe Configuration
 breathe_projects = {"librmm": "../cpp/doxygen/xml"}
+if Version(breathe.__version__) >= Version("5"):
+    for project_path in breathe_projects.values():
+        strip_constexpr_only_types(project_path)
 breathe_default_project = "librmm"
 
 copybutton_prompt_text = ">>> "
