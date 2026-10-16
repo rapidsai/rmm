@@ -71,6 +71,9 @@ from rmm.librmm.memory_resource cimport (
 )
 
 
+cdef size_t _ALLOCATION_ALIGNMENT = 256
+
+
 cdef class DeviceMemoryResource:
 
     cdef device_async_resource_ref get_mr(self) noexcept nogil:
@@ -81,6 +84,8 @@ cdef class DeviceMemoryResource:
 
         Notes
         -----
+        Allocations are always requested with 256-byte alignment.
+
         On integrated memory systems, attempting to allocate more memory than
         available can cause the process to be killed by the operating system
         instead of raising a catchable :class:`MemoryError`.
@@ -101,7 +106,7 @@ cdef class DeviceMemoryResource:
         cdef uintptr_t ptr
         with nogil:
             ptr = <uintptr_t>(self.get_mr().allocate(
-                stream.view(), nbytes
+                stream.view(), nbytes, _ALLOCATION_ALIGNMENT
             ))
         return ptr
 
@@ -120,7 +125,7 @@ cdef class DeviceMemoryResource:
         stream = as_stream(stream)
         with nogil:
             self.get_mr().deallocate(
-                stream.view(), <void*>(ptr), nbytes
+                stream.view(), <void*>(ptr), nbytes, _ALLOCATION_ALIGNMENT
             )
 
     def __dealloc__(self):
@@ -619,7 +624,9 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
         The allocation function must accept two arguments. An integer
         representing the number of bytes to allocate and a Stream on
         which to perform the allocation, and return an integer
-        representing the pointer to the allocated memory.
+        representing the pointer to the allocated memory. Allocations are
+        always requested with 256-byte alignment, so the returned pointer
+        must be 256-byte aligned.
     deallocate_func: callable
         The deallocation function must accept three arguments. an integer
         representing the pointer to the memory to free, a second
