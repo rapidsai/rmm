@@ -81,6 +81,10 @@ cdef extern from * nogil:
         ) noexcept
 
 
+cdef extern from "rmm/aligned.hpp" namespace "rmm" nogil:
+    const size_t CUDA_ALLOCATION_ALIGNMENT
+
+
 cdef extern from "<cuda/memory_resource>" namespace "cuda::mr" nogil:
     cdef cppclass device_accessible:
         pass

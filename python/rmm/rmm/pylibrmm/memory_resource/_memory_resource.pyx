@@ -37,6 +37,7 @@ from rmm.pylibrmm.helper cimport parse_bytes
 from rmm.statistics import Statistics
 
 from rmm.librmm.memory_resource cimport (
+    CUDA_ALLOCATION_ALIGNMENT,
     CppExcept,
     allocate_callback_t,
     allocation_handle_type,
@@ -71,9 +72,6 @@ from rmm.librmm.memory_resource cimport (
 )
 
 
-cdef size_t _ALLOCATION_ALIGNMENT = 256
-
-
 cdef class DeviceMemoryResource:
 
     cdef device_async_resource_ref get_mr(self) noexcept nogil:
@@ -106,7 +104,7 @@ cdef class DeviceMemoryResource:
         cdef uintptr_t ptr
         with nogil:
             ptr = <uintptr_t>(self.get_mr().allocate(
-                stream.view(), nbytes, _ALLOCATION_ALIGNMENT
+                stream.view(), nbytes, CUDA_ALLOCATION_ALIGNMENT
             ))
         return ptr
 
@@ -125,7 +123,7 @@ cdef class DeviceMemoryResource:
         stream = as_stream(stream)
         with nogil:
             self.get_mr().deallocate(
-                stream.view(), <void*>(ptr), nbytes, _ALLOCATION_ALIGNMENT
+                stream.view(), <void*>(ptr), nbytes, CUDA_ALLOCATION_ALIGNMENT
             )
 
     def __dealloc__(self):
