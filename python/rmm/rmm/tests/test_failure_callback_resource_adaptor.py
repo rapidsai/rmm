@@ -17,12 +17,12 @@ def test_failure_callback_resource_adaptor():
         callback_calls += 1
         return callback_calls == 1
 
-    def allocate_func(stream, size, alignment):
+    def allocate_func(size, stream):
         nonlocal allocation_calls
         allocation_calls += 1
         raise MemoryError("Intentional allocation failure")
 
-    def deallocate_func(stream, ptr, size, alignment):
+    def deallocate_func(ptr, size, stream):
         pass
 
     failing_mr = rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
@@ -39,10 +39,10 @@ def test_failure_callback_resource_adaptor_error():
     def callback(nbytes: int) -> bool:
         raise RuntimeError("MyError")
 
-    def allocate_func(stream, size, alignment):
+    def allocate_func(size, stream):
         raise MemoryError("Intentional allocation failure")
 
-    def deallocate_func(stream, ptr, size, alignment):
+    def deallocate_func(ptr, size, stream):
         pass
 
     failing_mr = rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
