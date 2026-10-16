@@ -267,8 +267,10 @@ cdef extern from "rmm/mr/fixed_size_memory_resource.hpp" \
 
 cdef extern from "rmm/mr/callback_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
-    ctypedef void* (*allocate_callback_t)(size_t, stream_ref, void*)
-    ctypedef void (*deallocate_callback_t)(void*, size_t, stream_ref, void*)
+    ctypedef void* (*allocate_callback_t)(stream_ref, size_t, size_t, void*)
+    ctypedef void (*deallocate_callback_t)(
+        stream_ref, void*, size_t, size_t, void*
+    )
 
     cdef cppclass callback_memory_resource:
         callback_memory_resource(

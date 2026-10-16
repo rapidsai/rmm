@@ -12,74 +12,81 @@ context:
 recipe:
   name: librmm-split
 
-cache:
-  source:
-    path: ../../..
-
-  build:
-    script:
-      content: |
-        # Remove `-fdebug-prefix-map` line from CFLAGS and CXXFLAGS so the
-        # incrementing version number in the compile line doesn't break the
-        # cache
-        set -x
-        export CFLAGS=$(echo $CFLAGS | sed -E 's@\-fdebug\-prefix\-map[^ ]*@@g')
-        export CXXFLAGS=$(echo $CXXFLAGS | sed -E 's@\-fdebug\-prefix\-map[^ ]*@@g')
-        set +x
-
-        # Unset CUDAARCHS set by conda-forge's cuda-nvcc activation script
-        # so that rapids-cmake selects the default supported architectures.
-        unset CUDAARCHS
-
-        ./build.sh -n -v clean librmm tests benchmarks
-      secrets:
-        - AWS_ACCESS_KEY_ID
-        - AWS_SECRET_ACCESS_KEY
-        - AWS_SESSION_TOKEN
-        - SCCACHE_DIST_AUTH_TOKEN
-      env:
-        CMAKE_C_COMPILER_LAUNCHER: ${{ env.get("CMAKE_C_COMPILER_LAUNCHER") }}
-        CMAKE_CUDA_COMPILER_LAUNCHER: ${{ env.get("CMAKE_CUDA_COMPILER_LAUNCHER") }}
-        CMAKE_CXX_COMPILER_LAUNCHER: ${{ env.get("CMAKE_CXX_COMPILER_LAUNCHER") }}
-        CMAKE_GENERATOR: ${{ env.get("CMAKE_GENERATOR") }}
-        NVCC_APPEND_FLAGS: ${{ env.get("NVCC_APPEND_FLAGS", default="") }}
-        PARALLEL_LEVEL: ${{ env.get("PARALLEL_LEVEL", default="8") }}
-        RAPIDS_ARTIFACTS_DIR: ${{ env.get("RAPIDS_ARTIFACTS_DIR", default="") }}
-        SCCACHE_BUCKET: ${{ env.get("SCCACHE_BUCKET", default="") }}
-        SCCACHE_DIST_AUTH_TYPE: ${{ env.get("SCCACHE_DIST_AUTH_TYPE", default="token") }}
-        SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: ${{ env.get("SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE", default="false") }}
-        SCCACHE_DIST_MAX_RETRIES: ${{ env.get("SCCACHE_DIST_MAX_RETRIES", default="inf") }}
-        SCCACHE_DIST_REQUEST_TIMEOUT: ${{ env.get("SCCACHE_DIST_REQUEST_TIMEOUT", default="7140") }}
-        SCCACHE_DIST_SCHEDULER_URL: ${{ env.get("SCCACHE_DIST_SCHEDULER_URL", default="") }}
-        SCCACHE_ERROR_LOG: ${{ env.get("SCCACHE_ERROR_LOG", default="/tmp/sccache.log") }}
-        SCCACHE_IDLE_TIMEOUT: ${{ env.get("SCCACHE_IDLE_TIMEOUT", default="0") }}
-        SCCACHE_NO_CACHE: ${{ env.get("SCCACHE_NO_CACHE", default="") }}
-        SCCACHE_RECACHE: ${{ env.get("SCCACHE_RECACHE", default="") }}
-        SCCACHE_REGION: ${{ env.get("SCCACHE_REGION", default="") }}
-        SCCACHE_S3_KEY_PREFIX: librmm-${{ env.get("RAPIDS_CONDA_ARCH") }}
-        SCCACHE_S3_NO_CREDENTIALS: ${{ env.get("SCCACHE_S3_NO_CREDENTIALS", default="false") }}
-        SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX: librmm-${{ env.get("RAPIDS_CONDA_ARCH") }}-cuda${{ cuda_major }}-conda-preprocessor-cache
-        SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE: ${{ env.get("SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE", default="true") }}
-        SCCACHE_S3_USE_SSL: ${{ env.get("SCCACHE_S3_USE_SSL", default="true") }}
-        SCCACHE_SERVER_LOG: ${{ env.get("SCCACHE_SERVER_LOG", default="sccache=debug") }}
-
-  requirements:
-    build:
-      - cmake ${{ cmake_version }}
-      - ninja
-      - ${{ compiler("c") }}
-      - ${{ compiler("cxx") }}
-      - ${{ compiler("cuda") }}
-      - cuda-version =${{ cuda_version }}
-      - ${{ stdlib("c") }}
-    host:
-      - rapids-logger =0.3
-      - cuda-driver-dev
+source:
+  path: ../../..
 
 outputs:
+  - staging:
+      name: librmm-build
+    build:
+      script:
+        content: |
+          set -x
+          # Versioned debug-prefix maps invalidate otherwise identical cached native objects.
+          for flags_name in CFLAGS CXXFLAGS; do
+              [[ -v "${flags_name}" ]] || continue
+              flags_value="${!flags_name}"
+              while [[ "${flags_value}" =~ -fdebug-prefix-map[^[:space:]]* ]]; do
+                  flags_value="${flags_value/"${BASH_REMATCH[0]}"/}"
+              done
+              export "${flags_name}=${flags_value}"
+          done
+          set +x
+
+          # Unset CUDAARCHS set by conda-forge's cuda-nvcc activation script
+          # so that rapids-cmake selects the default supported architectures.
+          unset CUDAARCHS
+
+          ./build.sh -n -v clean librmm tests benchmarks
+        secrets:
+          - AWS_ACCESS_KEY_ID
+          - AWS_SECRET_ACCESS_KEY
+          - AWS_SESSION_TOKEN
+          - SCCACHE_DIST_AUTH_TOKEN
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: ${{ env.get("CMAKE_C_COMPILER_LAUNCHER") }}
+          CMAKE_CUDA_COMPILER_LAUNCHER: ${{ env.get("CMAKE_CUDA_COMPILER_LAUNCHER") }}
+          CMAKE_CXX_COMPILER_LAUNCHER: ${{ env.get("CMAKE_CXX_COMPILER_LAUNCHER") }}
+          CMAKE_GENERATOR: ${{ env.get("CMAKE_GENERATOR") }}
+          NVCC_APPEND_FLAGS: ${{ env.get("NVCC_APPEND_FLAGS", default="") }}
+          PARALLEL_LEVEL: ${{ env.get("PARALLEL_LEVEL", default="8") }}
+          RAPIDS_ARTIFACTS_DIR: ${{ env.get("RAPIDS_ARTIFACTS_DIR", default="") }}
+          SCCACHE_BUCKET: ${{ env.get("SCCACHE_BUCKET", default="") }}
+          SCCACHE_CONF: ${{ env.get("SCCACHE_CONF", default="") }}
+          SCCACHE_DIST_AUTH_TYPE: ${{ env.get("SCCACHE_DIST_AUTH_TYPE", default="token") }}
+          SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: ${{ env.get("SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE", default="false") }}
+          SCCACHE_DIST_MAX_RETRIES: ${{ env.get("SCCACHE_DIST_MAX_RETRIES", default="inf") }}
+          SCCACHE_DIST_REQUEST_TIMEOUT: ${{ env.get("SCCACHE_DIST_REQUEST_TIMEOUT", default="7140") }}
+          SCCACHE_DIST_SCHEDULER_URL: ${{ env.get("SCCACHE_DIST_SCHEDULER_URL", default="") }}
+          SCCACHE_ERROR_LOG: ${{ env.get("SCCACHE_ERROR_LOG", default="/tmp/sccache.log") }}
+          SCCACHE_IDLE_TIMEOUT: ${{ env.get("SCCACHE_IDLE_TIMEOUT", default="0") }}
+          SCCACHE_NO_CACHE: ${{ env.get("SCCACHE_NO_CACHE", default="") }}
+          SCCACHE_RECACHE: ${{ env.get("SCCACHE_RECACHE", default="") }}
+          SCCACHE_REGION: ${{ env.get("SCCACHE_REGION", default="") }}
+          SCCACHE_S3_KEY_PREFIX: librmm-${{ env.get("RAPIDS_CONDA_ARCH") }}
+          SCCACHE_S3_NO_CREDENTIALS: ${{ env.get("SCCACHE_S3_NO_CREDENTIALS", default="false") }}
+          SCCACHE_S3_PREPROCESSOR_CACHE_KEY_PREFIX: librmm-${{ env.get("RAPIDS_CONDA_ARCH") }}-cuda${{ cuda_major }}-conda-preprocessor-cache
+          SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE: ${{ env.get("SCCACHE_S3_USE_PREPROCESSOR_CACHE_MODE", default="true") }}
+          SCCACHE_S3_USE_SSL: ${{ env.get("SCCACHE_S3_USE_SSL", default="true") }}
+          SCCACHE_SERVER_LOG: ${{ env.get("SCCACHE_SERVER_LOG", default="sccache=debug") }}
+
+    requirements:
+      build:
+        - cmake ${{ cmake_version }}
+        - ninja
+        - ${{ compiler("c") }}
+        - ${{ compiler("cxx") }}
+        - ${{ compiler("cuda") }}
+        - cuda-version =${{ cuda_version }}
+        - ${{ stdlib("c") }}
+      host:
+        - rapids-logger =0.3
+        - cuda-driver-dev
+
   - package:
       name: librmm
       version: ${{ version }}
+    inherit: librmm-build
     build:
       string: cuda${{ cuda_major }}_${{ datetime_string }}_${{ head_rev }}
       script:
@@ -119,6 +126,7 @@ outputs:
   - package:
       name: librmm-tests
       version: ${{ version }}
+    inherit: librmm-build
     build:
       string: cuda${{ cuda_major }}_${{ datetime_string }}_${{ head_rev }}
       script: cmake --install cpp/build --component testing
@@ -140,6 +148,9 @@ outputs:
         - ${{ pin_subpackage("librmm", exact=True) }}
         - rapids-logger =0.3
         - cuda-cudart
+        # The runtime DSO is owned by the platform package, which must be a
+        # direct dependency for rattler-build's linking checks.
+        - cuda-cudart_${{ target_platform }}
       ignore_run_exports:
         from_package:
           - cuda-cudart-dev
@@ -153,6 +164,7 @@ outputs:
   - package:
       name: librmm-example
       version: ${{ version }}
+    inherit: librmm-build
     build:
       string: cuda${{ cuda_major }}_${{ datetime_string }}_${{ head_rev }}
       script:
@@ -162,6 +174,11 @@ outputs:
           unset CUDAARCHS
 
           ./cpp/examples/build.sh --install
+        secrets:
+          - AWS_ACCESS_KEY_ID
+          - AWS_SECRET_ACCESS_KEY
+          - AWS_SESSION_TOKEN
+          - SCCACHE_DIST_AUTH_TOKEN
         env:
           CMAKE_C_COMPILER_LAUNCHER: ${{ env.get("CMAKE_C_COMPILER_LAUNCHER") }}
           CMAKE_CUDA_COMPILER_LAUNCHER: ${{ env.get("CMAKE_CUDA_COMPILER_LAUNCHER") }}
@@ -171,6 +188,7 @@ outputs:
           PARALLEL_LEVEL: ${{ env.get("PARALLEL_LEVEL", default="8") }}
           RAPIDS_ARTIFACTS_DIR: ${{ env.get("RAPIDS_ARTIFACTS_DIR", default="") }}
           SCCACHE_BUCKET: ${{ env.get("SCCACHE_BUCKET", default="") }}
+          SCCACHE_CONF: ${{ env.get("SCCACHE_CONF", default="") }}
           SCCACHE_DIST_AUTH_TYPE: ${{ env.get("SCCACHE_DIST_AUTH_TYPE", default="token") }}
           SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: ${{ env.get("SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE", default="false") }}
           SCCACHE_DIST_MAX_RETRIES: ${{ env.get("SCCACHE_DIST_MAX_RETRIES", default="inf") }}

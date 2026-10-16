@@ -23,8 +23,17 @@ build:
     version_independent: true
   string: cuda${{ cuda_major }}_cp${{ py_buildstring }}_abi3_${{ datetime_string }}_${{ head_rev }}
   script:
-    content:
-      - ./build.sh -v clean rmm --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
+    content: |
+      # Versioned debug-prefix maps invalidate otherwise identical cached native objects.
+      for flags_name in CFLAGS CXXFLAGS; do
+          [[ -v "${flags_name}" ]] || continue
+          flags_value="${!flags_name}"
+          while [[ "${flags_value}" =~ -fdebug-prefix-map[^[:space:]]* ]]; do
+              flags_value="${flags_value/"${BASH_REMATCH[0]}"/}"
+          done
+          export "${flags_name}=${flags_value}"
+      done
+      ./build.sh -v clean rmm --cmake-args=\"-DCMAKE_INSTALL_LIBDIR=lib\"
     secrets:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
@@ -40,6 +49,7 @@ build:
       RAPIDS_ARTIFACTS_DIR: ${{ env.get("RAPIDS_ARTIFACTS_DIR", default="") }}
       RAPIDS_PY_VERSION: ${{ py_abi_min }}
       SCCACHE_BUCKET: ${{ env.get("SCCACHE_BUCKET", default="") }}
+      SCCACHE_CONF: ${{ env.get("SCCACHE_CONF", default="") }}
       SCCACHE_DIST_AUTH_TYPE: ${{ env.get("SCCACHE_DIST_AUTH_TYPE", default="token") }}
       SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE: ${{ env.get("SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE", default="false") }}
       SCCACHE_DIST_MAX_RETRIES: ${{ env.get("SCCACHE_DIST_MAX_RETRIES", default="inf") }}
@@ -85,6 +95,7 @@ requirements:
       else: cuda-bindings >=13.0.2,<14.0
     - ${{ pin_compatible("cuda-version", upper_bound="x", lower_bound="x") }}
     - numpy >=2.0,<3.0
+    - rapids-logger =0.3
     - python
   run_constraints:
     - cupy >=14.0.1,!=14.1.0
