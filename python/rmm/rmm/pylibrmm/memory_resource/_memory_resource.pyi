@@ -95,8 +95,8 @@ class BinningMemoryResource(UpstreamResourceAdaptor):
 class CallbackMemoryResource(DeviceMemoryResource):
     def __init__(
         self,
-        allocate_func: Callable[[Stream, int, int], int],
-        deallocate_func: Callable[[Stream, int, int, int], None],
+        allocate_func: Callable[[int, Stream], int],
+        deallocate_func: Callable[[int, int, Stream], None],
     ) -> None: ...
 
 class LimitingResourceAdaptor(UpstreamResourceAdaptor):

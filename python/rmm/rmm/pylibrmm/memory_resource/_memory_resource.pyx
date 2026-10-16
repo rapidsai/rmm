@@ -586,9 +586,8 @@ cdef void* _allocate_callback_wrapper(
     with gil:
         try:
             return <void*>(<uintptr_t>((<object>(ctx))(
-                Stream._from_cudaStream_t(stream.get()),
                 nbytes,
-                alignment
+                Stream._from_cudaStream_t(stream.get())
             )))
         except BaseException as e:
             err = translate_python_except_to_cpp(e)
@@ -601,12 +600,7 @@ cdef void _deallocate_callback_wrapper(
     size_t alignment,
     void* ctx
 ) noexcept with gil:
-    (<object>(ctx))(
-        Stream._from_cudaStream_t(stream.get()),
-        <uintptr_t>(ptr),
-        nbytes,
-        alignment
-    )
+    (<object>(ctx))(<uintptr_t>(ptr), nbytes, Stream._from_cudaStream_t(stream.get()))
 
 
 cdef class CallbackMemoryResource(DeviceMemoryResource):
@@ -622,32 +616,26 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     Parameters
     ----------
     allocate_func: callable
-        The allocation function must accept three arguments: a Stream on
-        which to perform the allocation, an integer representing the number
-        of bytes to allocate, and an integer representing the requested
-        alignment. The alignment must be a valid power of two. An
-        invalid request raises before callback invocation. The function must
-        return an integer representing the pointer to the allocated memory.
-        The returned pointer must satisfy the requested alignment.
+        The allocation function must accept two arguments. An integer
+        representing the number of bytes to allocate and a Stream on
+        which to perform the allocation, and return an integer
+        representing the pointer to the allocated memory.
     deallocate_func: callable
-        The deallocation function must accept four arguments: a Stream on
-        which to perform the deallocation, an integer representing the pointer
-        to the memory to free, an integer representing the number of bytes to
-        free, and an integer representing the allocation alignment. It must not
-        raise an exception because this callback boundary cannot propagate
-        Python exceptions.
+        The deallocation function must accept three arguments. an integer
+        representing the pointer to the memory to free, a second
+        integer representing the number of bytes to free, and a Stream
+        on which to perform the deallocation. It must not raise an exception
+        because this callback boundary cannot propagate Python exceptions.
 
     Examples
     --------
     >>> import rmm
     >>> base_mr = rmm.mr.CudaMemoryResource()
-    >>> def allocate_func(stream, size, alignment):
+    >>> def allocate_func(size, stream):
     ...     print(f"Allocating {size} bytes")
-    ...     if alignment > 256:
-    ...         raise MemoryError("CudaMemoryResource supports up to 256-byte alignment")
     ...     return base_mr.allocate(size, stream)
     ...
-    >>> def deallocate_func(stream, ptr, size, alignment):
+    >>> def deallocate_func(ptr, size, stream):
     ...     print(f"Deallocating {size} bytes")
     ...     return base_mr.deallocate(ptr, size, stream)
     ...
@@ -658,9 +646,6 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
     Allocating 256 bytes
     >>> del dbuf
     Deallocating 256 bytes
-
-    The base resource's 256-byte default alignment satisfies every request
-    accepted by this example.
     """
     def __init__(
         self,
