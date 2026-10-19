@@ -10,8 +10,6 @@
 
 #include <cuda_runtime_api.h>
 
-#include <dlfcn.h>
-
 RMM_NAMESPACE_BEGIN
 namespace detail {
 
