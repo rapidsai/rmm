@@ -37,22 +37,8 @@ permissions: {}
 jobs:
   build-details:
     uses: rapidsai/shared-workflows/.github/workflows/compute-build-details.yaml@main
-  telemetry-setup:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    permissions:
-      contents: read
-    env:
-      OTEL_SERVICE_NAME: "build-rmm"
-    steps:
-      - name: Telemetry setup
-        # This gate is here and not at the job level because we need the job to not be skipped,
-        # since other jobs depend on it.
-        if: ${{ vars.TELEMETRY_ENABLED == 'true' }}
-        uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
   checks:
     if: ${{ github.ref == 'refs/heads/main' }}
-    needs: telemetry-setup
     permissions:
       actions: read
       contents: read
@@ -66,7 +52,7 @@ jobs:
       enable_check_version_files_changed: false
       enable_check_version_against_tag: false
   cpp-build:
-    needs: [build-details, telemetry-setup]
+    needs: ["build-details"]
     permissions:
       actions: read
       contents: read
@@ -84,7 +70,7 @@ jobs:
       script: ci/build_cpp.sh
       sha: ${{ inputs.sha }}
   python-build:
-    needs: [build-details, telemetry-setup, cpp-build]
+    needs: ["build-details", "cpp-build"]
     permissions:
       actions: read
       contents: read
@@ -169,7 +155,7 @@ jobs:
       docs-projects: rmm,librmm
       dry-run: false
   wheel-build:
-    needs: [build-details, telemetry-setup]
+    needs: ["build-details"]
     permissions:
       actions: read
       contents: read
@@ -223,17 +209,6 @@ jobs:
       package-name: rmm
       package-type: python
       publish-wheel-search-key: rmm_wheel_python_rmm
-  telemetry-summarize:
-    # This job must use a self-hosted runner to record telemetry traces.
-    runs-on: linux-amd64-cpu4
-    permissions:
-      actions: read
-    needs: [wheel-publish-cpp, wheel-publish-python, upload-conda, docs-build]
-    if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() }}
-    continue-on-error: true
-    steps:
-      - name: Telemetry summarize
-        uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
   devcontainers:
     name: Build devcontainers
     secrets: inherit  # zizmor: ignore[secrets-inherit]
