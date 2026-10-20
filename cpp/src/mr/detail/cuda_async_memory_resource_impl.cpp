@@ -72,6 +72,9 @@ cuda_async_memory_resource_impl::~cuda_async_memory_resource_impl()
 {
   if (rmm::process_is_exiting()) { return; }
 
+  // Destroying a pool with pending work or frees can cause later driver crashes when using
+  // hardware decompression on Blackwell GPUs.
+  RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaDeviceSynchronize());
   RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaMemPoolDestroy(pool_handle()));
 }
 
