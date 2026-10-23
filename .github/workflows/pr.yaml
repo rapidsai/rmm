@@ -232,7 +232,7 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@main
     with:
       enable_check_generated_files: false
-      ignored_pr_jobs: "telemetry-summarize conda-python-tests-integration-optional wheel-tests-integration-optional"
+      ignored_pr_jobs: "telemetry-summarize conda-python-tests-integration-optional wheel-tests-integration-optional docs-preview"
       # Main builds seed this cache. PR merge refs can restore it but should not create
       # duplicate archives that are inaccessible to other PRs.
       pre-commit-cache-read-only: true
