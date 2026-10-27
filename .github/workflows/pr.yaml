@@ -249,6 +249,7 @@ jobs:
       build-datetime: ${{ needs.build-details.outputs.build-datetime }}
       node_type: cpu8
       script: ci/build_cpp.sh
+      matrix_type: cuda-13-4-pr
   conda-cpp-tests:
     needs: [conda-cpp-build, changed-files]
     permissions:
@@ -263,6 +264,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_cpp.sh
+      matrix_type: cuda-13-4-pr,pull-request
   conda-cpp-debug-tests:
     needs: [checks, changed-files]
     permissions:
@@ -296,6 +298,7 @@ jobs:
       script: ci/build_python.sh
       # Build a conda package for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
+      matrix_type: cuda-13-4-pr
   conda-python-tests:
     needs: [conda-python-build, changed-files]
     permissions:
@@ -310,6 +313,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_python.sh
+      matrix_type: cuda-13-4-pr,pull-request
   conda-python-tests-integration-optional:
     needs: [conda-python-build, changed-files]
     permissions:
@@ -324,6 +328,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_python_integrations.sh
+      matrix_type: cuda-13-4-pr,pull-request
   docs-build-matrix:
     permissions:
       contents: read
@@ -331,6 +336,7 @@ jobs:
     with:
       build_type: pull-request
       matrix_name: docs-build
+      matrix_type: cuda-13-4-pr
   docs-build:
     needs: [docs-build-matrix, conda-python-build, changed-files]
     permissions:
@@ -388,6 +394,7 @@ jobs:
       build_type: pull-request
       build-datetime: ${{ needs.build-details.outputs.build-datetime }}
       node_type: cpu8
+      matrix_type: cuda-13-4-pr
   wheel-tests:
     needs: [wheel-build, changed-files]
     permissions:
@@ -402,6 +409,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_wheel.sh
+      matrix_type: cuda-13-4-pr,pull-request
   wheel-tests-integration-optional:
     needs: [wheel-build, changed-files]
     permissions:
@@ -416,6 +424,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_wheel_integrations.sh
+      matrix_type: cuda-13-4-pr,pull-request
   devcontainer:
     permissions:
       actions: read
@@ -427,7 +436,7 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@main
     with:
       arch: '["amd64", "arm64"]'
-      cuda: '["13.3"]'
+      cuda: '["13.4"]'
       node_type: "cpu8"
       env: |
         SCCACHE_DIST_MAX_RETRIES=inf
