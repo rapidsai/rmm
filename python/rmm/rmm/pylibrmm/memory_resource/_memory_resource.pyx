@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -27,7 +27,7 @@ from rmm.pylibrmm.utils cimport as_stream
 
 from rmm.pylibrmm.stream import DEFAULT_STREAM
 
-from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.cuda_stream_ref cimport stream_ref
 from rmm.librmm.per_device_resource cimport (
     cuda_device_id,
     set_per_device_resource as cpp_set_per_device_resource,
@@ -37,9 +37,11 @@ from rmm.pylibrmm.helper cimport parse_bytes
 from rmm.statistics import Statistics
 
 from rmm.librmm.memory_resource cimport (
+    CUDA_ALLOCATION_ALIGNMENT,
     CppExcept,
     allocate_callback_t,
     allocation_handle_type,
+    any_resource,
     arena_memory_resource,
     available_device_memory as c_available_device_memory,
     binning_memory_resource,
@@ -48,13 +50,13 @@ from rmm.librmm.memory_resource cimport (
     cuda_async_view_memory_resource,
     cuda_memory_resource,
     deallocate_callback_t,
+    device_accessible,
     device_async_resource_ref,
     failure_callback_resource_adaptor_oom,
     failure_callback_t,
     fixed_size_memory_resource,
     limiting_resource_adaptor,
     logging_resource_adaptor,
-    make_any_device_resource,
     make_device_async_resource_ref,
     managed_memory_resource,
     percent_of_free_device_memory as c_percent_of_free_device_memory,
@@ -80,6 +82,8 @@ cdef class DeviceMemoryResource:
 
         Notes
         -----
+        Allocations are always requested with 256-byte alignment.
+
         On integrated memory systems, attempting to allocate more memory than
         available can cause the process to be killed by the operating system
         instead of raising a catchable :class:`MemoryError`.
@@ -100,7 +104,7 @@ cdef class DeviceMemoryResource:
         cdef uintptr_t ptr
         with nogil:
             ptr = <uintptr_t>(self.get_mr().allocate(
-                stream.view(), nbytes
+                stream.view(), nbytes, CUDA_ALLOCATION_ALIGNMENT
             ))
         return ptr
 
@@ -119,7 +123,7 @@ cdef class DeviceMemoryResource:
         stream = as_stream(stream)
         with nogil:
             self.get_mr().deallocate(
-                stream.view(), <void*>(ptr), nbytes
+                stream.view(), <void*>(ptr), nbytes, CUDA_ALLOCATION_ALIGNMENT
             )
 
     def __dealloc__(self):
@@ -364,7 +368,7 @@ cdef class PoolMemoryResource(UpstreamResourceAdaptor):
             else optional[size_t](<size_t> parse_bytes(maximum_pool_size))
         )
         self.c_obj.reset(new pool_memory_resource(
-            make_any_device_resource(upstream_mr.get_mr()),
+            any_resource[device_accessible](upstream_mr.get_mr()),
             c_initial_pool_size,
             c_maximum_pool_size
         ))
@@ -408,7 +412,7 @@ cdef class ArenaMemoryResource(UpstreamResourceAdaptor):
             else optional[size_t](<size_t> parse_bytes(arena_size))
         )
         self.c_obj.reset(new arena_memory_resource(
-            make_any_device_resource(upstream_mr.get_mr()),
+            any_resource[device_accessible](upstream_mr.get_mr()),
             c_arena_size,
             dump_log_on_failure,
         ))
@@ -445,7 +449,7 @@ cdef class FixedSizeMemoryResource(UpstreamResourceAdaptor):
             size_t blocks_to_preallocate=128
     ):
         self.c_obj.reset(new fixed_size_memory_resource(
-            make_any_device_resource(upstream_mr.get_mr()),
+            any_resource[device_accessible](upstream_mr.get_mr()),
             block_size,
             blocks_to_preallocate
         ))
@@ -490,11 +494,11 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
         if (min_size_exponent == -1 or max_size_exponent == -1):
             self.c_obj.reset(new binning_memory_resource(
-                make_any_device_resource(upstream_mr.get_mr())
+                any_resource[device_accessible](upstream_mr.get_mr())
             ))
         else:
             self.c_obj.reset(new binning_memory_resource(
-                make_any_device_resource(upstream_mr.get_mr()),
+                any_resource[device_accessible](upstream_mr.get_mr()),
                 min_size_exponent,
                 max_size_exponent
             ))
@@ -573,8 +577,9 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
 
 cdef void* _allocate_callback_wrapper(
+    stream_ref stream,
     size_t nbytes,
-    cuda_stream_view stream,
+    size_t alignment,
     void* ctx
     # Note that this function is specifically designed to rethrow Python
     # exceptions as C++ exceptions when called as a callback from C++, so it is
@@ -585,19 +590,20 @@ cdef void* _allocate_callback_wrapper(
         try:
             return <void*>(<uintptr_t>((<object>(ctx))(
                 nbytes,
-                Stream._from_cudaStream_t(stream.value())
+                Stream._from_cudaStream_t(stream.get())
             )))
         except BaseException as e:
             err = translate_python_except_to_cpp(e)
     throw_cpp_except(err)
 
 cdef void _deallocate_callback_wrapper(
+    stream_ref stream,
     void* ptr,
     size_t nbytes,
-    cuda_stream_view stream,
+    size_t alignment,
     void* ctx
-) except * with gil:
-    (<object>(ctx))(<uintptr_t>(ptr), nbytes, Stream._from_cudaStream_t(stream.value()))
+) noexcept with gil:
+    (<object>(ctx))(<uintptr_t>(ptr), nbytes, Stream._from_cudaStream_t(stream.get()))
 
 
 cdef class CallbackMemoryResource(DeviceMemoryResource):
@@ -616,12 +622,15 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
         The allocation function must accept two arguments. An integer
         representing the number of bytes to allocate and a Stream on
         which to perform the allocation, and return an integer
-        representing the pointer to the allocated memory.
+        representing the pointer to the allocated memory. Allocations are
+        always requested with 256-byte alignment, so the returned pointer
+        must be 256-byte aligned.
     deallocate_func: callable
         The deallocation function must accept three arguments. an integer
         representing the pointer to the memory to free, a second
         integer representing the number of bytes to free, and a Stream
-        on which to perform the deallocation.
+        on which to perform the deallocation. It must not raise an exception
+        because this callback boundary cannot propagate Python exceptions.
 
     Examples
     --------
@@ -684,7 +693,7 @@ cdef class LimitingResourceAdaptor(UpstreamResourceAdaptor):
         size_t allocation_limit
     ):
         self.c_obj.reset(new limiting_resource_adaptor(
-            make_any_device_resource(upstream_mr.get_mr()),
+            any_resource[device_accessible](upstream_mr.get_mr()),
             allocation_limit
         ))
         self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
@@ -749,7 +758,7 @@ cdef class LoggingResourceAdaptor(UpstreamResourceAdaptor):
         self._log_file_name = log_file_name
 
         self.c_obj.reset(new logging_resource_adaptor(
-            make_any_device_resource(upstream_mr.get_mr()),
+            any_resource[device_accessible](upstream_mr.get_mr()),
             log_file_name.encode()
         ))
         self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
@@ -785,7 +794,7 @@ cdef class StatisticsResourceAdaptor(UpstreamResourceAdaptor):
         DeviceMemoryResource upstream_mr
     ):
         self.c_obj.reset(new statistics_resource_adaptor(
-            make_any_device_resource(upstream_mr.get_mr())
+            any_resource[device_accessible](upstream_mr.get_mr())
         ))
         self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
@@ -876,7 +885,7 @@ cdef class TrackingResourceAdaptor(UpstreamResourceAdaptor):
         bool capture_stacks=False
     ):
         self.c_obj.reset(new tracking_resource_adaptor(
-            make_any_device_resource(upstream_mr.get_mr()),
+            any_resource[device_accessible](upstream_mr.get_mr()),
             capture_stacks
         ))
         self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
@@ -949,7 +958,7 @@ cdef class FailureCallbackResourceAdaptor(UpstreamResourceAdaptor):
     ):
         self._callback = callback
         self.c_obj.reset(new failure_callback_resource_adaptor_oom(
-            make_any_device_resource(upstream_mr.get_mr()),
+            any_resource[device_accessible](upstream_mr.get_mr()),
             <failure_callback_t>(_oom_callback_function),
             <void*>(callback)
         ))
@@ -979,7 +988,7 @@ cdef class PrefetchResourceAdaptor(UpstreamResourceAdaptor):
         DeviceMemoryResource upstream_mr
     ):
         self.c_obj.reset(new prefetch_resource_adaptor(
-            make_any_device_resource(upstream_mr.get_mr())
+            any_resource[device_accessible](upstream_mr.get_mr())
         ))
         self.c_ref = make_device_async_resource_ref(deref(self.c_obj))
 
@@ -1110,7 +1119,7 @@ cpdef set_per_device_resource(int device, DeviceMemoryResource mr):
 
     cpp_set_per_device_resource(
         deref(device_id),
-        make_any_device_resource(mr.get_mr())
+        any_resource[device_accessible](mr.get_mr())
     )
 
 

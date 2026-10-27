@@ -270,6 +270,22 @@ def test_rmm_device_buffer_copy(
     np.testing.assert_equal(expected, result)
 
 
+def test_rmm_device_buffer_copy_uses_source_memory_resource() -> None:
+    source_mr = rmm.mr.StatisticsResourceAdaptor(rmm.mr.CudaMemoryResource())
+    current_mr = rmm.mr.StatisticsResourceAdaptor(rmm.mr.CudaMemoryResource())
+
+    rmm.mr.set_current_device_resource(source_mr)
+    db = rmm.DeviceBuffer(size=256)
+    assert source_mr.allocation_counts.total_bytes == 256
+    assert current_mr.allocation_counts.total_bytes == 0
+
+    rmm.mr.set_current_device_resource(current_mr)
+    db.copy()
+
+    assert source_mr.allocation_counts.total_bytes == 512
+    assert current_mr.allocation_counts.total_bytes == 0
+
+
 # Tests for stream=None validation (PR #2120)
 def test_device_buffer_init_stream_none() -> None:
     """Test that DeviceBuffer.__init__ raises TypeError for stream=None"""

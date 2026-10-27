@@ -1,11 +1,11 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 set -euo pipefail
 
 source rapids-configure-sccache
-source rapids-date-string
+source rapids-datetime-string
 
 export CMAKE_GENERATOR=Ninja
 
@@ -21,20 +21,17 @@ export RAPIDS_PACKAGE_VERSION
 # Creates and exports $RATTLER_CHANNELS
 source rapids-rattler-channel-string
 
-# Creates artifacts directory for telemetry
-source rapids-telemetry-setup
-
 # --no-build-id allows for caching with `sccache`
 # more info is available at
 # https://rattler.build/latest/tips_and_tricks/#using-sccache-or-ccache-with-rattler-build
-rapids-telemetry-record build.log rattler-build build \
+rattler-build build \
     --recipe conda/recipes/librmm \
     --experimental \
     --no-build-id \
     --output-dir "$RAPIDS_CONDA_BLD_OUTPUT_DIR" \
     "${RATTLER_CHANNELS[@]}"
 
-rapids-telemetry-record sccache-stats.txt sccache --show-adv-stats
+sccache --show-adv-stats
 sccache --stop-server >/dev/null 2>&1 || true
 
 # remove build_cache directory

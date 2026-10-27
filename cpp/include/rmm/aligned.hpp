@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,7 +10,7 @@
 #include <cassert>
 #include <cstddef>
 
-namespace RMM_EXPORT rmm {
+RMM_NAMESPACE_BEGIN
 
 /**
  * @addtogroup utilities
@@ -55,6 +55,9 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
 /**
  * @brief Align up to nearest multiple of specified power of 2
  *
+ * `alignment` must be a power of 2, and the result must not overflow `std::size_t`.
+ * These invariants are checked with assertions in debug builds.
+ *
  * @param[in] value value to align
  * @param[in] alignment amount, in bytes, must be a power of 2
  *
@@ -64,6 +67,8 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
 
 /**
  * @brief Align down to the nearest multiple of specified power of 2
+ *
+ * `alignment` must be a power of 2. This invariant is checked with an assertion in debug builds.
  *
  * @param[in] value value to align
  * @param[in] alignment amount, in bytes, must be a power of 2
@@ -95,4 +100,4 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
 
 /** @} */  // end of group
 
-}  // namespace RMM_EXPORT rmm
+RMM_NAMESPACE_END

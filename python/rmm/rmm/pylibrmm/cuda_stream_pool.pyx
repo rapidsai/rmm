@@ -1,9 +1,10 @@
-# SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 cimport cython
 from cython.operator cimport dereference as deref
 from libc.stddef cimport size_t
+from libcpp.memory cimport make_shared
 
 from rmm.librmm.cuda_stream cimport cuda_stream_flags
 from rmm.librmm.cuda_stream_pool cimport cuda_stream_pool
@@ -19,12 +20,20 @@ cdef class CudaStreamPool:
 
     Provides thread-safe access to a collection of CUDA stream objects.
     Successive calls may return views of identical streams.
+
+    Parameters
+    ----------
+    pool_size : int, optional
+        Number of streams in the pool. Defaults to 16.
+    flags : CudaStreamFlags, optional
+        Flags used to create each stream. Defaults to
+        ``CudaStreamFlags.SYNC_DEFAULT``.
     """
 
     def __cinit__(self, size_t pool_size = 16,
                   cuda_stream_flags flags = cuda_stream_flags.sync_default):
         with nogil:
-            self.c_obj.reset(new cuda_stream_pool(pool_size, flags))
+            self.c_obj = make_shared[cuda_stream_pool](pool_size, flags)
 
     def __dealloc__(self):
         with nogil:
@@ -48,11 +57,11 @@ cdef class CudaStreamPool:
         cdef size_t c_stream_id
         if stream_id is None:
             return Stream._from_cudaStream_t(
-                deref(self.c_obj).get_stream().value(), owner=self)
+                deref(self.c_obj).get_stream().get(), owner=self)
         else:
             c_stream_id = <size_t>(stream_id)
             return Stream._from_cudaStream_t(
-                deref(self.c_obj).get_stream(c_stream_id).value(), owner=self)
+                deref(self.c_obj).get_stream(c_stream_id).get(), owner=self)
 
     def get_pool_size(self) -> int:
         """

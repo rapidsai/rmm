@@ -1,10 +1,11 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for CallbackMemoryResource."""
 
 import functools
 import gc
+import sys
 
 import pytest
 
@@ -12,24 +13,33 @@ import rmm
 
 
 def test_custom_mr(capsys):
+    allocation_size = 257
     base_mr = rmm.mr.CudaMemoryResource()
+    allocations = []
+    deallocations = []
 
     def allocate_func(size, stream):
         print(f"Allocating {size} bytes")
-        return base_mr.allocate(size, stream)
+        ptr = base_mr.allocate(size, stream)
+        allocations.append((ptr, size, stream))
+        return ptr
 
     def deallocate_func(ptr, size, stream):
         print(f"Deallocating {size} bytes")
+        deallocations.append((ptr, size, stream))
         return base_mr.deallocate(ptr, size, stream)
 
     rmm.mr.set_current_device_resource(
         rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
     )
 
-    rmm.DeviceBuffer(size=256)
+    rmm.DeviceBuffer(size=allocation_size)
 
     captured = capsys.readouterr()
-    assert captured.out == "Allocating 256 bytes\nDeallocating 256 bytes\n"
+    assert captured.out == "Allocating 257 bytes\nDeallocating 257 bytes\n"
+    assert len(allocations) == 1
+    assert allocations[0][1] == allocation_size
+    assert deallocations == allocations
 
 
 @pytest.mark.parametrize(
@@ -56,6 +66,27 @@ def test_callback_mr_error(err_raise, err_catch):
 
     with pytest.raises(err_catch, match="My alloc error"):
         rmm.DeviceBuffer(size=256)
+
+
+def test_callback_mr_reports_deallocation_errors(monkeypatch):
+    base_mr = rmm.mr.CudaMemoryResource()
+    unraisable = []
+
+    def allocate_func(size, stream):
+        return base_mr.allocate(size, stream)
+
+    def deallocate_func(ptr, size, stream):
+        base_mr.deallocate(ptr, size, stream)
+        raise RuntimeError("My dealloc error")
+
+    monkeypatch.setattr(sys, "unraisablehook", unraisable.append)
+    cb_mr = rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
+    buf = rmm.DeviceBuffer(size=1, mr=cb_mr)
+    del buf
+
+    assert len(unraisable) == 1
+    assert isinstance(unraisable[0].exc_value, RuntimeError)
+    assert str(unraisable[0].exc_value) == "My dealloc error"
 
 
 def test_device_buffer_with_mr():

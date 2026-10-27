@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 # This import is needed for Cython typing in translate_python_except_to_cpp
@@ -13,13 +13,13 @@ from libcpp.optional cimport optional
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 
-from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.cuda_stream_ref cimport stream_ref
 
 
 cdef extern from * nogil:
     """
     #include <optional>
-    #include <rmm/aligned.hpp>
+    #include <cuda/stream>
     #include <rmm/resource_ref.hpp>
 
     // Default-constructible wrapper around rmm::device_async_resource_ref.
@@ -51,27 +51,38 @@ cdef extern from * nogil:
             return ref.value();
         }
 
-        void* allocate(rmm::cuda_stream_view stream, std::size_t bytes) {
-            return ref.value().allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        void* allocate(
+            cuda::stream_ref stream,
+            std::size_t bytes,
+            std::size_t alignment) {
+            return ref.value().allocate(stream, bytes, alignment);
         }
 
         void deallocate(
-            rmm::cuda_stream_view stream,
+            cuda::stream_ref stream,
             void* ptr,
-            std::size_t bytes) noexcept {
-            ref.value().deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+            std::size_t bytes,
+            std::size_t alignment) noexcept {
+            ref.value().deallocate(stream, ptr, bytes, alignment);
         }
     };
     """
     cdef cppclass device_async_resource_ref \
             "cython_device_async_resource_ref":
         device_async_resource_ref() noexcept
-        void* allocate(cuda_stream_view stream, size_t bytes) except +
+        void* allocate(
+            stream_ref stream, size_t bytes, size_t alignment
+        ) except +
         void deallocate(
-            cuda_stream_view stream,
+            stream_ref stream,
             void* ptr,
-            size_t bytes
+            size_t bytes,
+            size_t alignment
         ) noexcept
+
+
+cdef extern from "rmm/aligned.hpp" namespace "rmm" nogil:
+    const size_t CUDA_ALLOCATION_ALIGNMENT
 
 
 cdef extern from "<cuda/memory_resource>" namespace "cuda::mr" nogil:
@@ -79,27 +90,7 @@ cdef extern from "<cuda/memory_resource>" namespace "cuda::mr" nogil:
         pass
     cdef cppclass any_resource[Properties]:
         any_resource() except +
-
-
-# Inline C++ helper to convert device_async_resource_ref to
-# any_resource<device_accessible> for passing to constructor parameters.
-# Needed because Cython wraps intermediate values in __Pyx_FakeReference<T>,
-# a proxy with operator T&(). CCCL's any_resource only has a constrained
-# forwarding constructor that cannot see through this proxy. A free function
-# performs the conversion in pure C++ where it works directly.
-# TODO: Remove once CCCL merges NVIDIA/cccl#8320 and RMM upgrades.
-cdef extern from *:
-    """
-    #include <cuda/memory_resource>
-    #include <rmm/resource_ref.hpp>
-    inline cuda::mr::any_resource<cuda::mr::device_accessible>
-    make_any_device_resource(rmm::device_async_resource_ref ref) {
-        return cuda::mr::any_resource<cuda::mr::device_accessible>(ref);
-    }
-    """
-    any_resource[device_accessible] make_any_device_resource(
-        device_async_resource_ref) nogil except +
-
+        any_resource(device_async_resource_ref) except +
 
 # Inline C++ helper to construct optional[device_async_resource_ref] from any
 # concrete resource type. Returns optional so that Cython assignment
@@ -286,8 +277,10 @@ cdef extern from "rmm/mr/fixed_size_memory_resource.hpp" \
 
 cdef extern from "rmm/mr/callback_memory_resource.hpp" \
         namespace "rmm::mr" nogil:
-    ctypedef void* (*allocate_callback_t)(size_t, cuda_stream_view, void*)
-    ctypedef void (*deallocate_callback_t)(void*, size_t, cuda_stream_view, void*)
+    ctypedef void* (*allocate_callback_t)(stream_ref, size_t, size_t, void*)
+    ctypedef void (*deallocate_callback_t)(
+        stream_ref, void*, size_t, size_t, void*
+    )
 
     cdef cppclass callback_memory_resource:
         callback_memory_resource(

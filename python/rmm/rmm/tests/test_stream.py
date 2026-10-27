@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 
@@ -12,7 +12,7 @@ import rmm.pylibrmm.stream
 
 @pytest.fixture
 def current_device():
-    pytest.importorskip("cuda.core", minversion="0.5.0")
+    pytest.importorskip("cuda.core")
     from cuda.core import Device
 
     device = Device()
@@ -38,7 +38,7 @@ def test_cuda_core_stream_to_rmm(current_device):
     rmm_stream = rmm.pylibrmm.stream.Stream(cuda_stream)
     cuda_stream_2 = current_device.create_stream(rmm_stream)
 
-    assert cuda_stream_2.__cuda_stream__() == cuda_stream_2.__cuda_stream__()
+    assert cuda_stream_2.__cuda_stream__() == cuda_stream.__cuda_stream__()
 
 
 def test_rmm_stream_from_cuda_core_default_stream(current_device):
@@ -80,8 +80,6 @@ def test_cuda_stream_cupy(current_device):
 
 
 def test_cuda_core_buffer(current_device):
-    # Test that RMM's Stream can be converted to a cuda.core.Stream
-    pytest.importorskip("cuda.core", minversion="0.5.0")
     from cuda.core import DeviceMemoryResource
 
     rmm_stream = current_device.create_stream(rmm.pylibrmm.stream.Stream())
