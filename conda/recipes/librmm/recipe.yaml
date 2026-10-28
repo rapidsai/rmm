@@ -5,9 +5,9 @@ schema_version: 1
 context:
   version: ${{ env.get("RAPIDS_PACKAGE_VERSION") }}
   cuda_version: ${{ (env.get("RAPIDS_CUDA_VERSION") | split("."))[:2] | join(".") }}
-  cuda_major: '${{ (env.get("RAPIDS_CUDA_VERSION") | split("."))[0] }}'
-  datetime_string: '${{ env.get("RAPIDS_DATETIME_STRING") }}'
-  head_rev: '${{ git.head_rev(".")[:8] }}'
+  cuda_major: ${{ (env.get("RAPIDS_CUDA_VERSION") | split("."))[0] }}
+  datetime_string: ${{ env.get("RAPIDS_DATETIME_STRING") }}
+  head_rev: ${{ git.head_rev(".")[:8] }}
 
 recipe:
   name: librmm-split
