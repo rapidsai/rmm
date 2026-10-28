@@ -29,7 +29,10 @@ namespace mr {
  *
  * GPU memory is divided into a global arena, per-thread arenas for default streams, and per-stream
  * arenas for non-default streams. Each arena allocates memory from the global arena in chunks
- * called superblocks.
+ * called superblocks. Per-stream arenas are keyed by CUDA stream ID, so a newly created stream
+ * cannot reuse an arena associated with a destroyed stream's handle. These arenas remain for the
+ * lifetime of the resource; applications that continually create and destroy streams will grow
+ * the resource's internal bookkeeping.
  *
  * Blocks in each arena are allocated using address-ordered first fit. When a block is freed, it is
  * coalesced with neighbouring free blocks if the addresses are contiguous. Free superblocks are
