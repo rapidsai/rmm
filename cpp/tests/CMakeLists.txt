@@ -1,6 +1,6 @@
 # =============================================================================
 # cmake-format: off
-# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 # cmake-format: on
 # =============================================================================
@@ -11,6 +11,8 @@ option(CODE_COVERAGE "Enable generating code coverage with gcov." OFF)
 
 set(RMM_TESTS_CXX_FLAGS -Wall -Werror -Wextra -Wsign-conversion -Wno-unknown-pragmas)
 set(RMM_TESTS_CUDA_FLAGS -Werror=all-warnings -Xcompiler=-Wall,-Werror,-Wextra,-Wsign-conversion)
+
+find_package(Threads REQUIRED)
 
 include(rapids-test)
 rapids_test_init()
@@ -24,8 +26,8 @@ function(ConfigureTestInternal TEST_NAME)
   add_executable(${TEST_NAME} ${ARGN})
   target_include_directories(${TEST_NAME} PRIVATE "$<BUILD_INTERFACE:${RMM_SOURCE_DIR}>")
   target_link_libraries(
-    ${TEST_NAME} PRIVATE GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main pthread rmm
-                         $<TARGET_NAME_IF_EXISTS:conda_env>)
+    ${TEST_NAME} PRIVATE GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main
+                         Threads::Threads rmm $<TARGET_NAME_IF_EXISTS:conda_env>)
   set_target_properties(
     ${TEST_NAME}
     PROPERTIES POSITION_INDEPENDENT_CODE ON

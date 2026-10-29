@@ -17,6 +17,7 @@
 
 #include <chrono>
 #include <cstddef>
+#include <limits>
 #include <random>
 #include <type_traits>
 #include <utility>
@@ -48,9 +49,9 @@ struct DeviceScalarTest : public ::testing::Test {
     requires(std::is_integral_v<U> && not std::is_same_v<U, bool>)
   U random_value()
   {
-    static std::uniform_int_distribution<U> distribution{std::numeric_limits<T>::lowest(),
-                                                         std::numeric_limits<T>::max()};
-    return distribution(generator);
+    static std::uniform_int_distribution<decltype(+U{})> distribution{
+      std::numeric_limits<T>::lowest(), std::numeric_limits<T>::max()};
+    return static_cast<U>(distribution(generator));
   }
 
   template <typename U = T>

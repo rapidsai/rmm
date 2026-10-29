@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -73,7 +73,7 @@ class raii_temp_directory {
 
   [[nodiscard]] std::string generate_path(std::string filename) const
   {
-    return directory_path_ / filename;
+    return (directory_path_ / filename).string();
   }
 
  private:
@@ -254,7 +254,7 @@ TEST(Adaptor, AllocateFailure)
   auto* ptr0 = log_mr.allocate_sync(size0);
   log_mr.deallocate_sync(ptr0, size0);
   try {
-    static_cast<void*>(log_mr.allocate_sync(size1));
+    static_cast<void>(log_mr.allocate_sync(size1));
   } catch (...) {
   }
   log_mr.flush();
