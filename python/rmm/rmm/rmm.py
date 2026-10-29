@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 from collections.abc import Callable
 from typing import Any
@@ -35,7 +35,10 @@ def reinitialize(
     ----------
     pool_allocator : bool, default False
         If True, use a pool allocation strategy which can greatly improve
-        performance.
+        performance. The pool is backed by ``CudaAsyncMemoryResource`` when the
+        device supports stream-ordered memory pools, by
+        ``CudaMemoryResource`` otherwise, or by ``ManagedMemoryResource`` when
+        `managed_memory` is True.
     managed_memory : bool, default False
         If True, use managed memory for device memory allocation
     initial_pool_size : int | str, default None
