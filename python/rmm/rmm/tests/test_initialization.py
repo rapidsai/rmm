@@ -128,3 +128,38 @@ def test_available_device_memory():
     assert initial_memory[1] == final_memory[1]
     assert initial_memory[0] > 0
     assert final_memory[0] > 0
+
+
+def _expected_initial_resource_type(device=None):
+    from cuda.bindings import runtime
+
+    if device is None:
+        device = rmm._cuda.gpu.getDevice()
+    if rmm._cuda.gpu.getDeviceAttribute(
+        runtime.cudaDeviceAttr.cudaDevAttrMemoryPoolsSupported, device
+    ):
+        return rmm.mr.CudaAsyncMemoryResource
+    return rmm.mr.CudaMemoryResource
+
+
+def test_reinitialize_default_resource():
+    rmm.reinitialize()
+    assert (
+        type(rmm.mr.get_current_device_resource())
+        is _expected_initial_resource_type()
+    )
+
+
+def test_reinitialize_managed_memory_resource():
+    rmm.reinitialize(managed_memory=True)
+    assert (
+        type(rmm.mr.get_current_device_resource())
+        is rmm.mr.ManagedMemoryResource
+    )
+
+
+def test_initial_per_device_resource():
+    for device in range(rmm._cuda.gpu.getDeviceCount()):
+        mr = rmm.mr.get_per_device_resource(device)
+        assert type(mr) is _expected_initial_resource_type(device)
+        assert rmm.mr.get_per_device_resource(device) is mr

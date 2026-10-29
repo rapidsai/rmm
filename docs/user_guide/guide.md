@@ -126,8 +126,9 @@ by migratable memory.
 Memory resource objects are used to configure how device memory allocations are made by
 RMM.
 
-By default if a memory resource is not set explicitly, RMM uses the `CudaMemoryResource`, which
-uses `cudaMalloc` for allocating device memory.
+By default if a memory resource is not set explicitly, RMM uses the `CudaAsyncMemoryResource`,
+which uses `cudaMallocAsync` with the device's current memory pool. On devices that do not support
+stream-ordered memory pools, RMM uses the `CudaMemoryResource`, which uses `cudaMalloc`.
 
 `rmm.reinitialize()` provides an easy way to initialize RMM with specific memory resource options
 across multiple devices. See `help(rmm.reinitialize)` for full details.
@@ -250,9 +251,9 @@ Common to both usages is that they modify the currently active RMM memory resour
 >>> import rmm
 >>> import rmm.statistics
 
->>> # We start with the default CUDA memory resource
+>>> # We start with the default resource (CudaMemoryResource on devices without memory pool support)
 >>> rmm.mr.get_current_device_resource()
-<rmm.pylibrmm.memory_resource.CudaMemoryResource object at 0x7fa0da48a8e0>
+<rmm.pylibrmm.memory_resource.CudaAsyncMemoryResource object at 0x7fa0da48a8e0>
 
 >>> # When using statistics, we get a StatisticsResourceAdaptor with the context
 >>> with rmm.statistics.statistics():
