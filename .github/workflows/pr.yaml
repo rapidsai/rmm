@@ -313,7 +313,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_python.sh
-      matrix_type: cuda-13-4-pr,pull-request
+      matrix_type: python-3-15-pr,cuda-13-4-pr,pull-request
   conda-python-tests-integration-optional:
     needs: [conda-python-build, changed-files]
     permissions:
@@ -328,7 +328,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_python_integrations.sh
-      matrix_type: cuda-13-4-pr,pull-request
+      matrix_type: python-3-15-pr,cuda-13-4-pr,pull-request
   docs-build-matrix:
     permissions:
       contents: read
@@ -409,7 +409,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_wheel.sh
-      matrix_type: cuda-13-4-pr,pull-request
+      matrix_type: python-3-15-pr,cuda-13-4-pr,pull-request
   wheel-tests-integration-optional:
     needs: [wheel-build, changed-files]
     permissions:
@@ -424,7 +424,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_wheel_integrations.sh
-      matrix_type: cuda-13-4-pr,pull-request
+      matrix_type: python-3-15-pr,cuda-13-4-pr,pull-request
   devcontainer:
     permissions:
       actions: read
