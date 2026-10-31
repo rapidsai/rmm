@@ -20,7 +20,6 @@ cdef extern from * nogil:
     """
     #include <optional>
     #include <cuda/stream>
-    #include <rmm/aligned.hpp>
     #include <rmm/resource_ref.hpp>
 
     // Default-constructible wrapper around rmm::device_async_resource_ref.
@@ -52,27 +51,38 @@ cdef extern from * nogil:
             return ref.value();
         }
 
-        void* allocate(cuda::stream_ref stream, std::size_t bytes) {
-            return ref.value().allocate(stream, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        void* allocate(
+            cuda::stream_ref stream,
+            std::size_t bytes,
+            std::size_t alignment) {
+            return ref.value().allocate(stream, bytes, alignment);
         }
 
         void deallocate(
             cuda::stream_ref stream,
             void* ptr,
-            std::size_t bytes) noexcept {
-            ref.value().deallocate(stream, ptr, bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
+            std::size_t bytes,
+            std::size_t alignment) noexcept {
+            ref.value().deallocate(stream, ptr, bytes, alignment);
         }
     };
     """
     cdef cppclass device_async_resource_ref \
             "cython_device_async_resource_ref":
         device_async_resource_ref() noexcept
-        void* allocate(stream_ref stream, size_t bytes) except +
+        void* allocate(
+            stream_ref stream, size_t bytes, size_t alignment
+        ) except +
         void deallocate(
             stream_ref stream,
             void* ptr,
-            size_t bytes
+            size_t bytes,
+            size_t alignment
         ) noexcept
+
+
+cdef extern from "rmm/aligned.hpp" namespace "rmm" nogil:
+    const size_t CUDA_ALLOCATION_ALIGNMENT
 
 
 cdef extern from "<cuda/memory_resource>" namespace "cuda::mr" nogil:

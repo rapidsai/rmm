@@ -18,15 +18,15 @@ def test_custom_mr(capsys):
     allocations = []
     deallocations = []
 
-    def allocate_func(stream, size, alignment):
+    def allocate_func(size, stream):
         print(f"Allocating {size} bytes")
         ptr = base_mr.allocate(size, stream)
-        allocations.append((stream, ptr, size, alignment))
+        allocations.append((ptr, size, stream))
         return ptr
 
-    def deallocate_func(stream, ptr, size, alignment):
+    def deallocate_func(ptr, size, stream):
         print(f"Deallocating {size} bytes")
-        deallocations.append((stream, ptr, size, alignment))
+        deallocations.append((ptr, size, stream))
         return base_mr.deallocate(ptr, size, stream)
 
     rmm.mr.set_current_device_resource(
@@ -38,8 +38,7 @@ def test_custom_mr(capsys):
     captured = capsys.readouterr()
     assert captured.out == "Allocating 257 bytes\nDeallocating 257 bytes\n"
     assert len(allocations) == 1
-    assert allocations[0][2] == allocation_size
-    assert allocations[0][3] == 256
+    assert allocations[0][1] == allocation_size
     assert deallocations == allocations
 
 
@@ -55,10 +54,10 @@ def test_custom_mr(capsys):
 def test_callback_mr_error(err_raise, err_catch):
     base_mr = rmm.mr.CudaMemoryResource()
 
-    def allocate_func(stream, size, alignment):
+    def allocate_func(size, stream):
         raise err_raise("My alloc error")
 
-    def deallocate_func(stream, ptr, size, alignment):
+    def deallocate_func(ptr, size, stream):
         return base_mr.deallocate(ptr, size)
 
     rmm.mr.set_current_device_resource(
@@ -69,34 +68,14 @@ def test_callback_mr_error(err_raise, err_catch):
         rmm.DeviceBuffer(size=256)
 
 
-def test_callback_mr_python_api_uses_default_alignment():
-    """Python allocation APIs do not expose alignment, so C++ covers values above 256."""
-    alignments = []
-    base_mr = rmm.mr.CudaMemoryResource()
-
-    def allocate_func(stream, size, alignment):
-        alignments.append(alignment)
-        return base_mr.allocate(size, stream)
-
-    def deallocate_func(stream, ptr, size, alignment):
-        alignments.append(alignment)
-        return base_mr.deallocate(ptr, size, stream)
-
-    cb_mr = rmm.mr.CallbackMemoryResource(allocate_func, deallocate_func)
-    buf = rmm.DeviceBuffer(size=1, mr=cb_mr)
-    del buf
-
-    assert alignments == [256, 256]
-
-
 def test_callback_mr_reports_deallocation_errors(monkeypatch):
     base_mr = rmm.mr.CudaMemoryResource()
     unraisable = []
 
-    def allocate_func(stream, size, alignment):
+    def allocate_func(size, stream):
         return base_mr.allocate(size, stream)
 
-    def deallocate_func(stream, ptr, size, alignment):
+    def deallocate_func(ptr, size, stream):
         base_mr.deallocate(ptr, size, stream)
         raise RuntimeError("My dealloc error")
 
@@ -115,11 +94,11 @@ def test_device_buffer_with_mr():
     base = rmm.mr.CudaMemoryResource()
     rmm.mr.set_current_device_resource(base)
 
-    def alloc_cb(stream, size, alignment, *, base):
+    def alloc_cb(size, stream, *, base):
         allocations.append(size)
         return base.allocate(size, stream)
 
-    def dealloc_cb(stream, ptr, size, alignment, *, base):
+    def dealloc_cb(ptr, size, stream, *, base):
         return base.deallocate(ptr, size, stream)
 
     cb_mr = rmm.mr.CallbackMemoryResource(
