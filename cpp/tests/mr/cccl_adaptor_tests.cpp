@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "../byte_literals.hpp"
+
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/error.hpp>
@@ -165,11 +167,11 @@ TEST(AlignedAdaptorTest, ThrowOnInvalidAllocationAlignment)
 TEST(ArenaMRAdaptorTest, EqualityAndSharedOwnership)
 {
   cuda_mr cuda{};
-  arena_memory_resource mr{cuda};
+  arena_memory_resource mr{cuda, 64_MiB};
   auto copy = mr;
   EXPECT_EQ(mr, copy);
 
-  arena_memory_resource other{cuda};
+  arena_memory_resource other{cuda, 64_MiB};
   EXPECT_NE(mr, other);
 
   void* ptr{nullptr};
