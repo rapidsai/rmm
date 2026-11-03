@@ -36,7 +36,6 @@ rapids-print-env
 ./ci/gpu_info.sh
 
 rapids-logger "TEMP: WSL memory probe"
-nvidia-smi -q -d MEMORY || true
 grep -E "MemTotal|MemFree|MemAvailable|Commit" /proc/meminfo || true
 /opt/conda/bin/python ci/wsl_mem_probe.py || true
 

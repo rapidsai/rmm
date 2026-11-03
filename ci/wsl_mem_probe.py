@@ -66,21 +66,3 @@ print(
 )
 rt.cudaFree(a)
 show("after free")
-
-chunks = []
-while (c := malloc(GiB)) is not None:
-    chunks.append(c)
-print(f"cumulative 1 GiB chunks: {len(chunks)} GiB", flush=True)
-show("with all chunks held")
-for c in chunks:
-    rt.cudaFree(c)
-show("after freeing chunks")
-for pct in (90, 85, 80, 75, 70, 60, 50):
-    n = f0 * pct // 100 // 256 * 256
-    p = malloc(n)
-    print(
-        f"single {pct}% of free = {n} B ({n / GiB:.2f} GiB) ok={bool(p)}",
-        flush=True,
-    )
-    if p:
-        rt.cudaFree(p)
