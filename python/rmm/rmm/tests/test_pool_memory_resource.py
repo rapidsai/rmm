@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for PoolMemoryResource."""
@@ -73,3 +73,27 @@ def test_mr_upstream_lifetime() -> None:
     # Delete cuda_mr first. Should be kept alive by pool_mr
     del cuda_mr
     del pool_mr
+
+
+def test_reinitialize_pool_upstream() -> None:
+    from cuda.bindings import runtime
+
+    rmm.reinitialize(pool_allocator=True, initial_pool_size="1MiB")
+    mr = rmm.mr.get_current_device_resource()
+    assert type(mr) is rmm.mr.PoolMemoryResource
+    expected: type[rmm.mr.DeviceMemoryResource] = rmm.mr.CudaMemoryResource
+    if rmm._cuda.gpu.getDeviceAttribute(
+        runtime.cudaDeviceAttr.cudaDevAttrMemoryPoolsSupported,
+        rmm._cuda.gpu.getDevice(),
+    ):
+        expected = rmm.mr.CudaAsyncMemoryResource
+    assert type(mr.get_upstream()) is expected
+
+
+def test_reinitialize_managed_pool_upstream() -> None:
+    rmm.reinitialize(
+        pool_allocator=True, managed_memory=True, initial_pool_size="1MiB"
+    )
+    mr = rmm.mr.get_current_device_resource()
+    assert type(mr) is rmm.mr.PoolMemoryResource
+    assert type(mr.get_upstream()) is rmm.mr.ManagedMemoryResource
