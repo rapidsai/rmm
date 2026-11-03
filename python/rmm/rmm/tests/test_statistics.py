@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
@@ -16,7 +16,7 @@ from rmm.statistics import (
 )
 
 
-def test_context():
+def test_context() -> None:
     mr0 = rmm.mr.get_current_device_resource()
     assert get_statistics() is None
     with statistics():
@@ -27,6 +27,7 @@ def test_context():
         )
         b1 = rmm.DeviceBuffer(size=20)
         stats = get_statistics()
+        assert stats is not None
         assert stats.current_bytes == 20
         assert stats.current_count == 1
         assert stats.peak_bytes == 20
@@ -39,6 +40,7 @@ def test_context():
             assert mr1 is mr2
             b2 = rmm.DeviceBuffer(size=10)
             stats = get_statistics()
+            assert stats is not None
             assert stats.current_bytes == 10
             assert stats.current_count == 1
             assert stats.peak_bytes == 10
@@ -47,6 +49,7 @@ def test_context():
             assert stats.total_count == 1
 
         stats = get_statistics()
+        assert stats is not None
         assert stats.current_bytes == 30
         assert stats.current_count == 2
         assert stats.peak_bytes == 30

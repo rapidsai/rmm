@@ -1,18 +1,18 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
+#include <cuda/stream>
 
 #include <array>
 #include <cstdio>
 #include <sstream>
 #include <string>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace detail {
 
 // Stringify a size in bytes to a human-readable value
@@ -31,12 +31,12 @@ inline std::string format_bytes(std::size_t value)
 }
 
 // Stringify a stream ID
-inline std::string format_stream(rmm::cuda_stream_view stream)
+inline std::string format_stream(cuda::stream_ref stream)
 {
   std::stringstream sstr{};
-  sstr << std::hex << stream.value();
+  sstr << std::hex << stream.get();
   return sstr.str();
 }
 
 }  // namespace detail
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

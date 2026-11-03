@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,7 +10,7 @@
 #include <cassert>
 #include <cstddef>
 
-namespace RMM_EXPORT rmm {
+RMM_NAMESPACE_BEGIN
 
 /**
  * @addtogroup utilities
@@ -43,7 +43,20 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
 [[nodiscard]] bool is_supported_alignment(std::size_t alignment) noexcept;
 
 /**
+ * @brief Returns whether or not `alignment` is supported by base CUDA memory resources.
+ *
+ * @param[in] alignment to check
+ *
+ * @return True if the alignment is a valid memory alignment and is no larger than
+ * CUDA_ALLOCATION_ALIGNMENT, false otherwise.
+ */
+[[nodiscard]] bool is_supported_base_resource_alignment(std::size_t alignment) noexcept;
+
+/**
  * @brief Align up to nearest multiple of specified power of 2
+ *
+ * `alignment` must be a power of 2, and the result must not overflow `std::size_t`.
+ * These invariants are checked with assertions in debug builds.
  *
  * @param[in] value value to align
  * @param[in] alignment amount, in bytes, must be a power of 2
@@ -54,6 +67,8 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
 
 /**
  * @brief Align down to the nearest multiple of specified power of 2
+ *
+ * `alignment` must be a power of 2. This invariant is checked with an assertion in debug builds.
  *
  * @param[in] value value to align
  * @param[in] alignment amount, in bytes, must be a power of 2
@@ -80,9 +95,9 @@ static constexpr std::size_t CUDA_ALLOCATION_ALIGNMENT{256};
  *
  * @return true if the pointer is aligned
  */
-[[nodiscard]] bool is_pointer_aligned(void* ptr,
-                                      std::size_t alignment = CUDA_ALLOCATION_ALIGNMENT) noexcept;
+[[nodiscard]] bool is_pointer_aligned(
+  void* ptr, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
 
 /** @} */  // end of group
 
-}  // namespace RMM_EXPORT rmm
+RMM_NAMESPACE_END

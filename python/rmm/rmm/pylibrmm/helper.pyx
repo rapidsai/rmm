@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 """Helper functions for rmm"""
@@ -46,7 +46,7 @@ cdef object parse_bytes(object s):
     """
     cdef str suffix
     cdef double n
-    cdef int multiplier
+    cdef long long multiplier
 
     if isinstance(s, int):
         return s
@@ -64,4 +64,9 @@ cdef object parse_bytes(object s):
 
     multiplier = BYTE_SIZES[suffix.lower()]
 
-    return int(n*multiplier)
+    try:
+        return int(n*multiplier)
+    except OverflowError:
+        raise ValueError(
+            f"Could not parse {s} as a byte specification"
+        ) from None

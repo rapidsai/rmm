@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 set -eou pipefail
@@ -7,8 +7,8 @@ set -eou pipefail
 source rapids-init-pip
 
 RAPIDS_PY_CUDA_SUFFIX="$(rapids-wheel-ctk-name-gen "${RAPIDS_CUDA_VERSION}")"
-LIBRMM_WHEELHOUSE=$(RAPIDS_PY_WHEEL_NAME="librmm_${RAPIDS_PY_CUDA_SUFFIX}" rapids-download-wheels-from-github cpp)
-RMM_WHEELHOUSE=$(rapids-download-from-github "$(rapids-package-name "wheel_python" rmm --stable --cuda "$RAPIDS_CUDA_VERSION")")
+LIBRMM_WHEELHOUSE=$(rapids-download-from-github "$(rapids-artifact-name wheel_cpp librmm rmm --cuda "$RAPIDS_CUDA_VERSION")")
+RMM_WHEELHOUSE=$(rapids-download-from-github "$(rapids-artifact-name wheel_python rmm rmm --stable --cuda "$RAPIDS_CUDA_VERSION")")
 
 # generate constraints (possibly pinning to oldest support versions of dependencies)
 rapids-generate-pip-constraints test_python "${PIP_CONSTRAINT}"
@@ -28,9 +28,7 @@ PIP_INSTALL_SHARED_ARGS=(
 
 EXITCODE=0
 
-rapids-logger "Check system info"
-uname -a
-nvidia-smi
+./ci/gpu_info.sh
 
 echo "::group::PyTorch Tests"
 
@@ -42,7 +40,7 @@ CUDA_MINOR=$(echo "${RAPIDS_CUDA_VERSION}" | cut -d'.' -f2)
 # See notes in 'dependencies.yaml' for details on supported versions.
 if \
     { [ "${CUDA_MAJOR}" -eq 12 ] && [ "${CUDA_MINOR}" -eq 9 ]; } \
-    || { [ "${CUDA_MAJOR}" -eq 13 ] && [ "${CUDA_MINOR}" -eq 0 ]; }; \
+    || { [ "${CUDA_MAJOR}" -eq 13 ] && [ "${CUDA_MINOR}" -lt 3 ]; }; \
 then
 
     # ensure a CUDA variant of 'torch' is used
@@ -63,7 +61,7 @@ then
         EXITCODE="${EXITCODE_PYTORCH}"
     fi
 else
-    rapids-logger "Skipping PyTorch tests (requires CUDA 12.9 or 13.0, found ${RAPIDS_CUDA_VERSION})"
+    rapids-logger "Skipping PyTorch tests (requires CUDA 12.9 or <13.3, found ${RAPIDS_CUDA_VERSION})"
 fi
 
 echo "::endgroup::"

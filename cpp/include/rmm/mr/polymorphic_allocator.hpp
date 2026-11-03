@@ -1,19 +1,22 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
+#include <rmm/aligned.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
+#include <cuda/stream>
+
 #include <cstddef>
 #include <memory>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr {
 /**
  * @addtogroup memory_resources
@@ -21,11 +24,11 @@ namespace mr {
  * @file
  */
 /**
- * @brief A stream ordered Allocator using a `rmm::mr::device_memory_resource` to satisfy
+ * @brief A stream ordered Allocator using a `device_async_resource_ref` to satisfy
  * (de)allocations.
  *
  * Similar to `std::pmr::polymorphic_allocator`, uses the runtime polymorphism of
- * `device_memory_resource` to allow containers with `polymorphic_allocator` as their static
+ * type-erased resource refs to allow containers with `polymorphic_allocator` as their static
  * allocator type to be interoperable, but exhibit different behavior depending on resource used.
  *
  * Unlike STL allocators, `polymorphic_allocator`'s `allocate` and `deallocate` functions are stream
@@ -52,7 +55,9 @@ class polymorphic_allocator {
    *
    * @param mr The upstream memory resource to use for allocation.
    */
-  polymorphic_allocator(device_async_resource_ref mr) : mr_{mr} {}
+  polymorphic_allocator(cuda::mr::any_resource<cuda::mr::device_accessible> mr) : mr_(std::move(mr))
+  {
+  }
 
   /**
    * @brief Construct a `polymorphic_allocator` using the underlying memory resource of `other`.
@@ -62,7 +67,7 @@ class polymorphic_allocator {
    */
   template <typename U>
   polymorphic_allocator(polymorphic_allocator<U> const& other) noexcept
-    : mr_{other.get_upstream_resource()}
+    : mr_(other.get_upstream_resource())
   {
   }
 
@@ -73,9 +78,10 @@ class polymorphic_allocator {
    * @param stream The stream on which to perform the allocation
    * @return Pointer to the allocated storage
    */
-  value_type* allocate(std::size_t num, cuda_stream_view stream)
+  value_type* allocate(std::size_t num, cuda::stream_ref stream)
   {
-    return static_cast<value_type*>(get_upstream_resource().allocate(stream, num * sizeof(T)));
+    return static_cast<value_type*>(
+      mr_.allocate(stream, num * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT));
   }
 
   /**
@@ -88,9 +94,9 @@ class polymorphic_allocator {
    * @param num Number of objects originally allocated
    * @param stream Stream on which to perform the deallocation
    */
-  void deallocate(value_type* ptr, std::size_t num, cuda_stream_view stream) noexcept
+  void deallocate(value_type* ptr, std::size_t num, cuda::stream_ref stream) noexcept
   {
-    get_upstream_resource().deallocate(stream, ptr, num * sizeof(T));
+    mr_.deallocate(stream, ptr, num * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   /**
@@ -98,11 +104,11 @@ class polymorphic_allocator {
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return mr_;
+    return rmm::device_async_resource_ref{mr_};
   }
 
  private:
-  rmm::device_async_resource_ref mr_{
+  mutable cuda::mr::any_resource<cuda::mr::device_accessible> mr_{
     get_current_device_resource_ref()};  ///< Underlying resource used for (de)allocation
 };
 
@@ -144,7 +150,7 @@ bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> co
 /**
  * @brief Adapts a stream ordered allocator to provide a standard `Allocator` interface
  *
- * A stream-ordered allocator (i.e., `allocate/deallocate` use a `cuda_stream_view`) cannot be used
+ * A stream-ordered allocator (i.e., `allocate/deallocate` use a `cuda::stream_ref`) cannot be used
  * in an interface that expects a standard C++ `Allocator` interface. `stream_allocator_adaptor`
  * wraps a stream-ordered allocator and a stream to provide a standard `Allocator` interface. The
  * adaptor uses the wrapped stream in calls to the underlying allocator's `allocate` and
@@ -153,7 +159,7 @@ bool operator!=(polymorphic_allocator<T> const& lhs, polymorphic_allocator<U> co
  * Example:
  *\code{.cpp}
  * my_stream_ordered_allocator<int> a{...};
- * cuda_stream_view s = // create stream;
+ * cuda::stream_ref s = // create stream;
  *
  * auto adapted = stream_allocator_adaptor(a, s);
  *
@@ -181,7 +187,7 @@ class stream_allocator_adaptor {
    * @param allocator The stream ordered allocator to use as the underlying allocator
    * @param stream The stream used with the underlying allocator
    */
-  stream_allocator_adaptor(Allocator const& allocator, cuda_stream_view stream)
+  stream_allocator_adaptor(Allocator const& allocator, cuda::stream_ref stream)
     : alloc_{allocator}, stream_{stream}
   {
   }
@@ -237,7 +243,7 @@ class stream_allocator_adaptor {
   /**
    * @briefreturn{The stream on which calls to the underlying allocator are made}
    */
-  [[nodiscard]] cuda_stream_view stream() const noexcept { return stream_; }
+  [[nodiscard]] cuda::stream_ref stream() const noexcept { return stream_; }
 
   /**
    * @briefreturn{The underlying allocator}
@@ -245,8 +251,9 @@ class stream_allocator_adaptor {
   [[nodiscard]] Allocator underlying_allocator() const noexcept { return alloc_; }
 
  private:
-  Allocator alloc_;          ///< Underlying allocator used for (de)allocation
-  cuda_stream_view stream_;  ///< Stream on which (de)allocations are performed
+  Allocator alloc_;  ///< Underlying allocator used for (de)allocation
+  cuda::stream_ref stream_{
+    cuda::invalid_stream_t{}};  ///< Stream on which (de)allocations are performed
 };
 
 /**
@@ -285,4 +292,4 @@ bool operator!=(stream_allocator_adaptor<A> const& lhs, stream_allocator_adaptor
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

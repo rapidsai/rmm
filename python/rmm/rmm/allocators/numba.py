@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 import inspect
@@ -25,8 +25,8 @@ def _make_emm_plugin_finalizer(
         """
         Invoked when the MemoryPointer is freed
         """
-        # At exit time (particularly in the Numba test suite) allocations may
-        # have already been cleaned up by a call to Context.reset() for the
+        # At exit time (particularly in the Numba-CUDA test suite) allocations
+        # may have already been cleaned up by a call to Context.reset() for the
         # context, even if there are some DeviceNDArrays and their underlying
         # allocations lying around. Finalizers then get called by weakref's
         # atexit finalizer, at which point allocations[handle] no longer
@@ -47,10 +47,10 @@ def _make_emm_plugin_finalizer(
 
 class RMMNumbaManager(HostOnlyCUDAMemoryManager):
     """
-    External Memory Management Plugin implementation for Numba. Provides
+    External Memory Management Plugin implementation for Numba-CUDA. Provides
     on-device allocation only.
 
-    See https://numba.readthedocs.io/en/stable/cuda/external-memory.html for
+    See https://nvidia.github.io/numba-cuda/user/external-memory.html for
     details of the interface being implemented here.
     """
 
@@ -115,7 +115,7 @@ for _, method in inspect.getmembers(RMMNumbaManager, inspect.isfunction):
         )
 
 
-# Enables the use of RMM for Numba via an environment variable setting,
-# NUMBA_CUDA_MEMORY_MANAGER=rmm. See:
-# https://numba.readthedocs.io/en/stable/cuda/external-memory.html#environment-variable
+# Enables the use of RMM for Numba-CUDA via an environment variable setting,
+# NUMBA_CUDA_MEMORY_MANAGER=rmm.allocators.numba. See:
+# https://nvidia.github.io/numba-cuda/user/external-memory.html#environment-variable
 _numba_memory_manager = RMMNumbaManager

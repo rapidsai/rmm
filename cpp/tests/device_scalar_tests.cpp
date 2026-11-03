@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,10 +7,10 @@
 #include <rmm/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_scalar.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
@@ -19,9 +19,13 @@
 #include <cstddef>
 #include <random>
 #include <type_traits>
+#include <utility>
 
 // explicit instantiation for test coverage purposes
 template class rmm::device_scalar<int>;
+
+static_assert(
+  std::is_same_v<decltype(std::declval<rmm::device_scalar<int>>().stream()), cuda::stream_ref>);
 
 template <typename T>
 struct DeviceScalarTest : public ::testing::Test {
@@ -32,15 +36,16 @@ struct DeviceScalarTest : public ::testing::Test {
 
   DeviceScalarTest() : value{random_value()} {}
 
-  template <typename U = T, std::enable_if_t<std::is_same_v<U, bool>, bool> = true>
+  template <typename U = T>
+    requires std::is_same_v<U, bool>
   U random_value()
   {
     static std::bernoulli_distribution distribution{};
     return distribution(generator);
   }
 
-  template <typename U                                                                     = T,
-            std::enable_if_t<(std::is_integral_v<U> && not std::is_same_v<U, bool>), bool> = true>
+  template <typename U = T>
+    requires(std::is_integral_v<U> && not std::is_same_v<U, bool>)
   U random_value()
   {
     static std::uniform_int_distribution<U> distribution{std::numeric_limits<T>::lowest(),
@@ -48,7 +53,8 @@ struct DeviceScalarTest : public ::testing::Test {
     return distribution(generator);
   }
 
-  template <typename U = T, std::enable_if_t<std::is_floating_point_v<U>, bool> = true>
+  template <typename U = T>
+    requires std::is_floating_point_v<U>
   U random_value()
   {
     auto const mean{100};
@@ -138,7 +144,7 @@ TYPED_TEST(DeviceScalarTest, SetGetStream)
 
   EXPECT_EQ(scalar.stream(), this->stream);
 
-  rmm::cuda_stream_view const otherstream{cudaStreamPerThread};
+  auto const otherstream = cuda::stream_ref{cudaStreamPerThread};
   scalar.set_stream(otherstream);
 
   EXPECT_EQ(scalar.stream(), otherstream);
@@ -146,7 +152,7 @@ TYPED_TEST(DeviceScalarTest, SetGetStream)
 
 TEST(DeviceScalarAlignmentTest, SmallAlignment)
 {
-  auto s = rmm::device_scalar<int>(rmm::cuda_stream_view{});
+  auto s = rmm::device_scalar<int>(cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
   EXPECT_TRUE(rmm::is_pointer_aligned(s.data(), std::alignment_of_v<decltype(s)::value_type>));
 }
 
@@ -156,6 +162,7 @@ TEST(DeviceScalarAlignmentTest, LargeAlignment)
     int value;
   };
 
-  EXPECT_THROW(std::ignore = rmm::device_scalar<OverAligned>(rmm::cuda_stream_view{}),
+  EXPECT_THROW(std::ignore =
+                 rmm::device_scalar<OverAligned>(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}),
                rmm::bad_alloc);
 }

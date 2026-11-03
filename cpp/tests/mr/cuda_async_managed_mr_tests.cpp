@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -10,6 +10,9 @@
 #include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
+
+#include <cstdint>
+#include <limits>
 
 namespace rmm::test {
 namespace {
@@ -28,6 +31,15 @@ class AsyncManagedMRTest : public ::testing::Test {
   }
 };
 
+TEST_F(AsyncManagedMRTest, DefaultReleaseThresholdIsUint64Max)
+{
+  cuda_async_managed_mr mr{};
+  std::uint64_t threshold{};
+  RMM_CUDA_TRY(
+    cudaMemPoolGetAttribute(mr.pool_handle(), cudaMemPoolAttrReleaseThreshold, &threshold));
+  EXPECT_EQ(threshold, std::numeric_limits<std::uint64_t>::max());
+}
+
 TEST_F(AsyncManagedMRTest, BasicAllocateDeallocate)
 {
   const auto alloc_size{100};
@@ -44,7 +56,7 @@ TEST_F(AsyncManagedMRTest, EqualityWithSamePool)
   // ultimately refer to the same underlying pool handle. Construct two and compare.
   cuda_async_managed_mr mr1{};
   cuda_async_managed_mr mr2{};
-  EXPECT_TRUE(mr1.is_equal(mr2));
+  EXPECT_EQ(mr1, mr2);
 }
 
 TEST_F(AsyncManagedMRTest, AllocatedPointerIsManaged)

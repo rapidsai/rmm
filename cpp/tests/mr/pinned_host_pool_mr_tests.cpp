@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -9,28 +9,18 @@
 
 #include <gtest/gtest.h>
 
-// explicit instantiation for test coverage purposes
-template class rmm::mr::pool_memory_resource<rmm::mr::pinned_host_memory_resource>;
-
 namespace rmm::test {
 namespace {
-using pool_mr = rmm::mr::pool_memory_resource<rmm::mr::pinned_host_memory_resource>;
-
-TEST(PinnedPoolTest, ThrowOnNullUpstream)
-{
-  auto construct_nullptr = []() { pool_mr mr{nullptr, 1024}; };
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
-}
+using pool_mr = rmm::mr::pool_memory_resource;
 
 TEST(PinnedPoolTest, ThrowMaxLessThanInitial)
 {
   // Make sure first argument is enough larger than the second that alignment rounding doesn't
   // make them equal
   auto max_less_than_initial = []() {
-    rmm::mr::pinned_host_memory_resource pinned_mr{};
     const auto initial{1024};
     const auto maximum{256};
-    pool_mr mr{&pinned_mr, initial, maximum};
+    pool_mr mr{rmm::mr::pinned_host_memory_resource{}, initial, maximum};
   };
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }
@@ -40,10 +30,9 @@ TEST(PinnedPoolTest, ReferenceThrowMaxLessThanInitial)
   // Make sure first argument is enough larger than the second that alignment rounding doesn't
   // make them equal
   auto max_less_than_initial = []() {
-    rmm::mr::pinned_host_memory_resource pinned_mr{};
     const auto initial{1024};
     const auto maximum{256};
-    pool_mr mr{pinned_mr, initial, maximum};
+    pool_mr mr{rmm::mr::pinned_host_memory_resource{}, initial, maximum};
   };
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }
@@ -52,9 +41,8 @@ TEST(PinnedPoolTest, ReferenceThrowMaxLessThanInitial)
 TEST(PinnedPoolTest, InitialAndMaxPoolSizeEqual)
 {
   EXPECT_NO_THROW([]() {
-    rmm::mr::pinned_host_memory_resource pinned_mr{};
-    pool_mr mr(pinned_mr, 1000192, 1000192);
-    mr.allocate_sync(1000);
+    pool_mr mr(rmm::mr::pinned_host_memory_resource{}, 1000192, 1000192);
+    (void)mr.allocate_sync(1000);
   }());
 }
 
@@ -62,30 +50,27 @@ TEST(PinnedPoolTest, NonAlignedPoolSize)
 {
   EXPECT_THROW(
     []() {
-      rmm::mr::pinned_host_memory_resource pinned_mr{};
-      pool_mr mr(pinned_mr, 1000031, 1000192);
-      mr.allocate_sync(1000);
+      pool_mr mr(rmm::mr::pinned_host_memory_resource{}, 1000031, 1000192);
+      (void)mr.allocate_sync(1000);
     }(),
     rmm::logic_error);
 
   EXPECT_THROW(
     []() {
-      rmm::mr::pinned_host_memory_resource pinned_mr{};
-      pool_mr mr(pinned_mr, 1000192, 1000200);
-      mr.allocate_sync(1000);
+      pool_mr mr(rmm::mr::pinned_host_memory_resource{}, 1000192, 1000200);
+      (void)mr.allocate_sync(1000);
     }(),
     rmm::logic_error);
 }
 
 TEST(PinnedPoolTest, ThrowOutOfMemory)
 {
-  rmm::mr::pinned_host_memory_resource pinned_mr{};
   const auto initial{0};
   const auto maximum{1024};
-  pool_mr mr{pinned_mr, initial, maximum};
-  mr.allocate_sync(1024);
+  pool_mr mr{rmm::mr::pinned_host_memory_resource{}, initial, maximum};
+  (void)mr.allocate_sync(1024);
 
-  EXPECT_THROW(mr.allocate_sync(1024), rmm::out_of_memory);
+  EXPECT_THROW((void)mr.allocate_sync(1024), rmm::out_of_memory);
 }
 
 }  // namespace

@@ -1,0 +1,120 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+#pragma once
+
+#include <rmm/aligned.hpp>
+#include <rmm/detail/error.hpp>
+#include <rmm/detail/export.hpp>
+#include <rmm/mr/failure_callback_t.hpp>
+#include <rmm/resource_ref.hpp>
+
+#include <cuda/memory_resource>
+#include <cuda/stream>
+#include <cuda_runtime_api.h>
+
+#include <cstddef>
+#include <utility>
+
+RMM_NAMESPACE_BEGIN
+namespace mr {
+namespace detail {
+
+/**
+ * @brief Implementation class for failure_callback_resource_adaptor.
+ *
+ * @tparam ExceptionType The type of exception that this adaptor should respond to.
+ */
+template <typename ExceptionType>
+class failure_callback_resource_adaptor_impl {
+ public:
+  failure_callback_resource_adaptor_impl(
+    cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+    failure_callback_t callback,
+    void* callback_arg)
+    : upstream_mr_{std::move(upstream)}, callback_{std::move(callback)}, callback_arg_{callback_arg}
+  {
+  }
+
+  ~failure_callback_resource_adaptor_impl() = default;
+
+  failure_callback_resource_adaptor_impl(failure_callback_resource_adaptor_impl const&) = delete;
+  failure_callback_resource_adaptor_impl(failure_callback_resource_adaptor_impl&&)      = delete;
+  failure_callback_resource_adaptor_impl& operator=(failure_callback_resource_adaptor_impl const&) =
+    delete;
+  failure_callback_resource_adaptor_impl& operator=(failure_callback_resource_adaptor_impl&&) =
+    delete;
+
+  bool operator==(failure_callback_resource_adaptor_impl const& other) const noexcept
+  {
+    return this == std::addressof(other);
+  }
+
+  bool operator!=(failure_callback_resource_adaptor_impl const& other) const noexcept
+  {
+    return !(*this == other);
+  }
+
+  [[nodiscard]] device_async_resource_ref get_upstream_resource() const noexcept
+  {
+    return device_async_resource_ref{
+      const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
+  }
+
+  [[nodiscard]] void* allocate(cuda::stream_ref stream,
+                               std::size_t bytes,
+                               std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+  {
+    void* ret{};
+    while (true) {
+      try {
+        ret = upstream_mr_.allocate(stream, bytes, alignment);
+        break;
+      } catch (ExceptionType const&) {
+        if (!callback_(bytes, callback_arg_)) { throw; }
+      }
+    }
+    return ret;
+  }
+
+  void deallocate(cuda::stream_ref stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+  {
+    upstream_mr_.deallocate(stream, ptr, bytes, alignment);
+  }
+
+  [[nodiscard]] void* allocate_sync(std::size_t bytes,
+                                    std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+  {
+    auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
+    auto* ptr         = allocate(stream, bytes, alignment);
+    RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
+    return ptr;
+  }
+
+  void deallocate_sync(void* ptr,
+                       std::size_t bytes,
+                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+  {
+    auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
+    deallocate(stream, ptr, bytes, alignment);
+    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
+  }
+
+  RMM_CONSTEXPR_FRIEND void get_property(failure_callback_resource_adaptor_impl const&,
+                                         cuda::mr::device_accessible) noexcept
+  {
+  }
+
+ private:
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream_mr_;
+  failure_callback_t callback_;
+  void* callback_arg_;
+};
+
+}  // namespace detail
+}  // namespace mr
+RMM_NAMESPACE_END

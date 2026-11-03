@@ -1,0 +1,93 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <rmm/aligned.hpp>
+#include <rmm/detail/error.hpp>
+#include <rmm/detail/format.hpp>
+#include <rmm/mr/detail/limiting_resource_adaptor_impl.hpp>
+
+#include <cuda/stream>
+#include <cuda_runtime_api.h>
+
+RMM_NAMESPACE_BEGIN
+namespace mr {
+namespace detail {
+
+limiting_resource_adaptor_impl::limiting_resource_adaptor_impl(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream,
+  std::size_t allocation_limit,
+  std::size_t alignment)
+  : upstream_mr_{std::move(upstream)},
+    allocation_limit_{allocation_limit},
+    allocated_bytes_(0),
+    alignment_(alignment)
+{
+}
+
+device_async_resource_ref limiting_resource_adaptor_impl::get_upstream_resource() const noexcept
+{
+  return device_async_resource_ref{
+    const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
+}
+
+std::size_t limiting_resource_adaptor_impl::get_allocated_bytes() const { return allocated_bytes_; }
+
+std::size_t limiting_resource_adaptor_impl::get_allocation_limit() const
+{
+  return allocation_limit_;
+}
+
+void* limiting_resource_adaptor_impl::allocate(cuda::stream_ref stream,
+                                               std::size_t bytes,
+                                               std::size_t alignment)
+{
+  auto const proposed_size = rmm::align_up(bytes, alignment_);
+  auto const old           = allocated_bytes_.fetch_add(proposed_size);
+  if (old + proposed_size <= allocation_limit_) {
+    try {
+      return upstream_mr_.allocate(stream, bytes, alignment);
+    } catch (...) {
+      allocated_bytes_ -= proposed_size;
+      throw;
+    }
+  }
+
+  allocated_bytes_ -= proposed_size;
+  std::stringstream msg;
+  msg << "Exceeded memory limit " << allocation_limit_ << "; Allocated bytes " << allocated_bytes_
+      << "; Requested bytes " << bytes << "\n";
+  RMM_FAIL(msg.str(), rmm::out_of_memory);
+}
+
+void limiting_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
+                                                void* ptr,
+                                                std::size_t bytes,
+                                                std::size_t alignment) noexcept
+{
+  std::size_t const allocated_size = rmm::align_up(bytes, alignment_);
+  upstream_mr_.deallocate(stream, ptr, bytes, alignment);
+  allocated_bytes_ -= allocated_size;
+}
+
+void* limiting_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
+{
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
+  auto* ptr         = allocate(stream, bytes, alignment);
+  RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
+  return ptr;
+}
+
+void limiting_resource_adaptor_impl::deallocate_sync(void* ptr,
+                                                     std::size_t bytes,
+                                                     std::size_t alignment) noexcept
+{
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
+  deallocate(stream, ptr, bytes, alignment);
+  RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
+}
+
+}  // namespace detail
+}  // namespace mr
+RMM_NAMESPACE_END

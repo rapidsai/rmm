@@ -1,0 +1,66 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <rmm/cuda_device.hpp>
+#include <rmm/detail/error.hpp>
+#include <rmm/mr/detail/prefetch_resource_adaptor_impl.hpp>
+#include <rmm/prefetch.hpp>
+
+#include <cuda/stream>
+#include <cuda_runtime_api.h>
+
+RMM_NAMESPACE_BEGIN
+namespace mr {
+namespace detail {
+
+prefetch_resource_adaptor_impl::prefetch_resource_adaptor_impl(
+  cuda::mr::any_resource<cuda::mr::device_accessible> upstream)
+  : upstream_mr_{std::move(upstream)}
+{
+}
+
+device_async_resource_ref prefetch_resource_adaptor_impl::get_upstream_resource() const noexcept
+{
+  return device_async_resource_ref{
+    const_cast<cuda::mr::any_resource<cuda::mr::device_accessible>&>(upstream_mr_)};
+}
+
+void* prefetch_resource_adaptor_impl::allocate(cuda::stream_ref stream,
+                                               std::size_t bytes,
+                                               std::size_t alignment)
+{
+  void* ptr = upstream_mr_.allocate(stream, bytes, alignment);
+  rmm::prefetch(ptr, bytes, rmm::get_current_cuda_device(), stream);
+  return ptr;
+}
+
+void prefetch_resource_adaptor_impl::deallocate(cuda::stream_ref stream,
+                                                void* ptr,
+                                                std::size_t bytes,
+                                                std::size_t alignment) noexcept
+{
+  upstream_mr_.deallocate(stream, ptr, bytes, alignment);
+}
+
+void* prefetch_resource_adaptor_impl::allocate_sync(std::size_t bytes, std::size_t alignment)
+{
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
+  auto* ptr         = allocate(stream, bytes, alignment);
+  RMM_CUDA_TRY(cudaStreamSynchronize(stream.get()));
+  return ptr;
+}
+
+void prefetch_resource_adaptor_impl::deallocate_sync(void* ptr,
+                                                     std::size_t bytes,
+                                                     std::size_t alignment) noexcept
+{
+  auto const stream = cuda::stream_ref{cudaStream_t{cudaStreamDefault}};
+  deallocate(stream, ptr, bytes, alignment);
+  RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaStreamSynchronize(stream.get()));
+}
+
+}  // namespace detail
+}  // namespace mr
+RMM_NAMESPACE_END

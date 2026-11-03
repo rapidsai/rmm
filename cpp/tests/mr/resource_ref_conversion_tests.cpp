@@ -1,13 +1,16 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 // Tests for resource_ref type conversions between host_device and device/host variants
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_stream.hpp>
+#include <rmm/detail/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
+#include <rmm/mr/limiting_resource_adaptor.hpp>
 #include <rmm/mr/pinned_host_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
@@ -56,7 +59,10 @@ class new_delete_memory_resource {
   bool operator!=(new_delete_memory_resource const& other) const { return !operator==(other); }
 
   // NOLINTBEGIN
-  friend void get_property(new_delete_memory_resource const&, cuda::mr::host_accessible) noexcept {}
+  constexpr friend void get_property(new_delete_memory_resource const&,
+                                     cuda::mr::host_accessible) noexcept
+  {
+  }
   // NOLINTEND
 };
 
@@ -72,9 +78,9 @@ TEST(ResourceRefConversion, ResourceToRef)
                             new_delete_memory_resource&>);
   rmm::host_resource_ref mr_ref{mr};
   // Use the converted ref
-  void* ptr = mr_ref.allocate_sync(1024);
+  void* ptr = mr_ref.allocate_sync(1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   ASSERT_NE(ptr, nullptr);
-  mr_ref.deallocate_sync(ptr, 1024);
+  mr_ref.deallocate_sync(ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 // Test conversion from host_device_async_resource_ref to device_async_resource_ref
@@ -97,9 +103,9 @@ TEST(ResourceRefConversion, HostDeviceToDeviceSync)
   static_assert(cuda::has_property<decltype(d_ref), cuda::mr::device_accessible>);
 
   // Use the converted ref
-  void* ptr = d_ref.allocate_sync(1024);
+  void* ptr = d_ref.allocate_sync(1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   ASSERT_NE(ptr, nullptr);
-  d_ref.deallocate_sync(ptr, 1024);
+  d_ref.deallocate_sync(ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 TEST(ResourceRefConversion, HostDeviceToDeviceAsync)
@@ -114,9 +120,9 @@ TEST(ResourceRefConversion, HostDeviceToDeviceAsync)
 
   // Use the converted ref
   rmm::cuda_stream stream{};
-  void* ptr = d_ref.allocate(stream, 1024);
+  void* ptr = d_ref.allocate(stream, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   ASSERT_NE(ptr, nullptr);
-  d_ref.deallocate(stream, ptr, 1024);
+  d_ref.deallocate(stream, ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 // Host allocator that takes a resource_ref (similar to cudf's rmm_host_allocator)
@@ -128,7 +134,7 @@ class host_allocator {
   host_allocator() = delete;
 
   template <typename ResourceType>
-  host_allocator(ResourceType mr, rmm::cuda_stream_view stream) : mr_(mr), stream_(stream)
+  host_allocator(ResourceType mr, cuda::stream_ref stream) : mr_(mr), stream_(stream)
   {
   }
 
@@ -137,19 +143,22 @@ class host_allocator {
 
   T* allocate(std::size_t n)
   {
-    auto const result = mr_.allocate(stream_, n * sizeof(T));
-    stream_.synchronize();
+    auto const result = mr_.allocate(stream_, n * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT);
+    stream_.sync();
     return static_cast<T*>(result);
   }
 
-  void deallocate(T* p, std::size_t n) noexcept { mr_.deallocate(stream_, p, n * sizeof(T)); }
+  void deallocate(T* p, std::size_t n) noexcept
+  {
+    mr_.deallocate(stream_, p, n * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT);
+  }
 
   bool operator==(host_allocator const& other) const { return mr_ == other.mr_; }
   bool operator!=(host_allocator const& other) const { return !(*this == other); }
 
  private:
   rmm::host_async_resource_ref mr_;
-  rmm::cuda_stream_view stream_;
+  cuda::stream_ref stream_;
 };
 
 // Function that returns host_device_async_resource_ref (like cudf::get_pinned_memory_resource)
@@ -162,7 +171,7 @@ rmm::host_device_async_resource_ref get_pinned_resource()
 // Helper to create a pinned vector (similar to cudf's make_pinned_vector_async)
 template <typename T>
 thrust::host_vector<T, host_allocator<T>> make_pinned_vector(std::size_t size,
-                                                             rmm::cuda_stream_view stream)
+                                                             cuda::stream_ref stream)
 {
   return thrust::host_vector<T, host_allocator<T>>(size, {get_pinned_resource(), stream});
 }
@@ -209,6 +218,32 @@ TEST(ResourceRefConversionAllocator, VectorFromFunction)
   auto vec = make_pinned_vector<int>(1, stream);
   vec[0]   = 42;
   ASSERT_EQ(vec[0], 42);
+}
+
+TEST(ResourceCast, FindsConcreteResourceInAnyResource)
+{
+  constexpr std::size_t limit{1024};
+  rmm::mr::cuda_memory_resource cuda_mr{};
+  rmm::mr::limiting_resource_adaptor limiter{cuda_mr, limit};
+  cuda::mr::any_resource<cuda::mr::device_accessible> resource{limiter};
+
+  auto* const casted = cuda::mr::resource_cast<rmm::mr::limiting_resource_adaptor>(&resource);
+  ASSERT_NE(casted, nullptr);
+  EXPECT_EQ(casted->get_allocation_limit(), limit);
+  EXPECT_EQ(cuda::mr::resource_cast<rmm::mr::cuda_memory_resource>(&resource), nullptr);
+}
+
+TEST(ResourceCast, FindsConcreteResourceInDeviceAsyncResourceRef)
+{
+  constexpr std::size_t limit{1024};
+  rmm::mr::cuda_memory_resource cuda_mr{};
+  rmm::mr::limiting_resource_adaptor limiter{cuda_mr, limit};
+  rmm::device_async_resource_ref ref{limiter};
+
+  auto* const casted = cuda::mr::resource_cast<rmm::mr::limiting_resource_adaptor>(&ref);
+  ASSERT_NE(casted, nullptr);
+  EXPECT_EQ(casted->get_allocation_limit(), limit);
+  EXPECT_EQ(cuda::mr::resource_cast<rmm::mr::cuda_memory_resource>(&ref), nullptr);
 }
 
 // Test vector move (exercises allocator move semantics)
@@ -328,9 +363,9 @@ TEST(ForwardPropertyAdaptor, TypeEraseSyncAdaptor)
   forwarding_sync_adaptor adaptor{upstream};
   cuda::mr::synchronous_resource_ref<cuda::mr::device_accessible> erased{adaptor};
 
-  void* ptr = erased.allocate_sync(1024);
+  void* ptr = erased.allocate_sync(1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
   ASSERT_NE(ptr, nullptr);
-  erased.deallocate_sync(ptr, 1024);
+  erased.deallocate_sync(ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 // Verify that get_property still works correctly through the forwarding adaptor.

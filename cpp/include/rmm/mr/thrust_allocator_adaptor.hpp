@@ -1,21 +1,25 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
+#include <rmm/detail/exec_check_disable.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/detail/thrust_namespace.h>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_resource>
+#include <cuda/stream>
 #include <thrust/device_malloc_allocator.h>
 #include <thrust/device_ptr.h>
 #include <thrust/memory.h>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr {
 /**
  * @addtogroup memory_resource_adaptors
@@ -57,7 +61,8 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @brief Default constructor creates an allocator using the default memory
    * resource and default stream.
    */
-  thrust_allocator() = default;
+  RMM_EXEC_CHECK_DISABLE
+  thrust_allocator() : _stream{cuda::stream_ref{cudaStream_t{cudaStreamDefault}}} {}
 
   /**
    * @brief Constructs a `thrust_allocator` using the default device memory
@@ -65,7 +70,8 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    *
    * @param stream The stream to be used for device memory (de)allocation
    */
-  explicit thrust_allocator(cuda_stream_view stream) : _stream{stream} {}
+  RMM_EXEC_CHECK_DISABLE
+  explicit thrust_allocator(cuda::stream_ref stream) : _stream{stream} {}
 
   /**
    * @brief Constructs a `thrust_allocator` using a device memory resource and
@@ -74,8 +80,9 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    * @param mr The resource to be used for device memory allocation
    * @param stream The stream to be used for device memory (de)allocation
    */
-  thrust_allocator(cuda_stream_view stream, rmm::device_async_resource_ref mr)
-    : _stream{stream}, _mr(mr)
+  RMM_EXEC_CHECK_DISABLE
+  thrust_allocator(cuda::stream_ref stream, cuda::mr::any_resource<cuda::mr::device_accessible> mr)
+    : _stream{stream}, _mr(std::move(mr))
   {
   }
 
@@ -84,6 +91,38 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    *
    * @param other The `thrust_allocator` to copy
    */
+  RMM_EXEC_CHECK_DISABLE
+  thrust_allocator(thrust_allocator const& other)
+    : Base(other), _stream{other._stream}, _mr(other._mr), _device{other._device}
+  {
+  }
+
+  /**
+   * @brief Move constructor. Moves the resource pointer and stream.
+   *
+   * @param other The `thrust_allocator` to move from
+   */
+  RMM_EXEC_CHECK_DISABLE
+  thrust_allocator(thrust_allocator&& other) noexcept
+    : Base(std::move(other)),
+      _stream{other._stream},
+      _mr(std::move(other._mr)),
+      _device{other._device}
+  {
+  }
+
+  /// @default_copy_assignment{thrust_allocator}
+  thrust_allocator& operator=(thrust_allocator const&) = default;
+  /// @default_move_assignment{thrust_allocator}
+  thrust_allocator& operator=(thrust_allocator&&) noexcept = default;
+
+  /**
+   * @brief Copy constructor from a `thrust_allocator` of a different type.
+   * Copies the resource pointer and stream.
+   *
+   * @param other The `thrust_allocator` to copy
+   */
+  RMM_EXEC_CHECK_DISABLE
   template <typename U>
   thrust_allocator(thrust_allocator<U> const& other)
     : _mr(other.resource()), _stream{other.stream()}, _device{other._device}
@@ -99,7 +138,8 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   pointer allocate(size_type num)
   {
     cuda_set_device_raii dev{_device};
-    return thrust::device_pointer_cast(static_cast<T*>(_mr.allocate(_stream, num * sizeof(T))));
+    return thrust::device_pointer_cast(
+      static_cast<T*>(_mr.allocate(_stream, num * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT)));
   }
 
   /**
@@ -112,7 +152,8 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
   void deallocate(pointer ptr, size_type num) noexcept
   {
     cuda_set_device_raii dev{_device};
-    return _mr.deallocate(_stream, thrust::raw_pointer_cast(ptr), num * sizeof(T));
+    return _mr.deallocate(
+      _stream, thrust::raw_pointer_cast(ptr), num * sizeof(T), rmm::CUDA_ALLOCATION_ALIGNMENT);
   }
 
   /**
@@ -120,26 +161,30 @@ class thrust_allocator : public thrust::device_malloc_allocator<T> {
    */
   [[nodiscard]] rmm::device_async_resource_ref get_upstream_resource() const noexcept
   {
-    return _mr;
+    return rmm::device_async_resource_ref{_mr};
   }
 
   /**
    * @briefreturn{The stream used by this allocator}
    */
-  [[nodiscard]] cuda_stream_view stream() const noexcept { return _stream; }
+  [[nodiscard]] cuda::stream_ref stream() const noexcept { return _stream; }
 
   /**
    * @brief Enables the `cuda::mr::device_accessible` property
    *
    * This property declares that a `thrust_allocator` provides device accessible memory
    */
-  friend void get_property(thrust_allocator const&, cuda::mr::device_accessible) noexcept {}
+  RMM_CONSTEXPR_FRIEND void get_property(thrust_allocator const&,
+                                         cuda::mr::device_accessible) noexcept
+  {
+  }
 
  private:
-  cuda_stream_view _stream{};
-  rmm::device_async_resource_ref _mr{rmm::mr::get_current_device_resource_ref()};
+  cuda::stream_ref _stream{cuda::invalid_stream_t{}};
+  mutable cuda::mr::any_resource<cuda::mr::device_accessible> _mr{
+    rmm::mr::get_current_device_resource_ref()};
   cuda_device_id _device{get_current_cuda_device()};
 };
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

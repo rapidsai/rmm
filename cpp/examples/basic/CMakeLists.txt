@@ -1,9 +1,9 @@
 # cmake-format: off
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 # cmake-format: on
 
-cmake_minimum_required(VERSION 3.30.4)
+cmake_minimum_required(VERSION 4.0)
 
 include(../set_cuda_architecture.cmake)
 
@@ -23,6 +23,6 @@ rapids_cmake_build_type("Release")
 # Configure your project here
 add_executable(basic_example src/basic.cpp)
 target_link_libraries(basic_example PRIVATE rmm::rmm)
-target_compile_features(basic_example PRIVATE cxx_std_17)
+target_compile_features(basic_example PRIVATE cxx_std_20)
 
 install(TARGETS basic_example DESTINATION bin/examples/librmm)

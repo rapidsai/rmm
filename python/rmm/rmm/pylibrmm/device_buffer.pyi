@@ -1,8 +1,8 @@
-# SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Buffer
-from typing import Any, NotRequired, Optional, Protocol, TypedDict, overload
+from typing import NotRequired, Optional, Protocol, TypedDict, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -22,7 +22,7 @@ class SupportsCUDAArrayInterface(Protocol):
     """Protocol for objects that implement the CUDA array interface."""
 
     @property
-    def __cuda_array_interface__(self) -> dict[str, Any]: ...
+    def __cuda_array_interface__(self) -> _CUDAArrayInterface: ...
 
 class DeviceBuffer:
     mr: DeviceMemoryResource

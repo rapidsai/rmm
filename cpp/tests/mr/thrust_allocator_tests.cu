@@ -1,44 +1,64 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "mr_ref_test.hpp"
 
 #include <rmm/cuda_device.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_vector.hpp>
+#include <rmm/exec_policy.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/thrust_allocator_adaptor.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/stream>
 #include <thrust/reduce.h>
 
 #include <gtest/gtest.h>
 
+#include <type_traits>
+
 // explicit instantiation for test coverage purposes
 template class rmm::mr::thrust_allocator<int>;
+
+static_assert(!std::is_default_constructible_v<rmm::exec_policy>);
+static_assert(!std::is_default_constructible_v<rmm::exec_policy_nosync>);
+static_assert(std::is_constructible_v<rmm::exec_policy, cuda::stream_ref>);
+static_assert(std::is_constructible_v<rmm::exec_policy_nosync, cuda::stream_ref>);
 
 namespace rmm::test {
 namespace {
 
 struct allocator_test : public mr_ref_test {};
 
-// Disable until we support resource_ref with set_current_device_resource
 TEST_P(allocator_test, first)
 {
-  rmm::mr::set_current_device_resource_ref(this->ref);
+  rmm::mr::set_current_device_resource(this->ref);
   auto const num_ints{100};
   rmm::device_vector<int> ints(num_ints, 1);
   EXPECT_EQ(num_ints, thrust::reduce(ints.begin(), ints.end()));
 }
 
+TEST_P(allocator_test, execution_policies)
+{
+  rmm::cuda_stream stream;
+  auto const num_ints{100};
+  rmm::device_vector<int> ints(num_ints, 1);
+  auto const sum = thrust::reduce(rmm::exec_policy(stream, this->ref), ints.begin(), ints.end());
+  auto const sum_nosync =
+    thrust::reduce(rmm::exec_policy_nosync(stream, this->ref), ints.begin(), ints.end());
+  stream.synchronize();
+  EXPECT_EQ(num_ints, sum);
+  EXPECT_EQ(num_ints, sum_nosync);
+}
+
 TEST_P(allocator_test, defaults)
 {
-  rmm::mr::set_current_device_resource_ref(this->ref);
-  rmm::mr::thrust_allocator<int> allocator(rmm::cuda_stream_default);
-  EXPECT_EQ(allocator.stream(), rmm::cuda_stream_default);
+  rmm::mr::set_current_device_resource(this->ref);
+  rmm::mr::thrust_allocator<int> allocator(cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
+  EXPECT_EQ(allocator.stream(), cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
   EXPECT_EQ(allocator.get_upstream_resource(),
             rmm::device_async_resource_ref{rmm::mr::get_current_device_resource_ref()});
 }
@@ -49,7 +69,7 @@ TEST_P(allocator_test, multi_device)
   cuda_set_device_raii with_device{rmm::get_current_cuda_device()};
   rmm::cuda_stream stream{};
   // make allocator on device-0
-  rmm::mr::thrust_allocator<int> allocator(stream.view(), this->ref);
+  rmm::mr::thrust_allocator<int> allocator(stream, this->ref);
   auto const size{100};
   EXPECT_NO_THROW([&]() {
     auto vec = rmm::device_vector<int>(size, allocator);
@@ -58,11 +78,11 @@ TEST_P(allocator_test, multi_device)
   }());
 }
 
-INSTANTIATE_TEST_SUITE_P(
-  ThrustAllocatorTests,
-  allocator_test,
-  ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool", "Arena", "Binning"),
-  [](auto const& info) { return info.param; });
+// TODO(bdice): Add back test coverage after completing CCCL MR migration
+INSTANTIATE_TEST_SUITE_P(ThrustAllocatorTests,
+                         allocator_test,
+                         ::testing::Values("CUDA", "CUDA_Async", "Managed", "Pool"),
+                         [](auto const& info) { return info.param; });
 
 }  // namespace
 }  // namespace rmm::test

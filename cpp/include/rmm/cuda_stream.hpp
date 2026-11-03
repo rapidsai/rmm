@@ -1,20 +1,19 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/export.hpp>
 
-#include <cuda/stream_ref>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <functional>
 #include <memory>
 
-namespace RMM_EXPORT rmm {
+RMM_NAMESPACE_BEGIN
 /**
  * @addtogroup cuda_streams
  * @{
@@ -86,20 +85,6 @@ class cuda_stream {
   explicit operator cudaStream_t() const noexcept;
 
   /**
-   * @brief Creates an immutable, non-owning view of the wrapped CUDA stream.
-   *
-   * @return rmm::cuda_stream_view The view of the CUDA stream
-   */
-  [[nodiscard]] cuda_stream_view view() const;
-
-  /**
-   * @brief Implicit conversion to cuda_stream_view
-   *
-   * @return A view of the owned stream
-   */
-  operator cuda_stream_view() const;
-
-  /**
    * @brief Implicit conversion to cuda::stream_ref
    *
    * @return A stream_ref for the owned stream
@@ -127,4 +112,4 @@ class cuda_stream {
 };
 
 /** @} */  // end of group
-}  // namespace RMM_EXPORT rmm
+RMM_NAMESPACE_END

@@ -1,14 +1,15 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2025, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for object lifetime and garbage collection."""
 
 import gc
+from typing import Any
 
 import rmm
 
 
-def test_mr_devicebuffer_lifetime():
+def test_mr_devicebuffer_lifetime() -> None:
     # Test ensures MR/Stream lifetime is longer than DeviceBuffer. Even if all
     # references go out of scope
     # It is necessary to verify that it also works when using an upstream :
@@ -33,7 +34,7 @@ def test_mr_devicebuffer_lifetime():
     del a
 
 
-def test_dev_buf_circle_ref_dealloc():
+def test_dev_buf_circle_ref_dealloc() -> None:
     # This test creates a reference cycle containing a `DeviceBuffer`
     # and ensures that the garbage collector does not clear it, i.e.,
     # that the GC does not remove all references to other Python
@@ -46,7 +47,7 @@ def test_dev_buf_circle_ref_dealloc():
     dbuf1 = rmm.DeviceBuffer(size=1_000_000)
 
     # Make dbuf1 part of a reference cycle:
-    l1 = [dbuf1]
+    l1: list[Any] = [dbuf1]
     l1.append(l1)
 
     # due to the reference cycle, the device buffer doesn't actually get
@@ -60,14 +61,14 @@ def test_dev_buf_circle_ref_dealloc():
     gc.collect()
 
 
-def test_upstream_mr_circle_ref_dealloc():
+def test_upstream_mr_circle_ref_dealloc() -> None:
     # This test is just like the one above, except it tests that
     # instances of `UpstreamResourceAdaptor` (such as
     # `PoolMemoryResource`) are not cleared by the GC.
 
     rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())
     mr = rmm.mr.PoolMemoryResource(rmm.mr.get_current_device_resource())
-    l1 = [mr]
+    l1: list[Any] = [mr]
     l1.append(l1)
     del mr, l1
     rmm.mr.set_current_device_resource(rmm.mr.CudaMemoryResource())

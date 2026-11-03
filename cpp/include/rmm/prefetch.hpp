@@ -1,19 +1,19 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2025, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #pragma once
 
 #include <rmm/cuda_device.hpp>
-#include <rmm/cuda_stream_view.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/export.hpp>
 #include <rmm/error.hpp>
 
 #include <cuda/std/span>
+#include <cuda/stream>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 
 /**
  * @addtogroup utilities
@@ -37,7 +37,7 @@ namespace RMM_NAMESPACE {
 void prefetch(void const* ptr,
               std::size_t size,
               rmm::cuda_device_id device,
-              rmm::cuda_stream_view stream);
+              cuda::stream_ref stream);
 
 /**
  * @brief Prefetch a span of memory to the specified device on the specified stream.
@@ -51,13 +51,11 @@ void prefetch(void const* ptr,
  * @param stream The stream to use for the prefetch
  */
 template <typename T>
-void prefetch(cuda::std::span<T const> data,
-              rmm::cuda_device_id device,
-              rmm::cuda_stream_view stream)
+void prefetch(cuda::std::span<T const> data, rmm::cuda_device_id device, cuda::stream_ref stream)
 {
   prefetch(data.data(), data.size_bytes(), device, stream);
 }
 
 /** @} */  // end of group
 
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

@@ -1,17 +1,18 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
-#include <rmm/cuda_stream_view.hpp>
-#include <rmm/detail/error.hpp>
+#include <rmm/aligned.hpp>
 #include <rmm/detail/export.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
+
+#include <cuda/memory_resource>
+#include <cuda/stream>
 
 #include <cstddef>
 
-namespace RMM_NAMESPACE {
+RMM_NAMESPACE_BEGIN
 namespace mr {
 /**
  * @addtogroup memory_resources
@@ -19,13 +20,12 @@ namespace mr {
  * @file
  */
 /**
- * @brief `device_memory_resource` derived class that uses
- * cudaMallocManaged/Free for allocation/deallocation.
+ * @brief Memory resource that uses cudaMallocManaged/Free for allocation/deallocation.
  */
-class managed_memory_resource final : public device_memory_resource {
+class RMM_EXPORT managed_memory_resource final {
  public:
   managed_memory_resource()                               = default;
-  ~managed_memory_resource() override                     = default;
+  ~managed_memory_resource()                              = default;
   managed_memory_resource(managed_memory_resource const&) = default;  ///< @default_copy_constructor
   managed_memory_resource(managed_memory_resource&&)      = default;  ///< @default_move_constructor
   managed_memory_resource& operator=(managed_memory_resource const&) =
@@ -33,7 +33,6 @@ class managed_memory_resource final : public device_memory_resource {
   managed_memory_resource& operator=(managed_memory_resource&&) =
     default;  ///< @default_move_assignment{managed_memory_resource}
 
- private:
   /**
    * @brief Allocates memory of size at least \p bytes.
    *
@@ -41,54 +40,97 @@ class managed_memory_resource final : public device_memory_resource {
    *
    * The stream argument is ignored.
    *
-   * @param bytes The size of the allocation
    * @param stream This argument is ignored
+   * @param bytes The size of the allocation
+   * @param alignment The alignment of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, [[maybe_unused]] cuda_stream_view stream) override
-  {
-    // FIXME: Unlike cudaMalloc, cudaMallocManaged will throw an error for 0
-    // size allocations.
-    if (bytes == 0) { return nullptr; }
-
-    void* ptr{nullptr};
-    RMM_CUDA_TRY_ALLOC(cudaMallocManaged(&ptr, bytes), bytes);
-    return ptr;
-  }
+  [[nodiscard]] void* allocate([[maybe_unused]] cuda::stream_ref stream,
+                               std::size_t bytes,
+                               std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
 
   /**
    * @brief Deallocate memory pointed to by \p ptr.
    *
    * The stream argument is ignored.
    *
+   * @param stream This argument is ignored
    * @param ptr Pointer to be deallocated
    * @param bytes The size in bytes of the allocation. This must be equal to the
    * value of `bytes` that was passed to the `allocate` call that returned `ptr`.
-   * @param stream This argument is ignored
+   * @param alignment The alignment that was passed to the `allocate` call that returned `ptr`
    */
-  void do_deallocate(void* ptr,
-                     [[maybe_unused]] std::size_t bytes,
-                     [[maybe_unused]] cuda_stream_view stream) noexcept override
+  void deallocate([[maybe_unused]] cuda::stream_ref stream,
+                  void* ptr,
+                  std::size_t bytes,
+                  std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
+
+  /**
+   * @brief Allocates memory of size at least \p bytes synchronously.
+   *
+   * @param bytes The size of the allocation
+   * @param alignment The alignment of the allocation
+   * @return void* Pointer to the newly allocated memory
+   */
+  [[nodiscard]] void* allocate_sync(std::size_t bytes,
+                                    std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT);
+
+  /**
+   * @brief Deallocate memory pointed to by \p ptr synchronously.
+   *
+   * @param ptr Pointer to be deallocated
+   * @param bytes The size in bytes of the allocation
+   * @param alignment The alignment that was passed to the `allocate` call that returned `ptr`
+   */
+  void deallocate_sync(void* ptr,
+                       std::size_t bytes,
+                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept;
+
+  /**
+   * @brief Enables the `cuda::mr::device_accessible` property
+   *
+   * This property declares that a `managed_memory_resource` provides device accessible memory
+   */
+  RMM_CONSTEXPR_FRIEND void get_property(managed_memory_resource const&,
+                                         cuda::mr::device_accessible) noexcept
   {
-    RMM_ASSERT_CUDA_SUCCESS_SAFE_SHUTDOWN(cudaFree(ptr));
+  }
+
+  /**
+   * @brief Enables the `cuda::mr::host_accessible` property
+   *
+   * This property declares that a `managed_memory_resource` provides host accessible memory
+   */
+  RMM_CONSTEXPR_FRIEND void get_property(managed_memory_resource const&,
+                                         cuda::mr::host_accessible) noexcept
+  {
   }
 
   /**
    * @brief Compare this resource to another.
    *
-   * Two `managed_memory_resources` always compare equal, because they can each
-   * deallocate memory allocated by the other.
+   * All instances of managed_memory_resource are equivalent.
    *
-   * @param other The other resource to compare to
-   * @return true If the two resources are equivalent
-   * @return false If the two resources are not equal
+   * @return true Always
    */
-  [[nodiscard]] bool do_is_equal(device_memory_resource const& other) const noexcept override
-  {
-    return dynamic_cast<managed_memory_resource const*>(&other) != nullptr;
-  }
+  [[nodiscard]] bool operator==(managed_memory_resource const&) const noexcept;
+
+  /**
+   * @copydoc operator==
+   */
+  [[nodiscard]] bool operator!=(managed_memory_resource const&) const noexcept;
 };
+
+// static property checks
+static_assert(cuda::mr::synchronous_resource<managed_memory_resource>);
+static_assert(cuda::mr::resource<managed_memory_resource>);
+static_assert(
+  cuda::mr::synchronous_resource_with<managed_memory_resource, cuda::mr::device_accessible>);
+static_assert(
+  cuda::mr::synchronous_resource_with<managed_memory_resource, cuda::mr::host_accessible>);
+static_assert(cuda::mr::resource_with<managed_memory_resource, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<managed_memory_resource, cuda::mr::host_accessible>);
 
 /** @} */  // end of group
 }  // namespace mr
-}  // namespace RMM_NAMESPACE
+RMM_NAMESPACE_END

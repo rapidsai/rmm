@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -15,6 +15,7 @@
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
 
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
 #include <thrust/device_vector.h>
 #include <thrust/memory.h>
@@ -26,20 +27,18 @@
 
 void BM_UvectorSizeConstruction(benchmark::State& state)
 {
-  rmm::mr::cuda_memory_resource cuda_mr{};
-  rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{
-    &cuda_mr, rmm::percent_of_free_device_memory(50)};
-  rmm::mr::set_current_device_resource_ref(mr);
+  rmm::mr::set_current_device_resource(rmm::mr::pool_memory_resource{
+    rmm::mr::cuda_memory_resource{}, rmm::percent_of_free_device_memory(50)});
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     rmm::device_uvector<std::int32_t> vec(static_cast<std::size_t>(state.range(0)),
-                                          rmm::cuda_stream_view{});
+                                          cuda::stream_ref{cudaStream_t{cudaStreamDefault}});
     cudaDeviceSynchronize();
   }
 
   state.SetItemsProcessed(static_cast<std::int64_t>(state.iterations()));
 
-  rmm::mr::reset_current_device_resource_ref();
+  rmm::mr::reset_current_device_resource();
 }
 
 BENCHMARK(BM_UvectorSizeConstruction)
@@ -49,10 +48,8 @@ BENCHMARK(BM_UvectorSizeConstruction)
 
 void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 {
-  rmm::mr::cuda_memory_resource cuda_mr{};
-  rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource> mr{
-    &cuda_mr, rmm::percent_of_free_device_memory(50)};
-  rmm::mr::set_current_device_resource_ref(mr);
+  rmm::mr::set_current_device_resource(rmm::mr::pool_memory_resource{
+    rmm::mr::cuda_memory_resource{}, rmm::percent_of_free_device_memory(50)});
 
   for (auto _ : state) {  // NOLINT(clang-analyzer-deadcode.DeadStores)
     rmm::device_vector<std::int32_t> vec(static_cast<std::size_t>(state.range(0)));
@@ -61,7 +58,7 @@ void BM_ThrustVectorSizeConstruction(benchmark::State& state)
 
   state.SetItemsProcessed(static_cast<std::int64_t>(state.iterations()));
 
-  rmm::mr::reset_current_device_resource_ref();
+  rmm::mr::reset_current_device_resource();
 }
 
 BENCHMARK(BM_ThrustVectorSizeConstruction)
@@ -82,7 +79,7 @@ using rmm_vector    = rmm::device_vector<int32_t>;
 using rmm_uvector   = rmm::device_uvector<int32_t>;
 
 template <typename Vector>
-Vector make_vector(std::size_t num_elements, rmm::cuda_stream_view stream, bool zero_init = false)
+Vector make_vector(std::size_t num_elements, cuda::stream_ref stream, bool zero_init = false)
 {
   static_assert(std::is_same_v<Vector, thrust_vector> or std::is_same_v<Vector, rmm_vector> or
                   std::is_same_v<Vector, rmm_uvector>,
@@ -94,7 +91,8 @@ Vector make_vector(std::size_t num_elements, rmm::cuda_stream_view stream, bool 
   } else if constexpr (std::is_same_v<Vector, rmm_uvector>) {
     auto vec = Vector(num_elements, stream);
     if (zero_init) {
-      cudaMemsetAsync(vec.data(), 0, num_elements * sizeof(std::int32_t), stream.value());
+      RMM_CUDA_TRY(
+        cudaMemsetAsync(vec.data(), 0, num_elements * sizeof(std::int32_t), stream.get()));
     }
     return vec;
   }
@@ -115,22 +113,21 @@ void vector_workflow(std::size_t num_elements,
 {
   auto input = make_vector<Vector>(num_elements, input_stream, true);
   input_stream.synchronize();
-  for (rmm::cuda_stream_view stream : streams) {
+  for (cuda::stream_ref stream : streams) {
     auto output = make_vector<Vector>(num_elements, stream);
-    kernel<<<num_blocks, block_size, 0, stream.value()>>>(
+    kernel<<<num_blocks, block_size, 0, stream.get()>>>(
       vector_data(input), vector_data(output), num_elements);
   }
 
-  for (rmm::cuda_stream_view stream : streams) {
-    stream.synchronize();
+  for (cuda::stream_ref stream : streams) {
+    stream.sync();
   }
 }
 
 template <typename Vector>
 void BM_VectorWorkflow(benchmark::State& state)
 {
-  rmm::mr::cuda_async_memory_resource cuda_async_mr{};
-  rmm::mr::set_current_device_resource_ref(cuda_async_mr);
+  rmm::mr::set_current_device_resource(rmm::mr::cuda_async_memory_resource{});
 
   rmm::cuda_stream input_stream;
   std::vector<rmm::cuda_stream> streams(4);
@@ -149,7 +146,7 @@ void BM_VectorWorkflow(benchmark::State& state)
   state.SetBytesProcessed(
     static_cast<std::int64_t>(static_cast<std::size_t>(state.iterations()) * bytes));
 
-  rmm::mr::reset_current_device_resource_ref();
+  rmm::mr::reset_current_device_resource();
 }
 
 BENCHMARK_TEMPLATE(BM_VectorWorkflow, thrust_vector)  // NOLINT

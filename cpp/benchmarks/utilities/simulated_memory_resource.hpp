@@ -1,14 +1,20 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 #pragma once
 
+#include <rmm/aligned.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/detail/format.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 
+#include <cuda/memory_resource>
+#include <cuda/stream>
 #include <cuda_runtime_api.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 
 namespace rmm::mr {
 
@@ -20,7 +26,7 @@ namespace rmm::mr {
  *
  * Deallocation calls are ignored.
  */
-class simulated_memory_resource final : public device_memory_resource {
+class simulated_memory_resource final {
  public:
   /**
    * @brief Construct a `simulated_memory_resource`.
@@ -28,20 +34,17 @@ class simulated_memory_resource final : public device_memory_resource {
    * @param memory_size_bytes The size of the memory to simulate.
    */
   explicit simulated_memory_resource(std::size_t memory_size_bytes)
-    : begin_{reinterpret_cast<char*>(0x100)},                    // NOLINT
-      end_{reinterpret_cast<char*>(begin_ + memory_size_bytes)}  // NOLINT
+    : state_{std::make_shared<state>(reinterpret_cast<char*>(0x100), memory_size_bytes)}  // NOLINT
   {
   }
 
-  ~simulated_memory_resource() override = default;
+  ~simulated_memory_resource() = default;
 
-  // Disable copy (and move) semantics.
-  simulated_memory_resource(simulated_memory_resource const&)            = delete;
-  simulated_memory_resource& operator=(simulated_memory_resource const&) = delete;
-  simulated_memory_resource(simulated_memory_resource&&)                 = delete;
-  simulated_memory_resource& operator=(simulated_memory_resource&&)      = delete;
+  simulated_memory_resource(simulated_memory_resource const&)            = default;
+  simulated_memory_resource& operator=(simulated_memory_resource const&) = default;
+  simulated_memory_resource(simulated_memory_resource&&)                 = default;
+  simulated_memory_resource& operator=(simulated_memory_resource&&)      = default;
 
- private:
   /**
    * @brief Allocates memory of size at least `bytes`.
    *
@@ -52,15 +55,23 @@ class simulated_memory_resource final : public device_memory_resource {
    * @param bytes The size, in bytes, of the allocation
    * @return void* Pointer to the newly allocated memory
    */
-  void* do_allocate(std::size_t bytes, cuda_stream_view) override
+  void* allocate([[maybe_unused]] cuda::stream_ref stream,
+                 std::size_t bytes,
+                 std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
   {
+    RMM_EXPECTS(rmm::is_supported_alignment(alignment),
+                "Alignment must be a non-zero power of two.",
+                rmm::logic_error);
+    auto const address        = reinterpret_cast<std::uintptr_t>(state_->begin);
+    auto* const aligned_begin = reinterpret_cast<char*>(rmm::align_up(address, alignment));
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-    RMM_EXPECTS(begin_ + bytes <= end_,
+    RMM_EXPECTS(aligned_begin + bytes <= state_->end,
                 "Simulated memory size exceeded (failed to allocate " +
                   rmm::detail::format_bytes(bytes) + ")",
                 rmm::bad_alloc);
-    auto* ptr = static_cast<void*>(begin_);
-    begin_ += bytes;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    auto* ptr = static_cast<void*>(aligned_begin);
+    state_->begin =
+      aligned_begin + bytes;  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return ptr;
   }
 
@@ -68,12 +79,69 @@ class simulated_memory_resource final : public device_memory_resource {
    * @brief Deallocate memory pointed to by `ptr`.
    *
    * @note This call is ignored.
+   */
+  void deallocate([[maybe_unused]] cuda::stream_ref stream,
+                  void* /*ptr*/,
+                  std::size_t /*bytes*/,
+                  [[maybe_unused]] std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+  {
+  }
+
+  /**
+   * @brief Allocates memory of size at least `bytes` synchronously.
+   *
+   * @param bytes The size, in bytes, of the allocation
+   * @param alignment The alignment of the allocation
+   * @return void* Pointer to the newly allocated memory
+   */
+  void* allocate_sync(std::size_t bytes, std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT)
+  {
+    return allocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, bytes, alignment);
+  }
+
+  /**
+   * @brief Deallocate memory pointed to by `ptr` synchronously.
+   *
+   * @note This call is ignored.
    *
    * @param ptr Pointer to be deallocated
+   * @param bytes The size, in bytes, of the allocation
+   * @param alignment The alignment of the allocation
    */
-  void do_deallocate(void* /*ptr*/, std::size_t, cuda_stream_view) noexcept override {}
+  void deallocate_sync(void* ptr,
+                       std::size_t bytes,
+                       std::size_t alignment = rmm::CUDA_ALLOCATION_ALIGNMENT) noexcept
+  {
+    deallocate(cuda::stream_ref{cudaStream_t{cudaStreamDefault}}, ptr, bytes, alignment);
+  }
 
-  char* begin_{};
-  char* end_{};
+  bool operator==(simulated_memory_resource const&) const noexcept { return true; }
+  bool operator!=(simulated_memory_resource const&) const noexcept { return false; }
+
+  constexpr friend void get_property(simulated_memory_resource const&,
+                                     cuda::mr::device_accessible) noexcept
+  {
+  }
+
+ private:
+  struct state {
+    state(char* begin, std::size_t memory_size_bytes)
+      : begin{begin},
+        end{begin + memory_size_bytes}  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    {
+    }
+
+    char* begin{};
+    char* end{};
+  };
+
+  std::shared_ptr<state> state_{};
 };
+
+static_assert(cuda::mr::synchronous_resource<simulated_memory_resource>);
+static_assert(cuda::mr::resource<simulated_memory_resource>);
+static_assert(
+  cuda::mr::synchronous_resource_with<simulated_memory_resource, cuda::mr::device_accessible>);
+static_assert(cuda::mr::resource_with<simulated_memory_resource, cuda::mr::device_accessible>);
+
 }  // namespace rmm::mr

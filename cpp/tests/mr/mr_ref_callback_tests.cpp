@@ -1,0 +1,40 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "cccl_mr_ref_test_allocation.hpp"
+#include "cccl_mr_ref_test_basic.hpp"
+#include "cccl_mr_ref_test_mt.hpp"
+
+#include <rmm/aligned.hpp>
+#include <rmm/mr/callback_memory_resource.hpp>
+#include <rmm/mr/per_device_resource.hpp>
+
+#include <cuda/stream>
+
+namespace rmm::test {
+
+struct CallbackMRFixture : public ::testing::Test {
+  rmm::mr::cuda_memory_resource cuda{};
+  rmm::device_async_resource_ref upstream{cuda};
+
+  rmm::mr::callback_memory_resource mr{
+    [](cuda::stream_ref stream, std::size_t bytes, std::size_t alignment, void* arg) {
+      return static_cast<rmm::device_async_resource_ref*>(arg)->allocate(stream, bytes, alignment);
+    },
+    [](cuda::stream_ref stream, void* ptr, std::size_t bytes, std::size_t alignment, void* arg) {
+      static_cast<rmm::device_async_resource_ref*>(arg)->deallocate(stream, ptr, bytes, alignment);
+    },
+    &upstream,
+    &upstream};
+
+  rmm::device_async_resource_ref ref{mr};
+  rmm::cuda_stream stream{};
+};
+
+INSTANTIATE_TYPED_TEST_SUITE_P(CallbackMR, CcclMrRefTest, CallbackMRFixture);
+INSTANTIATE_TYPED_TEST_SUITE_P(CallbackMR, CcclMrRefAllocationTest, CallbackMRFixture);
+INSTANTIATE_TYPED_TEST_SUITE_P(CallbackMR, CcclMrRefTestMT, CallbackMRFixture);
+
+}  // namespace rmm::test

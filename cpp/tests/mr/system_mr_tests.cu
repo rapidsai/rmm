@@ -122,7 +122,7 @@ TEST_F(SystemMRTest, HeadroomMRDifferentParametersUnequal)
 {
   headroom_mr mr1{size_mb};
   headroom_mr mr2{size_gb};
-  EXPECT_FALSE(mr1.is_equal(mr2));
+  EXPECT_NE(mr1, mr2);
 }
 }  // namespace
 }  // namespace rmm::test

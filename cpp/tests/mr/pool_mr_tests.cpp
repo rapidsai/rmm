@@ -1,39 +1,80 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "../byte_literals.hpp"
 #include "test_utils.hpp"
 
+#include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
+#include <rmm/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
 #include <rmm/device_buffer.hpp>
+#include <rmm/mr/cuda_async_memory_resource.hpp>
 #include <rmm/mr/cuda_memory_resource.hpp>
-#include <rmm/mr/device_memory_resource.hpp>
 #include <rmm/mr/limiting_resource_adaptor.hpp>
 #include <rmm/mr/per_device_resource.hpp>
 #include <rmm/mr/pool_memory_resource.hpp>
+#include <rmm/resource_ref.hpp>
+
+#include <cuda/stream>
+#include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <cstddef>
 #include <memory>
+#include <mutex>
+#include <thread>
 #include <vector>
-
-// explicit instantiation for test coverage purposes
-template class rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
 
 namespace rmm::test {
 namespace {
 using cuda_mr     = rmm::mr::cuda_memory_resource;
-using pool_mr     = rmm::mr::pool_memory_resource<rmm::mr::device_memory_resource>;
-using limiting_mr = rmm::mr::limiting_resource_adaptor<rmm::mr::cuda_memory_resource>;
+using pool_mr     = rmm::mr::pool_memory_resource;
+using limiting_mr = rmm::mr::limiting_resource_adaptor;
 
-TEST(PoolTest, ThrowOnNullUpstream)
-{
-  auto construct_nullptr = []() { pool_mr mr{nullptr, 0}; };
-  EXPECT_THROW(construct_nullptr(), rmm::logic_error);
-}
+class host_func_gate {
+ public:
+  void wait()
+  {
+    std::unique_lock<std::mutex> lock{mutex_};
+    EXPECT_TRUE(condition_.wait_for(lock, std::chrono::seconds{10}, [this] { return released_; }));
+    complete_.store(true);
+  }
+
+  void release()
+  {
+    {
+      std::lock_guard<std::mutex> lock{mutex_};
+      released_ = true;
+    }
+    condition_.notify_one();
+  }
+
+  bool complete() const { return complete_.load(); }
+
+ private:
+  std::mutex mutex_;
+  std::condition_variable condition_;
+  bool released_{false};
+  std::atomic<bool> complete_{false};
+};
+
+class host_func_gate_release_guard {
+ public:
+  explicit host_func_gate_release_guard(host_func_gate& gate) : gate_{gate} {}
+
+  ~host_func_gate_release_guard() { gate_.release(); }
+
+ private:
+  host_func_gate& gate_;
+};
 
 TEST(PoolTest, ThrowMaxLessThanInitial)
 {
@@ -75,22 +116,22 @@ TEST(PoolTest, ForceGrowth)
   cuda_mr cuda;
   {
     auto const max_size{6000};
-    limiting_mr limiter{&cuda, max_size};
-    pool_mr mr{&limiter, 0};
-    EXPECT_NO_THROW(mr.allocate_sync(1000));
-    EXPECT_NO_THROW(mr.allocate_sync(4000));
-    EXPECT_NO_THROW(mr.allocate_sync(500));
-    EXPECT_THROW(mr.allocate_sync(2000), rmm::out_of_memory);  // too much
+    limiting_mr limiter{cuda, max_size};
+    pool_mr mr{limiter, 0};
+    EXPECT_NO_THROW((void)mr.allocate_sync(1000));
+    EXPECT_NO_THROW((void)mr.allocate_sync(4000));
+    EXPECT_NO_THROW((void)mr.allocate_sync(500));
+    EXPECT_THROW((void)mr.allocate_sync(2000), rmm::out_of_memory);  // too much
   }
   {
     // with max pool size
     auto const max_size{6000};
-    limiting_mr limiter{&cuda, max_size};
-    pool_mr mr{&limiter, 0, 8192};
-    EXPECT_NO_THROW(mr.allocate_sync(1000));
-    EXPECT_THROW(mr.allocate_sync(4000), rmm::out_of_memory);  // too much
-    EXPECT_NO_THROW(mr.allocate_sync(500));
-    EXPECT_NO_THROW(mr.allocate_sync(2000));  // fits
+    limiting_mr limiter{cuda, max_size};
+    pool_mr mr{limiter, 0, 8192};
+    EXPECT_NO_THROW((void)mr.allocate_sync(1000));
+    EXPECT_THROW((void)mr.allocate_sync(4000), rmm::out_of_memory);  // too much
+    EXPECT_NO_THROW((void)mr.allocate_sync(500));
+    EXPECT_NO_THROW((void)mr.allocate_sync(2000));  // fits
   }
 }
 
@@ -100,9 +141,9 @@ TEST(PoolTest, DeletedStream)
   cudaStream_t stream{};  // we don't use rmm::cuda_stream here to make destruction more explicit
   const int size = 10000;
   EXPECT_EQ(cudaSuccess, cudaStreamCreate(&stream));
-  EXPECT_NO_THROW(rmm::device_buffer buff(size, cuda_stream_view{stream}, &mr));
+  EXPECT_NO_THROW(rmm::device_buffer buff(size, cuda::stream_ref{stream}, mr));
   EXPECT_EQ(cudaSuccess, cudaStreamDestroy(stream));
-  EXPECT_NO_THROW(mr.allocate_sync(size));
+  EXPECT_NO_THROW((void)mr.allocate_sync(size));
 }
 
 // Issue #527
@@ -110,8 +151,172 @@ TEST(PoolTest, InitialAndMaxPoolSizeEqual)
 {
   EXPECT_NO_THROW([]() {
     pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1000192, 1000192);
-    mr.allocate_sync(1000);
+    (void)mr.allocate_sync(1000);
   }());
+}
+
+// Issue #1957
+TEST(PoolTest, AllocateMaxWithInitialPoolSize)
+{
+  EXPECT_NO_THROW([]() {
+    pool_mr mr(rmm::mr::get_current_device_resource_ref(), 256, 1024);
+    auto* ptr = mr.allocate_sync(1024);
+    mr.deallocate_sync(ptr, 1024);
+  }());
+}
+
+TEST(PoolTest, AllocateMaximumDirectlyWithZeroInitialPoolSize)
+{
+  EXPECT_NO_THROW([]() {
+    pool_mr mr(rmm::mr::get_current_device_resource_ref(), 0, 1024);
+    auto* ptr = mr.allocate_sync(1024);
+    mr.deallocate_sync(ptr, 1024);
+  }());
+}
+
+// Issue #1957: a partially-used upstream block must never be reclaimed.
+TEST(PoolTest, PartialUseBlockNotReclaimed)
+{
+  pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1024, 2048);
+  // Splits the 1024B upstream block, leaving it partly in use.
+  auto* ptr = mr.allocate_sync(512);
+  // The 1024B block is not fully free, so it cannot be reclaimed; the pool still cannot grow to
+  // satisfy 2048B under the 2048B cap.
+  EXPECT_THROW((void)mr.allocate_sync(2048), rmm::out_of_memory);
+  // The held pointer remained valid throughout.
+  EXPECT_NO_THROW(mr.deallocate_sync(ptr, 512));
+}
+
+TEST(PoolTest, MissingReclaimCandidateDoesNotWaitForPendingWork)
+{
+  cuda_mr upstream;
+  pool_mr mr{upstream, 1024, 1024};
+  auto* held_ptr = mr.allocate_sync(512);
+
+  host_func_gate prior_work;
+  rmm::cuda_stream source;
+  host_func_gate_release_guard const release_prior_work{prior_work};
+  auto* source_ptr = mr.allocate(source, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  RMM_CUDA_TRY(cudaLaunchHostFunc(
+    source.value(), [](void* data) { static_cast<host_func_gate*>(data)->wait(); }, &prior_work));
+  mr.deallocate(source, source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+
+  rmm::cuda_stream destination;
+  auto const failed_without_waiting = [&]() {
+    try {
+      auto* ptr = mr.allocate(destination, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      mr.deallocate(destination, ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      return false;
+    } catch (rmm::out_of_memory const&) {
+      return !prior_work.complete();
+    }
+  }();
+
+  prior_work.release();
+  source.synchronize();
+  destination.synchronize();
+  mr.deallocate_sync(held_ptr, 512);
+
+  EXPECT_TRUE(failed_without_waiting);
+  EXPECT_TRUE(prior_work.complete());
+}
+
+// Issue #1957: a request larger than the maximum pool size throws (and reclaim terminates).
+TEST(PoolTest, AllocateLargerThanMaxThrows)
+{
+  pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1024, 1024);
+  EXPECT_THROW((void)mr.allocate_sync(2048), rmm::out_of_memory);
+
+  EXPECT_EQ(mr.pool_size(), 1024);
+  EXPECT_NO_THROW([](pool_mr& resource) {
+    auto* ptr = resource.allocate_sync(1024);
+    resource.deallocate_sync(ptr, 1024);
+  }(mr));
+}
+
+// Issue #1957: reclaim a block sitting in a non-default stream's free list.
+TEST(PoolTest, ReclaimAcrossStreams)
+{
+  pool_mr mr(rmm::mr::get_current_device_resource_ref(), 256, 1024);
+  rmm::cuda_stream stream;
+  {
+    // Allocate and free 256B on a non-default stream so the freed block lands in that stream's
+    // free list.
+    rmm::device_buffer buf(256, stream, mr);
+  }
+  // Growing to 1024B requires reclaiming the entirely-free cross-stream block.
+  EXPECT_NO_THROW([&]() {
+    auto* ptr = mr.allocate_sync(1024);
+    mr.deallocate_sync(ptr, 1024);
+  }());
+}
+
+TEST(PoolTest, ReclaimIsStreamOrderedOnSameStream)
+{
+  rmm::mr::cuda_async_memory_resource upstream;
+  pool_mr mr{upstream, 256, 1024};
+  host_func_gate prior_work;
+  host_func_gate_release_guard const release_prior_work{prior_work};
+  rmm::cuda_stream stream;
+
+  auto* source_ptr = mr.allocate(stream, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  RMM_CUDA_TRY(cudaLaunchHostFunc(
+    stream.value(), [](void* data) { static_cast<host_func_gate*>(data)->wait(); }, &prior_work));
+  mr.deallocate(stream, source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+
+  auto* destination_ptr = mr.allocate(stream, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  auto const reclaim_returned_without_waiting = !prior_work.complete();
+
+  prior_work.release();
+  mr.deallocate(stream, destination_ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  stream.synchronize();
+
+  EXPECT_TRUE(reclaim_returned_without_waiting);
+  EXPECT_TRUE(prior_work.complete());
+}
+
+TEST(PoolTest, ReclaimIsStreamOrderedWithMergedPerThreadDefaultStream)
+{
+  rmm::mr::cuda_async_memory_resource upstream;
+  pool_mr mr{upstream, 256, 1024};
+  host_func_gate prior_work;
+  host_func_gate_release_guard const release_prior_work{prior_work};
+
+  auto* source_ptr =
+    mr.allocate(cuda::stream_ref{cudaStreamPerThread}, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  RMM_CUDA_TRY(cudaLaunchHostFunc(
+    cuda::stream_ref{cudaStreamPerThread}.get(),
+    [](void* data) { static_cast<host_func_gate*>(data)->wait(); },
+    &prior_work));
+  mr.deallocate(
+    cuda::stream_ref{cudaStreamPerThread}, source_ptr, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);
+
+  rmm::cuda_stream destination;
+  auto* destination_ptr = mr.allocate(destination, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  auto const reclaim_returned_without_waiting = !prior_work.complete();
+
+  prior_work.release();
+  mr.deallocate(destination, destination_ptr, 1024, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  destination.synchronize();
+
+  EXPECT_TRUE(reclaim_returned_without_waiting);
+  EXPECT_TRUE(prior_work.complete());
+}
+
+TEST(PoolTest, ReclaimsToMaximumWithCudaAsyncUpstreamAcrossStreams)
+{
+  rmm::mr::cuda_async_memory_resource upstream;
+  pool_mr mr{upstream, 256, 1024};
+  rmm::cuda_stream source;
+  {
+    rmm::device_buffer source_block{256, source, mr};
+  }
+
+  auto* ptr                      = mr.allocate_sync(1024);
+  auto const reclaimed_pool_size = mr.pool_size();
+  mr.deallocate_sync(ptr, 1024);
+
+  EXPECT_EQ(reclaimed_pool_size, 1024);
 }
 
 TEST(PoolTest, NonAlignedPoolSize)
@@ -119,31 +324,28 @@ TEST(PoolTest, NonAlignedPoolSize)
   EXPECT_THROW(
     []() {
       pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1000031, 1000192);
-      mr.allocate_sync(1000);
+      (void)mr.allocate_sync(1000);
     }(),
     rmm::logic_error);
 
   EXPECT_THROW(
     []() {
       pool_mr mr(rmm::mr::get_current_device_resource_ref(), 1000192, 1000200);
-      mr.allocate_sync(1000);
+      (void)mr.allocate_sync(1000);
     }(),
     rmm::logic_error);
 }
 
 TEST(PoolTest, UpstreamDoesntSupportMemInfo)
 {
-  cuda_mr cuda;
-  pool_mr mr1(&cuda, 0);
-  pool_mr mr2(&mr1, 0);
+  pool_mr mr1{cuda_mr{}, 0};
+  pool_mr mr2{mr1, 0};
   auto* ptr = mr2.allocate_sync(1024);
   mr2.deallocate_sync(ptr, 1024);
 }
 
 TEST(PoolTest, MultidevicePool)
 {
-  using MemoryResource = rmm::mr::pool_memory_resource<rmm::mr::cuda_memory_resource>;
-
   // Get the number of CUDA devices
   int num_devices = rmm::get_num_cuda_devices();
 
@@ -154,22 +356,22 @@ TEST(PoolTest, MultidevicePool)
     // initializing pool_memory_resource of multiple devices
     int devices      = 2;
     size_t pool_size = 1024;
-    std::vector<std::shared_ptr<MemoryResource>> mrs;
+    std::vector<pool_mr> mrs;
 
     for (int i = 0; i < devices; ++i) {
       RMM_CUDA_TRY(cudaSetDevice(i));
-      auto mr = std::make_shared<MemoryResource>(&general_mr, pool_size, pool_size);
-      rmm::mr::set_per_device_resource(rmm::cuda_device_id{i}, mr.get());
+      auto mr = pool_mr{general_mr, pool_size, pool_size};
+      rmm::mr::set_per_device_resource(rmm::cuda_device_id{i}, mr);
       mrs.emplace_back(mr);
     }
 
     {
       RMM_CUDA_TRY(cudaSetDevice(0));
-      rmm::device_buffer buf_a(16, rmm::cuda_stream_per_thread, mrs[0].get());
+      rmm::device_buffer buf_a(16, cuda::stream_ref{cudaStreamPerThread}, mrs[0]);
 
       {
         RMM_CUDA_TRY(cudaSetDevice(1));
-        rmm::device_buffer buf_b(16, rmm::cuda_stream_per_thread, mrs[1].get());
+        rmm::device_buffer buf_b(16, cuda::stream_ref{cudaStreamPerThread}, mrs[1]);
       }
 
       RMM_CUDA_TRY(cudaSetDevice(0));
@@ -177,44 +379,157 @@ TEST(PoolTest, MultidevicePool)
   }
 }
 
+// Host function used to stall a stream until the test releases it.
+void CUDART_CB spin_until_released(void* flag)
+{
+  auto* released = static_cast<std::atomic<bool>*>(flag);
+  while (!released->load(std::memory_order_acquire)) {
+    std::this_thread::sleep_for(std::chrono::milliseconds{1});
+  }
+}
+
+// Invariant under test: a freed block may be handed to another stream only after that stream
+// has been made dependent on all work that was in flight on the block when it was freed. This
+// must hold transitively when the pool moves whole free lists between streams: if stream A's
+// free list is merged into stream B's, and stream C later takes a block from B's list, C must
+// still be ordered after A's outstanding work on that block, even though C only synchronizes
+// with B's bookkeeping event.
+//
+// The test builds the shortest chain that exercises this, using three streams:
+//   stream A frees block X while a write of `pattern_a` to X is still pending on A (A is
+//   stalled by a host function, so the write cannot complete until the test releases it);
+//   stream B requests an allocation that the pool can only attempt by merging A's free list
+//   (containing X) into B's; the request itself fails, leaving X in B's list;
+//   stream C then allocates X out of B's list and writes `pattern_c` to it.
+// C's write must be stream-ordered after A's, so X must read back as `pattern_c` once both
+// streams have drained, regardless of timing. A probe event additionally checks that C's
+// write cannot complete while A is still stalled.
+TEST(PoolTest, CrossStreamStealAfterMergeWaitsForDonorStream)
+{
+  constexpr std::size_t block_size{1_MiB};
+  constexpr std::size_t pool_size{8_MiB};
+  constexpr int pattern_a{0xAA};
+  constexpr int pattern_c{0xBB};
+
+  pool_mr mr{rmm::mr::get_current_device_resource_ref(), pool_size, pool_size};
+  rmm::device_async_resource_ref ref{mr};
+
+  rmm::cuda_stream stream_a;
+  rmm::cuda_stream stream_b;
+  rmm::cuda_stream stream_c;
+
+  // X is carved from the front of the pool. The separator, allocated right behind it and held
+  // for the whole test, prevents X from coalescing with the rest of the pool's free memory.
+  void* ptr_x     = ref.allocate(stream_a, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  void* separator = ref.allocate(stream_b, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+
+  // Stall stream A, enqueue a write to X behind the stall, then free X on A. The pool records
+  // A's event behind the pending write, so any consumer that waits on A's event cannot touch X
+  // before the write completes.
+  std::atomic<bool> release{false};
+
+  // Unblock the callback during unwinding so resource teardown cannot wait on it indefinitely.
+  struct release_on_exit {
+    std::atomic<bool>& flag;
+
+    ~release_on_exit() { flag.store(true, std::memory_order_release); }
+  };
+
+  release_on_exit unblock{release};
+  RMM_CUDA_TRY(cudaLaunchHostFunc(stream_a.value(), spin_until_released, &release));
+  RMM_CUDA_TRY(cudaMemsetAsync(ptr_x, pattern_a, block_size, stream_a.value()));
+  ref.deallocate(stream_a, ptr_x, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+
+  // 6.5 MiB exceeds every individual free block (X: 1 MiB, rest of the pool: 6 MiB) and, since
+  // the separator prevents coalescing, the merged list too; the pool is at its maximum size, so
+  // this throws -- but only after merging A's free list (with X in it) into B's.
+  constexpr auto unsatisfiable = 6_MiB + block_size / 2;
+  EXPECT_THROW((void)ref.allocate(stream_b, unsatisfiable, rmm::CUDA_ALLOCATION_ALIGNMENT),
+               rmm::out_of_memory);
+
+  // Steal X from B's free list on a third stream and overwrite it. This waits only on B's
+  // event, which must have been recorded behind the wait on A's event during the merge above.
+  void* ptr_c = ref.allocate(stream_c, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  EXPECT_EQ(ptr_c, ptr_x);  // best fit: the stolen block is exactly X
+  RMM_CUDA_TRY(cudaMemsetAsync(ptr_c, pattern_c, block_size, stream_c.value()));
+
+  // Probe whether C's write can complete while A is still stalled. With the dependency chain
+  // intact it cannot -- C's stream is ordered behind A's pending work -- so the probe must
+  // still be pending when the deadline expires; the deadline only bounds the poll and does not
+  // affect correctness. If the chain is broken, the write completes almost immediately and the
+  // poll observes it. (An unbounded poll would hang here on a correct implementation.)
+  cudaEvent_t probe{};
+  RMM_CUDA_TRY(cudaEventCreateWithFlags(&probe, cudaEventDisableTiming));
+  RMM_CUDA_TRY(cudaEventRecord(probe, stream_c.value()));
+  auto const deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
+  auto probe_status   = cudaEventQuery(probe);
+  while (probe_status == cudaErrorNotReady && std::chrono::steady_clock::now() < deadline) {
+    std::this_thread::sleep_for(std::chrono::milliseconds{1});
+    probe_status = cudaEventQuery(probe);
+  }
+  EXPECT_EQ(probe_status, cudaErrorNotReady);
+
+  // Release stream A and drain both streams; only now may C's write complete.
+  release.store(true, std::memory_order_release);
+  stream_a.synchronize();
+  stream_c.synchronize();
+  RMM_CUDA_TRY(cudaEventDestroy(probe));
+
+  // Stream C's write is ordered after stream A's, so it must win.
+  std::vector<unsigned char> host(block_size);
+  RMM_CUDA_TRY(cudaMemcpy(host.data(), ptr_c, block_size, cudaMemcpyDefault));
+  EXPECT_TRUE(
+    std::all_of(host.cbegin(), host.cend(), [](unsigned char byte) { return byte == pattern_c; }));
+
+  ref.deallocate(stream_c, ptr_c, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+  ref.deallocate(stream_b, separator, block_size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+}
+
+class PoolMemoryResourceTest : public ::testing::Test {
+ protected:
+  rmm::mr::pool_memory_resource pool{rmm::mr::get_current_device_resource_ref(), 1024 * 1024};
+};
+
+TEST_F(PoolMemoryResourceTest, GetUpstreamResource)
+{
+  [[maybe_unused]] auto ref = pool.get_upstream_resource();
+}
+
+TEST_F(PoolMemoryResourceTest, AllocateDeallocate)
+{
+  constexpr std::size_t size{4096};
+  auto* ptr = pool.allocate_sync(size);
+  EXPECT_NE(ptr, nullptr);
+  EXPECT_NO_THROW(pool.deallocate_sync(ptr, size));
+}
+
+TEST_F(PoolMemoryResourceTest, SharedOwnership)
+{
+  auto copy = pool;  // copy shares the same underlying state
+  constexpr std::size_t size{4096};
+  auto* ptr = pool.allocate_sync(size);
+  EXPECT_NE(ptr, nullptr);
+  EXPECT_NO_THROW(copy.deallocate_sync(ptr, size));  // deallocate through the copy
+}
+
+TEST_F(PoolMemoryResourceTest, Equality)
+{
+  auto copy = pool;
+  EXPECT_EQ(pool, copy);
+
+  rmm::mr::pool_memory_resource other{rmm::mr::get_current_device_resource_ref(), 1024 * 1024};
+  EXPECT_NE(pool, other);
+}
+
+TEST_F(PoolMemoryResourceTest, PoolSize) { EXPECT_GE(pool.pool_size(), 1024 * 1024); }
+
 }  // namespace
 
 namespace test_properties {
-class fake_async_resource {
- public:
-  // To model `async_resource`
-  void* allocate_sync(std::size_t, std::size_t) { return nullptr; }
-  void deallocate_sync(void* /*ptr*/, std::size_t, std::size_t) noexcept {}
-  void* allocate(cuda_stream_view, std::size_t, std::size_t) { return nullptr; }
-  void deallocate(cuda_stream_view, void*, std::size_t, std::size_t) noexcept { return; }
-
-  bool operator==(const fake_async_resource& /*other*/) const { return true; }
-  bool operator!=(const fake_async_resource& /*other*/) const { return false; }
-
- private:
-  static void* do_allocate(std::size_t /*bytes*/, cuda_stream_view) { return nullptr; }
-  static void do_deallocate(void* /*ptr*/, std::size_t, cuda_stream_view) noexcept {}
-  [[nodiscard]] static bool do_is_equal(fake_async_resource const& /*other*/) noexcept
-  {
-    return true;
-  }
-};
 
 // static property checks
-static_assert(cuda::mr::synchronous_resource<fake_async_resource>);
-static_assert(cuda::mr::synchronous_resource<rmm::mr::pool_memory_resource<fake_async_resource>>);
+static_assert(cuda::mr::resource_with<rmm::mr::pool_memory_resource, cuda::mr::device_accessible>);
 
-// Ensure that we forward the property if it is there
-class fake_async_resource_device_accessible : public fake_async_resource {
-  friend void get_property(const fake_async_resource_device_accessible&,
-                           cuda::mr::device_accessible)
-  {
-  }
-};
-static_assert(
-  cuda::has_property<fake_async_resource_device_accessible, cuda::mr::device_accessible>);
-static_assert(
-  cuda::has_property<rmm::mr::pool_memory_resource<fake_async_resource_device_accessible>,
-                     cuda::mr::device_accessible>);
 }  // namespace test_properties
+
 }  // namespace rmm::test

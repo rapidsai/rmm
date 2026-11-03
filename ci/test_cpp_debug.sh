@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 set -euo pipefail
@@ -33,9 +33,7 @@ set -u
 
 rapids-print-env
 
-rapids-logger "Check system info"
-uname -a
-nvidia-smi
+./ci/gpu_info.sh
 
 rapids-logger "Building librmm in Debug mode"
 cmake -S cpp -B cpp/build \

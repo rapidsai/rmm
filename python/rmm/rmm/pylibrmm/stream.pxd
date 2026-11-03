@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 cimport cython
@@ -8,7 +8,7 @@ from libcpp cimport bool
 from libcpp.memory cimport unique_ptr
 
 from rmm.librmm.cuda_stream cimport cuda_stream
-from rmm.librmm.cuda_stream_view cimport cuda_stream_view
+from rmm.librmm.cuda_stream_ref cimport stream_ref
 
 
 @cython.final
@@ -25,7 +25,7 @@ cdef class Stream:
     @staticmethod
     cdef Stream _from_cudaStream_t(cudaStream_t s, object owner=*)
 
-    cdef cuda_stream_view view(self) noexcept nogil
+    cdef stream_ref view(self) noexcept nogil
     cdef void c_synchronize(self) except * nogil
     cdef bool c_is_default(self) noexcept nogil
     cdef void _init_with_new_cuda_stream(self, flags=*) except *
