@@ -30,6 +30,7 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <random>
 #include <string>
 #include <utility>
@@ -424,8 +425,8 @@ inline auto make_binning()
 {
   // Add a binning_memory_resource with fixed-size bins of sizes 256, 512, 1024, 2048 and 4096KiB
   // Larger allocations will use the CUDA resource
-  auto const bin_range_start{18};
-  auto const bin_range_end{22};
+  std::int8_t const bin_range_start{18};
+  std::int8_t const bin_range_end{22};
 
   return std::make_shared<rmm::mr::binning_memory_resource>(
     rmm::mr::cuda_memory_resource{}, bin_range_start, bin_range_end);

@@ -145,6 +145,9 @@ TEST_F(ArenaTest, AlignToSizeClass)  // NOLINT
   EXPECT_EQ(align_to_size_class(17_KiB), 20_KiB);
   EXPECT_EQ(align_to_size_class(13_MiB), 14_MiB);
   EXPECT_EQ(align_to_size_class(2500_MiB), 2560_MiB);
+  EXPECT_EQ(align_to_size_class(4_GiB - 1), 4_GiB);
+  EXPECT_EQ(align_to_size_class(4_GiB), 4_GiB);
+  EXPECT_EQ(align_to_size_class(4_GiB + 1), 5_GiB);
   EXPECT_EQ(align_to_size_class(128_GiB), 128_GiB);
   EXPECT_EQ(align_to_size_class(1_PiB), std::numeric_limits<std::size_t>::max());
 }
@@ -556,8 +559,8 @@ TEST_F(ArenaTest, SmallMediumLarge)  // NOLINT
 TEST_F(ArenaTest, Defragment)  // NOLINT
 {
   EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
-    auto const arena_size = superblock::minimum_size * 4;
-    arena_mr mr(rmm::mr::get_current_device_resource_ref(), arena_size);
+    auto const test_arena_size = superblock::minimum_size * 4;
+    arena_mr mr(rmm::mr::get_current_device_resource_ref(), test_arena_size);
     std::vector<std::thread> threads;
     std::size_t num_threads{4};
     threads.reserve(num_threads);
@@ -572,8 +575,8 @@ TEST_F(ArenaTest, Defragment)  // NOLINT
       thread.join();
     }
 
-    auto* ptr = mr.allocate_sync(arena_size);
-    mr.deallocate_sync(ptr, arena_size);
+    auto* ptr = mr.allocate_sync(test_arena_size);
+    mr.deallocate_sync(ptr, test_arena_size);
   }());
 }
 
@@ -583,8 +586,8 @@ TEST_F(ArenaTest, PerThreadToStreamDealloc)  // NOLINT
   // it was originally allocated in a superblock that was in a thread
   // arena that then moved to global arena during a defragmentation
   // and then moved to a stream arena.
-  auto const arena_size = superblock::minimum_size * 2;
-  arena_mr mr(rmm::mr::get_current_device_resource_ref(), arena_size);
+  auto const test_arena_size = superblock::minimum_size * 2;
+  arena_mr mr(rmm::mr::get_current_device_resource_ref(), test_arena_size);
   // Create an allocation from a per thread arena
   void* thread_ptr =
     mr.allocate(cuda::stream_ref{cudaStreamPerThread}, 256, rmm::CUDA_ALLOCATION_ALIGNMENT);

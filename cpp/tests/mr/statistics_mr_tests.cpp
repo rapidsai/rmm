@@ -19,6 +19,7 @@
 
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <thread>
@@ -259,7 +260,7 @@ TEST(StatisticsTest, NegativeInnerTracking)
   EXPECT_EQ(mr.get_allocations_counter().value, 0);
 
   // The inner_mr will have negative values
-  EXPECT_EQ(inner_mr.get_bytes_counter().value, -100_MiB);
+  EXPECT_EQ(inner_mr.get_bytes_counter().value, -static_cast<std::int64_t>(100_MiB));
   EXPECT_EQ(inner_mr.get_allocations_counter().value, -10);
 
   // Verify the peak and total

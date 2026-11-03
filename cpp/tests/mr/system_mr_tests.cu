@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -40,7 +40,7 @@ __global__ void touch_memory_kernel(char* data, std::size_t size)
 void touch_on_gpu(void* ptr, std::size_t size)
 {
   dim3 blockSize(256);
-  dim3 gridSize((size + blockSize.x - 1) / blockSize.x);
+  dim3 gridSize(static_cast<unsigned int>((size + blockSize.x - 1) / blockSize.x));
   touch_memory_kernel<<<gridSize, blockSize>>>(static_cast<char*>(ptr), size);
   cudaDeviceSynchronize();
 }

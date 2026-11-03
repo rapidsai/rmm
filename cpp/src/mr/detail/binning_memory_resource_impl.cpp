@@ -32,7 +32,7 @@ binning_memory_resource_impl::binning_memory_resource_impl(
   : upstream_mr_{std::move(upstream)}
 {
   for (auto i = min_size_exponent; i <= max_size_exponent; i++) {
-    add_bin(1 << i);
+    add_bin(std::size_t{1} << i);
   }
 }
 
