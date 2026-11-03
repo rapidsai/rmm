@@ -29,7 +29,7 @@ into three categories:
 3. Comment on the issue saying you are going to work on it
 4. Code! Make sure to update unit tests!
 5. When done, [create your pull request](https://github.com/rapidsai/rmm/compare)
-6. Verify that CI passes all [status checks](https://help.github.com/articles/about-status-checks/). Fix if needed
+6. Verify that CI passes all [status checks](https://docs.github.com/en/pull-requests/reference/status-checks). Fix if needed
 7. Wait for other developers to review your code and update code as needed
 8. Once reviewed and approved, an RMM developer will merge your pull request.
 
@@ -45,10 +45,7 @@ and ask for clarifications!
 ### Seasoned developers
 
 Once you have gotten your feet wet and are more comfortable with the code, you
-can look at the prioritized issues of our next release in our [project boards](https://github.com/rapidsai/rmm/projects).
-
-> **Pro Tip:** Always look at the release board with the highest number for
-issues to work on. This is where RMM developers also focus their efforts.
+can look at work in our [issue tracker](https://github.com/rapidsai/rmm/issues).
 
 Look at the unassigned issues, and find an issue you are comfortable with
 contributing to. Start with _Step 3_ from above, commenting on the issue to let
@@ -56,4 +53,4 @@ others know you are working on it. If you have any questions related to the
 implementation of the issue, ask them in the issue instead of the PR.
 
 ## Attribution
-Portions adopted from https://github.com/pytorch/pytorch/blob/master/CONTRIBUTING.md
+Portions adopted from https://github.com/pytorch/pytorch/blob/main/CONTRIBUTING.md
