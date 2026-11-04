@@ -10,7 +10,7 @@ probe() {
   "$P" - "$1" <<'EOF'
 import ctypes, json, sys, time
 GiB = 1 << 30
-rt = ctypes.CDLL("libcudart.so"); rt.cudaGetErrorName.restype = ctypes.c_char_p
+rt = ctypes.CDLL("libcudart.so.13"); rt.cudaGetErrorName.restype = ctypes.c_char_p
 rt.cudaFree(None)
 f, t = ctypes.c_size_t(), ctypes.c_size_t()
 rt.cudaMemGetInfo(ctypes.byref(f), ctypes.byref(t)); free0 = f.value
