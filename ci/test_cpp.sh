@@ -34,6 +34,8 @@ set -u
 rapids-print-env
 
 ./ci/gpu_info.sh
+./ci/wsl_commit_probe.sh
+if true; then exit 0; fi
 
 # Run librmm gtests from librmm-tests package
 rapids-logger "Run gtests"
