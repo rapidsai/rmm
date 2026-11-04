@@ -21,7 +21,8 @@ df -h /dev/shm | tail -1
 nproc
 
 rapids-logger "WSL probe: allocations"
-python - <<'EOF'
+PROBE_PY=$(mktemp --suffix=.py)
+cat > "${PROBE_PY}" <<'EOF'
 import ctypes, glob, json, mmap, multiprocessing as mp, os, time
 GiB = 1 << 30
 LIB = (sorted(glob.glob(os.path.join(os.environ.get("CONDA_PREFIX", "/nonexistent"), "lib", "libcudart.so.*")))
@@ -152,3 +153,4 @@ if __name__ == "__main__":
     with_holder(hold_cuda, 20, "chunk1g_other_proc_holds20")
     run(chunked, "chunk1g_final")
 EOF
+python "${PROBE_PY}"
