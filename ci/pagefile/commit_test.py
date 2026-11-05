@@ -117,25 +117,37 @@ def cudart():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["windows", "wsl"], required=True)
-    ap.add_argument("--host-memory-fraction", type=float, default=0.95)
+    ap.add_argument("--wsl-memory-fraction", type=float, default=0.95)
     args = ap.parse_args()
 
     total, avail = host_memory()
+    start = windows_commit(args.mode)
     emit(
         event="start",
         host_total_gib=round(total / GiB, 3),
         host_available_gib=round(avail / GiB, 3),
-        **windows_commit(args.mode),
+        **start,
     )
 
-    target = max(0, int(args.host_memory_fraction * total) - (total - avail))
+    if args.mode == "windows":
+        # Fill Windows commit up to physical RAM (all of system memory in use). The mapping is
+        # pagefile-backed, so its full size is charged at creation; touch only what fits in free
+        # physical memory so the test doesn't thrash.
+        target = max(0, total - int(start["committed_gib"] * GiB))
+        touch = max(0, min(target, avail - GiB))
+    else:
+        # Fill the WSL VM; leave a little so the guest's OOM killer stays out of the way.
+        target = touch = max(
+            0, int(args.wsl_memory_fraction * total) - (total - avail)
+        )
     host = mmap.mmap(-1, target) if target else None
-    for off in range(0, target, mmap.PAGESIZE):
+    for off in range(0, touch, mmap.PAGESIZE):
         host[off] = 1
     total, avail = host_memory()
     emit(
         event="host_allocated",
         host_alloc_gib=round(target / GiB, 3),
+        host_touched_gib=round(touch / GiB, 3),
         host_in_use_fraction=round((total - avail) / total, 4),
         **windows_commit(args.mode),
     )
