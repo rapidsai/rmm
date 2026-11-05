@@ -9,9 +9,6 @@ cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
 
 . /opt/conda/etc/profile.d/conda.sh
 
-./ci/wsl_host_probe.sh
-if true; then exit 0; fi
-
 rapids-logger "Configuring conda strict channel priority"
 conda config --set channel_priority strict
 
@@ -37,8 +34,6 @@ set -u
 rapids-print-env
 
 ./ci/gpu_info.sh
-./ci/wsl_commit_probe.sh post_conda
-if true; then exit 0; fi
 
 # Run librmm gtests from librmm-tests package
 rapids-logger "Run gtests"

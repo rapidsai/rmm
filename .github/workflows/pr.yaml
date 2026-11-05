@@ -9,7 +9,6 @@ concurrency:
 permissions: {}
 jobs:
   pr-builder:
-    if: false
     needs:
       - build-details
       - check-nightly-ci
@@ -37,62 +36,12 @@ jobs:
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@main
+    if: always()
     with:
       needs: ${{ toJSON(needs) }}
-  pagefile-windows:
-    strategy:
-      fail-fast: false
-      matrix:
-        gpu: [rtxpro6000, l4, h100]
-    runs-on: windows-amd64-gpu-${{ matrix.gpu }}-latest-1
-    permissions:
-      contents: read
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: "3.12"
-      - name: Install CUDA runtime
-        run: python -m pip install "nvidia-cuda-runtime==13.0.*"
-      - name: Commit test before resizing
-        continue-on-error: true
-        run: python ci/pagefile/commit_test.py --mode windows
-      - name: Size pagefile
-        shell: pwsh
-        run: ./ci/pagefile/size_pagefile.ps1 -Mode windows -Apply
-      - name: Commit test
-        run: python ci/pagefile/commit_test.py --mode windows
-  pagefile-wsl:
-    strategy:
-      fail-fast: false
-      matrix:
-        gpu: [rtxpro6000, l4, h100]
-    runs-on: wsl-amd64-gpu-${{ matrix.gpu }}-latest-1
-    permissions:
-      contents: read
-    timeout-minutes: 60
-    container:
-      image: rapidsai/ci-conda:26.12-cuda13.0.3-ubuntu24.04-py3.12
-      env:
-        NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-      - name: Commit test before resizing
-        continue-on-error: true
-        run: python ci/pagefile/commit_test.py --mode wsl
-      - name: Size pagefile
-        run: ci/pagefile/size_pagefile_wsl.sh -Apply
-      - name: Commit test
-        run: python ci/pagefile/commit_test.py --mode wsl
   build-details:
     uses: rapidsai/shared-workflows/.github/workflows/compute-build-details.yaml@main
   check-nightly-ci:
-    if: false
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -270,7 +219,6 @@ jobs:
       # duplicate archives that are inaccessible to other PRs.
       pre-commit-cache-read-only: true
   cmake-tests:
-    if: false
     needs: checks
     permissions:
       actions: read
@@ -287,8 +235,7 @@ jobs:
       container_image: "rapidsai/ci-conda:26.12-latest"
       script: "ci/test_cmake.sh"
   conda-cpp-build:
-    if: false
-    needs: [build-details]
+    needs: [build-details, checks]
     permissions:
       actions: read
       contents: read
@@ -303,7 +250,6 @@ jobs:
       node_type: cpu8
       script: ci/build_cpp.sh
       matrix_type: pull-request
-      matrix_filter: map(select(.ARCH == "amd64" and (.CUDA_VER | startswith("13"))))
   conda-cpp-tests:
     needs: [conda-cpp-build, changed-files]
     permissions:
@@ -318,9 +264,8 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_cpp.sh
-      matrix_type: wsl-pr
+      matrix_type: pull-request,wsl-pr
   conda-cpp-debug-tests:
-    if: false
     needs: [checks, changed-files]
     permissions:
       actions: read
@@ -330,6 +275,7 @@ jobs:
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@main
+    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_cpp
     with:
       build_type: pull-request
       node_type: "gpu-rtxpro6000-latest-1"
@@ -337,7 +283,6 @@ jobs:
       container_image: "rapidsai/ci-conda:26.12-latest"
       script: "ci/test_cpp_debug.sh"
   conda-python-build:
-    if: false
     needs: [build-details, conda-cpp-build]
     permissions:
       actions: read
@@ -355,7 +300,6 @@ jobs:
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
       matrix_type: pull-request
   conda-python-tests:
-    if: false
     needs: [conda-python-build, changed-files]
     permissions:
       actions: read
@@ -365,12 +309,12 @@ jobs:
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@main
+    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python_conda
     with:
       build_type: pull-request
       script: ci/test_python.sh
       matrix_type: pull-request
   conda-python-tests-integration-optional:
-    if: false
     needs: [conda-python-build, changed-files]
     permissions:
       actions: read
@@ -380,12 +324,12 @@ jobs:
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/conda-python-tests.yaml@main
+    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python_conda
     with:
       build_type: pull-request
       script: ci/test_python_integrations.sh
       matrix_type: pull-request
   docs-build-matrix:
-    if: false
     permissions:
       contents: read
     uses: rapidsai/shared-workflows/.github/workflows/compute-matrix.yaml@main
@@ -394,7 +338,6 @@ jobs:
       matrix_name: docs-build
       matrix_type: pull-request
   docs-build:
-    if: false
     needs: [docs-build-matrix, conda-python-build, changed-files]
     permissions:
       actions: read
@@ -407,6 +350,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.docs-build-matrix.outputs.matrix) }}
+    if: fromJSON(needs.changed-files.outputs.changed_file_groups).build_docs
     with:
       build_type: pull-request
       node_type: "gpu-${{ matrix.GPU }}-${{ matrix.DRIVER }}-1"
@@ -414,7 +358,7 @@ jobs:
       container_image: "rapidsai/ci-conda:26.12-cuda${{ matrix.CUDA_VER }}-${{ matrix.LINUX_VER }}-py${{ matrix.PY_VER }}"
       script: "ci/build_docs.sh"
   publish-api-docs:
-    if: false
+    if: github.ref_type == 'branch'
     needs: [docs-build]
     permissions:
       contents: read
@@ -435,7 +379,6 @@ jobs:
       docs-projects: rmm,librmm
       dry-run: true
   wheel-build:
-    if: false
     needs: [build-details, checks]
     permissions:
       actions: read
@@ -453,7 +396,6 @@ jobs:
       node_type: cpu8
       matrix_type: pull-request
   wheel-tests:
-    if: false
     needs: [wheel-build, changed-files]
     permissions:
       actions: read
@@ -463,12 +405,12 @@ jobs:
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@main
+    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python_wheels
     with:
       build_type: pull-request
       script: ci/test_wheel.sh
       matrix_type: pull-request,wsl-pr
   wheel-tests-integration-optional:
-    if: false
     needs: [wheel-build, changed-files]
     permissions:
       actions: read
@@ -478,12 +420,12 @@ jobs:
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
     uses: rapidsai/shared-workflows/.github/workflows/wheels-test.yaml@main
+    if: fromJSON(needs.changed-files.outputs.changed_file_groups).test_python_wheels
     with:
       build_type: pull-request
       script: ci/test_wheel_integrations.sh
       matrix_type: pull-request
   devcontainer:
-    if: false
     permissions:
       actions: read
       contents: read
