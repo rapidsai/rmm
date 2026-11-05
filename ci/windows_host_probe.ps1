@@ -11,6 +11,15 @@ Get-CimInstance Win32_PageFileSetting | Format-List
 (Get-Counter '\Memory\Committed Bytes', '\Memory\Commit Limit', '\Memory\Available MBytes').CounterSamples | Select-Object Path, CookedValue | Format-List
 Get-CimInstance Win32_VideoController | Select-Object Name, AdapterRAM, DriverVersion | Format-List
 
+Write-Host "== Privileges"
+whoami
+whoami /groups | Select-String -Pattern "Administrators|Mandatory Label"
+whoami /priv | Select-String -Pattern "SeCreatePagefilePrivilege|SeShutdownPrivilege|SeIncreaseQuotaPrivilege"
+([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+(Get-CimInstance Win32_OperatingSystem).LastBootUpTime
+Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management' -Name PagingFiles, ExistingPageFiles -ErrorAction SilentlyContinue | Format-List
+Get-ChildItem C:\Users -Directory -ErrorAction SilentlyContinue | ForEach-Object { $f = Join-Path $_.FullName ".wslconfig"; if (Test-Path $f) { Write-Host "-- $f"; Get-Content $f } }
+
 Write-Host "== Disks"
 Get-CimInstance Win32_LogicalDisk | Select-Object DeviceID, DriveType, FileSystem, Size, FreeSpace | Format-List
 Get-CimInstance Win32_DiskDrive | Select-Object Model, Size, InterfaceType | Format-List
