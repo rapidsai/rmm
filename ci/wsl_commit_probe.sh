@@ -6,6 +6,7 @@ set -uo pipefail
 
 grep -i microsoft /proc/version || { echo "not WSL, skipping"; exit 0; }
 
+if [ "${1:-full}" = "pre_conda" ]; then
 rapids-logger "WSL probe: environment"
 echo "WSLPROBE_ENV kernel=$(uname -r)"
 nvidia-smi -q > /tmp/nvsmi-q.txt 2>&1 || true
@@ -19,8 +20,9 @@ md5sum /usr/lib/x86_64-linux-gnu/libcuda.so.1 /usr/lib/wsl/drivers/*/libcuda.so.
 stat -c "%n" /dev/dxg /dev/nvidia* 2>&1 | head
 df -h /dev/shm | tail -1
 nproc
+fi
 
-rapids-logger "WSL probe: allocations"
+rapids-logger "WSL probe: allocations (${1:-full})"
 PROBE_PY=$(mktemp --suffix=.py)
 cat > "${PROBE_PY}" <<'EOF'
 import ctypes, glob, json, mmap, multiprocessing as mp, os, time
@@ -142,14 +144,52 @@ def with_holder(target, gib, label, **k):
     time.sleep(5)
 
 
+def vm():
+    keys = ("MemTotal", "MemFree", "MemAvailable", "Buffers", "Cached", "Shmem", "AnonPages", "Committed_AS")
+    return {l.split(":")[0]: int(l.split()[1]) // 1024 for l in open("/proc/meminfo") if l.split(":")[0] in keys}
+
+
+def fill_cache(path, gib):
+    with open(path, "wb") as f:
+        buf = os.urandom(1 << 20)
+        for _ in range(int(gib * 1024)):
+            f.write(buf)
+    with open(path, "rb") as f:
+        while f.read(64 << 20):
+            pass
+
+
+def drop_caches():
+    try:
+        os.sync()
+        with open("/proc/sys/vm/drop_caches", "w") as f:
+            f.write("3")
+        return "ok"
+    except OSError as e:
+        return str(e)
+
+
 if __name__ == "__main__":
-    run(single, "single_bisect")
-    run(chunked, "chunk1g")
-    run(chunked, "chunk1g_touch", touch=True)
-    run(chunked, "chunk4g", chunk=4 * GiB)
-    run(chunked, "async1g", api="cudaMallocAsync")
-    with_holder(hold_guest, 8, "chunk1g_guest_hold8")
-    with_holder(hold_cuda, 20, "chunk1g_other_proc_holds20")
-    run(chunked, "chunk1g_final")
+    import sys
+    phase = sys.argv[1] if len(sys.argv) > 1 else "full"
+    emit(label=phase + "_vm_start", lib=LIB, vm=vm())
+    run(chunked, phase + "_chunk1g")
+    if phase == "pre_conda":
+        path = "/__w/_temp/wsl_cache_fill.bin" if os.path.isdir("/__w/_temp") else "/tmp/wsl_cache_fill.bin"
+        fill_cache(path, 10)
+        emit(label="cache_filled_10g", vm=vm())
+        run(chunked, "after_cache_fill_chunk1g")
+        os.remove(path)
+        emit(label="cache_file_removed", vm=vm())
+        run(chunked, "after_cache_file_removed_chunk1g")
+        emit(label="drop_caches", result=drop_caches(), vm=vm())
+        run(chunked, "after_drop_caches_chunk1g")
+    else:
+        emit(label="drop_caches", result=drop_caches(), vm=vm())
+        run(chunked, phase + "_after_drop_caches_chunk1g")
+        with_holder(hold_guest, 8, phase + "_chunk1g_guest_hold8")
+        time.sleep(30)
+        emit(label=phase + "_after_hold8_released", vm=vm())
+        run(chunked, phase + "_after_hold8_released_chunk1g")
 EOF
-python "${PROBE_PY}"
+python "${PROBE_PY}" "${1:-full}"
