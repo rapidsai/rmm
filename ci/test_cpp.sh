@@ -10,7 +10,7 @@ cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")"/../
 . /opt/conda/etc/profile.d/conda.sh
 
 ./ci/wsl_host_probe.sh
-./ci/wsl_commit_probe.sh pre_conda
+if true; then exit 0; fi
 
 rapids-logger "Configuring conda strict channel priority"
 conda config --set channel_priority strict

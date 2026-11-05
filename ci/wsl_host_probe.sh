@@ -29,6 +29,10 @@ if [ -n "$PS" ]; then
     Get-CimInstance Win32_PageFileUsage | Select-Object Name,AllocatedBaseSize,CurrentUsage,PeakUsage | Format-List
     Get-CimInstance Win32_PageFileSetting | Format-List
     (Get-Counter "\Memory\Committed Bytes","\Memory\Commit Limit").CounterSamples | Select-Object Path,CookedValue | Format-List
+    Get-CimInstance Win32_LogicalDisk | Select-Object DeviceID,DriveType,FileSystem,Size,FreeSpace | Format-List
+    Get-CimInstance Win32_DiskDrive | Select-Object Model,Size,InterfaceType | Format-List
+    Get-ChildItem C:\\ -Force -Filter *.sys -ErrorAction SilentlyContinue | Select-Object Name,Length | Format-List
+    Get-ChildItem "$env:LOCALAPPDATA\\wsl","C:\\Users\\*\\AppData\\Local\\wsl" -Recurse -Filter *.vhdx -ErrorAction SilentlyContinue | Select-Object FullName,Length | Format-List
     Get-CimInstance Win32_VideoController | Select-Object Name,AdapterRAM,DriverVersion | Format-List
     Get-Content "$env:USERPROFILE\.wslconfig" -ErrorAction SilentlyContinue
     wsl.exe --version
