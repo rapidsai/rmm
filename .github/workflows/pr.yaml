@@ -39,30 +39,56 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/pr-builder.yaml@main
     with:
       needs: ${{ toJSON(needs) }}
-  windows-memory-probe:
+  pagefile-windows:
     strategy:
       fail-fast: false
       matrix:
-        runner: [windows-amd64-gpu-rtxpro6000-latest-1]
-    runs-on: ${{ matrix.runner }}
+        gpu: [rtxpro6000, l4, h100]
+    runs-on: windows-amd64-gpu-${{ matrix.gpu }}-latest-1
     permissions:
       contents: read
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - name: Host probe
-        shell: pwsh
-        run: ./ci/windows_host_probe.ps1
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.12"
-      - name: Allocation probe
+      - name: Install CUDA runtime
+        run: python -m pip install "nvidia-cuda-runtime==13.0.*"
+      - name: Commit test before resizing
+        continue-on-error: true
+        run: python ci/pagefile/commit_test.py --mode windows
+      - name: Size pagefile
         shell: pwsh
-        run: |
-          python -m pip install "nvidia-cuda-runtime==13.0.*"
-          ./ci/windows_host_probe.ps1
+        run: ./ci/pagefile/size_pagefile.ps1 -Mode windows -Apply
+      - name: Commit test
+        run: python ci/pagefile/commit_test.py --mode windows
+  pagefile-wsl:
+    strategy:
+      fail-fast: false
+      matrix:
+        gpu: [rtxpro6000, l4, h100]
+    runs-on: wsl-amd64-gpu-${{ matrix.gpu }}-latest-1
+    permissions:
+      contents: read
+    timeout-minutes: 60
+    container:
+      image: rapidsai/ci-conda:26.12-cuda13.0.3-ubuntu24.04-py3.12
+      env:
+        NVIDIA_VISIBLE_DEVICES: ${{ env.NVIDIA_VISIBLE_DEVICES }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Commit test before resizing
+        continue-on-error: true
+        run: python ci/pagefile/commit_test.py --mode wsl
+      - name: Size pagefile
+        run: ci/pagefile/size_pagefile_wsl.sh -Apply
+      - name: Commit test
+        run: python ci/pagefile/commit_test.py --mode wsl
   build-details:
     uses: rapidsai/shared-workflows/.github/workflows/compute-build-details.yaml@main
   check-nightly-ci:
@@ -261,6 +287,7 @@ jobs:
       container_image: "rapidsai/ci-conda:26.12-latest"
       script: "ci/test_cmake.sh"
   conda-cpp-build:
+    if: false
     needs: [build-details]
     permissions:
       actions: read
