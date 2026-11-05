@@ -148,8 +148,7 @@ if __name__ == "__main__":
     run(chunked, "chunk1g_touch", touch=True)
     run(chunked, "chunk4g", chunk=4 * GiB)
     run(chunked, "async1g", api="cudaMallocAsync")
-    run(chunked, "managed1g_touch", api="cudaMallocManaged", touch=True)
-    with_holder(hold_guest, 12, "chunk1g_guest_hold12")
+    with_holder(hold_guest, 8, "chunk1g_guest_hold8")
     with_holder(hold_cuda, 20, "chunk1g_other_proc_holds20")
     run(chunked, "chunk1g_final")
 EOF
