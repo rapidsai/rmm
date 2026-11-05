@@ -4,7 +4,6 @@
  */
 
 #include "../byte_literals.hpp"
-#include "test_utils.hpp"
 
 #include <rmm/aligned.hpp>
 #include <rmm/cuda_device.hpp>
@@ -88,15 +87,15 @@ TEST(PoolTest, ThrowMaxLessThanInitial)
   EXPECT_THROW(max_less_than_initial(), rmm::logic_error);
 }
 
-TEST(PoolTest, AllocateMostOfFreeMemory)
+TEST(PoolTest, AllocateNinetyPercent)
 {
-  // rapidsai/rmm#2339: WSL can commit only ~72% of the free memory reported by cudaMemGetInfo
-  auto const percent = is_wsl() ? 70 : 90;
-  auto allocate      = [percent]() {
-    auto const pool_size = rmm::percent_of_free_device_memory(percent);
-    pool_mr mr{rmm::mr::get_current_device_resource_ref(), pool_size};
+  auto allocate_ninety = []() {
+    auto const [free, total] = rmm::available_device_memory();
+    (void)total;
+    auto const ninety_percent_pool = rmm::percent_of_free_device_memory(90);
+    pool_mr mr{rmm::mr::get_current_device_resource_ref(), ninety_percent_pool};
   };
-  EXPECT_NO_THROW(allocate());
+  EXPECT_NO_THROW(allocate_ninety());
 }
 
 TEST(PoolTest, TwoLargeBuffers)
