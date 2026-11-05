@@ -1,20 +1,28 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 # TEMP (rapidsai/rmm#2339): size C:\pagefile.sys's maximum to the least value that lets a workload
-# allocate all GPU memory while host memory use reaches HostFraction of the RAM available to it.
+# allocate all GPU memory while also using host memory, with every input measured on this machine.
 #
 # Every WDDM/MCDM GPU allocation is charged 1:1 against Windows commit, and the commit limit is
-# RAM + pagefile, so the pagefile must cover whatever commit exceeds RAM's share of the limit:
-#   windows: commit = Committed_now + (HostFraction * RAM - RAM_in_use) + GPU + margin
-#   wsl:     commit = (Committed_now - WSL_VM_in_use) + WSL_VM_size + GPU + margin
-#   pagefile_max = max(pagefile_now, commit - (CommitLimit_now - pagefile_now))
-# In WSL the workload's host memory lives inside the WSL VM, whose commit is bounded by the VM's size.
+# RAM + pagefile, so:
+#   MaximumSize = VRAM + Host_memory + Windows_baseline + headroom - RAM
+# where
+#   VRAM             = sum over GPUs of nvidia-smi memory.total - memory.reserved
+#   RAM              = Commit Limit - current pagefile size (RAM's share of the commit limit)
+#   headroom         = -HeadroomGiB
+#   windows: Host_memory      = HostMemoryFraction * TotalPhysicalMemory - RAM in use
+#                               (the workload's additional host memory, run natively on Windows)
+#            Windows_baseline = Committed Bytes now
+#   wsl:     Host_memory      = WSL_memory = the WSL VM's size (.wslconfig memory=, else 50% of RAM)
+#                               (the workload runs in the VM, so the VM's size bounds its host memory)
+#            Windows_baseline = Committed Bytes now - vmmemWSL private bytes
+#                               (the VM's current commit is already inside WSL_memory; measured from the
+#                               Windows side because the VM returns freed guest pages to Windows lazily)
 param(
     [Parameter(Mandatory = $true)][ValidateSet("windows", "wsl")][string]$Mode,
-    [double]$HostFraction = 0.95,
-    [double]$MarginGiB = 1.0,
+    [double]$HostMemoryFraction = 0.95,
+    [double]$HeadroomGiB = 1.0,
     [long]$WslMemTotalBytes = 0,
-    [long]$WslUsedBytes = 0,
     [switch]$Apply
 )
 $ErrorActionPreference = "Stop"
@@ -64,47 +72,48 @@ foreach ($row in $gpuRows) {
 }
 
 $disk = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'"
-$margin = $MarginGiB * $GiB
+$vram = $gpu
+$RAM = $ramCommit
+$headroom = $HeadroomGiB * $GiB
+$vm = $null
 
 if ($Mode -eq "windows") {
-    $hostAlloc = [math]::Max(0.0, $HostFraction * $ram - ($ram - $ramAvail))
-    $baseline = $commit.Committed
-    $vm = $null
-    $required = $baseline + $hostAlloc + $gpu + $margin
+    $hostMemory = [math]::Max(0.0, $HostMemoryFraction * $ram - ($ram - $ramAvail))
+    $windowsBaseline = $commit.Committed
 } else {
-    if ($WslMemTotalBytes -le 0) { throw "wsl mode needs -WslMemTotalBytes and -WslUsedBytes from the WSL VM's /proc/meminfo" }
+    if ($WslMemTotalBytes -le 0) { throw "wsl mode needs -WslMemTotalBytes from the WSL VM's /proc/meminfo" }
     $vm = Get-WslVmBytes $ram
-    $vmPeak = [math]::Max($vm.Bytes, [double]$WslMemTotalBytes)
-    $baseline = $commit.Committed - $WslUsedBytes
-    $hostAlloc = $vmPeak
-    $required = $baseline + $vmPeak + $gpu + $margin
+    $hostMemory = [math]::Max($vm.Bytes, [double]$WslMemTotalBytes)
+    $vmProc = @(Get-Process -Name vmmemWSL, vmmem -ErrorAction SilentlyContinue)
+    if ($vmProc.Count -eq 0) { throw "no vmmemWSL/vmmem process found" }
+    $vmCommit = [double](($vmProc | Measure-Object PrivateMemorySize64 -Sum).Sum)
+    $windowsBaseline = $commit.Committed - $vmCommit
 }
 
-$pfMax = [math]::Max($pfNow, [math]::Ceiling(($required - $ramCommit) / $MiB) * $MiB)
+$maximumSize = $vram + $hostMemory + $windowsBaseline + $headroom - $RAM
+$pfMax = [math]::Max($pfNow, [math]::Ceiling($maximumSize / $MiB) * $MiB)
 $growth = $pfMax - $pfNow
 
 $result = [ordered]@{
-    mode                    = $Mode
-    gpus                    = ($gpuNames -join "; ")
-    ram_gib                 = [math]::Round($ram / $GiB, 3)
-    ram_available_gib       = [math]::Round($ramAvail / $GiB, 3)
-    ram_commit_gib          = [math]::Round($ramCommit / $GiB, 3)
-    gpu_allocatable_gib     = [math]::Round($gpu / $GiB, 3)
-    committed_now_gib       = [math]::Round($commit.Committed / $GiB, 3)
-    commit_limit_now_gib    = [math]::Round($commit.Limit / $GiB, 3)
-    baseline_gib            = [math]::Round($baseline / $GiB, 3)
-    host_alloc_gib          = [math]::Round($hostAlloc / $GiB, 3)
-    wsl_vm_size_gib         = $(if ($vm) { [math]::Round($vm.Bytes / $GiB, 3) } else { $null })
-    wsl_vm_size_source      = $(if ($vm) { $vm.Source } else { $null })
-    wsl_memtotal_gib        = $(if ($vm) { [math]::Round($WslMemTotalBytes / $GiB, 3) } else { $null })
-    wsl_used_gib            = $(if ($vm) { [math]::Round($WslUsedBytes / $GiB, 3) } else { $null })
-    margin_gib              = $MarginGiB
-    required_commit_gib     = [math]::Round($required / $GiB, 3)
-    pagefile_now_gib        = [math]::Round($pfNow / $GiB, 3)
-    pagefile_max_gib        = [math]::Round($pfMax / $GiB, 3)
-    pagefile_growth_gib     = [math]::Round($growth / $GiB, 3)
-    c_free_gib              = [math]::Round([double]$disk.FreeSpace / $GiB, 3)
-    automatic_managed       = $cs.AutomaticManagedPagefile
+    mode                  = $Mode
+    gpus                  = ($gpuNames -join "; ")
+    VRAM_gib              = [math]::Round($vram / $GiB, 3)
+    Host_memory_gib       = [math]::Round($hostMemory / $GiB, 3)
+    Windows_baseline_gib  = [math]::Round($windowsBaseline / $GiB, 3)
+    headroom_gib          = $HeadroomGiB
+    RAM_gib               = [math]::Round($RAM / $GiB, 3)
+    MaximumSize_gib       = [math]::Round($pfMax / $GiB, 3)
+    total_physical_gib    = [math]::Round($ram / $GiB, 3)
+    ram_available_gib     = [math]::Round($ramAvail / $GiB, 3)
+    committed_now_gib     = [math]::Round($commit.Committed / $GiB, 3)
+    commit_limit_now_gib  = [math]::Round($commit.Limit / $GiB, 3)
+    pagefile_now_gib      = [math]::Round($pfNow / $GiB, 3)
+    pagefile_growth_gib   = [math]::Round($growth / $GiB, 3)
+    wsl_memory_source     = $(if ($vm) { $vm.Source } else { $null })
+    wsl_memtotal_gib      = $(if ($vm) { [math]::Round($WslMemTotalBytes / $GiB, 3) } else { $null })
+    wsl_vm_commit_gib     = $(if ($vm) { [math]::Round($vmCommit / $GiB, 3) } else { $null })
+    c_free_gib            = [math]::Round([double]$disk.FreeSpace / $GiB, 3)
+    automatic_managed     = $cs.AutomaticManagedPagefile
 }
 Write-Output ("PAGEFILE_PLAN " + ($result | ConvertTo-Json -Compress))
 if ($growth -gt [double]$disk.FreeSpace) { throw "C: has $([math]::Round($disk.FreeSpace / $GiB, 1)) GiB free; the pagefile needs up to $([math]::Round($growth / $GiB, 1)) GiB more" }
@@ -140,7 +149,7 @@ public static class PageFile {
                 max_gib              = [math]::Round($pfMax / $GiB, 3)
                 committed_gib        = [math]::Round($after.Committed / $GiB, 3)
                 commit_limit_gib     = [math]::Round($after.Limit / $GiB, 3)
-                max_commit_limit_gib = [math]::Round(($ramCommit + $pfMax) / $GiB, 3)
+                max_commit_limit_gib = [math]::Round(($RAM + $pfMax) / $GiB, 3)
                 pagefile_alloc_mib   = ($pf | Measure-Object AllocatedBaseSize -Sum).Sum
             } | ConvertTo-Json -Compress))
     if ($status -ne 0) { throw ("NtCreatePagingFile failed with status 0x{0:X8}" -f $status) }

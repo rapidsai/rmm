@@ -28,33 +28,37 @@ def emit(**kw):
 
 
 def windows_commit(mode):
-    if mode == "windows":
-        out = subprocess.run(
-            [
-                "powershell",
-                "-NoProfile",
-                "-OutputFormat",
-                "Text",
-                "-Command",
-                COUNTERS,
-            ],
+    here = os.path.dirname(os.path.abspath(__file__))
+    cmd = (
+        [
+            "powershell",
+            "-NoProfile",
+            "-OutputFormat",
+            "Text",
+            "-Command",
+            COUNTERS,
+        ]
+        if mode == "windows"
+        else [sys.executable, os.path.join(here, "winps.py")]
+    )
+    # powershell.exe can fail to start while host memory is nearly exhausted; retry briefly.
+    for _ in range(5):
+        r = subprocess.run(
+            cmd,
+            input=None if mode == "windows" else COUNTERS,
             capture_output=True,
             text=True,
-        ).stdout
-    else:
-        here = os.path.dirname(os.path.abspath(__file__))
-        out = subprocess.run(
-            [sys.executable, os.path.join(here, "winps.py")],
-            input=COUNTERS,
-            capture_output=True,
-            text=True,
-        ).stdout
-    c, lim, pf = out.split()[-3:]
-    return {
-        "committed_gib": round(float(c) / GiB, 3),
-        "limit_gib": round(float(lim) / GiB, 3),
-        "pagefile_mib": int(pf),
-    }
+        )
+        fields = r.stdout.split()[-3:]
+        if len(fields) == 3:
+            c, lim, pf = fields
+            return {
+                "committed_gib": round(float(c) / GiB, 3),
+                "limit_gib": round(float(lim) / GiB, 3),
+                "pagefile_mib": int(pf),
+            }
+        time.sleep(2)
+    return {"counter_error": (r.stderr or r.stdout)[-300:]}
 
 
 def host_memory():
@@ -113,7 +117,7 @@ def cudart():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["windows", "wsl"], required=True)
-    ap.add_argument("--host-fraction", type=float, default=0.95)
+    ap.add_argument("--host-memory-fraction", type=float, default=0.95)
     args = ap.parse_args()
 
     total, avail = host_memory()
@@ -124,7 +128,7 @@ def main():
         **windows_commit(args.mode),
     )
 
-    target = max(0, int(args.host_fraction * total) - (total - avail))
+    target = max(0, int(args.host_memory_fraction * total) - (total - avail))
     host = mmap.mmap(-1, target) if target else None
     for off in range(0, target, mmap.PAGESIZE):
         host[off] = 1
