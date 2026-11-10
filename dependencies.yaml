@@ -206,7 +206,7 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - &librmm_unsuffixed librmm==26.12.*,>=0.0.0a0
+          - &librmm_unsuffixed librmm==27.2.*,>=0.0.0a0
     specific:
       - output_types: [requirements, constraints, pyproject]
         matrices:
@@ -214,12 +214,12 @@ dependencies:
               cuda: "12.*"
               cuda_suffixed: "true"
             packages:
-              - librmm-cu12==26.12.*,>=0.0.0a0
+              - librmm-cu12==27.2.*,>=0.0.0a0
           - matrix:
               cuda: "13.*"
               cuda_suffixed: "true"
             packages:
-              - librmm-cu13==26.12.*,>=0.0.0a0
+              - librmm-cu13==27.2.*,>=0.0.0a0
           - matrix:
               cuda_suffixed: "false"
             packages:
@@ -228,17 +228,17 @@ dependencies:
     common:
       - output_types: conda
         packages:
-          - rmm==26.12.*,>=0.0.0a0
+          - rmm==27.2.*,>=0.0.0a0
   depends_on_librmm_tests:
     common:
       - output_types: conda
         packages:
-          - librmm-tests==26.12.*,>=0.0.0a0
+          - librmm-tests==27.2.*,>=0.0.0a0
   depends_on_librmm_example:
     common:
       - output_types: conda
         packages:
-          - librmm-example==26.12.*,>=0.0.0a0
+          - librmm-example==27.2.*,>=0.0.0a0
   checks:
     common:
       - output_types: [conda, requirements, constraints]
