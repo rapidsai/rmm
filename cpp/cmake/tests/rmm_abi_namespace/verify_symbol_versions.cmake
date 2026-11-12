@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # cmake-format: on
 # =============================================================================
-cmake_minimum_required(VERSION 4.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 4.3 FATAL_ERROR)
 
 foreach(required_file IN ITEMS READELF RMM_LIBRARY PREVIOUS_RMM_LIBRARY CONSUMER_LIBRARY)
   if(NOT DEFINED ${required_file} OR NOT EXISTS "${${required_file}}")
