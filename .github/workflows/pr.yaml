@@ -376,7 +376,9 @@ jobs:
       statuses: write
     uses: rapidsai/shared-workflows/.github/workflows/docs-preview-status.yaml@preview-links
     with:
+      docs-project: rmm
       docs-preview-urls: ${{ needs.docs-build.outputs.docs-preview-urls }}
+      sha: ${{ github.sha }}
   publish-api-docs:
     if: github.ref_type == 'branch'
     needs: [docs-build]
