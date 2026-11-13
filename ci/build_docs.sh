@@ -1,5 +1,5 @@
 #!/bin/bash
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 set -euo pipefail
@@ -48,5 +48,11 @@ make dirhtml
 mkdir -p "${RAPIDS_DOCS_DIR}/rmm/html"
 mv _build/dirhtml/* "${RAPIDS_DOCS_DIR}/rmm/html"
 popd
+
+# TEMPORARY (testing only, revert before merge): use gha-tools from a test branch
+GHA_TOOLS_DIR="$(mktemp -d)"
+git clone --depth 1 -b preview-links https://github.com/ncclementi/gha-tools.git "${GHA_TOOLS_DIR}"
+export PATH="${GHA_TOOLS_DIR}/tools:${PATH}"
+command -v rapids-upload-docs   # should print ${GHA_TOOLS_DIR}/tools/rapids-upload-docs
 
 RAPIDS_VERSION_NUMBER="${RAPIDS_VERSION_MAJOR_MINOR}" rapids-upload-docs
