@@ -28,7 +28,6 @@ jobs:
       - wheel-tests
       - wheel-tests-integration-optional
       - devcontainer
-      - telemetry-setup
     permissions:
       actions: read
       contents: read
@@ -40,19 +39,6 @@ jobs:
     if: always()
     with:
       needs: ${{ toJSON(needs) }}
-  telemetry-setup:
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    permissions:
-      contents: read
-    env:
-      OTEL_SERVICE_NAME: "pr-rmm"
-    steps:
-      - name: Telemetry setup
-        # This gate is here and not at the job level because we need the job to not be skipped,
-        # since other jobs depend on it.
-        if: ${{ vars.TELEMETRY_ENABLED == 'true' }}
-        uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
   build-details:
     uses: rapidsai/shared-workflows/.github/workflows/compute-build-details.yaml@main
   check-nightly-ci:
@@ -72,8 +58,6 @@ jobs:
           repo: ${{ github.repository }}
           target-branch: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.ref }}
   changed-files:
-    needs:
-      - telemetry-setup
     permissions:
       actions: read
       contents: read
@@ -227,12 +211,10 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    needs:
-      - telemetry-setup
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@main
     with:
       enable_check_generated_files: false
-      ignored_pr_jobs: "telemetry-summarize conda-python-tests-integration-optional wheel-tests-integration-optional docs-preview"
+      ignored_pr_jobs: "conda-python-tests-integration-optional wheel-tests-integration-optional docs-preview"
       # Main builds seed this cache. PR merge refs can restore it but should not create
       # duplicate archives that are inaccessible to other PRs.
       pre-commit-cache-read-only: true
@@ -250,7 +232,7 @@ jobs:
       build_type: pull-request
       node_type: cpu16
       arch: "amd64"
-      container_image: "rapidsai/ci-conda:26.12-latest"
+      container_image: "rapidsai/ci-conda:27.02-latest"
       script: "ci/test_cmake.sh"
   conda-cpp-build:
     needs: [build-details, checks]
@@ -267,6 +249,7 @@ jobs:
       build-datetime: ${{ needs.build-details.outputs.build-datetime }}
       node_type: cpu8
       script: ci/build_cpp.sh
+      matrix_type: pull-request
   conda-cpp-tests:
     needs: [conda-cpp-build, changed-files]
     permissions:
@@ -281,6 +264,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_cpp.sh
+      matrix_type: pull-request
   conda-cpp-debug-tests:
     needs: [checks, changed-files]
     permissions:
@@ -296,7 +280,7 @@ jobs:
       build_type: pull-request
       node_type: "gpu-rtxpro6000-latest-1"
       arch: "amd64"
-      container_image: "rapidsai/ci-conda:26.12-latest"
+      container_image: "rapidsai/ci-conda:27.02-latest"
       script: "ci/test_cpp_debug.sh"
   conda-python-build:
     needs: [build-details, conda-cpp-build]
@@ -314,6 +298,7 @@ jobs:
       script: ci/build_python.sh
       # Build a conda package for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
+      matrix_type: pull-request
   conda-python-tests:
     needs: [conda-python-build, changed-files]
     permissions:
@@ -328,6 +313,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_python.sh
+      matrix_type: pull-request
   conda-python-tests-integration-optional:
     needs: [conda-python-build, changed-files]
     permissions:
@@ -342,6 +328,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_python_integrations.sh
+      matrix_type: pull-request
   docs-build-matrix:
     permissions:
       contents: read
@@ -349,6 +336,7 @@ jobs:
     with:
       build_type: pull-request
       matrix_name: docs-build
+      matrix_type: pull-request
   docs-build:
     needs: [docs-build-matrix, conda-python-build, changed-files]
     permissions:
@@ -367,7 +355,7 @@ jobs:
       build_type: pull-request
       node_type: "gpu-${{ matrix.GPU }}-${{ matrix.DRIVER }}-1"
       arch: "${{ matrix.arch }}"
-      container_image: "rapidsai/ci-conda:26.12-cuda${{ matrix.CUDA_VER }}-${{ matrix.LINUX_VER }}-py${{ matrix.PY_VER }}"
+      container_image: "rapidsai/ci-conda:27.02-cuda${{ matrix.CUDA_VER }}-${{ matrix.LINUX_VER }}-py${{ matrix.PY_VER }}"
       script: "ci/build_docs.sh"
   docs-preview:
     needs: [docs-build]
@@ -416,6 +404,7 @@ jobs:
       build_type: pull-request
       build-datetime: ${{ needs.build-details.outputs.build-datetime }}
       node_type: cpu8
+      matrix_type: pull-request
   wheel-tests:
     needs: [wheel-build, changed-files]
     permissions:
@@ -430,6 +419,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_wheel.sh
+      matrix_type: pull-request
   wheel-tests-integration-optional:
     needs: [wheel-build, changed-files]
     permissions:
@@ -444,6 +434,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_wheel_integrations.sh
+      matrix_type: pull-request
   devcontainer:
     permissions:
       actions: read
@@ -452,12 +443,10 @@ jobs:
       packages: read
       pull-requests: read
     secrets: inherit # zizmor: ignore[secrets-inherit]
-    needs:
-      - telemetry-setup
     uses: rapidsai/shared-workflows/.github/workflows/build-in-devcontainer.yaml@main
     with:
       arch: '["amd64", "arm64"]'
-      cuda: '["13.3"]'
+      cuda: '["13.4"]'
       node_type: "cpu8"
       env: |
         SCCACHE_DIST_MAX_RETRIES=inf
@@ -465,18 +454,5 @@ jobs:
         SCCACHE_DIST_FALLBACK_TO_LOCAL_COMPILE=false
       build_command: |
         sccache --zero-stats;
-        build-all -j0 -DBUILD_BENCHMARKS=ON --verbose 2>&1 | tee telemetry-artifacts/build.log;
-        sccache --show-adv-stats | tee telemetry-artifacts/sccache-stats.txt;
-  telemetry-summarize:
-    # This job must use a self-hosted runner to record telemetry traces.
-    runs-on: linux-amd64-cpu4
-    permissions:
-      actions: write
-    needs: pr-builder
-    if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() && github.run_attempt == '1' }}
-    continue-on-error: true
-    steps:
-      - name: Telemetry summarize
-        uses: rapidsai/shared-actions/telemetry-dispatch-summarize@main
-    env:
-      GH_TOKEN: ${{ github.token }}
+        build-all -j0 -DBUILD_BENCHMARKS=ON --verbose;
+        sccache --show-adv-stats;
