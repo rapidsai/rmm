@@ -100,11 +100,14 @@ class stream_ordered_memory_resource : public crtp<PoolResource> {
 
     auto stream_event = get_event(stream);
 
-    bytes = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
-    RMM_EXPECTS(bytes <= this->underlying().get_maximum_allocation_size(),
+    // Check the size before aligning it: a size within the alignment of SIZE_MAX would otherwise
+    // wrap around to zero in `align_up` and be served from an existing block.
+    RMM_EXPECTS(bytes <= rmm::align_down(this->underlying().get_maximum_allocation_size(),
+                                         rmm::CUDA_ALLOCATION_ALIGNMENT),
                 std::string("Maximum allocation size exceeded (failed to allocate ") +
                   rmm::detail::format_bytes(bytes) + ")",
                 rmm::out_of_memory);
+    bytes            = rmm::align_up(bytes, rmm::CUDA_ALLOCATION_ALIGNMENT);
     auto const block = this->underlying().get_block(bytes, stream_event);
 
     RMM_LOG_TRACE("[A][stream %s][%zuB][%p]",
