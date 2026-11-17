@@ -1,0 +1,49 @@
+name: Link checks
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run every Monday, Wednesday, and Friday at 08:00 UTC.
+    - cron: "0 8 * * 1,3,5"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Restore lychee cache
+        id: restore-lychee-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .lycheecache
+          key: lychee-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: lychee-${{ github.ref_name }}-
+      - name: List tracked files
+        run: git ls-files '*.md' '*.html' '*.rst' > "${RUNNER_TEMP}/lychee-files"
+      - name: Check links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: >-
+            --config .lychee.toml
+            --no-progress
+            --files-from "${{ runner.temp }}/lychee-files"
+          fail: true
+          failIfEmpty: true
+      - name: Save lychee cache
+        if: always()
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .lycheecache
+          key: ${{ steps.restore-lychee-cache.outputs.cache-primary-key }}
