@@ -13,6 +13,10 @@
 #include <cuda/stream>
 #include <cuda_runtime_api.h>
 
+#include <cstddef>
+#include <limits>
+#include <string>
+
 RMM_NAMESPACE_BEGIN
 namespace mr {
 namespace detail {
@@ -35,6 +39,12 @@ void* arena_memory_resource_impl::allocate(cuda::stream_ref stream,
                                            std::size_t /*alignment*/)
 {
   if (bytes == 0) { return nullptr; }
+  // A size within the alignment of SIZE_MAX would wrap around to zero when aligned up.
+  RMM_EXPECTS(bytes <= rmm::align_down(std::numeric_limits<std::size_t>::max(),
+                                       rmm::CUDA_ALLOCATION_ALIGNMENT),
+              std::string("Maximum allocation size exceeded (failed to allocate ") +
+                rmm::detail::format_bytes(bytes) + ")",
+              rmm::out_of_memory);
 #ifdef RMM_ARENA_USE_SIZE_CLASSES
   bytes = rmm::mr::detail::arena::align_to_size_class(bytes);
 #else

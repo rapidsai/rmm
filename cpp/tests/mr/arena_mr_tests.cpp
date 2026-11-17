@@ -531,6 +531,24 @@ TEST_F(ArenaTest, SizeSmallerThanSuperblockSize)  // NOLINT
   EXPECT_THROW(construct_small(), rmm::logic_error);
 }
 
+TEST_F(ArenaTest, AllocateNearSizeMaxThrows)  // NOLINT
+{
+  // A size within CUDA_ALLOCATION_ALIGNMENT of SIZE_MAX must not wrap around to a zero-byte block.
+  arena_mr mr{rmm::mr::get_current_device_resource_ref(), 4_MiB};
+  for (auto const bytes : {std::numeric_limits<std::size_t>::max(),
+                           std::numeric_limits<std::size_t>::max() - 3,
+                           std::numeric_limits<std::size_t>::max() - 254}) {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-goto)
+    EXPECT_THROW((void)mr.allocate_sync(bytes), rmm::out_of_memory);
+  }
+
+  auto* ptr1 = mr.allocate_sync(256);
+  auto* ptr2 = mr.allocate_sync(256);
+  EXPECT_NE(ptr1, ptr2);
+  mr.deallocate_sync(ptr1, 256);
+  mr.deallocate_sync(ptr2, 256);
+}
+
 TEST_F(ArenaTest, AllocateNinetyPercent)  // NOLINT
 {
   EXPECT_NO_THROW([]() {  // NOLINT(cppcoreguidelines-avoid-goto)
