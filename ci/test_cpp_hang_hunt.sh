@@ -31,9 +31,12 @@ rapids-print-env
 ./ci/gpu_info.sh
 cat /proc/sys/kernel/yama/ptrace_scope 2>/dev/null || echo "ptrace_scope: not present"
 
-ITERS=${HANG_HUNT_ITERS:-5}
-HANG_S=${HANG_HUNT_HANG_S:-120}
-DEADLINE=$((SECONDS + ${HANG_HUNT_MINUTES:-30} * 60))
+ITERS=${HANG_HUNT_ITERS:-15}
+PARALLEL=${HANG_HUNT_PARALLEL:-4}
+BURST=${HANG_HUNT_BURST:-8}
+BURST_ROUNDS=${HANG_HUNT_BURST_ROUNDS:-40}
+HANG_S=${HANG_HUNT_HANG_S:-180}
+DEADLINE=$((SECONDS + ${HANG_HUNT_MINUTES:-100} * 60))
 GTESTS="${CONDA_PREFIX}/bin/gtests/librmm"
 LOGS=$(mktemp -d)
 hangs=0
@@ -91,24 +94,56 @@ EOF
 gcc -shared -fPIC -o "${LOGS}/libptracer.so" "${LOGS}/ptracer.c"
 
 cd "${GTESTS}"
-while (( iter < ITERS && SECONDS < DEADLINE )); do
-  iter=$((iter + 1))
-  log="${LOGS}/iter_${iter}.log"
-  start=$SECONDS
-  LD_PRELOAD="${LOGS}/libptracer.so" ctest --no-tests=error --output-on-failure -j20 > "${log}" 2>&1 &
-  cpid=$!
-  while kill -0 "${cpid}" 2>/dev/null; do
+export LD_PRELOAD="${LOGS}/libptracer.so"
+
+# Wait for background jobs while dumping any test that hangs.
+wait_watching() {
+  while [[ -n "$(jobs -rp)" ]]; do
     sleep 5
     watch_tests
   done
-  wait "${cpid}" && rc=0 || rc=$?
-  echo "iteration ${iter}: rc=${rc} $((SECONDS - start)) s $(grep -o '[0-9]*% tests passed.*' "${log}" || true)"
-  if [[ "${rc}" -ne 0 ]]; then
-    echo "::group::ctest log for iteration ${iter}"
-    cat "${log}"
-    echo "::endgroup::"
-  fi
+}
+
+# Phase 1: PARALLEL concurrent copies of the whole suite, so many test processes create CUDA contexts at once.
+while (( iter < ITERS && SECONDS < DEADLINE )); do
+  iter=$((iter + 1))
+  start=$SECONDS
+  for c in $(seq 1 "${PARALLEL}"); do
+    ctest --no-tests=error --output-on-failure -j20 > "${LOGS}/iter_${iter}_${c}.log" 2>&1 &
+  done
+  wait_watching
+  for c in $(seq 1 "${PARALLEL}"); do
+    log="${LOGS}/iter_${iter}_${c}.log"
+    echo "iteration ${iter}.${c}: $((SECONDS - start)) s $(grep -o '[0-9]*% tests passed.*' "${log}" || echo 'no summary')"
+    if grep -q '\*\*\*' "${log}"; then
+      echo "::group::ctest log for iteration ${iter}.${c}"
+      cat "${log}"
+      echo "::endgroup::"
+    fi
+  done
 done
 
-rapids-logger "Hang hunt: ${hangs} hung test processes in ${iter} suite runs"
+# Phase 2: bursts of BURST simultaneous launches of the small tests that hung in the nightlies.
+round=0
+while (( round < BURST_ROUNDS && SECONDS < DEADLINE )); do
+  round=$((round + 1))
+  iter="burst${round}"
+  start=$SECONDS
+  for t in SYSTEM_MR_REF_PTDS_TEST DEVICE_SCALAR_PTDS_TEST BINNING_MR_PTDS_TEST PINNED_POOL_MR_REF_TEST \
+           PINNED_POOL_MR_REF_PTDS_TEST DEVICE_BUFFER_TEST; do
+    for c in $(seq 1 "${BURST}"); do
+      "./${t}" > "${LOGS}/${iter}_${t}_${c}.log" 2>&1 &
+    done
+  done
+  wait_watching
+  failed=$(grep -L 'PASSED' "${LOGS}/${iter}"_*.log | wc -l)
+  echo "burst ${round}: $((SECONDS - start)) s, ${failed} processes without PASSED"
+  for f in $(grep -L 'PASSED' "${LOGS}/${iter}"_*.log | head -3); do
+    echo "::group::${f}"
+    tail -30 "${f}"
+    echo "::endgroup::"
+  done
+done
+
+rapids-logger "Hang hunt: ${hangs} hung test processes"
 [[ "${hangs}" -eq 0 ]]
