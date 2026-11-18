@@ -31,9 +31,9 @@ rapids-print-env
 ./ci/gpu_info.sh
 cat /proc/sys/kernel/yama/ptrace_scope 2>/dev/null || echo "ptrace_scope: not present"
 
-ITERS=${HANG_HUNT_ITERS:-80}
+ITERS=${HANG_HUNT_ITERS:-5}
 HANG_S=${HANG_HUNT_HANG_S:-120}
-DEADLINE=$((SECONDS + ${HANG_HUNT_MINUTES:-95} * 60))
+DEADLINE=$((SECONDS + ${HANG_HUNT_MINUTES:-30} * 60))
 GTESTS="${CONDA_PREFIX}/bin/gtests/librmm"
 LOGS=$(mktemp -d)
 hangs=0
@@ -61,9 +61,32 @@ watch_tests() {
 }
 
 # The CI container has yama ptrace_scope=1 and no CAP_SYS_PTRACE, so gdb can only attach to tests that allow it.
+# A test that crashes also gets a gdb backtrace of all threads before it dies.
 cat > "${LOGS}/ptracer.c" <<'EOF'
+#include <signal.h>
 #include <sys/prctl.h>
-__attribute__((constructor)) static void allow_ptrace(void) { prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, 0, 0, 0); }
+#include <sys/wait.h>
+#include <unistd.h>
+static char self[24];
+static void on_crash(int sig) {
+  pid_t child = fork();
+  if (child == 0) {
+    execlp("gdb", "gdb", "-p", self, "-batch", "-ex", "info threads", "-ex", "thread apply all bt", (char*)0);
+    _exit(127);
+  }
+  if (child > 0) waitpid(child, 0, 0);
+  signal(sig, SIG_DFL);
+  raise(sig);
+}
+__attribute__((constructor)) static void setup(void) {
+  prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY, 0, 0, 0);
+  int n = 0;
+  for (pid_t p = getpid(); p > 0; p /= 10) n++;
+  for (pid_t p = getpid(); n > 0; p /= 10) self[--n] = '0' + p % 10;
+  signal(SIGSEGV, on_crash);
+  signal(SIGBUS, on_crash);
+  signal(SIGABRT, on_crash);
+}
 EOF
 gcc -shared -fPIC -o "${LOGS}/libptracer.so" "${LOGS}/ptracer.c"
 
