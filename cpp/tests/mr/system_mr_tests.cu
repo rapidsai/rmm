@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -16,12 +16,18 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <cstdint>
+#include <fstream>
+#include <map>
+#include <sstream>
+#include <string>
 
 namespace rmm::test {
 namespace {
 
 std::size_t constexpr size_mb{1_MiB};
 std::size_t constexpr size_gb{1_GiB};
+std::size_t constexpr size_64mb{64_MiB};
 
 void touch_on_cpu(void* ptr, std::size_t size)
 {
@@ -78,34 +84,74 @@ TEST(SystemMRSimpleTest, ThrowIfNotSupported)
   }
 }
 
-TEST_F(SystemMRTest, FirstTouchOnCPU)
+// On ATS systems (e.g. Grace Hopper, Grace Blackwell) the GPU memory is a NUMA node, so the kernel
+// places each system-allocated page on the NUMA node of the processor that first touches it.
+// /proc/self/numa_maps lists the pages resident on each node (`N<node>=<pages>`) for each mapping;
+// unlike move_pages(2) it is not blocked by container seccomp profiles. An allocation this large
+// gets an mmap of its own from the C library.
+std::map<int, std::size_t> numa_pages_of_mapping_containing(void* ptr)
 {
-  // On integrated memory systems, available device memory changes based on system/CPU activity
-  if (rmm::detail::device_integrated_memory::is_supported()) {
-    GTEST_SKIP() << "Skipping memory comparison test on integrated memory system";
+  auto const addr = reinterpret_cast<std::uintptr_t>(ptr);
+  std::ifstream numa_maps("/proc/self/numa_maps");
+  std::map<int, std::size_t> pages;
+  std::string line;
+  while (std::getline(numa_maps, line)) {
+    if (std::stoull(line, nullptr, 16) > addr) { break; }
+    pages.clear();
+    std::istringstream fields(line);
+    std::string field;
+    while (fields >> field) {
+      auto const eq = field.find('=');
+      if (field.size() > 1 && field[0] == 'N' && eq != std::string::npos) {
+        pages[std::stoi(field.substr(1, eq - 1))] = std::stoull(field.substr(eq + 1));
+      }
+    }
   }
-  auto const free = rmm::available_device_memory().first;
-  system_mr mr;
-  void* ptr = mr.allocate_sync(size_mb);
-  touch_on_cpu(ptr, size_mb);
-  auto const free2 = rmm::available_device_memory().first;
-  EXPECT_EQ(free, free2);
-  mr.deallocate_sync(ptr, size_mb);
+  return pages;
 }
 
-TEST_F(SystemMRTest, FirstTouchOnGPU)
-{
-  // On integrated memory systems, available device memory changes based on system/CPU activity
-  if (rmm::detail::device_integrated_memory::is_supported()) {
-    GTEST_SKIP() << "Skipping memory comparison test on integrated memory system";
+class SystemMRFirstTouchTest : public SystemMRTest {
+ protected:
+  void SetUp() override
+  {
+    SystemMRTest::SetUp();
+    if (IsSkipped()) { return; }
+    auto const device = rmm::get_current_cuda_device().value();
+    int numa_config{};
+    RMM_CUDA_TRY(cudaDeviceGetAttribute(&numa_config, cudaDevAttrNumaConfig, device));
+    if (numa_config != cudaDeviceNumaConfigNumaNode) {
+      GTEST_SKIP() << "Skipping first-touch placement tests: GPU memory is not a NUMA node";
+    }
+    RMM_CUDA_TRY(cudaDeviceGetAttribute(&gpu_numa_id, cudaDevAttrNumaId, device));
   }
-  auto const free = rmm::available_device_memory().first;
+
   system_mr mr;
-  void* ptr = mr.allocate_sync(size_mb);
-  touch_on_gpu(ptr, size_mb);
-  auto const free2 = rmm::available_device_memory().first;
-  EXPECT_LE(free2, free);
-  mr.deallocate_sync(ptr, size_mb);
+  int gpu_numa_id{-1};
+};
+
+TEST_F(SystemMRFirstTouchTest, FirstTouchOnCPU)
+{
+  void* ptr = mr.allocate_sync(size_64mb);
+  touch_on_cpu(ptr, size_64mb);
+  auto const pages = numa_pages_of_mapping_containing(ptr);
+  ASSERT_FALSE(pages.empty());
+  EXPECT_EQ(pages.count(gpu_numa_id), 0);
+  mr.deallocate_sync(ptr, size_64mb);
+}
+
+TEST_F(SystemMRFirstTouchTest, FirstTouchOnGPU)
+{
+  void* ptr = mr.allocate_sync(size_64mb);
+  touch_on_gpu(ptr, size_64mb);
+  auto const pages = numa_pages_of_mapping_containing(ptr);
+  ASSERT_EQ(pages.count(gpu_numa_id), 1);
+  std::size_t total{0};
+  for (auto const& [node, count] : pages) {
+    total += count;
+  }
+  // The allocator's own bookkeeping touches the start of the mapping from the CPU.
+  EXPECT_GE(pages.at(gpu_numa_id), total * 9 / 10);
+  mr.deallocate_sync(ptr, size_64mb);
 }
 
 TEST_F(SystemMRTest, HeadroomMRReserveAllFreeMemory)
