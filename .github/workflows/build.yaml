@@ -36,7 +36,7 @@ permissions: {}
 
 jobs:
   build-details:
-    uses: rapidsai/shared-workflows/.github/workflows/compute-build-details.yaml@main
+    uses: rapidsai/shared-workflows/.github/workflows/compute-build-details.yaml@d44e03d58f3342ea1b074fce89335a888e34f0b9
   telemetry-setup:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -48,7 +48,7 @@ jobs:
       - name: Telemetry setup
         # This gate is here and not at the job level because we need the job to not be skipped,
         # since other jobs depend on it.
-        if: ${{ vars.TELEMETRY_ENABLED == 'true' }}
+        if: ${{ inputs.build_type != 'release-candidate' && github.event.inputs.build_type != 'release-candidate' && vars.TELEMETRY_ENABLED == 'true' }}
         uses: rapidsai/shared-actions/telemetry-dispatch-stash-base-env-vars@main
   cpp-build:
     needs: [build-details, telemetry-setup]
@@ -58,7 +58,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@cbf3d64a73fd7b44ee70cebdb50c175b495f6b29
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@d44e03d58f3342ea1b074fce89335a888e34f0b9
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       build-datetime: ${{ needs.build-details.outputs.build-datetime }}
@@ -75,7 +75,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@cbf3d64a73fd7b44ee70cebdb50c175b495f6b29
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@d44e03d58f3342ea1b074fce89335a888e34f0b9
     with:
       # Build a conda package for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
@@ -101,7 +101,7 @@ jobs:
       date: ${{ inputs.date }}
       sha: ${{ inputs.sha }}
   docs-build:
-    if: ${{ github.ref_type == 'branch' && inputs.build_type != 'release-candidate' && github.event.inputs.build_type != 'release-candidate' && github.ref != 'refs/heads/agent/release-catalog-canary' && github.head_ref != 'agent/release-catalog-canary' && github.head_ref != 'refs/heads/agent/release-catalog-canary' && inputs.branch != 'agent/release-catalog-canary' && inputs.branch != 'refs/heads/agent/release-catalog-canary' && !startsWith(github.ref_name, 'release-test-') && !startsWith(github.ref, 'refs/heads/release-test-') && !startsWith(github.head_ref, 'release-test-') && !startsWith(github.head_ref, 'refs/heads/release-test-') && !startsWith(inputs.branch, 'release-test-') && !startsWith(inputs.branch, 'refs/heads/release-test-') }}
+    if: ${{ inputs.build_type != 'release-candidate' && github.event.inputs.build_type != 'release-candidate' && github.ref != 'refs/heads/agent/release-catalog-canary' && github.head_ref != 'agent/release-catalog-canary' && github.head_ref != 'refs/heads/agent/release-catalog-canary' && inputs.branch != 'agent/release-catalog-canary' && inputs.branch != 'refs/heads/agent/release-catalog-canary' && !startsWith(github.ref_name, 'release-test-') && !startsWith(github.ref, 'refs/heads/release-test-') && !startsWith(github.head_ref, 'release-test-') && !startsWith(github.head_ref, 'refs/heads/release-test-') && !startsWith(inputs.branch, 'release-test-') && !startsWith(inputs.branch, 'refs/heads/release-test-') && github.ref_type == 'branch' }}
     needs: [python-build]
     permissions:
       actions: read
@@ -109,7 +109,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@cbf3d64a73fd7b44ee70cebdb50c175b495f6b29
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@d44e03d58f3342ea1b074fce89335a888e34f0b9
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
@@ -120,7 +120,7 @@ jobs:
       container_image: "rapidsai/ci-conda:26.10-latest"
       script: ci/build_docs.sh
   publish-api-docs:
-    if: ${{ github.ref_type == 'branch' && inputs.build_type != 'release-candidate' && github.event.inputs.build_type != 'release-candidate' && github.ref != 'refs/heads/agent/release-catalog-canary' && github.head_ref != 'agent/release-catalog-canary' && github.head_ref != 'refs/heads/agent/release-catalog-canary' && inputs.branch != 'agent/release-catalog-canary' && inputs.branch != 'refs/heads/agent/release-catalog-canary' && !startsWith(github.ref_name, 'release-test-') && !startsWith(github.ref, 'refs/heads/release-test-') && !startsWith(github.head_ref, 'release-test-') && !startsWith(github.head_ref, 'refs/heads/release-test-') && !startsWith(inputs.branch, 'release-test-') && !startsWith(inputs.branch, 'refs/heads/release-test-') }}
+    if: ${{ inputs.build_type != 'release-candidate' && github.event.inputs.build_type != 'release-candidate' && github.ref != 'refs/heads/agent/release-catalog-canary' && github.head_ref != 'agent/release-catalog-canary' && github.head_ref != 'refs/heads/agent/release-catalog-canary' && inputs.branch != 'agent/release-catalog-canary' && inputs.branch != 'refs/heads/agent/release-catalog-canary' && !startsWith(github.ref_name, 'release-test-') && !startsWith(github.ref, 'refs/heads/release-test-') && !startsWith(github.head_ref, 'release-test-') && !startsWith(github.head_ref, 'refs/heads/release-test-') && !startsWith(inputs.branch, 'release-test-') && !startsWith(inputs.branch, 'refs/heads/release-test-') && github.ref_type == 'branch' }}
     needs: [docs-build]
     permissions:
       contents: read
@@ -139,7 +139,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@cbf3d64a73fd7b44ee70cebdb50c175b495f6b29
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@d44e03d58f3342ea1b074fce89335a888e34f0b9
     with:
       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
       build_type: ${{ inputs.build_type || 'branch' }}
@@ -159,7 +159,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@cbf3d64a73fd7b44ee70cebdb50c175b495f6b29
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@d44e03d58f3342ea1b074fce89335a888e34f0b9
     with:
       # Build a wheel for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
@@ -218,7 +218,7 @@ jobs:
     permissions:
       actions: read
     needs: [wheel-publish-cpp, wheel-publish-python, upload-conda, docs-build]
-    if: ${{ vars.TELEMETRY_ENABLED == 'true' && !cancelled() }}
+    if: ${{ inputs.build_type != 'release-candidate' && github.event.inputs.build_type != 'release-candidate' && vars.TELEMETRY_ENABLED == 'true' && !cancelled() }}
     continue-on-error: true
     steps:
       - name: Telemetry summarize
