@@ -31,10 +31,11 @@ rapids-print-env
 ./ci/gpu_info.sh
 cat /proc/sys/kernel/yama/ptrace_scope 2>/dev/null || echo "ptrace_scope: not present"
 
-ITERS=${HANG_HUNT_ITERS:-15}
+ITERS=${HANG_HUNT_ITERS:-12}
 PARALLEL=${HANG_HUNT_PARALLEL:-4}
 BURST=${HANG_HUNT_BURST:-8}
-BURST_ROUNDS=${HANG_HUNT_BURST_ROUNDS:-40}
+BURST_ROUNDS=${HANG_HUNT_BURST_ROUNDS:-20}
+HOG_PERCENT=${HANG_HUNT_HOG_PERCENT:-60}
 HANG_S=${HANG_HUNT_HANG_S:-180}
 DEADLINE=$((SECONDS + ${HANG_HUNT_MINUTES:-100} * 60))
 GTESTS="${CONDA_PREFIX}/bin/gtests/librmm"
@@ -96,20 +97,75 @@ gcc -shared -fPIC -o "${LOGS}/libptracer.so" "${LOGS}/ptracer.c"
 cd "${GTESTS}"
 export LD_PRELOAD="${LOGS}/libptracer.so"
 
-# Wait for background jobs while dumping any test that hangs.
+# Wait for the test processes in `pids` while dumping any test that hangs.
+pids=()
 wait_watching() {
-  while [[ -n "$(jobs -rp)" ]]; do
-    sleep 5
-    watch_tests
+  local p
+  for p in "${pids[@]}"; do
+    while kill -0 "${p}" 2>/dev/null; do
+      sleep 5
+      watch_tests
+    done
+    wait "${p}" || true
   done
+  pids=()
 }
 
-# Phase 1: PARALLEL concurrent copies of the whole suite, so many test processes create CUDA contexts at once.
+# Phase 1: right at the runner's first GPU use, when both nightly hangs hit, start bursts of BURST simultaneous
+# launches of each small test that hung in the nightlies.
+round=0
+while (( round < BURST_ROUNDS && SECONDS < DEADLINE )); do
+  round=$((round + 1))
+  iter="burst${round}"
+  start=$SECONDS
+  for t in SYSTEM_MR_REF_PTDS_TEST DEVICE_SCALAR_PTDS_TEST BINNING_MR_PTDS_TEST PINNED_POOL_MR_REF_TEST \
+           PINNED_POOL_MR_REF_PTDS_TEST DEVICE_BUFFER_TEST; do
+    for c in $(seq 1 "${BURST}"); do
+      "./${t}" > "${LOGS}/${iter}_${t}_${c}.log" 2>&1 &
+      pids+=($!)
+    done
+  done
+  wait_watching
+  failed=$(grep -L 'PASSED' "${LOGS}/${iter}"_*.log | wc -l)
+  echo "burst ${round}: $((SECONDS - start)) s, ${failed} processes without PASSED"
+  for f in $(grep -L 'PASSED' "${LOGS}/${iter}"_*.log | head -3); do
+    echo "::group::${f}"
+    tail -30 "${f}"
+    echo "::endgroup::"
+  done
+done
+
+# GB300 memory is coherent with the host (ATS), so neighbouring jobs' host memory pressure reaches the GPU driver.
+cat > "${LOGS}/hog.c" <<'EOF'
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+int main(int argc, char** argv) {
+  size_t n = strtoull(argv[1], 0, 10) << 20, step = 64ull << 20;
+  char* p = malloc(n);
+  for (;;) for (size_t i = 0; i < n; i += step) { memset(p + i, i, step < n - i ? step : n - i); usleep(1000); }
+}
+EOF
+gcc -O1 -o "${LOGS}/hog" "${LOGS}/hog.c"
+avail_mb=$(awk '/MemAvailable/ {print int($2 / 1024)}' /proc/meminfo)
+# The pod's cgroup limit can be far below the node's MemAvailable; stay inside it.
+if [[ -r /sys/fs/cgroup/memory.max && "$(cat /sys/fs/cgroup/memory.max)" != max ]]; then
+  cg_mb=$(( ($(cat /sys/fs/cgroup/memory.max) - $(cat /sys/fs/cgroup/memory.current)) / 1048576 ))
+  (( cg_mb < avail_mb )) && avail_mb=${cg_mb}
+fi
+echo "MemAvailable: $(awk '/MemAvailable/ {print int($2 / 1024)}' /proc/meminfo) MiB, usable ${avail_mb} MiB;" \
+  "hog takes $((avail_mb * HOG_PERCENT / 100)) MiB"
+LD_PRELOAD='' "${LOGS}/hog" $((avail_mb * HOG_PERCENT / 100)) &
+hog=$!
+
+iter=0
+# Phase 2: under host memory pressure, PARALLEL concurrent copies of the whole suite, so many test processes create CUDA contexts at once.
 while (( iter < ITERS && SECONDS < DEADLINE )); do
   iter=$((iter + 1))
   start=$SECONDS
   for c in $(seq 1 "${PARALLEL}"); do
     ctest --no-tests=error --output-on-failure -j20 > "${LOGS}/iter_${iter}_${c}.log" 2>&1 &
+    pids+=($!)
   done
   wait_watching
   for c in $(seq 1 "${PARALLEL}"); do
@@ -123,27 +179,7 @@ while (( iter < ITERS && SECONDS < DEADLINE )); do
   done
 done
 
-# Phase 2: bursts of BURST simultaneous launches of the small tests that hung in the nightlies.
-round=0
-while (( round < BURST_ROUNDS && SECONDS < DEADLINE )); do
-  round=$((round + 1))
-  iter="burst${round}"
-  start=$SECONDS
-  for t in SYSTEM_MR_REF_PTDS_TEST DEVICE_SCALAR_PTDS_TEST BINNING_MR_PTDS_TEST PINNED_POOL_MR_REF_TEST \
-           PINNED_POOL_MR_REF_PTDS_TEST DEVICE_BUFFER_TEST; do
-    for c in $(seq 1 "${BURST}"); do
-      "./${t}" > "${LOGS}/${iter}_${t}_${c}.log" 2>&1 &
-    done
-  done
-  wait_watching
-  failed=$(grep -L 'PASSED' "${LOGS}/${iter}"_*.log | wc -l)
-  echo "burst ${round}: $((SECONDS - start)) s, ${failed} processes without PASSED"
-  for f in $(grep -L 'PASSED' "${LOGS}/${iter}"_*.log | head -3); do
-    echo "::group::${f}"
-    tail -30 "${f}"
-    echo "::endgroup::"
-  done
-done
+kill "${hog}" || true
 
 rapids-logger "Hang hunt: ${hangs} hung test processes"
 [[ "${hangs}" -eq 0 ]]
