@@ -125,12 +125,12 @@ class SystemMRFirstTouchTest : public SystemMRTest {
     RMM_CUDA_TRY(cudaDeviceGetAttribute(&gpu_numa_id, cudaDevAttrNumaId, device));
   }
 
-  system_mr mr;
   int gpu_numa_id{-1};
 };
 
 TEST_F(SystemMRFirstTouchTest, FirstTouchOnCPU)
 {
+  system_mr mr;
   void* ptr = mr.allocate_sync(size_64mb);
   touch_on_cpu(ptr, size_64mb);
   auto const pages = numa_pages_of_mapping_containing(ptr);
@@ -141,6 +141,7 @@ TEST_F(SystemMRFirstTouchTest, FirstTouchOnCPU)
 
 TEST_F(SystemMRFirstTouchTest, FirstTouchOnGPU)
 {
+  system_mr mr;
   void* ptr = mr.allocate_sync(size_64mb);
   touch_on_gpu(ptr, size_64mb);
   auto const pages = numa_pages_of_mapping_containing(ptr);
