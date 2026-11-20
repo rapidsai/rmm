@@ -14,6 +14,7 @@
 #include <cuda_runtime_api.h>
 
 #include <gtest/gtest.h>
+#include <unistd.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -48,7 +49,8 @@ void touch_on_gpu(void* ptr, std::size_t size)
   dim3 blockSize(256);
   dim3 gridSize((size + blockSize.x - 1) / blockSize.x);
   touch_memory_kernel<<<gridSize, blockSize>>>(static_cast<char*>(ptr), size);
-  cudaDeviceSynchronize();
+  RMM_CUDA_TRY(cudaGetLastError());
+  RMM_CUDA_TRY(cudaDeviceSynchronize());
 }
 
 using system_mr = rmm::mr::system_memory_resource;
@@ -87,8 +89,8 @@ TEST(SystemMRSimpleTest, ThrowIfNotSupported)
 // On ATS systems (e.g. Grace Hopper, Grace Blackwell) the GPU memory is a NUMA node, so the kernel
 // places each system-allocated page on the NUMA node of the processor that first touches it.
 // /proc/self/numa_maps lists the pages resident on each node (`N<node>=<pages>`) for each mapping;
-// unlike move_pages(2) it is not blocked by container seccomp profiles. An allocation this large
-// gets an mmap of its own from the C library.
+// unlike move_pages(2) it is not blocked by container seccomp profiles. The kernel may merge an
+// allocation's mapping with adjacent ones, so the counts can include pages outside the allocation.
 std::map<int, std::size_t> numa_pages_of_mapping_containing(void* ptr)
 {
   auto const addr = reinterpret_cast<std::uintptr_t>(ptr);
@@ -146,12 +148,9 @@ TEST_F(SystemMRFirstTouchTest, FirstTouchOnGPU)
   touch_on_gpu(ptr, size_64mb);
   auto const pages = numa_pages_of_mapping_containing(ptr);
   ASSERT_EQ(pages.count(gpu_numa_id), 1);
-  std::size_t total{0};
-  for (auto const& [node, count] : pages) {
-    total += count;
-  }
-  // The allocator's own bookkeeping touches the start of the mapping from the CPU.
-  EXPECT_GE(pages.at(gpu_numa_id), total * 9 / 10);
+  auto const allocation_pages = size_64mb / static_cast<std::size_t>(sysconf(_SC_PAGESIZE));
+  // The allocator's own bookkeeping touches the start of the allocation from the CPU.
+  EXPECT_GE(pages.at(gpu_numa_id), allocation_pages * 9 / 10);
   mr.deallocate_sync(ptr, size_64mb);
 }
 
