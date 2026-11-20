@@ -6,6 +6,7 @@
 #include <rmm/aligned.hpp>
 #include <rmm/detail/cuda_stream.hpp>
 #include <rmm/detail/error.hpp>
+#include <rmm/detail/format.hpp>
 #include <rmm/logger.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/binning_memory_resource.hpp>
@@ -25,6 +26,7 @@
 #include <benchmarks/utilities/log_parser.hpp>
 #include <benchmarks/utilities/simulated_memory_resource.hpp>
 
+#include <array>
 #include <atomic>
 #include <barrier>
 #include <chrono>
@@ -298,39 +300,120 @@ std::vector<std::vector<rmm::detail::event>> parse_per_thread_events(std::string
   return per_thread_events;
 }
 
+/// Format bytes as "10.371208 GiB (11136000000 B)"
+std::string format_size(std::size_t bytes)
+{
+  return rmm::detail::format_bytes(bytes) + " (" + std::to_string(bytes) + " B)";
+}
+
+/// One row of the memory resource table: -r name, benchmark title, factory
+struct mr_entry {
+  std::string name;
+  std::string title;
+  MRFactoryFunc factory;
+};
+
+/// Find the table entry for a resource name, or nullptr if unknown
+mr_entry const* find_mr(std::string const& name)
+{
+  static std::array<mr_entry, 5> const table{{{"cuda", "CUDA Resource", &make_cuda},
+                                              {"binning", "Binning Resource", &make_binning},
+                                              {"pool", "Pool Resource", &make_pool},
+                                              {"arena", "Arena Resource", &make_arena},
+                                              {"managed", "Managed Resource", &make_managed}}};
+  auto iter = std::find_if(
+    table.begin(), table.end(), [&name](auto const& entry) { return entry.name == name; });
+  return iter == table.end() ? nullptr : &*iter;
+}
+
+/// Replay every event once, on one thread, in log order. Returns 1 on the first failed allocate.
+int reproduce(std::string const& name,
+              std::size_t simulated_size,
+              std::vector<std::vector<rmm::detail::event>> const& per_thread_events)
+{
+  using rmm::detail::action;
+  using rmm::detail::event;
+
+  auto const* entry = find_mr(name);
+  if (entry == nullptr) {
+    std::cout << "Error: invalid memory_resource name: " << name << "\n";
+    return 1;
+  }
+
+  // cuda and managed ignore -s
+  auto const limit      = (name == "cuda" || name == "managed") ? std::size_t{0} : simulated_size;
+  auto const limit_text = limit == 0 ? std::string{"not set"} : rmm::detail::format_bytes(limit);
+
+  std::vector<event> events;
+  for (auto const& thread_events : per_thread_events) {
+    events.insert(events.end(), thread_events.begin(), thread_events.end());
+  }
+  std::sort(events.begin(), events.end(), [](auto const& lhs, auto const& rhs) {
+    return lhs.index < rhs.index;
+  });
+
+  auto mr = entry->factory(simulated_size);
+
+  std::unordered_map<uintptr_t, allocation> allocation_map;
+  std::size_t live_bytes{0};
+  std::size_t peak_live_bytes{0};
+
+  auto release_live = [&]() {
+    for (auto const& ptr_alloc : allocation_map) {
+      auto alloc = ptr_alloc.second;
+      mr.deallocate_sync(alloc.ptr, alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+    }
+    allocation_map.clear();
+  };
+
+  for (auto const& log_event : events) {
+    // rmm::detail::action::ALLOCATE_FAILURE is ignored.
+    if (action::ALLOCATE == log_event.act) {
+      void* ptr{};
+      try {
+        ptr = mr.allocate_sync(log_event.size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+      } catch (std::exception const& e) {
+        std::cout << "event " << log_event.index << ": allocate " << format_size(log_event.size)
+                  << " failed. live " << format_size(live_bytes) << " in " << allocation_map.size()
+                  << " allocations. limit " << limit_text << ".\n";
+        std::cout << "Exception caught: " << e.what() << std::endl;
+        release_live();
+        return 1;
+      }
+      allocation_map.insert({log_event.pointer, allocation{ptr, log_event.size}});
+      live_bytes += log_event.size;
+      peak_live_bytes = std::max(peak_live_bytes, live_bytes);
+    } else if (action::FREE == log_event.act) {
+      auto iter = allocation_map.find(log_event.pointer);
+      if (iter != allocation_map.end()) {
+        auto alloc = iter->second;
+        allocation_map.erase(iter);
+        mr.deallocate_sync(alloc.ptr, alloc.size, rmm::CUDA_ALLOCATION_ALIGNMENT);
+        live_bytes -= alloc.size;
+      }
+    }
+  }
+
+  release_live();
+  std::cout << "replayed " << events.size() << " events. peak live " << format_size(peak_live_bytes)
+            << ". limit " << limit_text << ".\n";
+  return 0;
+}
+
 void declare_benchmark(std::string const& name,
                        std::size_t simulated_size,
                        std::vector<std::vector<rmm::detail::event>> const& per_thread_events,
                        std::size_t num_threads)
 {
-  if (name == "cuda") {
-    benchmark::RegisterBenchmark("CUDA Resource",
-                                 replay_benchmark(&make_cuda, simulated_size, per_thread_events))
-      ->Unit(benchmark::kMillisecond)
-      ->Threads(static_cast<int>(num_threads));
-  } else if (name == "binning") {
-    benchmark::RegisterBenchmark("Binning Resource",
-                                 replay_benchmark(&make_binning, simulated_size, per_thread_events))
-      ->Unit(benchmark::kMillisecond)
-      ->Threads(static_cast<int>(num_threads));
-  } else if (name == "pool") {
-    benchmark::RegisterBenchmark("Pool Resource",
-                                 replay_benchmark(&make_pool, simulated_size, per_thread_events))
-      ->Unit(benchmark::kMillisecond)
-      ->Threads(static_cast<int>(num_threads));
-  } else if (name == "arena") {
-    benchmark::RegisterBenchmark("Arena Resource",
-                                 replay_benchmark(&make_arena, simulated_size, per_thread_events))
-      ->Unit(benchmark::kMillisecond)
-      ->Threads(static_cast<int>(num_threads));
-  } else if (name == "managed") {
-    benchmark::RegisterBenchmark("Managed Resource",
-                                 replay_benchmark(&make_managed, simulated_size, per_thread_events))
-      ->Unit(benchmark::kMillisecond)
-      ->Threads(static_cast<int>(num_threads));
-  } else {
+  auto const* entry = find_mr(name);
+  if (entry == nullptr) {
     std::cout << "Error: invalid memory_resource name: " << name << "\n";
+    return;
   }
+  benchmark::RegisterBenchmark(entry->title.c_str(),
+                               replay_benchmark(entry->factory, simulated_size, per_thread_events))
+    ->Unit(benchmark::kMillisecond)
+    ->Threads(static_cast<int>(num_threads));
 }
 
 // Usage: REPLAY_BENCHMARK -f "path/to/log/file"
@@ -359,6 +442,11 @@ int main(int argc, char** argv)
       options.add_options()("v,verbose",
                             "Enable verbose printing of log events",
                             cxxopts::value<bool>()->default_value("false"));
+      options.add_options()("reproduce",
+                            "Replay every event once, on one thread, in log order, without "
+                            "Google Benchmark. Requires -r. Exits 1 on the first allocation "
+                            "failure and 0 if every event replays.",
+                            cxxopts::value<bool>()->default_value("false"));
 
       auto args = options.parse(argc, argv);
 
@@ -372,6 +460,9 @@ int main(int argc, char** argv)
 
     auto filename = args["file"].as<std::string>();
 
+    auto const simulated_size =
+      static_cast<std::size_t>(args["size"].as<float>() * static_cast<float>(1U << 30U));
+
     auto per_thread_events = [filename]() {
       try {
         auto events = parse_per_thread_events(filename);
@@ -382,12 +473,29 @@ int main(int argc, char** argv)
       }
     }();
 
+    if (args["reproduce"].as<bool>()) {
+      if (args.count("resource") == 0) {
+        std::cout << "Error: --reproduce requires -r/--resource.\n";
+        return 1;
+      }
+      if (std::all_of(per_thread_events.begin(),
+                      per_thread_events.end(),
+                      [](auto const& thread_events) { return thread_events.empty(); })) {
+        std::cout << "Error: log has no events: " << filename << "\n";
+        return 1;
+      }
+      try {
+        return reproduce(args["resource"].as<std::string>(), simulated_size, per_thread_events);
+      } catch (std::exception const& e) {
+        std::cout << "Error: " << e.what() << std::endl;
+        return 1;
+      }
+    }
+
 #ifdef CUDA_API_PER_THREAD_DEFAULT_STREAM
     std::cout << "Using CUDA per-thread default stream.\n";
 #endif
 
-    auto const simulated_size =
-      static_cast<std::size_t>(args["size"].as<float>() * static_cast<float>(1U << 30U));
     if (simulated_size != 0 && args["resource"].as<std::string>() != "cuda") {
       std::cout << "Simulating GPU with memory size of " << simulated_size << " bytes.\n";
     }
