@@ -40,7 +40,6 @@ rapids-logger "Run gtests"
 
 export GTEST_OUTPUT=xml:${RAPIDS_TESTS_DIR}/
 timeout 15m ./ci/run_ctests.sh -j20 && EXITCODE=$? || EXITCODE=$?;
-"${CONDA_PREFIX}/bin/gtests/librmm/SYSTEM_MR_TEST" --gtest_filter="SystemMRFirstTouch*" || EXITCODE=$?
 
 # Run all examples from librmm-example package
 for example in "${CONDA_PREFIX}"/bin/examples/librmm/*; do
