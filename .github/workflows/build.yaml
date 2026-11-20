@@ -36,7 +36,7 @@ permissions: {}
 
 jobs:
   build-details:
-    uses: rapidsai/shared-workflows/.github/workflows/compute-build-details.yaml@d44e03d58f3342ea1b074fce89335a888e34f0b9
+    uses: rapidsai/shared-workflows/.github/workflows/compute-build-details.yaml@b9301f31768c248fdcd8f46211da594d8264b517
   telemetry-setup:
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -58,7 +58,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@d44e03d58f3342ea1b074fce89335a888e34f0b9
+    uses: rapidsai/shared-workflows/.github/workflows/conda-cpp-build.yaml@b9301f31768c248fdcd8f46211da594d8264b517
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       build-datetime: ${{ needs.build-details.outputs.build-datetime }}
@@ -75,7 +75,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@d44e03d58f3342ea1b074fce89335a888e34f0b9
+    uses: rapidsai/shared-workflows/.github/workflows/conda-python-build.yaml@b9301f31768c248fdcd8f46211da594d8264b517
     with:
       # Build a conda package for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
@@ -109,7 +109,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@d44e03d58f3342ea1b074fce89335a888e34f0b9
+    uses: rapidsai/shared-workflows/.github/workflows/custom-job.yaml@b9301f31768c248fdcd8f46211da594d8264b517
     with:
       build_type: ${{ inputs.build_type || 'branch' }}
       branch: ${{ inputs.branch }}
@@ -139,7 +139,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@d44e03d58f3342ea1b074fce89335a888e34f0b9
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@b9301f31768c248fdcd8f46211da594d8264b517
     with:
       matrix_filter: group_by([.ARCH, (.CUDA_VER|split(".")|map(tonumber)|.[0])]) | map(max_by(.PY_VER|split(".")|map(tonumber)))
       build_type: ${{ inputs.build_type || 'branch' }}
@@ -159,7 +159,7 @@ jobs:
       id-token: write
       packages: read
       pull-requests: read
-    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@d44e03d58f3342ea1b074fce89335a888e34f0b9
+    uses: rapidsai/shared-workflows/.github/workflows/wheels-build.yaml@b9301f31768c248fdcd8f46211da594d8264b517
     with:
       # Build a wheel for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
