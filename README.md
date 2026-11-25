@@ -318,6 +318,16 @@ A coalescing, best-fit pool sub-allocator.
 A memory resource that can only allocate a single fixed size. Average allocation and deallocation
 cost is constant.
 
+### `fixed_slab_memory_resource`
+
+Carves variable-size, at-least-`rmm::CUDA_ALLOCATION_ALIGNMENT`-aligned (256-byte) allocations in
+O(1) from one fixed-capacity upstream slab. **Single-stream:** every call must pass the construction
+stream (else `rmm::logic_error`), eliminating per-call CUDA overhead (no event waits, stream
+tracking, or teardown fencing) and cross-stream ordering. `deallocate` is a memory no-op: slices are
+never reused, and the slab returns to upstream when the last resource copy dies. `allocate_sync` is
+a host-only carve without waiting (synchronize the recorded stream before host-synchronous use).
+Requests exceeding remaining capacity throw `rmm::out_of_memory` instead of growing.
+
 ### `binning_memory_resource`
 
 Configurable to use multiple upstream memory resources for allocations that fall within different
@@ -479,7 +489,11 @@ construction and destruction of the memory resource object.
 
 Note that a class `thread_safe_resource_adapter` is provided which can be used to adapt a memory
 resource that is not thread safe to be thread safe (as described above). This adapter is not needed
-with any current RMM device memory resources.
+with any current RMM device memory resources except `fixed_slab_memory_resource`, which requires it
+for concurrent allocations or deallocations across threads (shared ownership across copies is not
+synchronization). Cross-stream use of `fixed_slab_memory_resource` would require per-stream tracking
+(a stream registry), PTDS ownership checks, and per-call event waits/teardown fencing — coupled
+features that cannot be added piecemeal.
 
 ## Allocators
 
