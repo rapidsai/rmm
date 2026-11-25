@@ -214,7 +214,7 @@ jobs:
     uses: rapidsai/shared-workflows/.github/workflows/checks.yaml@main
     with:
       enable_check_generated_files: false
-      ignored_pr_jobs: "conda-python-tests-integration-optional wheel-tests-integration-optional"
+      ignored_pr_jobs: "conda-python-tests-integration-optional wheel-tests-integration-optional docs-preview"
       # Main builds seed this cache. PR merge refs can restore it but should not create
       # duplicate archives that are inaccessible to other PRs.
       pre-commit-cache-read-only: true
@@ -232,7 +232,7 @@ jobs:
       build_type: pull-request
       node_type: cpu16
       arch: "amd64"
-      container_image: "rapidsai/ci-conda:26.12-latest"
+      container_image: "rapidsai/ci-conda:27.02-latest"
       script: "ci/test_cmake.sh"
   conda-cpp-build:
     needs: [build-details, checks]
@@ -249,7 +249,7 @@ jobs:
       build-datetime: ${{ needs.build-details.outputs.build-datetime }}
       node_type: cpu8
       script: ci/build_cpp.sh
-      matrix_type: cuda-13-4-pr
+      matrix_type: pull-request
   conda-cpp-tests:
     needs: [conda-cpp-build, changed-files]
     permissions:
@@ -264,7 +264,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_cpp.sh
-      matrix_type: cuda-13-4-pr,pull-request
+      matrix_type: pull-request
   conda-cpp-debug-tests:
     needs: [checks, changed-files]
     permissions:
@@ -280,7 +280,7 @@ jobs:
       build_type: pull-request
       node_type: "gpu-rtxpro6000-latest-1"
       arch: "amd64"
-      container_image: "rapidsai/ci-conda:26.12-latest"
+      container_image: "rapidsai/ci-conda:27.02-latest"
       script: "ci/test_cpp_debug.sh"
   conda-python-build:
     needs: [build-details, conda-cpp-build]
@@ -298,7 +298,7 @@ jobs:
       script: ci/build_python.sh
       # Build a conda package for each CUDA x ARCH x minimum supported Python version
       matrix_filter: group_by({CUDA_VER, ARCH}) | map(min_by(.PY_VER | split(".") | map(tonumber)))
-      matrix_type: cuda-13-4-pr
+      matrix_type: pull-request
   conda-python-tests:
     needs: [conda-python-build, changed-files]
     permissions:
@@ -313,7 +313,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_python.sh
-      matrix_type: cuda-13-4-pr,pull-request
+      matrix_type: pull-request
   conda-python-tests-integration-optional:
     needs: [conda-python-build, changed-files]
     permissions:
@@ -328,7 +328,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_python_integrations.sh
-      matrix_type: cuda-13-4-pr,pull-request
+      matrix_type: pull-request
   docs-build-matrix:
     permissions:
       contents: read
@@ -336,7 +336,7 @@ jobs:
     with:
       build_type: pull-request
       matrix_name: docs-build
-      matrix_type: cuda-13-4-pr
+      matrix_type: pull-request
   docs-build:
     needs: [docs-build-matrix, conda-python-build, changed-files]
     permissions:
@@ -355,8 +355,18 @@ jobs:
       build_type: pull-request
       node_type: "gpu-${{ matrix.GPU }}-${{ matrix.DRIVER }}-1"
       arch: "${{ matrix.arch }}"
-      container_image: "rapidsai/ci-conda:26.12-cuda${{ matrix.CUDA_VER }}-${{ matrix.LINUX_VER }}-py${{ matrix.PY_VER }}"
+      container_image: "rapidsai/ci-conda:27.02-cuda${{ matrix.CUDA_VER }}-${{ matrix.LINUX_VER }}-py${{ matrix.PY_VER }}"
       script: "ci/build_docs.sh"
+  docs-preview:
+    needs: [docs-build]
+    if: needs.docs-build.result == 'success'
+    permissions:
+      statuses: write
+    uses: rapidsai/shared-workflows/.github/workflows/docs-preview-status.yaml@main
+    with:
+      docs-project: rmm
+      docs-preview-urls: ${{ needs.docs-build.outputs.docs-preview-urls }}
+      sha: ${{ github.sha }}
   publish-api-docs:
     if: github.ref_type == 'branch'
     needs: [docs-build]
@@ -394,7 +404,7 @@ jobs:
       build_type: pull-request
       build-datetime: ${{ needs.build-details.outputs.build-datetime }}
       node_type: cpu8
-      matrix_type: cuda-13-4-pr
+      matrix_type: pull-request
   wheel-tests:
     needs: [wheel-build, changed-files]
     permissions:
@@ -409,7 +419,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_wheel.sh
-      matrix_type: cuda-13-4-pr,pull-request
+      matrix_type: pull-request
   wheel-tests-integration-optional:
     needs: [wheel-build, changed-files]
     permissions:
@@ -424,7 +434,7 @@ jobs:
     with:
       build_type: pull-request
       script: ci/test_wheel_integrations.sh
-      matrix_type: cuda-13-4-pr,pull-request
+      matrix_type: pull-request
   devcontainer:
     permissions:
       actions: read

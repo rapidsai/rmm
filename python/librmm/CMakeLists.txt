@@ -1,11 +1,11 @@
 # =============================================================================
 # cmake-format: off
-# SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 # cmake-format: on
 # =============================================================================
 
-cmake_minimum_required(VERSION 4.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 4.3 FATAL_ERROR)
 
 include(../../cmake/rapids_config.cmake)
 
@@ -13,6 +13,9 @@ project(
   librmm-python
   VERSION "${RAPIDS_VERSION}"
   LANGUAGES CXX)
+
+# Find C++ libraries from RAPIDS wheels in site-packages.
+set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS TRUE)
 
 # Check if rmm is already available. If so, it's the user's responsibility to ensure that the CMake
 # package is also available at build time of the Python rmm package.
