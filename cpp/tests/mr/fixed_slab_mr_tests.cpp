@@ -27,6 +27,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <new>
 #include <optional>
 #include <thread>
@@ -72,11 +73,30 @@ void CUDART_CB spin_until_released(void* data)
   }
 }
 
-// Sets the flag on scope exit so the stream callback can never block teardown.
+// Sets the flag on scope exit so the stream callback can never block teardown, then waits for
+// the stream so the callback has exited before the flag goes out of scope.
 struct release_on_exit {
   std::atomic<bool>& flag;
+  cudaStream_t stream;
 
-  ~release_on_exit() { flag.store(true, std::memory_order_release); }
+  ~release_on_exit()
+  {
+    flag.store(true, std::memory_order_release);
+    // The wait returns only after the callback has exited, so the flag outlives every read; the
+    // flag is already true, so the callback exits immediately and this cannot hang.
+    (void)cudaStreamSynchronize(stream);
+  }
+};
+
+// Frees a 2048_B backing allocation from the fixture's upstream when its owner dies: a fatal
+// ASSERT between allocation and test end would otherwise skip the free and leak the GPU
+// allocation. Both users allocate exactly 2048_B.
+struct backing_free {
+  rmm::mr::cuda_memory_resource* upstream;
+  void operator()(void* p) const
+  {
+    if (p) { upstream->deallocate_sync(p, 2048_B, rmm::CUDA_ALLOCATION_ALIGNMENT); }
+  }
 };
 
 // ---------------------------------------------------------------------------
@@ -255,16 +275,20 @@ TEST_F(FixedSlabTest, RecordedStreamAccepted)
   mr.deallocate(construction_stream, a, 256_B);
   EXPECT_EQ(mr.carved_bytes(), 256_B);
 
+  // CUDA guarantees only 256-byte alignment, so the padding the 512-carve needs depends on the
+  // real base address.
+  auto const pad512 = (512 - ((reinterpret_cast<std::uintptr_t>(mr.data()) + 256) & 511)) & 511;
+
   auto* b = mr.allocate(construction_stream, 256_B, 512);
   ASSERT_NE(b, nullptr);
   EXPECT_TRUE(rmm::is_pointer_aligned(b, 512));
-  EXPECT_EQ(mr.carved_bytes(), 768_B);
+  EXPECT_EQ(mr.carved_bytes(), 512_B + pad512);
 
   auto* sync_ptr = mr.allocate_sync(1);
   ASSERT_NE(sync_ptr, nullptr);
-  EXPECT_EQ(mr.carved_bytes(), 769);
+  EXPECT_EQ(mr.carved_bytes(), 512_B + pad512 + 1);
   mr.deallocate_sync(sync_ptr, 1);
-  EXPECT_EQ(mr.carved_bytes(), 769);
+  EXPECT_EQ(mr.carved_bytes(), 512_B + pad512 + 1);
 }
 
 TEST_F(FixedSlabTest, SyncAllocationIsHostOnlyCarve)
@@ -279,7 +303,7 @@ TEST_F(FixedSlabTest, SyncAllocationIsHostOnlyCarve)
   // ~unblock sets the flag FIRST and the resource's release() (upstream cudaFree can
   // implicit-synchronize the device) cannot block behind the still-spinning callback.
   fixed_slab_mr mr{upstream, construction_stream, 512_B};
-  release_on_exit unblock{released};
+  release_on_exit unblock{released, construction_stream.value()};
   RMM_CUDA_TRY(cudaLaunchHostFunc(construction_stream.value(), spin_until_released, &released));
 
   void* ptr = nullptr;
@@ -573,6 +597,8 @@ TEST_F(FixedSlabTest, HonorsLargerAlignmentAtMisalignedBase)
   rmm::cuda_stream stream{rmm::cuda_stream::flags::non_blocking};
   auto* backing = upstream.allocate_sync(2048_B, rmm::CUDA_ALLOCATION_ALIGNMENT);
   ASSERT_NE(backing, nullptr);
+  std::unique_ptr<std::byte, backing_free> backing_owner{reinterpret_cast<std::byte*>(backing),
+                                                         backing_free{&upstream}};
   auto const backing_address = reinterpret_cast<std::uintptr_t>(backing);
   auto* misaligned           = reinterpret_cast<std::byte*>(
     (backing_address % 512 == 0) ? backing_address + 256 : backing_address);
@@ -599,7 +625,6 @@ TEST_F(FixedSlabTest, HonorsLargerAlignmentAtMisalignedBase)
     EXPECT_EQ(a, misaligned + 256);
     EXPECT_EQ(mr.carved_bytes(), 257);
   }
-  upstream.deallocate_sync(backing, 2048_B, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 TEST_F(FixedSlabTest, PaddingDoesNotFit)
@@ -611,6 +636,8 @@ TEST_F(FixedSlabTest, PaddingDoesNotFit)
   rmm::cuda_stream stream{rmm::cuda_stream::flags::non_blocking};
   auto* backing = upstream.allocate_sync(2048_B, rmm::CUDA_ALLOCATION_ALIGNMENT);
   ASSERT_NE(backing, nullptr);
+  std::unique_ptr<std::byte, backing_free> backing_owner{reinterpret_cast<std::byte*>(backing),
+                                                         backing_free{&upstream}};
   auto const backing_address = reinterpret_cast<std::uintptr_t>(backing);
   auto* misaligned           = reinterpret_cast<std::byte*>(
     (backing_address % 512 == 0) ? backing_address + 256 : backing_address);
@@ -635,7 +662,6 @@ TEST_F(FixedSlabTest, PaddingDoesNotFit)
     EXPECT_EQ(a, misaligned);
     EXPECT_EQ(mr.carved_bytes(), 256_B);
   }
-  upstream.deallocate_sync(backing, 2048_B, rmm::CUDA_ALLOCATION_ALIGNMENT);
 }
 
 TEST_F(FixedSlabTest, ExplicitDefaultStreams)

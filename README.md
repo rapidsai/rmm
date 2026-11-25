@@ -321,9 +321,11 @@ cost is constant.
 ### `fixed_slab_memory_resource`
 
 Carves variable-size, at-least-`rmm::CUDA_ALLOCATION_ALIGNMENT`-aligned (256-byte) allocations in
-O(1) from one fixed-capacity upstream slab. **Single-stream:** every call must pass the construction
-stream (else `rmm::logic_error`), eliminating per-call CUDA overhead (no event waits, stream
-tracking, or teardown fencing) and cross-stream ordering. `deallocate` is a memory no-op: slices are
+O(1) from one fixed-capacity upstream slab. **Single-stream:** allocation calls must pass the
+construction stream (`rmm::logic_error` otherwise); mismatched-stream `deallocate` of a real
+pointer terminates instead of throwing (`noexcept`), while null-pointer or zero-byte frees are
+ignored without stream validation. No per-call CUDA overhead (no event waits, stream tracking, or
+teardown fencing) and no cross-stream ordering. `deallocate` is a memory no-op: slices are
 never reused, and the slab returns to upstream when the last resource copy dies. `allocate_sync` is
 a host-only carve without waiting (synchronize the recorded stream before host-synchronous use).
 Requests exceeding remaining capacity throw `rmm::out_of_memory` instead of growing.
