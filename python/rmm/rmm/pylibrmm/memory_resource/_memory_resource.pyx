@@ -37,6 +37,7 @@ from rmm.pylibrmm.helper cimport parse_bytes
 from rmm.statistics import Statistics
 
 from rmm.librmm.memory_resource cimport (
+    CUDA_ALLOCATION_ALIGNMENT,
     CppExcept,
     allocate_callback_t,
     allocation_handle_type,
@@ -81,6 +82,8 @@ cdef class DeviceMemoryResource:
 
         Notes
         -----
+        Allocations are always requested with 256-byte alignment.
+
         On integrated memory systems, attempting to allocate more memory than
         available can cause the process to be killed by the operating system
         instead of raising a catchable :class:`MemoryError`.
@@ -101,7 +104,7 @@ cdef class DeviceMemoryResource:
         cdef uintptr_t ptr
         with nogil:
             ptr = <uintptr_t>(self.get_mr().allocate(
-                stream.view(), nbytes
+                stream.view(), nbytes, CUDA_ALLOCATION_ALIGNMENT
             ))
         return ptr
 
@@ -120,7 +123,7 @@ cdef class DeviceMemoryResource:
         stream = as_stream(stream)
         with nogil:
             self.get_mr().deallocate(
-                stream.view(), <void*>(ptr), nbytes
+                stream.view(), <void*>(ptr), nbytes, CUDA_ALLOCATION_ALIGNMENT
             )
 
     def __dealloc__(self):
@@ -574,8 +577,9 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
 
 
 cdef void* _allocate_callback_wrapper(
-    size_t nbytes,
     stream_ref stream,
+    size_t nbytes,
+    size_t alignment,
     void* ctx
     # Note that this function is specifically designed to rethrow Python
     # exceptions as C++ exceptions when called as a callback from C++, so it is
@@ -593,11 +597,12 @@ cdef void* _allocate_callback_wrapper(
     throw_cpp_except(err)
 
 cdef void _deallocate_callback_wrapper(
+    stream_ref stream,
     void* ptr,
     size_t nbytes,
-    stream_ref stream,
+    size_t alignment,
     void* ctx
-) except * with gil:
+) noexcept with gil:
     (<object>(ctx))(<uintptr_t>(ptr), nbytes, Stream._from_cudaStream_t(stream.get()))
 
 
@@ -617,12 +622,15 @@ cdef class CallbackMemoryResource(DeviceMemoryResource):
         The allocation function must accept two arguments. An integer
         representing the number of bytes to allocate and a Stream on
         which to perform the allocation, and return an integer
-        representing the pointer to the allocated memory.
+        representing the pointer to the allocated memory. Allocations are
+        always requested with 256-byte alignment, so the returned pointer
+        must be 256-byte aligned.
     deallocate_func: callable
         The deallocation function must accept three arguments. an integer
         representing the pointer to the memory to free, a second
         integer representing the number of bytes to free, and a Stream
-        on which to perform the deallocation.
+        on which to perform the deallocation. It must not raise an exception
+        because this callback boundary cannot propagate Python exceptions.
 
     Examples
     --------

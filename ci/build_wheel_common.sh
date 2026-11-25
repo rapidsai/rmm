@@ -12,9 +12,6 @@ if [[ "${RAPIDS_WHEEL_COMMON_INITIALIZED:-}" != "true" ]]; then
   RAPIDS_VERSION_SUFFIX=".post${RAPIDS_DATETIME_STRING}" \
     rapids-generate-version > ./VERSION
 
-  # Creates artifacts directory for telemetry
-  source rapids-telemetry-setup
-
   export RAPIDS_WHEEL_COMMON_INITIALIZED=true
 fi
 
@@ -65,11 +62,11 @@ build_wheel() (
   # environment variable so it does not constrain the frontend installation.
   unset PIP_CONSTRAINT
 
-  rapids-telemetry-record "build-${package_name}.log" rapids-python-build-retry \
+  rapids-python-build-retry \
     "${rapids_build_args[@]}" \
     .
 
-  rapids-telemetry-record "sccache-stats-${package_name}.txt" sccache --show-adv-stats
+  sccache --show-adv-stats
   sccache --stop-server >/dev/null 2>&1 || true
 )
 
