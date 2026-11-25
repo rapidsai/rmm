@@ -328,13 +328,24 @@ ignored without stream validation. No per-call CUDA overhead (no event waits, st
 teardown fencing) and no cross-stream ordering. `deallocate` is a memory no-op: slices are
 never reused, and the slab returns to upstream when the last resource copy dies. `allocate_sync` is
 a host-only carve without waiting (synchronize the recorded stream before host-synchronous use).
-The construction stream must remain alive until the last owner of the resource is destroyed: the
-final release frees the slab on that recorded stream, and synchronizing it does not make a
-destroyed stream handle valid. A resource constructed on `cudaStreamPerThread` must be used only
-from its constructing thread — the per-thread stream handle is a sentinel every thread shares, so
-the recorded-stream check cannot distinguish another thread's stream, and
+That final release is queued on the construction stream. Before the last
+owner is destroyed, every slice must be unused: keep all device work on the construction stream,
+or order the last use on every other stream before the final release (record an event on that
+stream and make the construction stream wait on it); keeping the construction stream alive does
+not order that work. The construction stream must remain alive until that destruction, and
+synchronizing it does not make a destroyed stream handle valid. A resource constructed on
+`cudaStreamPerThread` must be used only from its constructing thread — the per-thread stream
+handle is a sentinel every thread shares, so the recorded-stream check cannot distinguish
+another thread's stream, and
 `thread_safe_resource_adaptor` serializes host calls without ordering device work across
-per-thread streams; for cross-thread use, construct the resource on an explicit shared stream.
+per-thread streams. For cross-thread use, share ONE adaptor instance (two adaptors around copies
+of one slab lock separate mutexes) or guard every alias with one external lock — the slab's
+host-side carve state is not synchronized — and call only the adaptor's stream-taking
+`allocate`/`deallocate` with the construction stream: its `allocate_sync`/`deallocate_sync` pass
+`cudaStreamDefault` upstream, which the recorded-stream check rejects (`rmm::logic_error`) or
+terminates on — unless the slab was recorded on the legacy/default stream, which the check
+normalizes and accepts. An explicit shared stream orders device work but does not serialize host
+calls.
 Requests exceeding remaining capacity throw `rmm::out_of_memory` instead of growing.
 
 ### `binning_memory_resource`

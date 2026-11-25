@@ -90,9 +90,11 @@ struct release_on_exit {
   {
     flag->store(true, std::memory_order_release);
     // The flag is already true, so the callback exits immediately and this cannot hang.
-    if (cudaStreamSynchronize(stream) == cudaSuccess) { return; }
-    // Synchronize failed: completion unconfirmed, so keep the flag alive for a callback that
-    // may still be spinning.
+    cudaError_t const status = cudaStreamSynchronize(stream);
+    if (status == cudaSuccess) { return; }
+    // Synchronize failed: report without throwing (destructors must not throw), and keep the
+    // flag alive for a callback that may still be spinning.
+    ADD_FAILURE() << "cudaStreamSynchronize failed: " << cudaGetErrorString(status);
     (void)flag.release();
   }
 };
