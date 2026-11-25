@@ -328,6 +328,13 @@ ignored without stream validation. No per-call CUDA overhead (no event waits, st
 teardown fencing) and no cross-stream ordering. `deallocate` is a memory no-op: slices are
 never reused, and the slab returns to upstream when the last resource copy dies. `allocate_sync` is
 a host-only carve without waiting (synchronize the recorded stream before host-synchronous use).
+The construction stream must remain alive until the last owner of the resource is destroyed: the
+final release frees the slab on that recorded stream, and synchronizing it does not make a
+destroyed stream handle valid. A resource constructed on `cudaStreamPerThread` must be used only
+from its constructing thread — the per-thread stream handle is a sentinel every thread shares, so
+the recorded-stream check cannot distinguish another thread's stream, and
+`thread_safe_resource_adaptor` serializes host calls without ordering device work across
+per-thread streams; for cross-thread use, construct the resource on an explicit shared stream.
 Requests exceeding remaining capacity throw `rmm::out_of_memory` instead of growing.
 
 ### `binning_memory_resource`

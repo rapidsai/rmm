@@ -74,17 +74,26 @@ void CUDART_CB spin_until_released(void* data)
 }
 
 // Sets the flag on scope exit so the stream callback can never block teardown, then waits for
-// the stream so the callback has exited before the flag goes out of scope.
+// the stream so the callback has exited before teardown continues. Owns the flag on the heap:
+// if the synchronize fails, callback completion is unconfirmed, so the flag is deliberately
+// leaked rather than freed while a pending callback could still read it.
 struct release_on_exit {
-  std::atomic<bool>& flag;
+  std::unique_ptr<std::atomic<bool>> flag;
   cudaStream_t stream;
+
+  explicit release_on_exit(cudaStream_t stream)
+    : flag{std::make_unique<std::atomic<bool>>(false)}, stream{stream}
+  {
+  }
 
   ~release_on_exit()
   {
-    flag.store(true, std::memory_order_release);
-    // The wait returns only after the callback has exited, so the flag outlives every read; the
-    // flag is already true, so the callback exits immediately and this cannot hang.
-    (void)cudaStreamSynchronize(stream);
+    flag->store(true, std::memory_order_release);
+    // The flag is already true, so the callback exits immediately and this cannot hang.
+    if (cudaStreamSynchronize(stream) == cudaSuccess) { return; }
+    // Synchronize failed: completion unconfirmed, so keep the flag alive for a callback that
+    // may still be spinning.
+    (void)flag.release();
   }
 };
 
@@ -297,14 +306,13 @@ TEST_F(FixedSlabTest, SyncAllocationIsHostOnlyCarve)
   // callback (with pending construction work ahead of it) and carve synchronously. The
   // carve must return promptly WITHOUT the callback ever running; if a wait were performed
   // the test would hang (or time out) until the flag release.
-  std::atomic<bool> released{false};
-
   // Declared BEFORE the guard so ~mr destructs SECOND: locals unwind in reverse order, so
   // ~unblock sets the flag FIRST and the resource's release() (upstream cudaFree can
   // implicit-synchronize the device) cannot block behind the still-spinning callback.
   fixed_slab_mr mr{upstream, construction_stream, 512_B};
-  release_on_exit unblock{released, construction_stream.value()};
-  RMM_CUDA_TRY(cudaLaunchHostFunc(construction_stream.value(), spin_until_released, &released));
+  release_on_exit unblock{construction_stream.value()};
+  RMM_CUDA_TRY(
+    cudaLaunchHostFunc(construction_stream.value(), spin_until_released, unblock.flag.get()));
 
   void* ptr = nullptr;
   EXPECT_NO_THROW(ptr = mr.allocate_sync(256_B));
