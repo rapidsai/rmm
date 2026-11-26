@@ -36,8 +36,8 @@ struct fixed_size_free_list : free_list<block_base> {
   }
 
   /**
-   * @brief Inserts a block into the `free_list` in the correct order, coalescing it with the
-   *        preceding and following blocks if either is contiguous.
+   * @brief Inserts a block at the back of the `free_list`. Blocks are fixed-size, so no ordering
+   *        or coalescing is performed.
    *
    * @param block The block to insert.
    */

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2020-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for basic RMM allocations."""
@@ -63,8 +63,8 @@ def _make_system_memory_mr(
 
 
 # Test all combinations of default/managed and pooled/non-pooled allocation.
-# The mode fixture is class-scoped so that the (potentially expensive) memory
-# resource is created once per mode combo rather than once per dtype/nelem.
+# The mode parameters are class-scoped so that tests are grouped by mode combo;
+# the autouse fixture still creates a new memory resource for each test.
 @pytest.mark.parametrize(
     "managed, pool",
     list(product([False, True], [False, True])),

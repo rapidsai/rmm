@@ -48,7 +48,7 @@ TEST_P(allocation_size, MultiThreaded)
   // Provoke interleaving to test that aligned allocations are updated with correct ordering
   // relative to upstream deallocate. The delayed memory resource frees the pointer upstream
   // immediately then sleeps, simulating the window where the address is available for reuse
-  // but the adaptor hasn't updated its counters yet.
+  // but the adaptor hasn't updated its pointer map yet.
   //
   // Thread-0             Thread-1
   // alloc
@@ -58,7 +58,8 @@ TEST_P(allocation_size, MultiThreaded)
   //                      dealloc-end
   // dealloc-end
   //
-  // After both threads complete, the counters must reflect zero outstanding allocations.
+  // The test checks that both threads allocate and deallocate without error under this
+  // interleaving.
   std::vector<std::thread> threads;
   for (int i = 0; i < 2; i++) {
     threads.emplace_back([&, i = i]() {

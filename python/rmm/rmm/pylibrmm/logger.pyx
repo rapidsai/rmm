@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023-2024, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import warnings
@@ -160,7 +160,7 @@ def set_flush_level(level):
     Examples
     --------
     >>> import rmm
-    >>> rmm.flush_on(rmm.logging_level.WARN) # set flush level to warn
+    >>> rmm.set_flush_level(rmm.logging_level.WARN) # set flush level to warn
     """
     _validate_level_type(level)
     default_logger().flush_on(level)
@@ -194,7 +194,7 @@ def get_flush_level():
     Examples
     --------
     >>> import rmm
-    >>> rmm.flush_level() # get current flush level
+    >>> rmm.get_flush_level() # get current flush level
     <logging_level.INFO: 2>
     """
     return default_logger().flush_level()
