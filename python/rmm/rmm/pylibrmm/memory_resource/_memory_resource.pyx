@@ -525,10 +525,10 @@ cdef class BinningMemoryResource(UpstreamResourceAdaptor):
         upstream_mr : DeviceMemoryResource
             The memory resource to use for allocations larger than any of the
             bins.
-        min_size_exponent : size_t
+        min_size_exponent : int
             The base-2 exponent of the minimum size FixedSizeMemoryResource
             bin to create.
-        max_size_exponent : size_t
+        max_size_exponent : int
             The base-2 exponent of the maximum size FixedSizeMemoryResource
             bin to create.
         """

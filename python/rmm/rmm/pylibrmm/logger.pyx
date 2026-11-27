@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023-2024, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2023-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
 import warnings
@@ -28,9 +28,9 @@ def should_log(level):
 
     Parameters
     ----------
-    level : logging_level
+    level : level_enum
         The debug logging level. Valid values are instances of the
-        ``logging_level`` enum.
+        ``level_enum`` enum.
 
     Returns
     -------
@@ -40,7 +40,7 @@ def should_log(level):
     Raises
     ------
     TypeError
-        If the logging level is not an instance of the ``logging_level`` enum.
+        If the logging level is not an instance of the ``level_enum`` enum.
     """
     _validate_level_type(level)
     return default_logger().should_log(level)
@@ -56,14 +56,14 @@ def set_logging_level(level):
 
     Parameters
     ----------
-    level : logging_level
+    level : level_enum
         The debug logging level. Valid values are instances of the
-        ``logging_level`` enum.
+        ``level_enum`` enum.
 
     Raises
     ------
     TypeError
-        If the logging level is not an instance of the ``logging_level`` enum.
+        If the logging level is not an instance of the ``level_enum`` enum.
 
     See Also
     --------
@@ -72,7 +72,7 @@ def set_logging_level(level):
     Examples
     --------
     >>> import rmm
-    >>> rmm.set_logging_level(rmm.logging_level.WARN) # set logging level to warn
+    >>> rmm.set_logging_level(rmm.level_enum.warn) # set logging level to warn
     """
     _validate_level_type(level)
     default_logger().set_level(level)
@@ -93,8 +93,8 @@ def get_logging_level():
 
     Returns
     -------
-    level : logging_level
-        The current debug logging level, an instance of the ``logging_level``
+    level : level_enum
+        The current debug logging level, an instance of the ``level_enum``
         enum.
 
     See Also
@@ -105,7 +105,7 @@ def get_logging_level():
     --------
     >>> import rmm
     >>> rmm.get_logging_level() # get current logging level
-    <logging_level.INFO: 2>
+    <level_enum.info: 2>
     """
     return default_logger().level()
 
@@ -143,14 +143,14 @@ def set_flush_level(level):
 
     Parameters
     ----------
-    level : logging_level
+    level : level_enum
         The debug logging level. Valid values are instances of the
-        ``logging_level`` enum.
+        ``level_enum`` enum.
 
     Raises
     ------
     TypeError
-        If the logging level is not an instance of the ``logging_level`` enum.
+        If the logging level is not an instance of the ``level_enum`` enum.
 
     See Also
     --------
@@ -160,7 +160,7 @@ def set_flush_level(level):
     Examples
     --------
     >>> import rmm
-    >>> rmm.flush_on(rmm.logging_level.WARN) # set flush level to warn
+    >>> rmm.set_flush_level(rmm.level_enum.warn) # set flush level to warn
     """
     _validate_level_type(level)
     default_logger().flush_on(level)
@@ -182,8 +182,8 @@ def get_flush_level():
 
     Returns
     -------
-    logging_level
-        The current flush level, an instance of the ``logging_level``
+    level_enum
+        The current flush level, an instance of the ``level_enum``
         enum.
 
     See Also
@@ -194,7 +194,7 @@ def get_flush_level():
     Examples
     --------
     >>> import rmm
-    >>> rmm.flush_level() # get current flush level
-    <logging_level.INFO: 2>
+    >>> rmm.get_flush_level() # get current flush level
+    <level_enum.info: 2>
     """
     return default_logger().flush_level()
