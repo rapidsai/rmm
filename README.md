@@ -318,6 +318,36 @@ A coalescing, best-fit pool sub-allocator.
 A memory resource that can only allocate a single fixed size. Average allocation and deallocation
 cost is constant.
 
+### `fixed_slab_memory_resource`
+
+Carves variable-size, at-least-`rmm::CUDA_ALLOCATION_ALIGNMENT`-aligned (256-byte) allocations in
+O(1) from one fixed-capacity upstream slab. **Single-stream:** allocation calls must pass the
+construction stream (`rmm::logic_error` otherwise); mismatched-stream `deallocate` of a real
+pointer terminates instead of throwing (`noexcept`), while null-pointer or zero-byte frees are
+ignored without stream validation. No per-call CUDA overhead (no event waits, stream tracking, or
+teardown fencing) and no cross-stream ordering. `deallocate` is a memory no-op: slices are
+never reused, and the slab returns to upstream when the last resource copy dies. `allocate_sync` is
+a host-only carve without waiting (synchronize the recorded stream before host-synchronous use).
+That final release is queued on the construction stream. Before the last
+owner is destroyed, every slice must be unused: keep all device work on the construction stream,
+or order the last use on every other stream before the final release (record an event on that
+stream and make the construction stream wait on it); keeping the construction stream alive does
+not order that work. The construction stream must remain alive until that destruction, and
+synchronizing it does not make a destroyed stream handle valid. A resource constructed on
+`cudaStreamPerThread` must be used only from its constructing thread — the per-thread stream
+handle is a sentinel every thread shares, so the recorded-stream check cannot distinguish
+another thread's stream, and
+`thread_safe_resource_adaptor` serializes host calls without ordering device work across
+per-thread streams. For cross-thread use, share ONE adaptor instance (two adaptors around copies
+of one slab lock separate mutexes) or guard every alias with one external lock — the slab's
+host-side carve state is not synchronized — and call only the adaptor's stream-taking
+`allocate`/`deallocate` with the construction stream: its `allocate_sync`/`deallocate_sync` pass
+`cudaStreamDefault` upstream, which the recorded-stream check rejects (`rmm::logic_error`) or
+terminates on — unless the slab was recorded on the legacy/default stream, which the check
+normalizes and accepts. An explicit shared stream orders device work but does not serialize host
+calls.
+Requests exceeding remaining capacity throw `rmm::out_of_memory` instead of growing.
+
 ### `binning_memory_resource`
 
 Configurable to use multiple upstream memory resources for allocations that fall within different
@@ -479,7 +509,11 @@ construction and destruction of the memory resource object.
 
 Note that a class `thread_safe_resource_adapter` is provided which can be used to adapt a memory
 resource that is not thread safe to be thread safe (as described above). This adapter is not needed
-with any current RMM device memory resources.
+with any current RMM device memory resources except `fixed_slab_memory_resource`, which requires it
+for concurrent allocations or deallocations across threads (shared ownership across copies is not
+synchronization). Cross-stream use of `fixed_slab_memory_resource` would require per-stream tracking
+(a stream registry), PTDS ownership checks, and per-call event waits/teardown fencing — coupled
+features that cannot be added piecemeal.
 
 ## Allocators
 

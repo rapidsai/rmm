@@ -111,6 +111,7 @@ add_library(
   src/mr/detail/cuda_async_managed_memory_resource_impl.cpp
   src/mr/detail/cuda_async_memory_resource_impl.cpp
   src/mr/detail/fixed_size_memory_resource_impl.cpp
+  src/mr/detail/fixed_slab_memory_resource_impl.cpp
   src/mr/detail/limiting_resource_adaptor_impl.cpp
   src/mr/detail/logging_resource_adaptor_impl.cpp
   src/mr/detail/pool_memory_resource_impl.cpp
@@ -120,6 +121,7 @@ add_library(
   src/mr/detail/thread_safe_resource_adaptor_impl.cpp
   src/mr/detail/tracking_resource_adaptor_impl.cpp
   src/mr/fixed_size_memory_resource.cpp
+  src/mr/fixed_slab_memory_resource.cpp
   src/mr/limiting_resource_adaptor.cpp
   src/mr/logging_resource_adaptor.cpp
   src/mr/managed_memory_resource.cpp

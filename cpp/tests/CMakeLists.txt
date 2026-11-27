@@ -1,6 +1,6 @@
 # =============================================================================
 # cmake-format: off
-# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION.
+# SPDX-FileCopyrightText: Copyright (c) 2018-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 # cmake-format: on
 # =============================================================================
@@ -154,6 +154,17 @@ ConfigureTest(THREAD_SAFE_MR_REF_TEST mr/mr_ref_thread_safe_tests.cpp GPUS 1 PER
 
 # pool mr tests
 ConfigureTest(POOL_MR_TEST mr/pool_mr_tests.cpp GPUS 1 PERCENT 100)
+# SINGLE binary only: the shared ConfigureTest wrapper auto-generates a _PTDS_TEST twin for every
+# registration, and the single-stream contract dropped that variant; register through
+# ConfigureTestInternal instead.
+ConfigureTestInternal(FIXED_SLAB_MR_TEST mr/fixed_slab_mr_tests.cpp)
+target_link_libraries(FIXED_SLAB_MR_TEST PRIVATE $<COMPILE_ONLY:rmm> CUDA::cudart)
+rapids_test_add(
+  NAME FIXED_SLAB_MR_TEST
+  COMMAND FIXED_SLAB_MR_TEST
+  GPUS 1
+  PERCENT 100
+  INSTALL_COMPONENT_SET testing)
 ConfigureTest(POOL_MR_REF_TEST mr/mr_ref_pool_tests.cpp GPUS 1 PERCENT 100)
 ConfigureTest(PINNED_POOL_MR_REF_TEST mr/mr_ref_pinned_pool_tests.cpp)
 
