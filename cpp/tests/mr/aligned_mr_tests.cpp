@@ -45,10 +45,10 @@ TEST_P(allocation_size, MultiThreaded)
   auto delayed = delayed_memory_resource(upstream, std::chrono::milliseconds{300});
   auto mr      = rmm::mr::aligned_resource_adaptor(delayed);
   auto stream  = rmm::cuda_stream{};
-  // Provoke interleaving to test that aligned allocations are updated with correct ordering
-  // relative to upstream deallocate. The delayed memory resource frees the pointer upstream
-  // immediately then sleeps, simulating the window where the address is available for reuse
-  // but the adaptor hasn't updated its pointer map yet.
+  // Provoke interleaving of concurrent allocate/deallocate through the adaptor. The delayed
+  // memory resource frees the pointer upstream immediately then sleeps, so one thread's
+  // deallocate overlaps the other's. With the default alignment (CUDA_ALLOCATION_ALIGNMENT)
+  // the adaptor forwards these calls directly to upstream.
   //
   // Thread-0             Thread-1
   // alloc
