@@ -24,8 +24,8 @@ namespace detail {
 /**
  * @brief Implementation class for cuda_async_memory_resource.
  *
- * Owns a CUDA memory pool and delegates allocation/deallocation to a
- * cuda_async_view_memory_resource. This class satisfies the CCCL
+ * Delegates allocation/deallocation to a cuda_async_view_memory_resource and owns the CUDA memory
+ * pool when its configuration requires creating one. This class satisfies the CCCL
  * `cuda::mr::resource` concept and is held by `cuda_async_memory_resource`
  * via `cuda::mr::shared_resource` for reference-counted ownership.
  */
@@ -84,6 +84,7 @@ class cuda_async_memory_resource_impl {
 
  private:
   cuda_async_view_memory_resource pool_{};
+  bool owns_pool_{};
 };
 
 }  // namespace detail
