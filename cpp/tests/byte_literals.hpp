@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -9,11 +9,11 @@
 
 namespace rmm::test {
 
-constexpr auto kilo{long{1} << 10};
-constexpr auto mega{long{1} << 20};
-constexpr auto giga{long{1} << 30};
-constexpr auto tera{long{1} << 40};
-constexpr auto peta{long{1} << 50};
+constexpr auto kilo{std::uint64_t{1} << 10};
+constexpr auto mega{std::uint64_t{1} << 20};
+constexpr auto giga{std::uint64_t{1} << 30};
+constexpr auto tera{std::uint64_t{1} << 40};
+constexpr auto peta{std::uint64_t{1} << 50};
 
 // user-defined Byte literals
 constexpr unsigned long long operator""_B(unsigned long long val) { return val; }
