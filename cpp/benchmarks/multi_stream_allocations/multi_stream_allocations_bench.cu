@@ -6,6 +6,8 @@
 #include <rmm/cuda_device.hpp>
 #include <rmm/cuda_stream.hpp>
 #include <rmm/cuda_stream_pool.hpp>
+#include <rmm/detail/runtime_capabilities.hpp>
+#include <rmm/device_buffer.hpp>
 #include <rmm/device_uvector.hpp>
 #include <rmm/mr/arena_memory_resource.hpp>
 #include <rmm/mr/binning_memory_resource.hpp>
@@ -15,13 +17,19 @@
 #include <rmm/mr/pool_memory_resource.hpp>
 #include <rmm/resource_ref.hpp>
 
+#include <cuda/memory_pool>
 #include <cuda/stream>
 #include <cuda_runtime_api.h>
 
 #include <benchmark/benchmark.h>
 #include <benchmarks/utilities/cxxopts.hpp>
 
+#include <chrono>
 #include <cstddef>
+#include <cstdint>
+#include <numeric>
+#include <utility>
+#include <vector>
 
 __global__ void compute_bound_kernel(int64_t* out)
 {
@@ -40,6 +48,151 @@ __global__ void compute_bound_kernel(int64_t* out)
 
 using any_device_resource = cuda::mr::any_resource<cuda::mr::device_accessible>;
 using MRFactoryFunc       = std::function<any_device_resource()>;
+
+namespace {
+
+constexpr std::size_t cross_stream_operations = 1024;
+constexpr std::size_t cross_stream_pool_bytes = cross_stream_operations * 65536;
+
+std::pair<any_device_resource, cudaMemPool_t> make_cross_stream_pool(bool use_cccl)
+{
+  if (!use_cccl) {
+    auto pool = rmm::mr::cuda_async_memory_resource{};
+    return {pool, pool.pool_handle()};
+  }
+
+  // Match RMM's native creation flags. CCCL's memory_pool_properties does not expose
+  // the hardware-decompression flag, which RMM enables on supported CUDA versions.
+  cudaMemPoolProps properties{};
+  properties.allocType     = cudaMemAllocationTypePinned;
+  properties.handleTypes   = cudaMemHandleTypeNone;
+  properties.location.type = cudaMemLocationTypeDevice;
+  properties.location.id   = rmm::get_current_cuda_device().value();
+#if CUDART_VERSION >= RMM_MIN_HWDECOMPRESS_CUDA_VERSION
+  if (rmm::detail::hwdecompress::is_supported()) {
+    properties.usage = cudaMemPoolCreateUsageHwDecompress;
+  }
+#endif
+  cudaMemPool_t handle{};
+  RMM_CUDA_TRY(cudaMemPoolCreate(&handle, &properties));
+  return {cuda::shared_device_memory_pool::from_native_handle(handle), handle};
+}
+
+void BM_CrossStreamOwnership(benchmark::State& state, bool use_cccl)
+try {
+  auto [pool, handle] = make_cross_stream_pool(use_cccl);
+  rmm::device_async_resource_ref resource{pool};
+  rmm::cuda_stream producer{rmm::cuda_stream::flags::non_blocking};
+  rmm::cuda_stream consumer{rmm::cuda_stream::flags::non_blocking};
+  auto const bytes = static_cast<std::size_t>(state.range(0));
+
+  // Scratch does not use the measured pool. Each allocation touches only its first
+  // 64-bit word; allocation size is varied independently of copy size.
+  rmm::mr::cuda_memory_resource scratch;
+  rmm::device_uvector<std::uint64_t> inputs{cross_stream_operations, producer, scratch};
+  rmm::device_uvector<std::uint64_t> outputs{cross_stream_operations, consumer, scratch};
+  std::vector<std::uint64_t> expected(cross_stream_operations), actual(cross_stream_operations);
+  auto const result_bytes = cross_stream_operations * sizeof(std::uint64_t);
+  cuda::event ready{cuda::device_ref{rmm::get_current_cuda_device().value()}};
+
+  try {
+    // Use identical retention/reuse policies and explicitly finish priming before
+    // either pool is used. Even a whole batch of outstanding allocations fits.
+    std::uint64_t threshold = cross_stream_pool_bytes;
+    RMM_CUDA_TRY(cudaMemPoolSetAttribute(handle, cudaMemPoolAttrReleaseThreshold, &threshold));
+    for (auto attribute : {cudaMemPoolReuseFollowEventDependencies,
+                           cudaMemPoolReuseAllowOpportunistic,
+                           cudaMemPoolReuseAllowInternalDependencies}) {
+      int enabled = 1;
+      RMM_CUDA_TRY(cudaMemPoolSetAttribute(handle, attribute, &enabled));
+    }
+    {
+      rmm::device_buffer prime{cross_stream_pool_bytes, producer, resource};
+    }
+    producer.synchronize();
+
+    std::uint64_t epoch = 0;
+    auto run_batch      = [&] {
+      // Inputs stay immutable until all consumers finish. Distinct nonzero values
+      // detect stale results across both operations and batches, including warmup.
+      std::iota(expected.begin(), expected.end(), ++epoch * cross_stream_operations);
+      RMM_CUDA_TRY(cudaMemcpyAsync(
+        inputs.data(), expected.data(), result_bytes, cudaMemcpyHostToDevice, producer.value()));
+      RMM_CUDA_TRY(cudaMemsetAsync(outputs.data(), 0, result_bytes, consumer.value()));
+      producer.synchronize();
+      consumer.synchronize();
+
+      using clock      = std::chrono::steady_clock;
+      auto const start = clock::now();
+      for (std::size_t i = 0; i < cross_stream_operations; ++i) {
+        rmm::device_buffer buffer{bytes, producer, resource};
+        RMM_CUDA_TRY(cudaMemcpyAsync(buffer.data(),
+                                     inputs.data() + i,
+                                     sizeof(std::uint64_t),
+                                     cudaMemcpyDeviceToDevice,
+                                     producer.value()));
+        RMM_CUDA_TRY(cudaEventRecord(ready.get(), producer.value()));
+        RMM_CUDA_TRY(cudaStreamWaitEvent(consumer.value(), ready.get(), 0));
+        // The wait captures this record; later records do not change an enqueued wait.
+        buffer.set_stream(consumer);
+        RMM_CUDA_TRY(cudaMemcpyAsync(outputs.data() + i,
+                                     buffer.data(),
+                                     sizeof(std::uint64_t),
+                                     cudaMemcpyDeviceToDevice,
+                                     consumer.value()));
+      }  // Destruction enqueues each free on the consumer, after its last use.
+      auto const submitted = clock::now();
+      // The final event wait covers all producer work. Finish all frees before
+      // reusing scratch or destroying the pool; no implicit sync is assumed.
+      consumer.synchronize();
+      auto const completed = clock::now();
+
+      RMM_CUDA_TRY(cudaMemcpyAsync(
+        actual.data(), outputs.data(), result_bytes, cudaMemcpyDeviceToHost, consumer.value()));
+      consumer.synchronize();
+      RMM_EXPECTS(actual == expected, "Cross-stream data validation failed");
+      return std::pair{std::chrono::duration<double>(submitted - start).count(),
+                       std::chrono::duration<double>(completed - start).count()};
+    };
+
+    run_batch();  // Untimed, fully validated warmup.
+    double submit_seconds = 0;
+    for (auto _ : state) {
+      auto const [submit, completion] = run_batch();
+      state.SetIterationTime(completion);
+      submit_seconds += submit;
+    }
+    // Both intervals are host wall time per batch. Manual real_time and throughput
+    // use completion time. Setup, priming, input/reset and host validation are excluded.
+    state.counters["host_submit_wall_us"] =
+      benchmark::Counter(submit_seconds * 1e6, benchmark::Counter::kAvgIterations);
+    state.SetItemsProcessed(state.iterations() *
+                            static_cast<std::int64_t>(cross_stream_operations));
+  } catch (...) {
+    // Keep the pool and scratch alive while draining any partially submitted batch.
+    producer.synchronize_no_throw();
+    consumer.synchronize_no_throw();
+    throw;
+  }
+} catch (std::exception const& error) {
+  // Report setup failures as well as submission/validation failures on this case.
+  state.SkipWithError(error.what());
+}
+
+void declare_cross_stream_benchmarks()
+{
+  for (auto const& [name, use_cccl] : {std::pair{"cuda_async", false}, {"cuda_shared", true}}) {
+    benchmark::RegisterBenchmark(
+      (std::string{"BM_CrossStreamOwnership/"} + name).c_str(), BM_CrossStreamOwnership, use_cccl)
+      ->Arg(4096)
+      ->Arg(65536)
+      ->ArgName("bytes")
+      ->UseManualTime()
+      ->Unit(benchmark::kMicrosecond);
+  }
+}
+
+}  // namespace
 
 static void run_prewarm(rmm::cuda_stream_pool& stream_pool, rmm::device_async_resource_ref mr)
 {
@@ -230,6 +383,7 @@ int main(int argc, char** argv)
         resource_names.emplace_back("pool");
         resource_names.emplace_back("arena");
         resource_names.emplace_back("binning");
+        declare_cross_stream_benchmarks();
       }
 
       for (auto& resource_name : resource_names) {
